@@ -112,12 +112,6 @@ function withHealthKitBridgeSource(config) {
   });
 }
 
-/**
- * Preserves HealthKit background delivery without importing Nitro's C++
- * umbrella into Expo's Swift application target.
- *
- * @param {import("expo/config").ExpoConfig} config
- */
 function withHealthKitBackgroundBootstrap(config) {
   config = withHealthKitEntitlements(config);
   config = withHealthKitAppDelegate(config);

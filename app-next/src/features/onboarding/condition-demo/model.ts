@@ -66,7 +66,6 @@ export function phasesFor(s: Scenario): Phase[] {
           { name: 'unlocked', duration: 3 },
         ]
       : [{ name: 'unlocked', duration: 4 }]),
-    // Leaving is the point of "Be at the gym": give the relock a beat longer.
     { name: 'leave', duration: s.kind === 'gym-presence' ? 3 : 2 },
   ];
 }
@@ -191,7 +190,6 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
   'worklet';
   let next = { ...state };
   let remaining = Math.max(0, seconds);
-  // Split at phase boundaries: stride and scenery never accumulate stopped time.
   while (remaining > 0.0000001) {
     const phase = phaseAt(next.time, s);
     const boundary =

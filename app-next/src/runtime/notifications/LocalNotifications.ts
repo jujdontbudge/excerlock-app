@@ -5,7 +5,6 @@ export interface LocalNotificationsBackend {
   schedule(plan: LocalNotificationPlan): Promise<string>;
   cancel(id: string): Promise<void>;
 }
-/** Serialized fixed IDs replace prior plans; no device token or server registration. */
 export class LocalNotifications {
   private tail: Promise<unknown> = Promise.resolve();
   constructor(private backend: LocalNotificationsBackend, private isCurrent: () => boolean, private generation: () => number = () => 0) {}

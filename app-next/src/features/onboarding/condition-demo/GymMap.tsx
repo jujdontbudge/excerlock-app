@@ -5,7 +5,6 @@ import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { DemoState, Scenario, snapshot } from './model';
 import { demoRows } from './layout';
-// G's generic extension exposes the native Fabric matrix prop to Reanimated.
 const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const Ring = Animated.createAnimatedComponent(Circle);
 export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; scenario: Scenario }) {

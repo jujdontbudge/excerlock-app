@@ -40,11 +40,6 @@ const empty = (generation: number | null = null): WalkingDurationState => ({
   version: 1, generation, cursor: null, millisecondsByDay: {}, pending: [], segments: [],
 });
 
-/**
- * Durable measured-time authority. Only adjacent committed verified samples
- * create time; the five-second cap prevents suspension from fabricating it.
- * Totals, cursor and projection intents share one atomic storage write.
- */
 export class WalkingDurationLedger {
   private queue: Promise<unknown> = Promise.resolve();
   constructor(private readonly storage: WalkingDurationStorage) {}
@@ -54,8 +49,6 @@ export class WalkingDurationLedger {
   observe(input: WalkingDurationObservation): Promise<WalkingDurationState> {
     return this.serialize(async () => {
       validateObservation(input);
-      // CoreMotion wall clocks carry sub-millisecond fractions. Segment bounds
-      // and totals are integer milliseconds, so the cursor is floored here.
       const observation = { ...input, at: Math.floor(input.at) };
       let state = await this.load();
       if (state.generation !== observation.generation) {
@@ -66,7 +59,6 @@ export class WalkingDurationLedger {
       const prior = state.cursor;
       if (prior && observation.at < prior.at) throw new Error('Obsolete walking duration observation');
       if (prior && observation.at === prior.at) {
-        // A negative observation dominates at the same timestamp.
         if (prior.verified && !observation.verified) {
           state = { ...state, cursor: observation };
           await this.save(state);
@@ -74,9 +66,6 @@ export class WalkingDurationLedger {
         return state;
       }
       let next = state;
-      // A timezone change cannot reframe an in-flight verified run. The first
-      // verified observation owns its temporal frame until negative evidence
-      // closes continuity; only the next run adopts the device's new timezone.
       const cursor = prior?.verified && observation.verified
         ? { ...observation, timezone: prior.timezone }
         : observation;
@@ -103,8 +92,6 @@ export class WalkingDurationLedger {
 
   reset(): Promise<void> { return this.serialize(() => this.save(empty())); }
 
-  /** Removes only sealed daily totals. Cursor, generation, and unacknowledged
-   * projection intents remain authoritative even when older than the cutoff. */
   pruneBeforeDay(cutoffDay: string): Promise<WalkingDurationState> {
     return this.serialize(async () => {
       validateRetentionDay(cutoffDay);
@@ -128,12 +115,8 @@ export class WalkingDurationLedger {
     if (raw === null) return empty();
     let value: unknown;
     try { value = JSON.parse(raw); } catch { throw new Error('Invalid walking duration ledger'); }
-    // Ledgers written before observations were floored hold fractional bounds.
-    // Flooring them is lossless to within one millisecond and reopens a ledger
-    // that would otherwise reject every later commit.
     if (!validState(value)) value = floorFractions(value);
     if (!validState(value)) throw new Error('Invalid walking duration ledger');
-    // v1 aggregates predate exact evidence. Never fabricate segments from totals.
     return { ...value, segments: Array.isArray((value as Partial<WalkingDurationState>).segments) ?
       (value as WalkingDurationState).segments : [] };
   }
@@ -196,7 +179,6 @@ function addInterval(state: WalkingDurationState, start: number, end: number, ti
 function validateObservation(value: WalkingDurationObservation): void {
   if (!Number.isSafeInteger(value.generation) || value.generation < 0 || !Number.isFinite(value.at) ||
     typeof value.verified !== 'boolean' || !value.timezone) throw new Error('Invalid walking duration observation');
-  // Validate the IANA identifier now, rather than corrupting a durable cursor.
   dayKey(new Date(value.at).toISOString(), value.timezone);
 }
 function validState(value: unknown): value is WalkingDurationState {

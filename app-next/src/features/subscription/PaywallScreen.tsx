@@ -27,12 +27,9 @@ export function PaywallScreen({
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
-  /** B7 UI variation; `control` leaves the remote catalog order in charge. */
   variantKey?: PaywallVariant;
   onClose?: () => void;
-  /** Onboarding only: back to the reminder screen before the paywall. */
   onBack?: () => void;
-  /** Reports the mounted placement so the slot can expose the variant it rendered. */
   onLoaded?: (paywall: SubscriptionPaywall) => void;
 }) {
   const runtime = useRuntime(),
@@ -46,9 +43,6 @@ export function PaywallScreen({
     chosen = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null);
-  // Read by the loader without joining its dependencies: a variant that answers
-  // late must not reload the placement, because a second load is a new flow
-  // variation (and therefore a second exposure for one mounted surface).
   useEffect(() => {
     latest.current = { variantKey, onLoaded };
   }, [variantKey, onLoaded]);
@@ -76,9 +70,6 @@ export function PaywallScreen({
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
   }, [load]);
-  // A variant that answers after the placement load still takes effect while the
-  // user has not chosen a plan, so the rendered surface always matches the
-  // exposure the slot reports for it.
   useEffect(() => {
     if (!paywall || chosen.current) return;
     setSelected(defaultPlanHandle(paywall.products, variantKey));
@@ -128,7 +119,6 @@ export function PaywallScreen({
     <ScreenShell
       contentStyle={{ gap: t.space.md, paddingTop: 0 }}
       header={
-        // Back on the left and a quiet Restore on the right; nothing between them.
         <View
           style={{
             paddingHorizontal: t.layout.page,
@@ -159,8 +149,6 @@ export function PaywallScreen({
         </View>
       }
       footer={
-        // One tight block, as successful paywalls do: the promise that nothing is charged today, the
-        // plans, and the button, in the same place as every other screen's.
         <>
           {product?.offerLabel ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
@@ -186,7 +174,6 @@ export function PaywallScreen({
         </>
       }>
       {rule ? <PaywallHero rule={rule} /> : <View style={{ flex: 1 }} />}
-      {/* Sell what they told us they want, in their own goals; never what the app does. */}
       <View style={{ gap: t.space.sm, alignItems: 'center', marginBottom: -t.space.md }}>
         {paywallPromises(answers).map((promise, index) => (
           <Reveal
@@ -225,10 +212,6 @@ export function PaywallScreen({
   );
 }
 
-/**
- * One plan, side by side with the others and priced per month so they compare at a glance; the
- * billed amount is in the card's accessibility label and in the terms under the button.
- */
 function PlanCard({ product, selected, onPress }: { product: PaywallProduct; selected: boolean; onPress: () => void }) {
   const m = useMotion(),
     ink = selected ? t.text.onAccent : t.text.primary,

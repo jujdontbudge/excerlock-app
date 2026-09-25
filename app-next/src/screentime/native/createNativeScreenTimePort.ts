@@ -15,16 +15,10 @@ export type NativeScreenTimeEnforcementHandler = Readonly<{
 export type NativeScreenTimeRequestState = Readonly<{ authorizationPromptBusy: boolean; pickerBusy: boolean }>;
 export type NativeScreenTimePort = ScreenTimePort & {
   requestState(): NativeScreenTimeRequestState;
-  /** Erases only ExcerLock's persisted FamilyControls token selection. */
   eraseLockedSelection(): Promise<void>;
 };
 const mapAuthorization = (value: 0 | 1 | 2): PermissionStatus => value === 2 ? 'granted' : value === 1 ? 'denied' : 'notDetermined';
 
-/**
- * Real iOS port. Shield writes are deliberately injected so EnforcementHost
- * remains the sole policy authority; this adapter never invokes the legacy scheduler.
- * NativeScreenTimePickerHost must be mounted once at the runtime React root.
- */
 export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler): NativeScreenTimePort {
   let authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
   let authorizationPromptBusy = false;
@@ -43,9 +37,6 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
     requestAuthorization,
     presentAppPicker: async () => {
       if (pickerBusy) throw new Error('A Screen Time picker request is already active');
-      // The phone is the authority: a grant from Settings or another prompt must
-      // not be hidden by a cached status, and an undecided grant is asked for here
-      // so a lock-apps control always ends in the system sheet or a typed error.
       if (readAuthorization() === 'notDetermined') await requestAuthorization();
       if (authorization !== 'granted') throw new ScreenTimeAuthorizationError(authorization);
       pickerBusy = true;

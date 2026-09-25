@@ -9,7 +9,6 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
     presentAppPicker: async () => {
-      // Like the native port, the picker asks for Screen Time while undecided and refuses without it.
       let status = permissionsStore.getState().data.screenTime;
       if (status === 'notDetermined') status = await ctx.request('screenTime');
       if (status !== 'granted') throw new ScreenTimeAuthorizationError(status);

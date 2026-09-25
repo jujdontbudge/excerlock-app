@@ -1,15 +1,10 @@
 export type ClientConfiguration = {
-  // The standalone lab never reaches this parser: research bundles resolve the
-  // lab-local `@client-services` module at bundle time and embed no client
-  // identity group at all. Accepting `lab` here would only let a production
-  // bundle construct production identity services under a research label.
   environment: 'dev' | 'preview' | 'prod';
   auth: { supabaseUrl: string; supabaseAnonKey: string; apiBaseUrl: string; googleIosClientId: string; googleRedirectUri: string };
   adaptyPublicKey: string;
   posthog: { apiKey: string; host: string };
   sentryDsn: string;
 };
-/** Only allowlisted public extras; never reads process.env or build upload tokens. */
 export function readClientConfiguration(extra: unknown): ClientConfiguration {
   if (!extra || typeof extra !== 'object') throw new Error('Client configuration is unavailable');
   const root = extra as Record<string, unknown>;

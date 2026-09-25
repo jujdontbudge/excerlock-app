@@ -7,7 +7,6 @@ export function Label({
   style,
   ...props
 }: TextProps & { variant?: keyof typeof t.type; tone?: keyof typeof t.text }) {
-  // Onboarding centres flowing text; an absolutely placed label keeps its own box.
   const onboarding = useSetupPresentation() && StyleSheet.flatten(style)?.position !== 'absolute';
   return (
     <Text
@@ -18,7 +17,6 @@ export function Label({
         t.type[variant],
         { color: t.text[tone], fontVariant: ['tabular-nums'] },
         style,
-        // Stretch fills a column but leaves a label in a row (badge, chart legend) its own width.
         onboarding ? { alignSelf: 'stretch', textAlign: 'center' } : null,
       ]}
     />

@@ -11,7 +11,6 @@ import { runCleanups } from './runCleanups';
 export const PLACEMENT_FRESHNESS_MS = 5_000;
 export type PlacementEvidence = { placement: 'propped' | 'handheld' | 'unknown'; at: number | null };
 
-/** Keeps the device-verified classifier thresholds; this boundary only maps vocabulary and freshness. */
 export class PlacementAdapter {
   private classifier = new PhonePlacementClassifier();
   private unsubscribe: PhonePlacementSubscription | null = null;

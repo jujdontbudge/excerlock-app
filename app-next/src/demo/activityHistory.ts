@@ -3,7 +3,6 @@ import { stepCount } from './stepCount';
 import { dayKey } from '../domain/calendar';
 import { rulesStore } from '../state/rulesStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
-/** Reconcile today's fake facts; historical measurements remain unchanged. */
 export function activityHistory(ctx: FakeContext) {
   const refresh = () => {
     const s = ctx.snapshot();

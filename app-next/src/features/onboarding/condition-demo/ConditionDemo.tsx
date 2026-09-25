@@ -33,7 +33,6 @@ function Text(props: TextProps) {
   return <NativeText {...props} style={[{ fontFamily: t.font.regular }, props.style]} />;
 }
 
-/** An illustration only: never starts detection, changes permission state or grants access. */
 export function ConditionDemo({
   draft,
   schedule,
@@ -53,7 +52,6 @@ export function ConditionDemo({
     query,
     phasesFor(scenario).reduce((sum, phase) => sum + phase.duration, 0),
   );
-  // A different draft or preview seek starts a fresh, deterministic scene.
   return (
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
@@ -136,7 +134,6 @@ function DemoScene({
     scenario.kind === 'walk-steps' ||
     scenario.kind === 'walk-minutes' ||
     (scenario.kind === 'gym-minutes' && ['counting', 'unlocked', 'leave'].includes(frame.phase));
-  // A single scene coordinate space keeps both columns disjoint at every width.
   const geometry = sceneGeometry(dimensions.width, dimensions.height);
   const { scale } = geometry;
   const unit = scenario.kind === 'walk-steps' ? 'steps' : 'min';

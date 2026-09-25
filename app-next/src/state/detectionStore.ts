@@ -60,7 +60,6 @@ export const detectionStore = createPersistedStore('detection', initial, {
         (typeof (value as PendingHistoryCredit).timezone === 'string' && (value as PendingHistoryCredit).timezone!.length > 0)) &&
       (value as PendingHistoryCredit).to > (value as PendingHistoryCredit).from),
 }, { manualPersistence: true });
-/** Explicit durability barrier for background callbacks and serialized reconciliation. */
 let durableWrites: Promise<void> = Promise.resolve();
 export function persistDetectionState(): Promise<void> {
   const serialized = JSON.stringify({ state: { data: detectionStore.getState().data }, version: 0 });

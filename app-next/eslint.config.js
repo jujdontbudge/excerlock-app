@@ -7,6 +7,11 @@ module.exports = defineConfig([
     plugins: { a11y: require('./eslint-a11y.cjs') },
     rules: { 'a11y/named-controls': 'error' },
   },
+  {
+    files: ['**/*.{ts,tsx,js,jsx,cjs,mjs}'],
+    plugins: { excerlock: require('../packages/eslint-plugin-excerlock/index.cjs') },
+    rules: { 'excerlock/no-comments': 'error' },
+  },
   { ignores: ['ios/**', 'build/**', 'evidence/**', 'coverage/**', 'dist/**'] },
   {
     files: ['src/**/*.{ts,tsx}'],

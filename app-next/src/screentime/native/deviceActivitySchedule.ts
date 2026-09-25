@@ -13,7 +13,6 @@ export type DeviceActivityDateComponents = Readonly<{
   second: number;
 }>;
 
-/** DeviceActivity schedules use the device's local calendar components. */
 export function localDateComponents(atMs: number): DeviceActivityDateComponents {
   const date = new Date(atMs);
   return {
@@ -57,7 +56,6 @@ export function usageThresholdComponents(thresholdMinutes: number): Readonly<{
   };
 }
 
-/** Keeps caller-owned window ids out of DeviceActivity's public OS log names. */
 export function monitorNameForLockWindow(id: string): string {
   let hash = 2_166_136_261;
   for (let index = 0; index < id.length; index += 1) {

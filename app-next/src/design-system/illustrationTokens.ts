@@ -1,23 +1,12 @@
 import { tokens as t } from './tokens';
-/**
- * Illustration-only values: geometry and lettering inside artwork, such as the
- * miniature phones of the condition demo and the plan preview. These are drawn
- * to scale with the picture, not read as UI, so they sit outside the type
- * roles. UI chrome may not import this module (guardrails/design-system.test.ts).
- */
 export const illustrationTokens = {
-  /** Standalone pictograms: artwork drawn with icon glyphs, above the UI icon scale. */
   pictogram: { card: 64, hero: 112 },
-  /** Padlock artwork proportions, as fractions of the padlock's width. */
   padlock: { bodyRadius: 0.13, bodyInset: 6, homeBodyRadius: 0.16, shackleRadius: 0.31 },
-  /** Corner radii inside artwork: miniature phones and the cards pinned to the demo scene. */
   corner: { phone: 26, blob: 40, tile: 20, glyph: 3, info: 18, caption: 14 },
-  /** Lettering inside a miniature phone, drawn at the phone's scale. */
   miniature: {
     glyph: { fontSize: 20, fontFamily: t.font.regular },
     count: { fontSize: 7, fontFamily: t.font.regular },
     status: { fontSize: 10, fontFamily: t.font.semibold },
-    /** The status-bar clock of the full-size Home previewed in the trial phone. */
     statusBar: { fontSize: 17, fontFamily: t.font.semibold },
     button: { fontSize: 10.5, fontFamily: t.font.semibold },
     wordmark: { fontSize: 15, fontFamily: t.font.bold },
@@ -27,18 +16,12 @@ export const illustrationTokens = {
     title: { fontSize: 12, lineHeight: 17, fontFamily: t.font.bold },
     body: { fontSize: 9.5, lineHeight: 14, fontFamily: t.font.regular },
   },
-  /** Fixed-size labels pinned to the condition-demo scene; they never scale with text size. */
   scene: {
     caption: { fontSize: 12, lineHeight: 17, fontFamily: t.font.semibold },
     value: { fontSize: 16, lineHeight: 20, fontFamily: t.font.bold },
     title: { fontSize: 13, lineHeight: 19, fontFamily: t.font.semibold },
     body: { fontSize: 12, lineHeight: 17, fontFamily: t.font.regular },
   },
-  /**
-   * Decorative palette of the captain-approved condition-demo illustration. The
-   * prototype deliberately uses soft white cards rather than the outlined-card
-   * treatment. Reference: condition-demo/IMPLEMENTATION-PROMPT.md.
-   */
   demo: {
     sky: ['#F2792C', '#F58E42', '#F9AE72'],
     farHill: '#F9C79A',
@@ -70,15 +53,12 @@ export const illustrationTokens = {
     shadow: '0px 16px 36px rgba(120,50,10,.22)',
     tabInactive: 'rgba(255,255,255,0.6)',
   },
-  /** O01–O03 intro compositions: tiles, tilts, third-party brand marks and decorative gradients. */
   welcome: {
-    /** Gaps around the artwork on O01–O03, part of the approved composition rather than the spacing scale. */
     gap: { hero: 48, progress: 44, control: 20, dots: 20 },
     canvasWidth: 354,
     heroHeight: 244,
     control: {
       height: 156,
-      /* Locked social apps sit above the activities; the arrow points from one to the other. */
       locked: { size: 54, radius: 15, badge: 22, badgeOffset: -6, gap: 14, veil: 'rgba(190,195,206,0.48)' },
       tileSize: 132,
       radius: 34,
@@ -132,7 +112,6 @@ export const illustrationTokens = {
       { name: 'whatsapp', x: 178, y: 12, tilt: '-14deg' },
       { name: 'tiktok', x: 264, y: 23, tilt: '13deg' },
     ] as const,
-    /** Where the schedule card sits in the O01 composition; the card itself is UI chrome. */
     card: { x: 20, y: 82, width: 314 },
     brands: {
       instagram: ['#7935BD', '#D63589', '#FFAC55'],
@@ -144,40 +123,24 @@ export const illustrationTokens = {
       white: '#FFFFFF',
     },
   },
-  /** The trial-reminder bell (S3d): a pale bell carrying one red notification badge. */
   reminder: {
     size: 170,
     bell: '#D5DEE1',
     badge: '#D92D20',
     badgeSize: 68,
-    /** The badge centre, as fractions of the bell's box. */
     badgeX: 0.76,
     badgeY: 0.26,
     count: { fontSize: 42, lineHeight: 56, fontFamily: t.font.semibold },
-    /** Swing about the handle, in degrees: a strike and its dying rebounds. */
     swing: [14, -10, 6, -3, 1],
   },
-  /** The onboarding paywall hero: the whole trial phone standing in a wall of locked social apps. */
   paywall: {
     minHeight: 240,
-    /** Where the condition card ends before it is measured, as a share of the phone's height. */
     conditionsEnd: 0.72,
-    /**
-     * The phone and the wall fade out over this height from the bottom edge of the condition card,
-     * solid before the lock list starts, so the promises below sit on plain page colour.
-     */
     fadeHeight: 12,
-    /** The page colour where the hero ends, halfway down the orange-to-ivory screen. */
     fade: ['rgba(252,231,215,0)', '#FCE7D7'],
-    /** The phone may grow to this share of the screen width, as large as the reference paywall's. */
     widest: 0.7,
-    /**
-     * Straight rows of tiles. The columns beside the phone are centred on its edges, half tucked
-     * behind it, and further columns run out past the screen edges; the first row starts `top` down.
-     */
     tile: { size: 56, radius: 16, pitch: 70, top: 12, badge: 20, badgeOffset: -5 },
     fieldOpacity: 0.8,
-    /** Each app appears once, in this order: the most-used feeds take the top rows beside the phone. */
     order: [
       'tiktok',
       'instagram',
@@ -231,11 +194,6 @@ export const illustrationTokens = {
       crunchyroll: { fill: '#FF640A', glyph: '#FFFFFF' },
     },
   },
-  /**
-   * A copy of the iOS 26 system alert, measured from a real one on iOS 26.4 (402-point screen): drawn
-   * where the real alert will appear so it lands on top of its picture (ADR 0043). It uses Apple's
-   * system font, the one place a weight is set rather than named.
-   */
   systemAlert: {
     width: 320,
     radius: 34,
@@ -256,30 +214,18 @@ export const illustrationTokens = {
     title: { fontSize: 17, lineHeight: 22, fontFamily: 'System', fontWeight: '600' },
     body: { fontSize: 15, lineHeight: 20, fontFamily: 'System', fontWeight: '400' },
     action: { fontSize: 17, lineHeight: 22, fontFamily: 'System', fontWeight: '400' },
-    /** Two short labels share a row; longer ones stack, as iOS lays them out. */
     rowLabel: 12,
-    /**
-     * The guide drawn with it: an outline on the button to tap, and a hand-drawn arrow in the
-     * screen margin beside the alert, so it still shows while the real alert covers the copy.
-     * The arrow's tip is at `tip` in its box, drawn for the right-hand margin.
-     */
     ring: 3,
     arrow: {
       width: 36,
       height: 52,
       stroke: 3,
       tip: { x: 6, y: 47 },
-      /** From the button's edge to the arrow's box: past the alert's inset, two points clear of it. */
       offset: 12,
       curve: 'M30 3 C35 22 27 40 6 47',
       head: 'M12 39 L6 47 L15.5 50',
     },
   },
-  /**
-   * The simulator demo's copy of Apple's Screen Time app picker (FamilyActivityPicker), which the
-   * simulator cannot show: an iOS sheet with Cancel and Done, a search field and an inset list of
-   * categories with round checkboxes, in Apple's colours and system font.
-   */
   appPicker: {
     background: '#F2F2F7',
     row: '#FFFFFF',
@@ -304,6 +250,5 @@ export const illustrationTokens = {
     label: { fontSize: 17, lineHeight: 22, fontFamily: 'System', fontWeight: '400' },
     header: { fontSize: 13, lineHeight: 18, fontFamily: 'System', fontWeight: '400' },
   },
-  /** The referral-source marks on O06, drawn at their own size. */
   referral: { size: 34, radius: 8, appStoreTop: '#27C6F2', appStoreBottom: '#1478F8', muted: '#9699A0' },
 } as const;

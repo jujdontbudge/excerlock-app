@@ -1,4 +1,3 @@
-/** Persisted ceremony/handoff policy; no timers or camera/native side effects. */
 export const PICKUP_GRACE_MS = 20_000;
 export const HANDOFF_MS = 60_000;
 export type ProppedState = {
@@ -8,7 +7,6 @@ export type ProppedState = {
   watermark: number;
   deadlineAt: number | null;
   scanGeneration: number | null;
-  /** Timestamp of the latest foreground scan pass. Missing on legacy v1 snapshots. */
   verifiedSince?: number | null;
 };
 export type ProppedEvent =
@@ -41,16 +39,13 @@ function clear(state: ProppedState): void {
 function expire(state: ProppedState, now: number): void {
   if (state.deadlineAt !== null && now >= state.deadlineAt) clear(state);
 }
-/** Scanning alone never grants relief; a rescan may use ONLY the existing handoff deadline. */
 export function proppedRelief(state: ProppedState): boolean {
-  // A legacy persisted pass without authoritative time cannot grant relief.
   return state.verifiedSince != null && (['propped', 'handheld', 'active', 'handoff'].includes(state.phase) ||
     (state.phase === 'scanning' && state.deadlineAt !== null));
 }
 export function reducePropped(previous: ProppedState, event: ProppedEvent, now: number): ProppedState {
   validate(previous); time(now);
   const state = { ...previous, verifiedSince: previous.verifiedSince ?? null };
-  // Hydrated legacy propped states must rescan instead of retaining undated relief.
   if (state.verifiedSince === null && ['propped', 'handheld', 'active', 'handoff'].includes(state.phase)) clear(state);
   const current = Math.max(now, state.watermark);
   if (event.kind !== 'tick') {
@@ -86,8 +81,6 @@ export function reducePropped(previous: ProppedState, event: ProppedEvent, now: 
         case 'putDown':
           if (state.phase === 'active') { state.phase = 'handoff'; state.deadlineAt = event.at + HANDOFF_MS; }
           break;
-        // Caller feeds expiry of normal walking grace, not every negative sample.
-        // Pickup and handoff failures never enter the normal walking grace.
         case 'walkingStopped': if (state.phase === 'active') clear(state); break;
       }
     }

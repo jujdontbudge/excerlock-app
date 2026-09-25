@@ -31,7 +31,6 @@ export function O03() {
   return (
     <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
       <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="display" />
-      {/* Locked apps, an arrow down, then the activities that unlock them; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.control, gap: t.space.md }}>
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>

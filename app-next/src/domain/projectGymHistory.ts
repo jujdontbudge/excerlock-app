@@ -17,13 +17,6 @@ export function measuredGymMinutesByDay(
   return Object.fromEntries([...byDay].map(([day, segments]) => [day, segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 60_000, 0)]));
 }
 
-/**
- * Projects confirmed geofence intervals into earned gym rule progress.
- *
- * Configured region ids are explicit so deleted/stale regions never earn.
- * Dwell is unioned across regions before local-day splitting, preventing
- * overlapping gyms from double-crediting the same wall-clock time.
- */
 export function projectGymHistory(
   rules: readonly Rule[],
   rows: readonly RuleDay[],

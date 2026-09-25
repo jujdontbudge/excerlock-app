@@ -10,12 +10,6 @@ import { finishSelection, restoreSelection, toggleSelection } from './selection'
 const appPicker = art.appPicker,
   p = appPicker;
 
-/**
- * The simulator demo's stand-in for Apple's Screen Time app picker, which only a real iPhone can
- * show. It copies Apple's sheet: Cancel, the title and Done across the top, a search field, and
- * the categories in an inset list with round checkboxes; searching also finds single apps. It
- * exists only in development builds on the fake runtime and never ships.
- */
 export function FakeAppPicker({
   initial,
   onResolve,

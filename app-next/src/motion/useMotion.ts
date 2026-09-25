@@ -25,12 +25,10 @@ const curves: Record<Curve, ReturnType<typeof Easing.bezier>> = {
   standard: Easing.bezier(...tokens.motion.easing.standard),
   enter: Easing.bezier(...tokens.motion.easing.enter),
 };
-/** CSS timing functions for style transitions and keyframes, built on first use. */
 const cssCurve = (curve: Curve) => {
   const [x1, y1, x2, y2] = tokens.motion.easing[curve];
   return cubicBezier(x1, y1, x2, y2);
 };
-/** Colour and opacity may still cross-fade under Reduce Motion; anything that moves or resizes may not. */
 const stillProperties = new Set<StyleKey>(['opacity', 'backgroundColor', 'borderColor']);
 export function motionFor(reduced: boolean) {
   const m = tokens.motion;
@@ -48,10 +46,6 @@ export function motionFor(reduced: boolean) {
       pop: reduced ? 1 : m.scale.pop,
       selected: reduced ? 1 : m.scale.selected,
     },
-    /**
-     * The one timing call: the standard curve unless named, and no motion under Reduce Motion.
-     * `stretch` lengthens a token duration for a longer draw; it never replaces the token.
-     */
     timing(to: number, duration: Duration, options: { curve?: Curve; stretch?: number; done?: Done } = {}) {
       'worklet';
       if (reduced) {
@@ -64,7 +58,6 @@ export function motionFor(reduced: boolean) {
         options.done,
       );
     },
-    /** A token spring; under Reduce Motion the value lands at once. Both calls also run inside gesture worklets. */
     spring(to: number, spring: Spring, done?: Done) {
       'worklet';
       if (reduced) {
@@ -73,15 +66,12 @@ export function motionFor(reduced: boolean) {
       }
       return withSpring(to, m.spring[spring], done);
     },
-    /** Starts an animation built by these helpers after a pause; no pause under Reduce Motion. */
     delay<T>(ms: number, animation: T) {
       return reduced ? animation : (withDelay(ms, animation as never) as T);
     },
-    /** Plays helper-built animations in order; under Reduce Motion only the last value remains. */
     sequence<T>(...animations: [T, ...T[]]) {
       return reduced ? animations[animations.length - 1] : (withSequence(...(animations as unknown as never[])) as T);
     },
-    /** Style transition props for an Animated component. */
     transition(
       property: StyleKey | StyleKey[],
       duration: Duration,
@@ -98,10 +88,6 @@ export function motionFor(reduced: boolean) {
         transitionTimingFunction: cssCurve(options.curve ?? 'standard'),
       };
     },
-    /**
-     * Keyframe animation props for an Animated component. `spread` lengthens a loop so siblings drift apart;
-     * under Reduce Motion the element holds still, or plays `still` (an opacity-only version) when given.
-     */
     keyframes(
       frames: CSSAnimationKeyframes<ViewStyle>,
       duration: Duration,
@@ -127,7 +113,6 @@ export function motionFor(reduced: boolean) {
     },
   };
 }
-/** Stable for as long as the Reduce Motion setting holds, so effects may depend on it. */
 export function useMotion() {
   const reduced = useReducedMotion();
   return useMemo(() => motionFor(reduced), [reduced]);

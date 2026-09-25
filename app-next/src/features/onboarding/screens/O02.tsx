@@ -26,7 +26,6 @@ export function O02() {
   return (
     <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
       <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="display" />
-      {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.progress }}>
         <ProgressArtwork />
       </View>

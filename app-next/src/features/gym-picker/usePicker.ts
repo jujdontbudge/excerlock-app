@@ -85,7 +85,6 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
   useEffect(() => {
     if (stage !== 'place') return;
     let active = true;
-    // Preserve the resolved place address until the user actually moves the pin.
     if (candidate && distanceMetres(pin, candidate) < 5) return;
     const timer = setTimeout(() => {
       const key = roundCoordinate(pin);

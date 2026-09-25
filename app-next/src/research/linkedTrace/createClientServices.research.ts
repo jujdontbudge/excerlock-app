@@ -11,20 +11,7 @@ import type { Unsubscribe } from '../../ports/models';
 import { createPostHogRuntime } from './createPostHogRuntime.research';
 import { initializeSentrySdk } from './SentryBinding.research';
 
-/**
- * The isolated lab's identity graph.
- *
- * The standalone Trace Lab measures ExcerLock's real enforcement and motion
- * behavior, but it is research-only: it must never initialize, authenticate,
- * or identify against production Supabase or production Adapty. This factory
- * constructs a local canonical identity and a local research entitlement and
- * uses only lab-local observability (no-op PostHog, no-op Sentry). No Supabase
- * client, Adapty SDK activation, production key, or network call is reachable
- * from here; Metro selects this module instead of `runtime/createClientServices`
- * for research builds (see `@client-services` in metro.config.js).
- */
 
-/** Fixed local identity. It is never a Supabase user and never uploaded. */
 export const LAB_RESEARCH_USER_ID = 'lab-local-linked-trace';
 const LAB_IDENTITY: AuthIdentity = Object.freeze({
   kind: 'canonical',
@@ -33,7 +20,6 @@ const LAB_IDENTITY: AuthIdentity = Object.freeze({
   generation: 1,
   ready: true,
 });
-/** Local research entitlement: enough for the guided test's enforcement path. */
 const LAB_ENTITLEMENT: SubscriptionEntitlement = Object.freeze({
   status: 'active',
   renewsAt: null,
@@ -53,8 +39,6 @@ function createLabAuth(): AuthPort {
   return {
     session: () => ({ kind: 'anonymous' }),
     identity: () => LAB_IDENTITY,
-    // The lab identity is fixed and local, so there is nothing to boot or wait
-    // for; boot is still explicit to keep the production boot contract.
     boot: async () => LAB_IDENTITY,
     waitForCanonicalIdentity: async () => LAB_IDENTITY,
     signInWithApple: async () => { throw new LabIdentityUnavailableError(); },
@@ -80,8 +64,6 @@ function subscribe<T>(subscribers: Set<(value: T) => void>, callback: (value: T)
 }
 
 function createLabSubscription(): SubscriptionPort {
-  // The guided screen reads the entitlement store, so the local research
-  // entitlement must be the store's value; production Adapty never writes it.
   const publish = () => entitlementStore.getState().patch({ entitlement: LAB_ENTITLEMENT });
   publish();
   const subscribers = new Set<(entitlement: SubscriptionEntitlement) => void>();
@@ -104,7 +86,6 @@ function createLabSubscription(): SubscriptionPort {
   };
 }
 
-/** Same returned shape as the production factory, with a lab-local identity. */
 export async function createClientServices(options: {
   version: string;
   build: string;
@@ -115,7 +96,6 @@ export async function createClientServices(options: {
   void options.beforeDelete;
   void options.afterDelete;
   void options.reportError;
-  // The lab binding is a no-op: no Sentry SDK, no network, no production DSN.
   initializeSentrySdk();
   const auth = createLabAuth();
   const subscription = createLabSubscription();
@@ -132,11 +112,9 @@ export async function createClientServices(options: {
     auth,
     subscription,
     analytics: telemetry.analytics,
-    // The lab has no API identity, so a report cannot leave the device.
     incidentReports: { post: async () => { throw new LabIdentityUnavailableError(); } },
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
-    // The lab has no identity spine: the rail reads once and stays bundled.
     onboardingFlow: createOnboardingFlowPort({
       readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
     }),

@@ -3,7 +3,6 @@ import type { ExportPayload, ExportPort } from '../ports/ExportPort';
 
 type PayloadExporter = Readonly<{ requestShare(payload: ExportPayload): Promise<void> }>;
 
-/** Binds both payload assembly and native sharing to one account generation. */
 export function createAccountBoundExport(
   identity: () => AuthIdentity,
   exporter: PayloadExporter,

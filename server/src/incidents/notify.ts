@@ -34,7 +34,6 @@ export function renderIncidentEmail(record: NewIncidentReportRecord): {
   return { subject, html };
 }
 
-/** Best effort: a missing key or a failed send never fails the report. */
 export async function sendIncidentEmail(
   record: NewIncidentReportRecord,
   environment: Environment = config,

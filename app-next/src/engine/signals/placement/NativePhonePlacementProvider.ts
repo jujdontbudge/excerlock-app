@@ -24,7 +24,6 @@ export class NativePhonePlacementProvider implements PhonePlacementProvider {
     this.started = false;
   }
 
-  /** Native samples carry `userAcceleration` on top of the placement contract. */
   public onSample(
     callback: (sample: DeviceMotionSample) => void,
   ): PhonePlacementSubscription {

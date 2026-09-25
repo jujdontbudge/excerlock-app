@@ -36,7 +36,6 @@ export function NumberField({
   max?: number;
   labelTone?: 'primary' | 'secondary';
   adjustValue?: (current: number, direction: 'increment' | 'decrement') => number;
-  /** Field and unit share one centred column, for a screen whose number is the hero. */
   centered?: boolean;
   emphasis?: ChoiceEmphasis;
 }) {

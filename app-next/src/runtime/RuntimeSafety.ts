@@ -2,7 +2,6 @@ export type RuntimeSafetySnapshot = {
   permissionPromptPending: boolean;
   cameraActive: boolean;
 };
-/** Synchronous token acquisition closes the window before the first native await. */
 export class RuntimeSafety {
   private prompts = 0;
   private camera = false;
@@ -17,7 +16,6 @@ export class RuntimeSafety {
   }
   async startCamera(operation: () => Promise<void>): Promise<void> {
     this.camera = true;
-    // A failed native start is not evidence the camera is stopped.
     await operation();
   }
   async stopCamera(operation: () => Promise<void>): Promise<void> {

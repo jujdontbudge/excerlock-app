@@ -4,11 +4,6 @@ import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { config } from "../config.js";
 
-/**
- * The compiled entry point lives at dist/db/migrator.js and the SQL ships
- * alongside it at dist/../drizzle, which is the same relative position the
- * source occupies. One expression therefore resolves correctly in both.
- */
 export const migrationsFolder = fileURLToPath(
   new URL("../../drizzle", import.meta.url),
 );
@@ -38,8 +33,6 @@ export interface RunMigrationsOptions {
 }
 
 function connectWithPostgres(databaseUrl: string): MigrationConnection {
-  // One connection, no pool: a migration is a single serial conversation and a
-  // lingering pool would keep the deploy's node process alive after it ends.
   const client = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
 
   return {
@@ -48,13 +41,6 @@ function connectWithPostgres(databaseUrl: string): MigrationConnection {
   };
 }
 
-/**
- * Applies every pending migration in `drizzle/` to the configured database.
- *
- * Drizzle records applied migrations in its own journal table, so re-running
- * this against an up-to-date database is a no-op. That is what makes it safe
- * to call on every deploy.
- */
 export async function runMigrations(
   options: RunMigrationsOptions = {},
 ): Promise<{ migrationsFolder: string }> {

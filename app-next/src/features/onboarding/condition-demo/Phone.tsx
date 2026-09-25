@@ -14,7 +14,6 @@ import { motionFor } from '../../../motion/useMotion';
 import { DemoState, Scenario, snapshot } from './model';
 import { demoRows } from './layout';
 const ScanArc = Animated.createAnimatedComponent(Circle);
-// The phone is a decorative miniature, not a second accessible interface.
 function Text(props: TextProps) {
   return <NativeText {...props} allowFontScaling={false} style={[{ fontFamily: t.font.regular }, props.style]} />;
 }

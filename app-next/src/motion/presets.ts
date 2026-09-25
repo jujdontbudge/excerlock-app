@@ -16,7 +16,6 @@ import { tokens } from '../design-system/tokens';
 const m = tokens.motion;
 type Duration = keyof typeof m.duration;
 const standard = Easing.bezier(...m.easing.standard);
-/** Opacity fades stay under Reduce Motion; they are the fallback for every spatial preset. */
 export const opacityIn = (duration: Duration = 'standard', delay = 0) =>
   FadeIn.duration(m.duration[duration]).delay(delay).easing(standard).reduceMotion(ReduceMotion.Never);
 export const fadeIn = opacityIn();
@@ -41,7 +40,6 @@ export function popIn(reduced: boolean) {
 }
 export const staggeredList = slideUp;
 type Direction = 'forward' | 'back';
-/** A step of a multi-page flow slides in from the side it came from; Reduce Motion cross-fades. */
 export function pageIn(reduced: boolean, direction: Direction) {
   if (reduced) return opacityIn();
   return (direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.emphasized).easing(standard);
@@ -50,11 +48,9 @@ export function pageOut(reduced: boolean, direction: Direction) {
   if (reduced) return opacityOut();
   return (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.standard).easing(standard);
 }
-/** A sheet leaves downwards; Reduce Motion fades it. */
 export function sheetOut(reduced: boolean) {
   return reduced ? opacityOut() : FadeOutDown.duration(m.duration.emphasized).easing(standard);
 }
-/** The shared layout transition; none under Reduce Motion. */
 export function layoutTransition(reduced: boolean) {
   return reduced ? undefined : LinearTransition.duration(m.duration.standard).easing(standard);
 }

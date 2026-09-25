@@ -14,7 +14,6 @@ export type AuthServiceConfig = {
   apiBaseUrl: string;
   googleIosClientId: string;
   googleRedirectUri: string;
-  /** Caller-owned injected client (primarily tests); this service never stops or disposes it. */
   supabase?: SupabaseClient;
   secureBackend?: import('./secureStorage').SecureStoreBackend;
   fetchImpl?: typeof fetch;
@@ -34,17 +33,15 @@ export type AuthServiceConfig = {
 export type AuthServices = {
   auth: SupabaseAuthAdapter;
   coordinator: IdentityCoordinator;
-  /** SAME gate T05 must await before every purchase/restore. */
   waitForIdentityReady: (options?: { timeoutMs?: number }) => Promise<AuthIdentity>;
   dispose: () => Promise<void>;
-  /** Shared global serializer for T05 identity-sensitive vendor transitions. */
   runIdentityOperation: RunIdentityOperation;
 };
 
 function defaultAppleDeps(): AppleNativeDeps {
   return {
     signInAsync: async ({ nonce }) => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const Apple = require('expo-apple-authentication') as typeof import('expo-apple-authentication');
       const credential = await Apple.signInAsync({ nonce });
       return {
@@ -54,7 +51,7 @@ function defaultAppleDeps(): AppleNativeDeps {
       };
     },
     digestSHA256Hex: async (value) => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const Crypto = require('expo-crypto') as typeof import('expo-crypto');
       return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value);
     },
@@ -62,18 +59,11 @@ function defaultAppleDeps(): AppleNativeDeps {
 }
 
 function defaultGoogleDeps(clientId: string, redirectUri: string): GoogleAuthDeps {
-  // Lazy to keep Jest without native modules working when injected mocks are used.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   const { buildRealGoogleRequest } = require('./providerGoogle') as typeof import('./providerGoogle');
   return buildRealGoogleRequest(clientId, redirectUri);
 }
 
-/**
- * Factory the root composition uses to create the real auth spine.
- * Injects SDK + HTTP dependencies for deterministic tests; the root provides
- * the real PostHog/Adapty/fetch/SecureStore/Google redirect implementations.
- * Does NOT integrate into createRuntime/FakeRuntime; see README root wiring.
- */
 export async function createAuthServices(config: AuthServiceConfig): Promise<AuthServices> {
   const runIdentityOperation = createIdentityBarrier();
   const sdkLifecycle = new AuthSdkLifecycle();
@@ -87,14 +77,12 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     bootTimeoutMs,
   } = config;
 
-  // Resolve native dependencies before constructing the self-starting SDK so a
-  // synchronous native dependency failure cannot orphan its refresh ticker.
   const appleDeps = config.appleDeps ?? defaultAppleDeps();
   const googleDeps = config.googleDeps ?? defaultGoogleDeps(googleIosClientId, googleRedirectUri);
   const ownsSupabase = !config.supabase;
   let supabase = config.supabase;
   if (!supabase) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
     const { createSupabaseClient } = require('./supabaseClient') as typeof import('./supabaseClient');
     supabase = createSupabaseClient({
       supabaseUrl,
@@ -199,7 +187,6 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   let disposal: Promise<void> | null = null;
   const dispose = (): Promise<void> => {
     if (disposal) return disposal;
-    // Fence application operations and callbacks before the first await.
     sdkLifecycle.closeCalls();
     disposal = (async () => {
       const failures: unknown[] = [];
@@ -235,7 +222,4 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   }
 }
 
-/** Re-exported for existing callers; the implementation lives in the
- * dependency-free `signInRequired` module so a research bundle never pulls in
- * the production identity graph through the sign-in route. */
 export { resolveSignInRequired, type SignInRequiredSource } from './signInRequired';

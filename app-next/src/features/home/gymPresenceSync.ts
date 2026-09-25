@@ -6,13 +6,6 @@ import { settingsStore } from '../../state/settingsStore';
 import { permissionsStore } from '../../state/permissionsStore';
 import { dayKey, currentInstances, windowInstances } from '../../domain/schedule';
 import { PRESENCE_CONFIRM_MS, PRESENCE_EXIT_GRACE_MS, PRESENCE_RETRY_MS } from '../../domain/presence';
-/**
- * App-level gym presence engine. While a gym condition can still earn today (or a visit is in progress) it keeps
- * the runtime's presence observation alive, confirms arrival automatically through the same 30-second check-in
- * the manual Unlock button uses, and ends the visit after a sustained absence so the lock and the minute clock
- * both follow the user out of the door. Nothing here runs while the app is suspended: background geofencing is
- * a later phase, so the manual "I'm at the gym" route stays the safety net.
- */
 export function startGymPresenceSync(runtime: Runtime) {
   if (runtime.kind !== 'fake') return () => undefined;
   let active = true,
@@ -59,7 +52,6 @@ export function startGymPresenceSync(runtime: Runtime) {
       failedAt = null;
       if (active) runtime.analytics.track('gym_presence_auto_confirmed');
     } catch {
-      // Losing presence mid-confirmation is expected; only a failure while still inside earns a pause.
       if (presence === 'inside') failedAt = now();
     } finally {
       confirming = null;

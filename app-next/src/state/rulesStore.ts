@@ -2,12 +2,6 @@ import { Rule, LockedApps } from '../domain/types';
 import { validateRule } from '../domain/validateRule';
 import { createPersistedStore } from './createPersistedStore';
 import * as v from './validation';
-/**
- * One-line note set when hydration retires running/biking rules (B38). The Conditions
- * screen shows it until dismissed; dismissing clears it forever. The native HealthKit
- * capability stays compiled for a future OTA return (owned by the native porter), but no
- * JavaScript path reads it, so retired rows can never come back on their own.
- */
 export const rulesRetirementNote =
   'Running and biking conditions were removed; your walking and gym conditions are unchanged.';
 const activityOf = (row: unknown): unknown => {
@@ -18,8 +12,6 @@ const activityOf = (row: unknown): unknown => {
   if (typeof mode !== 'object' || mode === null) return undefined;
   return (mode as { activity?: unknown }).activity;
 };
-// Allow-list based so the detector never needs to name retired activities: in practice
-// these are the running/biking rows stored before B38, which validateRule now rejects.
 const retiredActivity = (row: unknown): boolean => {
   const activity = activityOf(row);
   return typeof activity === 'string' && !['walking', 'gym'].includes(activity);

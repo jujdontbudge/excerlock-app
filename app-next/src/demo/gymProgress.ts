@@ -3,10 +3,6 @@ import { rulesStore } from '../state/rulesStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
 import { dayKey, currentInstances } from '../domain/schedule';
 import { applyProgress } from '../domain/progress';
-/**
- * Local presence clock. Minutes are credited only while a confirmed gym presence session exists in
- * `ruleDaysStore.gymPresence` and the sampled presence is still inside; either signal dropping pauses the clock.
- */
 export function gymProgress(ctx: FakeContext) {
   let last: number | null = null;
   const confirmed = () => !!ruleDaysStore.getState().data.gymPresence?.confirmedAt;

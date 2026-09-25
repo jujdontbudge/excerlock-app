@@ -1,9 +1,3 @@
-/**
- * Keys the app is never allowed to put in a diagnostic snapshot: raw location,
- * contact details, credentials and Screen Time app identity. The route already
- * bounds the document size; this is the content guard, matched case-insensitively
- * against every object key at any depth.
- */
 export const FORBIDDEN_DIAGNOSTIC_KEYS = new Set([
   "latitude",
   "longitude",
@@ -33,7 +27,6 @@ export const FORBIDDEN_DIAGNOSTIC_KEYS = new Set([
   "familyactivityselection",
 ]);
 
-/** Returns the JSON path of the first forbidden key, or null when clean. */
 export function findForbiddenDiagnosticKey(
   value: unknown,
   path = "diagnostics",

@@ -21,7 +21,6 @@ function native(): NativeSearch {
   if (!module) throw new Error('Place search needs the updated iOS development build.');
   return module;
 }
-/** Apple Maps discovery only. Saving and exercise signals remain behind GymPort. */
 export const nativePlaceSearch: PlaceSearch = {
   suggest: async (query, near) => native().suggest(query, near?.latitude ?? null, near?.longitude ?? null),
   resolve: async (s) => native().resolve(s.id, s.title, s.subtitle),

@@ -21,19 +21,14 @@ import { createSensorStreamModuleClient } from './sensorStreams';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
-  /** Full runtime root owns headless reconciliation when false. */
   registerHeadless?: boolean;
 };
 export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const rawMotion = new NativeMotionProvider(createExcerlockMotionModuleClient());
   const rawPlacement = new NativePhonePlacementProvider(createPhonePlacementModuleClient());
-  // The whole native sensor surface (same JSI module as above), exposed for
-  // diagnostics and a later OTA; the walking gate does not read it.
   const sensors = createSensorStreamModuleClient();
   const location = createNativeLocationProvider();
   const gymLog = new AsyncStorageGymVisitLog();
-  // One 50 Hz device-motion stream feeds both consumers: the stride
-  // discriminator at full rate, the placement classifier at its calibrated 10 Hz.
   const motion = new MotionAdapter(rawMotion, Date.now, strideSourceFrom(rawPlacement));
   const placement = new PlacementAdapter(decimateDeviceMotion(rawPlacement));
   const historyLedger = new HistoryCreditLedger(AsyncStorage);

@@ -5,7 +5,6 @@ export type ScheduleWindowPlan = { ok: true; windows: NativeScheduleWindow[] } |
   { ok: false; reason: 'nativeWindowLimit' | 'nativeAnchorUnavailable'; required: number };
 export type ScheduleIssue = Pick<Extract<ScheduleWindowPlan, { ok: false }>, 'reason' | 'required'>;
 const WEEK=7*1440;
-/** Exact cyclic weekly union. It never fills gaps merely to satisfy Apple's monitor limit. */
 export function planScheduleWindows(rules: readonly Rule[], now: string, timezone: string, limit=7): ScheduleWindowPlan {
  const spans:{start:number;end:number}[]=[];
  for(const rule of rules){if(!rule.enabled)continue;const w=rule.schedule.window;for(const day of rule.schedule.days){const start=w.kind==='allDay'?0:w.startMinute,end=w.kind==='allDay'?1440:w.endMinute;if(w.kind==='range'&&end<=start)spans.push({start:day*1440+start,end:(day+1)*1440+end});else spans.push({start:day*1440+start,end:day*1440+end});}}
@@ -24,10 +23,6 @@ export function planScheduleWindows(rules: readonly Rule[], now: string, timezon
  return{ok:true,windows};
 }
 
-/** DeviceActivity extracts recurring weekday/hour/minute components from these
- * instants. A DST-gap-shifted instant would permanently change those wall
- * components, so choose a nearby same-weekday week only when this week's pair
- * is nonconverged or collapsed. */
 function resolveRecurringAnchor(sunday:string,start:number,end:number,timezone:string):{start:number;end:number}|null{
  for(const weekShift of [0,-7,7,-14,14]){
   const startDay=addDays(sunday,Math.floor(start/1440)+weekShift);

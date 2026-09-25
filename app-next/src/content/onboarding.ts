@@ -28,7 +28,6 @@ export const onboardingCopy = {
   O20: { title: 'What exercise should unlock your apps?', body: 'Pick the one you will really do.' },
 } as const;
 export const finalLoopTitle = { before: 'You become ', emphasis: 'ADDICTED', after: ' to exercise' } as const;
-/** The O16–O18 illustration: its lock-screen caption and what each phase shows, for VoiceOver. */
 export const loopSceneCopy = {
   locked: 'Apps locked until you exercise',
   descriptions: [
@@ -37,7 +36,6 @@ export const loopSceneCopy = {
     'The phone is put away and the person walks.',
   ],
 } as const;
-/** Loop subheads carry one orange word; the rest stays neutral at heading size. */
 export const loopSubheads = {
   O16: { before: '', emphasis: 'Scrolling', after: ' is the habit' },
   O17: { before: '', emphasis: 'Exercise', after: ' becomes the habit' },

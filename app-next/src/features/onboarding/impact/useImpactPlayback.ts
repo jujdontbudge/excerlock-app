@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMotion } from '../../../motion/useMotion';
 import { impactTiming as timing } from './timing';
-/** Timers cancel on back, route changes and unmount; no persisted timers. */
 export function useImpactPlayback(step: string, advance: () => void, active = true) {
   const callback = useRef(advance);
   useEffect(() => {

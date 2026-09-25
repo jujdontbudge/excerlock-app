@@ -7,7 +7,6 @@ import { Icon, IconName } from '../icons/Icon';
 import { tokens as t } from './tokens';
 import { BlockingTimeline } from './BlockingTimeline';
 import { LockShackle } from './LockShackle';
-/** Shared onboarding card with caller-provided demo or live rule content. */
 export function BlockingScheduleCard({
   message,
   start,

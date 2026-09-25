@@ -7,11 +7,6 @@ import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { PLAN_MOTION as p, PLAN_BADGE as b } from './planMotion';
 
-/**
- * Mirrors the reference replay: the loading screen has already faded to empty, then the
- * check badge and caption fade in at the centre, ripple while they hold, and finally the
- * orange disc blooms out of the badge to cover the screen before the ready screen shows.
- */
 export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; onDone: () => void }) {
   const { width, height } = useWindowDimensions();
   const m = useMotion();
@@ -30,7 +25,6 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     const done = setTimeout(() => callbacks.current.onDone(), m.reduced ? m.duration.standard : p.done);
     return () => { clearTimeout(covered); clearTimeout(done); };
   }, [m.duration.standard, m.reduced]);
-  // The covered hold keeps the orange screen up for a beat before it fades onto the ready screen.
   const layer = useAnimatedStyle(() => ({
     opacity: m.reduced ? 1 : interpolate(elapsed.get(), [0, p.reveal, p.done], [1, 1, 0], 'clamp'),
   }));
@@ -39,7 +33,6 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     const v = Math.max(0, Math.min(1, (elapsed.get() - p.burst) / (p.covered - p.burst)));
     return { transform: [{ scale: m.reduced ? 1 : 1 + v * v * (coverScale - 1) }] };
   });
-  // Keep this arithmetic inside each worklet; calling an ordinary JS helper from the UI thread crashes Hermes.
   const ripple1 = useAnimatedStyle(() => {
     const now = elapsed.get();
     const sinceStart = now - (p.gap + p.badgeIn);

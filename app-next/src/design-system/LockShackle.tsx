@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { tokens as t } from './tokens';
 
-/** Fixed outer silhouette; thickness grows inward without changing the lock's proportions. */
 export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
   const gradientId = useId().replace(/:/g, '');
   const width = bodyWidth * 0.60;

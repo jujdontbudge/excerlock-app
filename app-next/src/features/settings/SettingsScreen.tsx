@@ -20,7 +20,6 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     notificationStatus = usePermissionsStore((s) => s.data.notifications),
     taps = useRef(0),
     [mailNote, setMailNote] = useState(false);
-  // One switch: on means the app wants reminders and iOS allows them.
   const notificationsOn = notificationsEnabled && notificationStatus === 'granted';
   const toggleNotifications = async (on: boolean) => {
     useSettingsStore.getState().patch({ notificationsEnabled: on });

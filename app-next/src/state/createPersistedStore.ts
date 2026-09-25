@@ -5,12 +5,8 @@ export type Validators<T> = { [K in keyof T]: (value: unknown) => boolean };
 export type DataStore<T> = { data: T; patch: (value: Partial<T>) => void; reset: () => void };
 export type PersistenceBarrier = { persistBarrier(): Promise<void>; retryPersistence(): Promise<void> };
 export type StoreHooks<T> = {
-  /** Safety-critical owners may require an explicit awaited durability transaction. */
   manualPersistence?: boolean;
-  /** Per-row filtering applied to in-memory patches and hydrated payloads before validation,
-      so one malformed row can never erase the valid rows beside it. */
   sanitize?: (value: Partial<T>) => Partial<T>;
-  /** One-way upgrade of stale persisted payloads, applied only at hydration before sanitize. */
   migrate?: (persisted: unknown) => unknown;
 };
 export function createPersistedStore<T extends object>(
@@ -77,8 +73,6 @@ export function createPersistedStore<T extends object>(
         storage: createJSONStorage(() => hooks?.manualPersistence ? {
           getItem: (key) => AsyncStorage.getItem(key),
           removeItem: (key) => AsyncStorage.removeItem(key),
-          // The owner persists complete snapshots explicitly. An automatic late
-          // middleware write must not overwrite its committed intent/cursor.
           setItem: async () => {},
         } : serializedStorage),
         partialize: (state) => ({ data: state.data }),
@@ -94,8 +88,6 @@ export function createPersistedStore<T extends object>(
   const retryPersistence = (): Promise<void> => {
     const retry = writeTail.then(async () => {
       const operation = latestOperation;
-      // A newer middleware write queued after this retry request owns
-      // durability. Never replay the older failed snapshot ahead of it.
       if (!operation || operation.status !== 'failed') return;
       await perform(operation);
     });

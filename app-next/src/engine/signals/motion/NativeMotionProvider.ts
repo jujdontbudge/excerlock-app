@@ -11,7 +11,6 @@ import type {
   Unsubscribe,
 } from "./MotionProvider";
 
-/** Adapts the local Expo Module's event names to the stable SignalKit contract. */
 export class NativeMotionProvider implements MotionProvider {
   private readonly subscriptions = new Set<MotionModuleSubscription>();
   private started = false;

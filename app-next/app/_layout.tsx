@@ -19,9 +19,6 @@ export default function RootLayout() {
     Baloo2_700Bold,
     Baloo2_800ExtraBold,
   });
-  // Diagnostic stage boundary. The runtime only starts after this commit, so
-  // the mark always precedes HydrationDone/BootGateRedirect; the native
-  // RCTContentDidAppearNotification usually wins the same stage first.
   useEffect(() => {
     markStartupStage('FirstReactRender');
   }, []);

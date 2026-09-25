@@ -11,14 +11,10 @@ export type EnforcementProjection = {
   deleting: boolean;
   screenTimeAuthorized: boolean;
   selectionEmpty: boolean;
-  /** End of CURRENT active union instance, not the recurring planner anchor. */
   activeUntil: number | null;
   windows: NonNullable<EnforcementSnapshot['windows']>;
 };
 
-/** Policy projection shared by foreground/headless composition. Auth readiness is
- * deliberately not a gating condition. Unknown entitlement preserves native state.
- */
 export function projectEnforcement(input: EnforcementProjection): EnforcementSnapshot {
   const { now, windows, decision } = input;
   if (!Number.isFinite(now) || !Number.isSafeInteger(input.revision) || input.revision < 0) throw new Error('Invalid enforcement clock/revision');
@@ -32,8 +28,6 @@ export function projectEnforcement(input: EnforcementProjection): EnforcementSna
   if (!input.screenTimeAuthorized || input.selectionEmpty) return { ...snapshot, openReason: 'disabled' };
   if (input.entitlement.status === 'unknown') return { ...snapshot, state: 'unknown' };
   if (!['active', 'trial'].includes(input.entitlement.status)) return { ...snapshot, openReason: 'lapsed' };
-  // Renewal is not expiry: cancellation does not immediately revoke paid access.
-  // A vendor-active grace/lifetime remains authoritative until refreshed otherwise.
   const expiry = input.entitlement.accessExpiresAt ? Date.parse(input.entitlement.accessExpiresAt) : null;
   if (expiry !== null && !Number.isFinite(expiry)) throw new Error('Invalid access expiry');
   if (expiry !== null && expiry <= now && !input.entitlement.isLifetime && !input.entitlement.isInGracePeriod) return { ...snapshot, openReason: 'lapsed' };
@@ -41,8 +35,6 @@ export function projectEnforcement(input: EnforcementProjection): EnforcementSna
   if (decision.state === 'unlockedMet') {
     const relock = decision.relockAt === null ? now : Date.parse(decision.relockAt);
     if (!Number.isFinite(relock) || relock < now) throw new Error('Stale earned suppression boundary');
-    // This is suppression expiry, not active-window end: same-day later windows
-    // must not override earned relief. Native start callbacks rearm at relockAt.
     return { ...eligible, openReason: 'earned', eligibleUntil: relock };
   }
   if (decision.state === 'noRulesToday' || decision.state === 'beforeWindow' || decision.state === 'afterWindow') return { ...eligible, openReason: 'outsideWindow' };

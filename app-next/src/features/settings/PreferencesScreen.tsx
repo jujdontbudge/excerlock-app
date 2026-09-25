@@ -54,7 +54,6 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label>
         ) : null}
       </SettingsGroup>
-      {/* Choice rows carry their own outline, so the walk places are a titled list, not rows inside a card. */}
       <View style={{ gap: t.space.sm }}>
         <Label accessibilityRole="header" variant="section">
           {c.walkPlaces}

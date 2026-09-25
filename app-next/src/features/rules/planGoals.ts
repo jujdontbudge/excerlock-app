@@ -5,7 +5,6 @@ import { Answers } from '../../onboarding/types';
 
 export type PlanGoal = { id: 'movement' | 'body' | 'screen'; text: string; icon: IconName };
 
-/** Motivating goals mirrored from the user's own onboarding answers; screen time is always halved. */
 export function planGoals(answers: Answers): PlanGoal[] {
   const activity = answers.activity === 'gym' ? 'gym' : 'walking';
   const body = answers.bodyGoal === 'lose' || answers.bodyGoal === 'gain' || answers.bodyGoal === 'maintain' ? answers.bodyGoal : null;

@@ -1,6 +1,5 @@
 import { FakeContext } from './FakeContext';
 import { dayKey } from '../domain/calendar';
-/** One source for the fake pedometer and today's Analytics activity. */
 export function stepCount(ctx: FakeContext): number {
   const now = ctx.clock.now(),
     today = dayKey(now, ctx.clock.timezone()),

@@ -1,4 +1,3 @@
-/** Representative minutes keep subsequent illustrative time math numeric. */
 export const screenTimeRanges = [
   { label: 'Less than 2 hours', minutes: 60, upper: 120 },
   { label: '2 to 4 hours', minutes: 180, upper: 240 },

@@ -5,7 +5,6 @@ import { tokens as t } from '../../design-system/tokens';
 
 export type ActivityStat = { label: string; value: string; glyph?: 'flame'; a11y?: string };
 
-/** Every stat stays on screen: the row divides the content width instead of scrolling one off the edge. */
 export function ActivityStats({ stats }: { stats: ActivityStat[] }) {
   return (
     <View style={s.row}>

@@ -34,7 +34,7 @@ export function ChoiceRow({
 }) {
   const m = useMotion();
   const solid = emphasis === 'solid' && selected;
-  void compact; // sizing is universal — compact retained for API compat only
+  void compact;
   return (
     <PressableScale
       label={title}

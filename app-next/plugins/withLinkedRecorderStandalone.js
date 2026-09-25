@@ -6,18 +6,9 @@ const { build: buildXcodeProject } = require("@bacons/xcode/build/json");
 const { withFinalizedMod } = require("expo/config-plugins");
 const { DEV_CLIENT_MODULES, standaloneEnabled } = require("./linkedRecorderResearchConfig");
 
-// The standalone Trace Lab build is a Release artifact with an embedded JS
-// bundle. Expo autolinks expo-dev-client (launcher, menu and menu interface)
-// in every configuration regardless of the plugin list, so the generated
-// Podfile must exclude those modules for this build only; Metro-served `dev`
-// research builds keep the launcher.
 const EXCLUDED_MODULES = DEV_CLIENT_MODULES;
 const EXCLUDED_CALL = `use_expo_modules!({ exclude: [${EXCLUDED_MODULES.map((name) => `'${name}'`).join(", ")}] })`;
 
-// Signing: this Mac has no Xcode account signed in, so automatic signing falls
-// back to the wildcard team profile and fails the Family Controls/App Group
-// entitlements. The lab Device/Development profiles are already installed;
-// pin them per target by their installed names.
 const LAB_PROFILES = {
   ExcerLock: "ExcerLock Trace Lab Development",
   DeviceActivityMonitorExtension: "ExcerLock Trace Lab Monitor Development",
@@ -28,8 +19,6 @@ const LAB_PROFILES = {
 
 function patchPodfile(contents) {
   if (contents.includes(EXCLUDED_CALL)) return contents;
-  // Only the generated bare call is patchable; a Podfile that already passes
-  // options is a template change and must fail closed rather than guess.
   const patched = contents.replace(/(^|[^\w])use_expo_modules!(?![({])/, `$1${EXCLUDED_CALL}`);
   if (patched === contents) {
     throw new Error(
@@ -74,11 +63,6 @@ function betaTargets(betaProject) {
   );
 }
 
-/**
- * `@kingstinct/expo-apple-targets` writes the Beta project file during the
- * base-mod phase, before finalized mods run, so signing must be applied to the
- * file on disk rather than the (already written) in-memory project.
- */
 function pinLabSigningTargets(projectPath) {
   const project = XcodeProject.open(projectPath);
   const targets = betaTargets(project);
@@ -95,7 +79,6 @@ function pinLabSigningTargets(projectPath) {
     target.setBuildSetting("PROVISIONING_PROFILE_SPECIFIER", specifier);
   }
   fs.writeFileSync(projectPath, buildXcodeProject(project.toJSON()));
-  // Re-read: a later writer must not silently drop the standalone signing.
   const written = XcodeProject.open(projectPath);
   for (const [targetName, specifier] of Object.entries(LAB_PROFILES)) {
     const target = betaTargets(written).find((candidate) => candidate.props.productName === targetName);
@@ -105,14 +88,6 @@ function pinLabSigningTargets(projectPath) {
   }
 }
 
-/**
- * Applied only for `EXCERLOCK_ENV=lab EXCERLOCK_LINKED_RECORDER_TRACE=1`.
- * Uses a finalized mod so the Podfile, Info.plist and Xcode project exist and
- * every other mutation has already run; `pod install` still runs after
- * prebuild's config-plugin phase.
- *
- * @param {import("expo/config").ExpoConfig} config
- */
 function withLinkedRecorderStandalone(config) {
   return withFinalizedMod(config, ["ios", (modConfig) => {
     if (!standaloneEnabled()) return modConfig;

@@ -11,13 +11,11 @@ export type WalkingStatus = {
 export const inactiveWalkingStatus: WalkingStatus = { ruleId: null, phase: 'inactive', since: null, placement: 'unknown', proppedVerified: false, proppedSince: null };
 export interface WalkingPort {
   start(rule: Rule, options?: { placement: 'propped' | 'handheld' }): Promise<WalkingStatus>;
-  /** Runs the bounded three-second foreground manual check. */
   check(rule: Rule): Promise<boolean>;
   stop(): void;
   completeProppedScan(): boolean;
   snapshot(): WalkingStatus;
   observe(callback: () => void): Unsubscribe;
-  /** Raw/manual-check observation only. Canonical policy remains the persisted reducer. */
   observeWalking(callback: (walking: boolean) => void): Unsubscribe;
   details(): { steps: number; walkingSeconds: number };
   treadmillFraming(): { ready: boolean; message: string; placement: 'propped' | 'handheld' };

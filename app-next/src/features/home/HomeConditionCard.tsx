@@ -5,7 +5,6 @@ import { ProgressBar } from '../../design-system/ProgressBar';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon, IconName } from '../../icons/Icon';
 
-/** One Home condition card; Home and the trial phone preview render the same card. */
 export function HomeConditionCard({
   testID,
   icon,

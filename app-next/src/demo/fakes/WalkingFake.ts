@@ -26,8 +26,6 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
   const step = () => {
     if (!activeRule || !walkingState || ctx.snapshot().loading) return;
     const now = Date.parse(ctx.clock.now()), qualifying = evidenceFromScenario(), graceMs = settingsStore.getState().data.stopGrace * 1000;
-    // Fake-clock jumps stand in for a live provider's frequent evidence. Feed
-    // reducer heartbeats rather than treating a deterministic jump as silence.
     for (let at = Math.min(lastTick + 1000, now); at <= now; at += 1000)
       walkingState = reduceWalking(walkingState, { kind: 'evidence', at, qualifying }, at, graceMs);
     walkingState = reduceWalking(walkingState, { kind: 'tick' }, now, graceMs);

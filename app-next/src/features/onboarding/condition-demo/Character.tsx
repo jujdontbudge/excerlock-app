@@ -41,8 +41,6 @@ function Frame({
     const state = snapshot(clock.value, scenario);
     if (!state.walking) return { opacity: index === (state.phase === 'blocked' ? 7 : 6) ? 1 : 0 };
     const { first, second, mix } = stride(clock.value.walkTime);
-    // All canvases stay decoded/mounted; only the adjacent pair is visible.
-    // The lower frame remains opaque while the next pose fades over it.
     return {
       zIndex: index === second - 1 ? 1 : 0,
       opacity: index === first - 1 ? 1 : !reduced && index === second - 1 ? mix : 0,

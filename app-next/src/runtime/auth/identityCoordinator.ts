@@ -2,22 +2,6 @@ import type { AuthIdentity } from '../../ports/AuthPort';
 import type { Unsubscribe } from '../../ports/models';
 import type { RunIdentityOperation } from './identityBarrier';
 
-/**
- * Canonical identity spine coordinator.
- *
- * Order (awaited, asserted in tests):
- *   canonical Supabase identity
- *   -> authenticated PUT /v1/user (Bearer from SecureStore session)
- *   -> awaited analytics identify (PostHog distinct_id = Supabase UID)
- *   -> awaited subscription identify (Adapty activate then identify)
- *   -> integration attachment (Adapty setIntegrationIdentifier posthog_distinct_id)
- *   -> ready
- *
- * Provisional UI is usable immediately; purchases/restores and person-bound
- * exposures must await the SAME exported ready gate (T05 uses
- * waitForIdentityReady). Fresh unchanged identity never re-runs the spine.
- * No automatic PostHog alias. No client-only subscription transfer.
- */
 
 export type PutUserResult = { status: number };
 export type AuthContext = { accessToken: string; userId: string; generation: number };
@@ -53,13 +37,11 @@ export class IdentityCoordinator {
     if (this.unsubscribe) return;
     this.unsubscribe = this.deps.subscribeIdentity((identity) => {
       this.revokeReadiness(identity);
-      // Defer outside any Supabase SDK lock / subscriber lock.
       setTimeout(() => {
         if (this.disposed) return;
         void this.onIdentity(identity).catch(() => undefined);
       }, 0);
     });
-    // Process current identity (deferred as well for consistent ordering).
     const current = this.deps.getIdentity();
     setTimeout(() => {
       if (this.disposed) return;
@@ -95,18 +77,12 @@ export class IdentityCoordinator {
     return `${identity.generation}:${identity.userId}`;
   }
 
-  /** True when the spine has completed for the current canonical identity. */
   isReady(): boolean {
     const identity = this.deps.getIdentity();
     const key = this.keyFor(identity);
     return key !== null && this.readyByKey.has(key);
   }
 
-  /**
-   * SAME gate T05 must await before every purchase/restore. Resolves when the
-   * spine completes for the current generation; rejects on tombstone or when
-   * generation changes. Never resolves while provisional or deleting.
-   */
   async waitForIdentityReady(options?: { timeoutMs?: number }): Promise<AuthIdentity> {
     if (this.disposed) throw new Error('Identity coordinator disposed');
     const timeoutMs = options?.timeoutMs ?? 15000;
@@ -126,7 +102,6 @@ export class IdentityCoordinator {
       }, timeoutMs);
       const checkGeneration = () => {
         const now = this.deps.getIdentity();
-        // If generation changed, the wait is stale.
         if (now.generation !== start.generation) {
           cleanup();
           reject(new Error('Identity generation changed while waiting for ready'));
@@ -149,7 +124,6 @@ export class IdentityCoordinator {
         }
       };
       const unsub = this.deps.subscribeIdentity(onIdentity);
-      // Also resolve via explicit ready notification below.
       const key = startKey ?? `gen:${start.generation}`;
       const list = this.readyResolvers.get(key) ?? [];
       const entry = {
@@ -173,7 +147,6 @@ export class IdentityCoordinator {
           if (idx >= 0) current.splice(idx, 1);
         }
       };
-      // Immediate check in case ready already arrived between start and subscribe.
       if (startKey && this.readyByKey.has(startKey)) {
         cleanup();
         const ready = this.readyByKey.get(startKey);
@@ -182,7 +155,6 @@ export class IdentityCoordinator {
     });
   }
 
-  /** Manual retry entry for visible retry buttons after PUT/identify failures. */
   async retry(): Promise<void> {
     const identity = this.deps.getIdentity();
     await this.onIdentity(identity, { force: true });
@@ -212,44 +184,35 @@ export class IdentityCoordinator {
     const userId = identity.userId;
     if (!userId) return;
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
-    // 1. Authenticated PUT /v1/user with current Bearer. No userId from body.
     const authContext = await this.deps.getAuthContext();
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
     if (!authContext || authContext.userId !== userId || authContext.generation !== identity.generation) {
-      // No token yet (secure hydration race); remain unready, retryable.
       return;
     }
     let put: PutUserResult;
     try {
       put = await this.deps.putUser({ accessToken: authContext.accessToken, userId });
     } catch {
-      // Network/transient: remain unready, visible retry. Do not mark ready.
       return;
     }
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
     if (put.status === 410) {
-      // Tombstoned: invalidate local auth, boot fresh anonymous. Never ready.
       try {
         await this.deps.onTombstone?.(userId);
       } catch {
-        // Tombstone handler surfaces its own retry; coordinator stays unready.
       }
       this.notifyRejected(key, new Error('Account deleted (410); local session invalidated'));
       return;
     }
     if (put.status < 200 || put.status >= 300) {
-      // Includes 502/503: not success, remain unready, visible retry.
       return;
     }
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
-    // 2. Awaited analytics identify. 3. Awaited subscription identify.
-    // Order is asserted; ready stays false through each await.
     try {
       await this.deps.analyticsIdentify(userId);
     } catch {
       return;
     }
-    // If generation changed mid-spine, abandon without marking ready.
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
     try {
       await this.deps.subscriptionIdentify(userId);
@@ -263,21 +226,19 @@ export class IdentityCoordinator {
       return;
     }
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
-    // No alias, no client transfer. Mark ready for this exact key only.
     this.lastReadyKey = key;
     const readyIdentity: AuthIdentity = { ...identity, ready: true };
     if (this.disposed) return;
     this.readyByKey.set(key, readyIdentity);
     try {
       this.deps.onReady?.(readyIdentity);
-    } catch { /* ignore */ }
+    } catch {}
     this.notifyResolved(key, readyIdentity);
   }
 
   private notifyResolved(key: string, identity: AuthIdentity): void {
     if (this.disposed) return;
     const list = this.readyResolvers.get(key) ?? [];
-    // Also notify generation-scoped waiters.
     const genKey = `gen:${identity.generation}`;
     const genList = this.readyResolvers.get(genKey) ?? [];
     const all = [...list, ...genList];

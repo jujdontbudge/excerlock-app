@@ -7,10 +7,6 @@ export interface IdentityErasureGateway {
   eraseAdaptyProfile(userId: string): Promise<void>;
   erasePosthogPerson(userId: string): Promise<void>;
   deleteAuthUser(userId: string): Promise<void>;
-  /**
-   * @deprecated Legacy Clerk hook. Implementations must delegate to
-   * deleteAuthUser; new code calls deleteAuthUser directly.
-   */
   deleteClerkUser?(userId: string): Promise<void>;
 }
 
@@ -62,15 +58,6 @@ export function createUserDeletionService(options: {
         await options.repository.markPosthogErased(userId, now());
       }
 
-      // Auth provider is deliberately last. Until every data processor
-      // confirms erasure, the authenticated caller must retain a credential
-      // with which to retry this durable workflow. The durable retry worker
-      // finishes the provider-last gap without a client token: provider
-      // not-found is idempotent success, so a lost response after auth
-      // erasure still checkpoints on retry.
-      //
-      // Legacy clerkDeletedAt is never treated as Supabase erasure; only
-      // authDeletedAt with the active provider completes this step.
       if (!state.authDeletedAt || state.authProvider !== authProvider) {
         await deleteAuthUser(userId);
         await options.repository.markAuthDeleted(userId, now(), authProvider);

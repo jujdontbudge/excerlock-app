@@ -19,7 +19,6 @@ import { DotGridReveal } from './scenes/DotGridReveal';
 import { LoopStory } from './scenes/LoopStory';
 import { ChoiceQuestion } from './scenes/ChoiceQuestion';
 const screens = { O01, O02, O03, O04, O05, O06, O08, O09, O10, O11, O15, O20 };
-/** Step bodies only; the shell header owns the back control. */
 export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string; back?: () => void }) {
   if (['O07', 'O21', 'O22'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
   if (step in activityBaseline) {

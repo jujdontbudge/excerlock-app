@@ -1,4 +1,3 @@
-/** Local-only transport. Resolving means the share sheet closed, not delivery. */
 export interface JsonExportDependencies {
   cacheDirectory: string | null;
   randomId(): string;
@@ -6,7 +5,6 @@ export interface JsonExportDependencies {
   write(uri: string, contents: string): Promise<void>;
   share(uri: string): Promise<void>;
   remove(uri: string): Promise<void>;
-  /** Account/consent generation captured by the caller before building payload. */
   isCurrent(): boolean;
 }
 
@@ -32,7 +30,6 @@ export function createJsonExport(deps: JsonExportDependencies) {
         if (!deps.isCurrent()) throw new Error('Export session changed.');
         await deps.share(uri);
       } finally {
-        // Also remove partial writes. A cleanup failure is surfaced, never hidden.
         try {
           if (uri) await deps.remove(uri);
         } finally {

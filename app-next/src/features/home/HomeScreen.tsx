@@ -65,8 +65,6 @@ export function HomeScreen() {
   useEffect(() => {
     runtime.analytics.screen('Home');
   }, [runtime]);
-  // Every enabled condition is listed, not only the ones scheduled today; an off-day
-  // condition shows as scheduled with no progress yet.
   const conditions = rules
     .filter((rule) => rule.enabled)
     .map((rule) => progress.find((entry) => entry.rule.id === rule.id) ?? {
@@ -116,7 +114,6 @@ export function HomeScreen() {
       safeBottom={false}
       scrollUnderStatusBar={false}
       >
-      {/* The app name sits in the middle of the screen; the streak badge keeps the right edge. */}
       <View style={{ justifyContent: 'center' }}>
         <Label variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>
           {c.title}
@@ -125,7 +122,6 @@ export function HomeScreen() {
           <StreakBadge count={streak.current} />
         </View>
       </View>
-      {/* Anything a condition still needs gets one card here, above everything else (ADR 0043). */}
       <SetupReminder />
       {scheduleIssue ? (
         <View accessibilityRole="alert" style={{ padding: t.space.md, gap: t.space.md,

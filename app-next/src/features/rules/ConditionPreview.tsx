@@ -9,7 +9,6 @@ import { minuteLabel } from '../../domain/scheduleLabel';
 import { conditionPreviewCopy as c } from '../../content/conditionPreview';
 import { rulePreviewCopy } from '../../content/rulePreview';
 
-/** The rule so far, shown in the same card the welcome screen uses to introduce a rule. */
 export function ConditionPreview({
   sentence,
   icon,

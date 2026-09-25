@@ -31,7 +31,6 @@ export function analyticsModel(
     ),
     allDays = dates(start, end),
     eligible = allDays.filter((d) => d <= today);
-  // Day keeps its surrounding week for the seven-day trend; Week and Month are daily.
   const groupDays = period === 'Day' ? dates(weekStart(start), addDays(weekStart(start), 6)) : allDays;
   const groups: string[][] = groupDays.map((d) => [d]);
   const series = groups.map((days) => {
@@ -68,9 +67,7 @@ export function analyticsModel(
       walking: sum(rows.map((r) => r.activity.walking)),
       gym: sum(rows.map((r) => r.activity.gym)),
     },
-    /** Confirmed gym arrivals: met days of arrival-trigger rules inside the period. */
     arrivals: periodRuleDays.filter((d) => d.met && arrivalRules.some((r) => r.id === d.ruleId)).length,
-    /** Verified walking minutes: state-rule progress inside the period. */
     walkingMinutes: sum(periodRuleDays.filter((d) => stateRules.some((r) => r.id === d.ruleId)).map((d) => d.progress)),
     conditions: {
       gymMinutes: enabled.some((r) => r.activity === 'gym' && r.mode.kind === 'target'),

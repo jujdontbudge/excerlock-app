@@ -3,7 +3,6 @@ import type {
   ScreenTimeSelectionSummary,
 } from "./ScreenTimeModule";
 
-/** What a selection holds. Counts are all FamilyControls exposes to us. */
 export type SelectionContents = Readonly<{
   applicationCount: number;
   categoryCount: number;
@@ -14,10 +13,6 @@ export const DEFAULT_SELECTION_CONTENTS: SelectionContents = Object.freeze({
   categoryCount: 2,
 });
 
-/**
- * Composes the one line a caller may show for a selection. Only an adapter runs
- * this: the string is built from counts, never from an identifier or app name.
- */
 export function summarizeSelection(
   handle: ScreenTimeSelectionHandle,
   contents: SelectionContents,

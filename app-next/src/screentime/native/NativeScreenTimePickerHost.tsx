@@ -64,9 +64,6 @@ export class NativeScreenTimePickerCoordinator
     if (pending === null) {
       return;
     }
-    // react-native-device-activity persists the FamilyControls selection on a
-    // 100ms debounce as the sheet commits. Resolve after that write so a Done
-    // tap is not reported as an empty pick.
     const settle = () => {
       if (this.pending !== pending) {
         return;

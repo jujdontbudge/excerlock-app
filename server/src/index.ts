@@ -38,8 +38,6 @@ export interface BuildServerOptions extends FastifyServerOptions {
 export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
   const app = Fastify({
     ...options,
-    // Caddy is the only intended proxy and runs on loopback. Trusting every
-    // proxy lets a direct client spoof X-Forwarded-For and evade IP limits.
     trustProxy: ["127.0.0.1", "::1"],
   });
   void app.register(helmet, {
@@ -96,11 +94,6 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     { prefix: "/v1" },
   );
 
-  // Bounded durable retry worker for provider-last checkpoint gaps. It
-  // completes deletions without a client token (e.g. lost response after
-  // auth erasure). Single-flight local; concurrent replicas are safe via
-  // idempotent gateway operations and serialized checkpoint transactions.
-  // Disabled in tests and when deletion is unconfigured.
   const workerOption = options.deletionRetryWorker;
   if (workerOption !== null && config.nodeEnv !== "test") {
     const worker =

@@ -1,4 +1,3 @@
-/** @excerlock/analytics-events — the one public surface. Everything else is internal. */
 export { EVENTS } from './src/registry'
 export type {
   AdaptyEventName,

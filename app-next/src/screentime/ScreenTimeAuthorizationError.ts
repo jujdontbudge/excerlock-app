@@ -1,6 +1,5 @@
 import type { PermissionStatus } from '../domain/types';
 
-/** Screen Time is not granted, so the FamilyControls picker cannot be presented. */
 export class ScreenTimeAuthorizationError extends Error {
   constructor(public readonly status: PermissionStatus) {
     super(

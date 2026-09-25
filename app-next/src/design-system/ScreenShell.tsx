@@ -39,7 +39,6 @@ export function ScreenShell({
 }>) {
   const scroll = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
-  // Until the footer reports its size, reserve one button plus the home indicator.
   const [footerHeight, setFooterHeight] = useState<number>(t.control.full + insets.bottom + t.space.xs + t.space.sm);
   useLayoutEffect(() => {
     if (scrollResetKey === undefined) return;
@@ -71,7 +70,6 @@ export function ScreenShell({
           ? (safeBottom && !footer ? ['bottom'] : [])
           : safeBottom && !footer ? ['top', 'bottom'] : ['top']}>
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
-          {/* The header is a sibling above the scroll view in every mode, so back and close never scroll away. */}
           {header ? (
             <View style={scrollUnderStatusBar ? { paddingTop: insets.top } : undefined}>{header}</View>
           ) : null}

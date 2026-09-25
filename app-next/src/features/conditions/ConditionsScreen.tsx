@@ -32,7 +32,6 @@ export function ConditionsScreen({
 }: {
   onAdd: () => void;
   onEdit: (id: string) => void;
-  /** Opens the permission screens when a condition turned on is missing something it needs. */
   onNeeds?: () => void;
 }) {
   const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),

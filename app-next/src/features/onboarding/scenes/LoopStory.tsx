@@ -9,16 +9,13 @@ import { finalLoopTitle, loopSubheads, onboardingCopy } from '../../../content/o
 import { LOOP_SCENE, LoopScene } from './LoopScene';
 
 const steps = ['O16', 'O17', 'O18'] as const;
-/** Two heading lines at default type; measurement takes over once the real headings report in. */
 const minHeadingHeight = 76;
 export function LoopStory({ step }: { step: (typeof steps)[number] }) {
   const phase = steps.indexOf(step),
     m = useMotion(),
     [box, setBox] = useState({ width: 0, height: 0 }),
     [headings, setHeadings] = useState<Partial<Record<(typeof steps)[number], number>>>({}),
-    // The heading box reserves only what the tallest of the three crossfading headings actually needs.
     headingHeight = Math.max(minHeadingHeight, ...Object.values(headings).map((v) => v ?? 0)),
-    // Fit the scene to the shorter of the two axes so it centres whole instead of overflowing the button.
     canvasWidth = box.width && box.height ? Math.min(box.width, (box.height * LOOP_SCENE.width) / LOOP_SCENE.height) : 0;
   return (
     <>
@@ -48,7 +45,6 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
           </Animated.View>
         ))}
       </View>
-      {/* The scene is sized to the space left under the heading so it centres instead of overflowing the button. */}
       <View
         testID="loop-scene-box"
         style={{ flex: 1, justifyContent: 'center' }}
@@ -62,7 +58,6 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
   );
 }
 
-/** The loop screens carry a heading-sized subhead whose first word is orange. */
 function LoopHeading({ step }: { step: 'O16' | 'O17' }) {
   const sub = loopSubheads[step],
     subhead = `${sub.before}${sub.emphasis}${sub.after}`;

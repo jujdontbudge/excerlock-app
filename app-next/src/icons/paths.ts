@@ -1,5 +1,4 @@
 import { genderPaths } from './genderLibrary';
-/** Authored 24-point utility paths. Every glyph has a distinct semantic silhouette. */
 export const paths = {
   male: genderPaths.male.path,
   female: genderPaths.female.path,

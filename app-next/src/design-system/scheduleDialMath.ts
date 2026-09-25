@@ -7,7 +7,6 @@ export function dialPoint(minute: number, center: number, radius: number) {
   return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
 }
 
-/** Clockwise from midnight at one-minute precision. */
 export function dialMinute(x: number, y: number, center: number): number {
   const angle = Math.atan2(y - center, x - center) + Math.PI / 2;
   return wrap(Math.round(angle / (Math.PI * 2) * DAY));

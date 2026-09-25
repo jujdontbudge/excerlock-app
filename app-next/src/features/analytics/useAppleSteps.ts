@@ -16,7 +16,6 @@ const fallbackMetrics = (point: FallbackPoint): ApplePedometerPoint => ({
   activeMinutes: null,
 });
 
-/** Read-only Apple pedometer analytics. Exact day bounds preserve local DST boundaries. */
 export function useAppleSteps(days: string[], today: string, fallback: FallbackPoint[]) {
   const runtime = useRuntime();
   const [revision, setRevision] = useState(0);

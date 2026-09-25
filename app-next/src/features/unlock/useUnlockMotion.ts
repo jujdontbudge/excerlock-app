@@ -8,6 +8,5 @@ export function useUnlockMotion() {
   const dev = __DEV__ ? runtime?.dev : undefined;
   const scenario = useSyncExternalStore(dev?.subscribe ?? noop, () => dev?.snapshot().accessibility);
   const reduced = motion.reduced || scenario === 'reduceMotion';
-  // Built from `reduced` itself, so every helper honours the dev Reduce Motion scenario too.
   return useMemo(() => motionFor(reduced), [reduced]);
 }

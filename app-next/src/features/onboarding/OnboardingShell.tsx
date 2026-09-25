@@ -57,7 +57,6 @@ export function OnboardingShell({
           : undefined}
         header={
           ['S2', 'S3', 'S3b', 'S3c'].includes(step) ? undefined : ['O01', 'O02', 'O03', 'S3d'].includes(step) ? (
-            // The welcome pages and the trial reminder show a back control without a progress bar.
             <OnboardingHeader progress={0} showProgress={false} onBack={step === 'O01' ? undefined : onBack} />
           ) : (
             <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />

@@ -3,7 +3,6 @@ import { FakeContext } from './FakeContext';
 import { scenarios } from './scenarios';
 import { DevSnapshot } from '../ports/RuntimeControls';
 const key = 'excerlock-next.fake-context.v1';
-/** Adapter metadata, separate from the eight product stores; never resets product edits. */
 export function contextPersistence(ctx: FakeContext) {
   let writing = Promise.resolve(),
     stops: (() => void)[] = [],
@@ -55,7 +54,6 @@ export function contextPersistence(ctx: FakeContext) {
         ctx.update(patch);
       }
     } catch {
-      /* Invalid or unavailable adapter metadata must not prevent local launch. */
     }
     ctx.update({ hydrated: true });
     if (!disposed) stops = [ctx.subscribe(save), ctx.clock.observe(save)];

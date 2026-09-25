@@ -24,7 +24,6 @@ export type NativeWalkingPortOptions = {
   onError?: (error: unknown) => void;
 };
 
-/** UI-facing projection over the one persisted detection service. */
 export class NativeWalkingPort implements WalkingPort {
   private ruleId: string | null = null;
   private scanGeneration: number | null = null;

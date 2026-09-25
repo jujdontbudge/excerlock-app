@@ -9,7 +9,6 @@ const LANDMARK_CONFIDENCE_THRESHOLD = 0.6;
 const HEAD_CONFIDENCE_THRESHOLD = 0.5;
 const MIN_TORSO_HEIGHT = 0.05;
 const MIN_HEAD_HEIGHT = 0.05;
-/** Face-box height jitters frame to frame; scale by a recent median instead. */
 const HEAD_SCALE_HISTORY = 15;
 const MIN_NORMALIZED_VERTICAL_RANGE = 0.04;
 const MIN_VALID_SAMPLES_FOR_SIGNAL = 10;
@@ -51,13 +50,6 @@ function validLandmarks(sample: GaitKeypointSample): readonly GaitLandmark[] | u
   return landmarks as readonly GaitLandmark[];
 }
 
-/**
- * Vertical position in body-relative units. Torso (shoulders + hips) when the
- * whole trunk is in view; otherwise the head, scaled by face height. A phone
- * propped on a treadmill console sees head and shoulders only, and the head
- * bobs once per step, so the head path is the common one (verified against a
- * console recording: 1.64 Hz head bob at 1.62 steps/s, 2026-09-05).
- */
 function normalizedVerticalPosition(
   sample: GaitKeypointSample,
   headScale: (height: number) => number,
@@ -171,12 +163,6 @@ export class GaitPeriodicityDetector {
   }
 
   private recordPeak(peak: SignalPoint): void {
-    // A local maximum is only a stride if it rises far enough above the trough
-    // before it. Real pose estimation jitters frame to frame, so without this
-    // guard a sub-pixel wobble both becomes the reference for the next interval
-    // and resets a run of genuine strides — one noisy frame destroys the scan.
-    // Discard it outright and keep the existing trough, because the real stride
-    // we are still climbing out of has not peaked yet.
     if (peak.value - this.segmentMinimum < MIN_NORMALIZED_VERTICAL_RANGE) {
       return;
     }

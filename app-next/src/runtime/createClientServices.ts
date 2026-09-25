@@ -18,7 +18,6 @@ import { createAccountBoundExport } from './AccountBoundExport';
 import { RuntimeCleanupError } from './RuntimeSingleton';
 import { createIncidentReportTransport } from './incident/IncidentReportClient';
 
-/** Real client services; root must hydrate stores before construction and supply native deletion cleanup. */
 export async function createClientServices(options: {
   extra: unknown;
   version: string;
@@ -73,10 +72,6 @@ export async function createClientServices(options: {
     auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics,
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
-    // The flow rail reads once per app run. A fresh install reads it before the
-    // identity spine has settled, so the port waits for the same canonical-ready
-    // gate the rest of the app uses (bounded) and reads once more; onboarding
-    // itself never waits — it paints the bundled order until this settles.
     onboardingFlow: createOnboardingFlowPort({
       readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
       awaitReady: () =>
@@ -86,12 +81,10 @@ export async function createClientServices(options: {
         ),
     }),
     reviewPreset: createReviewPresetPort(telemetry.analytics.flags), notifications,
-    // Incident reports ride the same bearer as PUT /v1/user; the adapter decides whether a token may leave.
     incidentReports: createIncidentReportTransport({
       apiBaseUrl: config.auth.apiBaseUrl,
       getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
     }),
-    // Snapshot account before file writing. Payload assembly must also bind its origin.
     dataExport,
     boot: identity.boot,
     waitForIdentityReady: identity.waitForIdentityReady,

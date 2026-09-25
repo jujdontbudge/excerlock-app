@@ -3,7 +3,6 @@ import { planWatchdog, type WatchdogContext, type WatchdogRegistration } from '.
 import { linkedTrace } from '@linked-trace';
 
 export type EnforcementSnapshot = {
-  /** Monotonically increasing revision, including account/selection/eligibility changes. */
   scheduleIssue?: ScheduleIssue;
   revision: number;
   now: number;
@@ -13,26 +12,19 @@ export type EnforcementSnapshot = {
   eligibleUntil: number;
   openReason?: 'earned' | 'outsideWindow' | 'lapsed' | 'disabled' | 'deleting';
   futureEnforcementEligible: boolean;
-  /** Exact union windows, supplied by root schedule planner; never broaden gaps. */
   windows?: { id: string; start: number; end: number }[];
 };
 export interface EnforcementTransport {
-  /** Atomically publishes eligibility/suppression before callbacks can write shields. */
   publish(snapshot: EnforcementSnapshot): Promise<void>;
-  /** Every native operation MUST compare the revision under the same native lock. */
   shield(revision: number): Promise<boolean>;
   unshield(revision: number): Promise<boolean>;
-  /** Stage a new monitor WITHOUT removing the currently valid one. */
   stageWatchdog(plan: WatchdogRegistration, revision: number): Promise<string>;
-  /** Commit staged protection and retire old registration without a protection gap. */
   commitWatchdog(id: string, revision: number): Promise<boolean>;
   cancelWatchdogs(revision: number): Promise<void>;
-  /** Atomically replace the guarded DeviceActivity schedule (at most seven union windows). */
   replaceWindows(windows: { id: string; start: number; end: number }[], snapshotRevision: number): Promise<void>;
 }
 export type EnforcementResult = 'applied' | 'preserved' | 'superseded';
 
-/** One host for root subscriptions, foreground and headless wakes, never per-tab. */
 export class EnforcementHost {
   private queue: Promise<unknown> = Promise.resolve();
   private requested = 0;
@@ -53,14 +45,12 @@ export class EnforcementHost {
     this.queue = work.catch(() => undefined);
     return work;
   }
-  /** Stops JS ownership only; bounded native protection survives JS disposal. */
   dispose(): void { this.disposed = true; this.requested++; }
 
   private async apply(request: number, force: boolean): Promise<EnforcementResult> {
     const snapshot = this.deps.read();
     const fresh = () => !this.disposed && request === this.requested && this.deps.read().revision === snapshot.revision;
     if (!fresh()) return 'superseded';
-    // Unknown entitlement cannot create new relief or renew old protection.
     if (snapshot.state === 'unknown') return 'preserved';
     const native = this.deps.transport;
     let policyPublishPending = __LINKED_RECORDER_TRACE__;
@@ -86,7 +76,6 @@ export class EnforcementHost {
         this.windowsSignature = signature;
       }
       if (snapshot.state === 'open') {
-        // Native snapshot has already invalidated queued callback authority.
         if (!await this.traceShield(native, 'unshield', 'policy_open', snapshot.revision)) throw new Error('Native open policy was not applied');
         if (!fresh()) return 'superseded';
         await this.cancelWatchdogs(native, snapshot.revision);
@@ -136,8 +125,6 @@ export class EnforcementHost {
       return fresh() ? 'applied' : 'superseded';
     } catch (error) {
       if (__LINKED_RECORDER_TRACE__ && policyPublishPending) this.tracePolicy(snapshot, 'failed');
-      // Never manufacture shields after earned unlock/lapse/window end/deletion.
-      // Native revision check closes the race after this final JS freshness read.
       if (fresh() && (snapshot.state === 'conditional' || snapshot.state === 'shield')) {
         try {
           if (!await this.traceShield(native, 'shield', 'fail_closed', snapshot.revision)) throw new Error('Fail-closed shield rejected');

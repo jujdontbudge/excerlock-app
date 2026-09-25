@@ -1,19 +1,5 @@
 import { AuthCancelledError, AuthError } from '../../ports/AuthPort';
 
-/**
- * Apple native sign-in helpers.
- *
- * Contract (verified against installed expo-apple-authentication@57.0.1):
- * - iOS passes `options.nonce` straight to `ASAuthorizationAppleIdRequest.nonce`
- *   (see ios/AppleAuthenticationRequest.swift: `request.nonce = options.nonce`).
- *   Apple expects the SHA256 hash there; Supabase expects the raw nonce in
- *   linkIdentity/signInWithIdToken `nonce`. So: raw -> hash for Apple, raw for
- *   Supabase. Order matters and is asserted in tests.
- * - signInAsync throws CodedError ERR_REQUEST_CANCELED when the user dismisses
- *   the sheet. That maps to AuthCancelledError. Missing identityToken (or
- *   authorizationCode/user) maps to visible AuthError retry, never silent.
- * - A fresh raw nonce is generated per attempt (no reuse) to prevent replay.
- */
 
 export type AppleCredential = {
   identityToken: string;
@@ -34,8 +20,6 @@ export type AppleNativeDeps = {
 
 export function generateRawNonce(randomBytes?: () => string): string {
   if (randomBytes) return randomBytes();
-  // 32 random alphanumeric chars. No secret is logged; callers keep raw only
-  // in memory for the single link call.
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const bytes = new Uint8Array(32);
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -53,15 +37,13 @@ export async function hashNonceSHA256Hex(rawNonce: string, digestSHA256Hex: (val
 }
 
 export async function realDigestSHA256Hex(value: string): Promise<string> {
-  // Lazy require keeps Jest with injected mocks from loading native crypto.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   const Crypto = require('expo-crypto') as typeof import('expo-crypto');
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value);
 }
 
 export async function requestAppleCredential(deps: AppleNativeDeps, rawNonce?: string): Promise<AppleCredential> {
   const raw = rawNonce ?? generateRawNonce(deps.randomNonce);
-  // Order: hash first, then pass HASHED nonce to Apple.
   const hashed = await hashNonceSHA256Hex(raw, deps.digestSHA256Hex);
   let credential: { identityToken: string | null; authorizationCode: string | null; user: string | null };
   try {
@@ -78,7 +60,7 @@ export async function requestAppleCredential(deps: AppleNativeDeps, rawNonce?: s
 }
 
 export async function realAppleSignIn(hashedNonce: string): Promise<{ identityToken: string | null; authorizationCode: string | null; user: string | null }> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   const Apple = require('expo-apple-authentication') as typeof import('expo-apple-authentication');
   return Apple.signInAsync({ nonce: hashedNonce });
 }

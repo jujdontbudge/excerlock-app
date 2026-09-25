@@ -9,5 +9,4 @@ const state =
     dispatch: (action) => set((s) => ({ draft: reduceDraft(s.draft, action) })),
   });
 export const useRuleDraftStore = create(state(createDraft('walking')));
-/** A modal owns a separate transaction, including while another route is retained. */
 export const createRuleDraftStore = (draft: RuleDraft) => createStore(state(draft));

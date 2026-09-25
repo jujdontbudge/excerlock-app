@@ -1,4 +1,3 @@
-/** Runs every cleanup and reports all failures after the final attempt. */
 export async function runCleanups(
   cleanups: readonly (() => void | Promise<void>)[],
   message: string,

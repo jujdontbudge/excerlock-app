@@ -10,8 +10,6 @@ import { expoLocalNotifications } from './notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../state/permissionsStore';
 import { reportRuntimeError } from './productionRuntime';
 
-// Only imported by the real runtime host. No custom remote payload can bypass
-// notificationLanding's route allowlist.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -21,7 +19,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/** Root effects remain mounted above setup/paywall/tab navigation guards. */
 export function NativeRuntimeEffects() {
   const runtime = useRuntime();
   const status = useRuntimeStatus();
@@ -53,7 +50,6 @@ export function NativeRuntimeEffects() {
         proppedActive: typeof walking?.proppedVerified === 'boolean' ? walking.proppedVerified : null,
       };
     },
-    // Rule drafts live only on builder routes; those routes are never safe to reload.
     getEnvelope: () => (live.current ? { route: pathname, draftIds: [] } : null),
     report: (message) => reportRuntimeError(new Error(message)),
   });
@@ -118,8 +114,6 @@ export function NativeRuntimeEffects() {
     const sync = () => {
       void runtime.shieldCopy?.sync();
     };
-    // Cold start counts as a foreground pass; later passes re-read the flag
-    // rail once flags settle for the current app open.
     sync();
     const foreground = AppState.addEventListener('change', (state) => {
       if (state === 'active') sync();
@@ -129,17 +123,8 @@ export function NativeRuntimeEffects() {
 
   useEffect(() => {
     const sync = () => {
-      // Resolves, clamps and applies the whole `stride_gate_config` payload: a
-      // rejected or absent payload leaves the shipped gate running, and the
-      // kill switch inside a payload drops the raw-stream leg.
       void runtime.strideGate?.sync();
     };
-    // Same rail convention as the shield copy: cold start counts as a
-    // foreground pass, and every return to the foreground re-reads the flag,
-    // so a published change applies without an app update. The SDK's own flag
-    // fetch lands asynchronously, so a change published while the app was open
-    // applies on the pass after that fetch settles, at the latest the next
-    // foreground.
     sync();
     const foreground = AppState.addEventListener('change', (state) => {
       if (state === 'active') sync();

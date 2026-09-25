@@ -5,7 +5,6 @@ import { subscriptionCopy } from '../../content/subscription';
 const c = subscriptionCopy.promises;
 const defaultMinutes = 180;
 
-/** The three dreams the paywall sells, drawn from the body goal, main goal and scrolling time the user gave. */
 export function paywallPromises(answers: Answers): [string, string, string] {
   const body = answers.bodyGoal === 'lose' || answers.bodyGoal === 'gain' || answers.bodyGoal === 'maintain'
     ? c.body[answers.bodyGoal]

@@ -1,4 +1,3 @@
-// Phase 1 offer fixture only. Phase 2 must read Adapty's real offer and prices.
 export const fakeOffer = { trialDays: 7, reminderDaysBefore: 2, label: '7-day free trial' };
 export const subscriptionCopy = {
   T1: 'Try ExcerLock free',
@@ -23,7 +22,6 @@ export const subscriptionCopy = {
   ],
   title: 'Choose your plan',
   body: 'Build a healthier relationship with your phone.',
-  /** The paywall sells what the user said they want, never what the app does. */
   promises: {
     body: {
       lose: 'Lose the body fat and feel light again',
@@ -72,21 +70,12 @@ export const subscriptionCopy = {
 
 export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
-/**
- * On Johan's call (September 23, 2026) the paywall carries no billed-price line or legal links under
- * its button: the plan cards compare per month, the billed amount stays in each card's spoken label,
- * the App Store purchase sheet states the price and renewal before any charge, and the Privacy Policy
- * and Terms of Use stay in Settings → Legal.
- */
-/** A price per month, as the plan cards show it. */
 export const perMonth = (price: string) => `${price}/mo`;
 
 const planNames: Record<string, string> = { year: 'Yearly', month: 'Monthly', week: 'Weekly', day: 'Daily' };
-/** A plan card names the plan by how often it bills, falling back to the store's own title. */
 export const planName = (product: { title: string; periodUnit: string | null }) =>
   (product.periodUnit && planNames[product.periodUnit]) || product.title;
 
-/** Plan-row title line: the plan name and the billed renewal price, one string. */
 export function planRowTitle(product: { title: string; localizedPrice: string; localizedPeriod: string }): string {
   return `${product.title} · ${product.localizedPrice} / ${product.localizedPeriod}`;
 }

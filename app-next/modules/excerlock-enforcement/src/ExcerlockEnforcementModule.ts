@@ -12,11 +12,6 @@ export class ExcerlockEnforcementModule extends NativeModule {
   commitWatchdog!: (id: string, revision: number) => Promise<boolean>;
   cancelWatchdogs!: (revision: number) => Promise<void>;
   replaceWindows!: (windows: { id: string; start: number; end: number }[], revision: number) => Promise<void>;
-  /**
-   * Writes the App Group copy overrides the shield extension reads. The string
-   * is produced only by `serializeShieldCopyOverrides`, so an unvalidated or
-   * hand-built payload cannot reach the shared store.
-   */
   setShieldCopyOverrides!: (json: ShieldCopyOverridesJson) => Promise<void>;
 }
 export default requireNativeModule<ExcerlockEnforcementModule>('ExcerlockEnforcement');

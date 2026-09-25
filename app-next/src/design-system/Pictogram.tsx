@@ -1,6 +1,5 @@
 import { Icon, IconName, IconTone } from '../icons/Icon';
 import { illustrationTokens as art } from './illustrationTokens';
-/** An icon glyph drawn as artwork, above the UI icon scale: a card's picture or a screen's hero. */
 export function Pictogram({
   name,
   size = 'hero',

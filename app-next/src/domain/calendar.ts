@@ -26,11 +26,6 @@ export function localInstant(day: DayKey, minute: number, timezone: string): str
   return resolveLocalInstant(day, minute, timezone).instant;
 }
 
-/**
- * Resolves a local wall-clock minute without relying on offset-guess iteration.
- * Repeated minutes choose their earliest occurrence. Nonexistent minutes retain
- * their position within the spring gap and report that they did not converge.
- */
 export function resolveLocalInstant(day: DayKey, minute: number, timezone: string): LocalInstantResolution {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day)
     throw new RangeError(`Invalid local day: ${day}`);
@@ -56,8 +51,6 @@ export function resolveLocalInstant(day: DayKey, minute: number, timezone: strin
     return Date.parse(`${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}:00Z`);
   };
 
-  // Every current IANA offset affecting this local day is visible in this
-  // window. Offset values retain sub-hour transitions such as Lord Howe's.
   const offsets = new Set<number>();
   for (let sample = wall - 36 * 3600000; sample <= wall + 36 * 3600000; sample += 6 * 3600000) {
     offsets.add(renderedWall(sample) - sample);
@@ -74,8 +67,6 @@ export function resolveLocalInstant(day: DayKey, minute: number, timezone: strin
   return remember(cacheKey, { instant: new Date(after.instant).toISOString(), converged: false });
 }
 
-/** Accounting/deadline boundary: unlike deliberate schedule gap shifting,
- * development must surface a nonconverged day boundary for investigation. */
 export function localDayStart(day: DayKey, timezone: string): string {
   const result = resolveLocalInstant(day, 0, timezone);
   if (typeof __DEV__ !== 'undefined' && __DEV__ && !result.converged)

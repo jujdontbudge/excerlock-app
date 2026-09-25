@@ -17,10 +17,6 @@ function createConnection(databaseUrl: string) {
 
 let connection: ReturnType<typeof createConnection> | undefined;
 
-/**
- * Lazily creates the database connection. A keyless local/test process receives
- * null instead of opening a socket or failing during module import.
- */
 export function getDb(): ReturnType<typeof createConnection>["db"] | null {
   if (!config.databaseUrl) {
     return null;

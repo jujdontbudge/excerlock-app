@@ -1,4 +1,3 @@
-/** Reference sequence, accelerated after native review: no long idle holds. */
 export const impactTiming = {
   metric: 700,
   conclusion: 2200,

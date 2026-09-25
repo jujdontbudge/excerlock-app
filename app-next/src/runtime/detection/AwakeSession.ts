@@ -5,7 +5,6 @@ export type AwakeSessionState = {
   authorization: LocationAuthorizationStatus;
   error: string | null;
 };
-/** Honest capability state: running means requested/native-started, never guaranteed future residency. */
 export class AwakeSession {
   private state: AwakeSessionState;
   constructor(private readonly location: LocationProvider) {

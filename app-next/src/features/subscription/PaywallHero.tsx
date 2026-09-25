@@ -10,11 +10,6 @@ import { Reveal } from '../../motion/Reveal';
 
 const hero = art.paywall;
 
-/**
- * The same phone as the trial preview, large, in front of a wall of locked social apps. The phone is
- * sized so that its condition card ends just above the hero's bottom edge; from there a short fade
- * turns solid before the lock list, so nothing below the conditions shows.
- */
 export function PaywallHero({ rule }: { rule: Rule }) {
   const [box, setBox] = useState({ width: 0, height: 0 }),
     [conditionsEnd, setConditionsEnd] = useState<number>(hero.conditionsEnd);
@@ -41,7 +36,6 @@ export function PaywallHero({ rule }: { rule: Rule }) {
             height={box.height}
             phone={{ left: (box.width - phoneWidth) / 2, width: phoneWidth }}
           />
-          {/* Absolute, so the phone never sizes the hero it is fitted to; it rises in with the page. */}
           <View style={{ position: 'absolute', top }}>
             <Reveal>
               <TrialPhone

@@ -27,7 +27,6 @@ export function validateOtpCode(code: string): string {
   return normalized;
 }
 
-/** Never log or persist the code. Callers keep it in memory for one verify call. */
 export function isExistingAccountError(error: unknown): boolean {
   const message = ((error as { message?: unknown })?.message ?? '').toString().toLowerCase();
   const code = ((error as { code?: unknown })?.code ?? '').toString().toLowerCase();

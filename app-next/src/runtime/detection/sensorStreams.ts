@@ -7,12 +7,6 @@ import type {
   RecordedAccelerometerSample,
 } from '../../../modules/excerlock-motion/src/ExcerlockMotion.types';
 
-/**
- * Every sensor stream the ExcerlockMotion binary exposes, as one narrow boundary.
- * Nothing here decides walking; the walking gate reads only the streams it was
- * built for (`MotionAdapter`, `PlacementAdapter`). The rest are collected and
- * exposed so a later JS bundle can use them without a new binary.
- */
 export interface SensorStreamModuleClient {
   getAvailability(): MotionAvailability;
   getAuthorizationStatus(): MotionAuthStatus;
@@ -34,7 +28,6 @@ export interface SensorStreamModuleClient {
   ): { remove(): void };
 }
 
-/** Loads JSI only when the iOS composition root asks for the sensor surface. */
 export function createSensorStreamModuleClient(): SensorStreamModuleClient {
   const moduleSurface = require('../../../modules/excerlock-motion') as {
     getExcerlockMotionModule(): SensorStreamModuleClient;
@@ -47,9 +40,7 @@ export type SensorStreamId = 'activityCadence' | 'deviceMotion' | 'altimeter' | 
 export interface SensorStreamDescriptor {
   readonly id: SensorStreamId;
   readonly event: keyof ExcerlockMotionModuleEvents;
-  /** The availability flags the Swift guard requires before this stream starts. */
   readonly availability: readonly (keyof MotionAvailability)[];
-  /** CMMotionActivityManager / CMPedometer / CMAltimeter streams prompt for Motion & Fitness when undetermined. */
   readonly requiresMotionAuthorization: boolean;
   start(client: SensorStreamModuleClient): Promise<void>;
   stop(client: SensorStreamModuleClient): Promise<void>;
@@ -86,10 +77,8 @@ export interface SensorStreamSmokeResult {
   readonly id: SensorStreamId;
   readonly available: boolean;
   readonly start: SensorCallOutcome;
-  /** Events received inside the sample window (0 on a device without the sensor). */
   readonly samples: number;
   readonly stop: { readonly outcome: 'stopped' | 'rejected'; readonly code: string | null };
-  /** Native told the truth: available ⇒ started and stopped; unavailable ⇒ rejected with the unavailable code. */
   readonly ok: boolean;
 }
 
@@ -109,7 +98,6 @@ export interface SensorStreamSmokeReport {
 }
 
 export interface SensorStreamSmokeOptions {
-  /** How long each started stream is left running to count events. */
   readonly sampleWindowMs: number;
   readonly wait?: (ms: number) => Promise<void>;
 }
@@ -121,14 +109,6 @@ function errorCode(error: unknown): string {
   return typeof code === 'string' && code ? code : 'ERR_UNKNOWN';
 }
 
-/**
- * Starts and stops every stream the binary exposes, one at a time, and judges
- * each answer against the availability flag: this is the OTA-readiness smoke.
- * An *available* stream behind Motion & Fitness is skipped while undetermined so
- * the smoke never raises a permission prompt; an unavailable one is still
- * exercised, because the Swift guards check availability before touching Core
- * Motion and reject without prompting. Streams are stopped even when start rejected.
- */
 export async function runSensorStreamSmoke(
   client: SensorStreamModuleClient,
   options: SensorStreamSmokeOptions,
@@ -191,11 +171,9 @@ async function smokeRecorder(
 
 export interface SensorSnapshot {
   readonly availability: MotionAvailability;
-  /** Motion & Fitness status. Named so because `authorization` is a forbidden incident-diagnostics key on the API. */
   readonly motionAccess: MotionAuthStatus;
 }
 
-/** Flags only, no readings: what an incident report may say about this phone's sensors. Null when native cannot answer. */
 export function snapshotSensors(client: Pick<SensorStreamModuleClient, 'getAvailability' | 'getAuthorizationStatus'>): SensorSnapshot | null {
   try {
     return { availability: client.getAvailability(), motionAccess: client.getAuthorizationStatus() };

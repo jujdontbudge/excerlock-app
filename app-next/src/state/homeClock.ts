@@ -9,7 +9,6 @@ import { rulesStore as useRulesStore } from './rulesStore';
 
 export type HomeClockSnapshot = Readonly<{ now: string; timezone: string }>;
 
-/** Owns the wall-clock interval within which every time-derived Home model is stable. */
 export function createHomeClockSnapshot(clock: ClockPort) {
   let rulesIdentity: readonly Rule[] | null = null;
   let daysIdentity: readonly RuleDay[] | null = null;

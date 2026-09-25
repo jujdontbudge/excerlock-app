@@ -12,15 +12,6 @@ export type SupabaseClientConfig = {
   lock?: LockFunc;
 };
 
-/**
- * Real Supabase client for the ExcerLock app.
- *
- * - Tokens persist ONLY in SecureStore via SecureSupabaseStorage (chunked for
- *   large serialized sessions). Never AsyncStorage, never Zustand.
- * - autoRefreshToken is on; the root must register AppState foreground refresh
- *   (see README root wiring). detectSessionInUrl is off (native, no URL).
- * - flowType pkce for email OTP + updateUser email_change.
- */
 export function createSupabaseClient(config: SupabaseClientConfig): SupabaseClient {
   const { supabaseUrl, supabaseAnonKey, storageKey = SUPABASE_STORAGE_KEY, secureBackend, fetchImpl, lock } = config;
   if (!supabaseUrl || !supabaseAnonKey) {

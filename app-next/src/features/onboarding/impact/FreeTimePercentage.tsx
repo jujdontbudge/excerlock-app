@@ -12,7 +12,6 @@ export function FreeTimePercentage({ hours }: { hours: number }) {
   const m = useMotion();
   const percent = Math.round((hours / onboardingLabels.freeHours) * 100);
   const value = useSharedValue(m.reduced ? percent : 0);
-  // One fixed duration (about a second) for any value: a higher percentage simply counts faster.
   useEffect(() => {
     value.set(m.timing(percent, 'emphasized', { stretch: 2 }));
   }, [percent, value, m]);

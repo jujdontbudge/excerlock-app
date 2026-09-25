@@ -6,7 +6,6 @@ import type {
 } from '@excerlock/analytics-events';
 import type { EnforcementSnapshot } from './EnforcementHost';
 
-/** The part of an applied policy that decides whether shields moved. */
 export type AppliedPolicy = Pick<EnforcementSnapshot, 'state' | 'relief' | 'openReason'>;
 
 export type EnforcementContext = { appState: EnforcementAppState; source: EnforcementSource };
@@ -23,13 +22,6 @@ const OPEN_REASON: Record<NonNullable<AppliedPolicy['openReason']>, ShieldsLifte
   earned: 'earned', outsideWindow: 'window_end', lapsed: 'lapsed', disabled: 'disabled', deleting: 'deleting',
 };
 
-/**
- * Turns two applied policies into the shield events the host emits. Only the
- * shield boundary counts: relief changing shape (walking → propped) or an open
- * reason changing is silent, and `unknown` never moves shields. A missing or
- * unknown previous policy is a fresh JS context, which reports shields it finds
- * up (cause `boot`) or relief it finds live, but not an ordinary open day.
- */
 export function enforcementTransitionEvents(
   previous: AppliedPolicy | null,
   next: AppliedPolicy,

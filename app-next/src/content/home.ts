@@ -12,7 +12,6 @@ export const homeCopy = {
   inProgress: 'In progress',
   scheduled: 'Scheduled',
   lockCaption: 'Apps blocked until\nyou complete exercise',
-  /** Home is always headed with the app's name, never a greeting (Johan's call, September 23, 2026). */
   title: 'ExcerLock',
   locked: 'Apps are blocked',
   met: 'Unlocked for the rest of today',
@@ -66,7 +65,6 @@ export const homeCopy = {
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,
   walkReady: 'Walk with your phone on you and your apps open on their own.',
   openSettings: 'Open Settings',
-  /** The one reminder card on Home while a condition is missing something it needs (ADR 0043). */
   needs: {
     apps: 'Your apps are not locked yet',
     motion: 'Your steps are not counting yet',
@@ -75,7 +73,6 @@ export const homeCopy = {
     gym: 'Pick your gym so visits count',
   },
   needsBody: 'ExcerLock needs this to work.',
-  /** The reminder card's button, which opens that permission's setup screen. */
   fixNeed: {
     apps: 'Choose apps',
     motion: 'Turn on',

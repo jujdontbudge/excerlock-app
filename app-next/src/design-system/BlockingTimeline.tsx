@@ -67,7 +67,6 @@ export function BlockingTimeline({ start, end, window }: { start: string; end: s
       </Animated.View>
       {window?.kind === 'range' ? (
         <View style={{ marginHorizontal: t.space.xs }}>
-          {/* Reserves one line of support text for the absolutely placed times below. */}
           <View style={{ height: t.type.support.lineHeight * Math.min(fontScale, t.a11y.textScale) }} />
           {[
             { text: start, minute: window.startMinute },

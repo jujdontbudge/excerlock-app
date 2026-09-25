@@ -67,8 +67,6 @@ export class DetectionService {
                 { kind, at },
                 at,
               ),
-              // Put-down enters the dedicated 60-second handoff. Do not retain
-              // a separate walking grace that could outlive/stack with it.
               ...(kind === 'putDown' ? { walking: createWalkingState(at) } : {}),
               observedAt: at,
             });
@@ -96,8 +94,6 @@ export class DetectionService {
           ...disposers.map((dispose) => () => dispose()),
           () => this.deps.motion.stop(),
           () => this.deps.placement.stop(),
-          // A previously reported query/write rejection is not a native
-          // cleanup failure. Wait for quiescence; flush() still exposes it.
           () => this.queue,
         ],
         'Detection service cleanup failed',
@@ -130,8 +126,6 @@ export class DetectionService {
       }
       let ledger = await this.deps.historyLedger.read();
       this.assertGeneration(wake.generation);
-      // Replay the exact durable intent before consulting cursors or issuing a
-      // newer query. Ledger.apply is idempotent across process restarts.
       if (before.pendingHistory) {
         ledger = await this.commitHistory(before.pendingHistory, wake, ledger);
       }
@@ -199,7 +193,6 @@ export class DetectionService {
       return result;
     });
   }
-  /** Lightweight foreground clock tick: live reducers + durable gym events, never step history. */
   tick(now: number, walkingGraceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
       this.assertGeneration(generation);
@@ -223,7 +216,6 @@ export class DetectionService {
       await this.commitObserved(now, generation, undefined, 'tick');
     });
   }
-  /** Root calls only after durable history sealing; serialized with sensor writers. */
   pruneGymHistory(cutoffMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
       this.assertGeneration(generation);
@@ -238,11 +230,8 @@ export class DetectionService {
     this.committedListeners.add(callback);
     return () => this.committedListeners.delete(callback);
   }
-  /** Waits for the latest serialized mutation and preserves its rejection. */
   async flush(): Promise<void> { await this.lastWork; }
   private async commitHistory(pending: PendingHistoryCredit, wake: DetectionWake, previous: HistoryLedger): Promise<HistoryLedger> {
-    // New intents persist their original timezone. The fallback exists only
-    // for legacy pending v1 records written before timezone was recorded.
     const ledger = await this.deps.historyLedger.apply(pending, pending.timezone ?? wake.timezone);
     this.assertGeneration(wake.generation);
     detectionStore.getState().patch({
@@ -299,7 +288,6 @@ export class DetectionService {
   cancelProppedScan(now: number, generation: number): Promise<void> {
     return this.applyPropped({ kind: 'scanCancel', at: now }, now, generation);
   }
-  /** Serialized foreground sample used by the bounded manual check. */
   reconcileMotion(now: number, graceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
       this.assertGeneration(generation);
@@ -407,8 +395,6 @@ export class DetectionService {
     if (this.deps.walkingDurationLedger) {
       if (!timezone) throw new Error('Walking duration timezone unavailable');
       const data = detectionStore.getState().data;
-      // Walking grace and propped pickup/handoff/propped-only relief are
-      // intentionally excluded from measured exercise duration.
       const verified = isMeasuredWalkingState(data);
       await this.deps.walkingDurationLedger.observe({ generation, at: Math.max(at, data.walking.watermark, data.propped.watermark, data.gym.watermark), verified, timezone });
       this.assertGeneration(generation);

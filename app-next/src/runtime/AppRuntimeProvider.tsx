@@ -80,9 +80,9 @@ export function useRuntime() {
 
 function NativePickerHost() {
   const { NativeScreenTimePickerHost } =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
     require('../screentime/native/createNativeScreenTimePort') as typeof import('../screentime/native/createNativeScreenTimePort');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   const { NativeRuntimeEffects } = require('./NativeRuntimeEffects') as typeof import('./NativeRuntimeEffects');
   return (
     <>

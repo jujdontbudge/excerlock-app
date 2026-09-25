@@ -4,7 +4,6 @@ import Animated, { SharedValue, useAnimatedProps } from 'react-native-reanimated
 import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { DemoState } from './model';
-// G's generic extension exposes the native Fabric matrix prop to Reanimated.
 const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const hill = (y: number) =>
   `M-400 ${y + 60} C-300 ${y},-200 ${y + 80},-100 ${y + 20} S100 ${y + 70},200 ${y + 10} S400 ${y + 70},500 ${y + 20} S700 ${y + 70},800 ${y + 10} L800 400 L-400 400 Z`;
@@ -71,7 +70,6 @@ export function World({ clock }: { clock: SharedValue<DemoState> }) {
 }
 export function Treadmill({ clock }: { clock: SharedValue<DemoState> }) {
   const props = useAnimatedProps(() => ({ matrix: [1, 0, 0, 1, -clock.value.distance % 30, 0] }));
-  // The belt's top edge meets the walker's feet (Character stands 112 above the scene floor).
   return (
     <Svg width={190} height={120} style={{ position: 'absolute', left: 0, bottom: 86 }} viewBox="0 0 190 120">
       <Rect x={6} y={88} width={178} height={22} rx={11} fill={art.demo.treadmill} />

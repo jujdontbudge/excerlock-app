@@ -3,18 +3,6 @@ import { Session } from '../../domain/types';
 import { sessionStore } from '../../state/sessionStore';
 import { FakeContext } from '../FakeContext';
 
-/**
- * Local-only AuthPort for demos/tests. Keeps the non-secret Session shape in
- * sessionStore; never stores tokens (there are none locally). Identity is
- * derived deterministically from the Session so UI and coordinator gates can
- * be exercised without a network.
- *
- * Cancellation preserves the Phase 1 contract (return current session) so
- * existing demo tests keep passing; the real Supabase adapter throws
- * AuthCancelledError instead. SignInScreen handles both. Failures throw.
- * Deletion is provisional-only local erase (no server UID exists locally)
- * and never emits account_deleted under an erased person.
- */
 export function AuthFake(ctx: FakeContext): AuthPort {
   let email = 'alex@example.test';
   let generation = 0;
@@ -23,7 +11,6 @@ export function AuthFake(ctx: FakeContext): AuthPort {
   const identity = (): AuthIdentity => {
     const current = session();
     if (current.kind === 'signedIn') {
-      // Fake canonical UID is stable per generation for deterministic tests.
       return { kind: 'canonical', userId: `fake-user-${generation}`, isAnonymous: false, generation, ready: true };
     }
     return { kind: 'provisional', userId: null, isAnonymous: true, generation, ready: false };
@@ -66,8 +53,6 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     deleteAccount: async () => {
       ctx.result();
       generation += 1;
-      // Provisional-only local erase: no server UID exists, no DELETE, no
-      // account_deleted event under an erased person. Local rules/stores stay.
       sessionStore.getState().patch({ session: { kind: 'anonymous' } });
       emitIdentity();
     },

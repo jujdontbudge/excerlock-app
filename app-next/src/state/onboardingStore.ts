@@ -8,7 +8,6 @@ export type OnboardingState = {
   complete: boolean;
   setupStep: string;
   setupComplete: boolean;
-  /** The onboarding hard paywall's one-per-install "Not now" decline was used. */
   winbackDeclined: boolean;
 };
 const step = isOnboardingStepId;

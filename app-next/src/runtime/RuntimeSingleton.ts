@@ -10,7 +10,6 @@ export class RuntimeCleanupError extends Error {
 const isRetryUnsafe = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { retryUnsafe?: unknown }).retryUnsafe === true;
 
-/** One VM-owned graph shared by React and background task launches. */
 export class RuntimeSingleton<T extends { disposeAsync(): Promise<void> }> {
   private pending: Promise<T> | null = null;
   private shutdown: Promise<void> | null = null;

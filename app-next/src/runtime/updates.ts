@@ -1,79 +1,19 @@
-/**
- * T03 OTA coordinator — single owner of every `expo-updates` call.
- *
- * Mount contract (root-owned): mount `useOtaCoordinator` at the runtime root,
- * above every guard. The coordinator never gates on paywall or setup state;
- * it only receives primitive safe-boundary inputs via LIVE getters (DI).
- * Fail closed when any safety input is unknown or any getter throws.
- *
- * First launch: native `ON_LOAD` owns check+download inside
- * `fallbackToCacheTimeout`. JS only observes `useUpdates()` via
- * `observeStartup()` and never issues a duplicate check on the same launch.
- * Later native downloads are observed via `observeDownloadedUpdate()` without
- * repeated startup checks and without resetting staged state. An observed
- * download gains reload authority only on a genuinely new foreground
- * (generation advances); a timed-out fetch result can never be resurrected
- * through observation in the same foreground.
- *
- * Later: on foreground, an eligible pending update is attempted FIRST
- * regardless of the 6h check cadence, with fresh live safety; unsafe defers
- * until another foreground. Otherwise after >= 6h in background,
- * `checkForUpdateAsync` then `fetchUpdateAsync` with SEPARATE budgets, then
- * `reloadAsync` only at a safe boundary with live revalidation immediately
- * before reload after EVERY async write. Reload-loop guard persists
- * `{ updateId, launchCount }` and stops after two failed activations of one
- * update id. `markSuccessfulLaunch` is the ONLY path that clears the guard —
- * T10 calls it after hydrated stable app; the hook never auto-clears on mount.
- * A pending id equal to the currently running id is rejected and cleared
- * (never retried).
- *
- * Required guard/envelope persistence failures deny reload and report.
- * Corrupt persisted guard throws (never silently resets retry authority).
- * Last-check persistence is best-effort only (explicitly distinct, never
- * denies reload).
- *
- * No unsafe reload races: every budgeted operation captures an epoch. Timeout
- * revokes the epoch; late work that resolves after revocation throws instead
- * of reloading. No concurrent checks/reloads: `inFlight` serializes work.
- *
- * Safe routes are actual expo-router tab paths with groups excluded
- * (`/home`, `/conditions`, `/analytics`, `/settings`). `'/'` is the BootGate
- * transient (redirects after onboarding guard) and is NEVER safe — root must
- * provide the live pathname (e.g. `/home`) via the safety getter; the
- * coordinator normalizes legacy `/(tabs)/…` Stack names to the same canonical
- * paths but never guesses arbitrary routes.
- *
- * Code-signing note: Expo account is Free, so the conditional signing
- * requirement is not enabled. No keys are created here and no tamper
- * verification is claimed.
- */
 import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ---------------------------------------------------------------------------
-// Budgets / policy
-// ---------------------------------------------------------------------------
 
-/** Foreground is stale only after 6h in background. */
 export const OTA_FOREGROUND_STALE_MS = 6 * 60 * 60 * 1000;
-/** Budget for `checkForUpdateAsync` alone. */
 export const OTA_CHECK_BUDGET_MS = 15_000;
-/** Budget for `fetchUpdateAsync` alone (separate from check). */
 export const OTA_FETCH_BUDGET_MS = 60_000;
-/** Stop retrying one update id after this many reloads without success. */
 export const OTA_MAX_RELOAD_ATTEMPTS = 2;
 
 const OTA_GUARD_KEY = 'excerlock-next.ota-guard.v1';
 const OTA_ENVELOPE_KEY = 'excerlock-next.ota-envelope.v1';
 const OTA_LAST_CHECK_KEY = 'excerlock-next.ota-last-check.v1';
 
-// ---------------------------------------------------------------------------
-// Types (primitives only — no guard/store imports)
-// ---------------------------------------------------------------------------
 
-/** Primitive safe-boundary inputs. `null`/`undefined` means unknown → unsafe. */
 export type OtaSafetyInput = {
   purchaseOrRestoreBusy: boolean | null | undefined;
   permissionPromptPending: boolean | null | undefined;
@@ -84,18 +24,8 @@ export type OtaSafetyInput = {
   route: string | null | undefined;
 };
 
-/**
- * LIVE safety getter. Called fresh immediately before reload and after EVERY
- * async write. Must return the latest values (hook reads via refs + real
- * `AppState.currentState`). If it throws, the coordinator fails closed
- * (defers as unsafe, never reloads).
- */
 export type OtaSafetyGetter = () => OtaSafetyInput;
 
-/**
- * LIVE envelope getter. Called fresh at reload time. If it throws, reload is
- * denied (failed) — envelope persistence is required, never best-effort.
- */
 export type OtaEnvelopeGetter = () => { route: string; draftIds: string[] } | null;
 
 export type OtaResumeEnvelope = {
@@ -134,16 +64,7 @@ export type OtaSafeEvaluation =
   | { safe: true; reason: 'safe' }
   | { safe: false; reason: string };
 
-// ---------------------------------------------------------------------------
-// Pure helpers — actual expo-router tab paths (groups excluded)
-// ---------------------------------------------------------------------------
 
-/**
- * Canonical safe tab roots as returned by `usePathname()` (groups excluded).
- * `'/'` is BootGate (transient redirect) and is intentionally NOT safe.
- * Legacy Stack screen names containing groups (e.g. `/(tabs)/home`) normalize
- * to the same canonical paths (see `normalizeOtaRoute`).
- */
 const OTA_SAFE_ROUTE_SET = new Set<string>([
   '/home',
   '/conditions',
@@ -151,12 +72,6 @@ const OTA_SAFE_ROUTE_SET = new Set<string>([
   '/settings',
 ]);
 
-/**
- * Normalize a route string to its canonical group-excluded pathname.
- * Strips query/hash, trailing slash, and any `(group)` segments.
- * Returns `'/'` for the root/empty/group-only paths (which is unsafe).
- * Returns null for non-string/empty input (unsafe).
- */
 export function normalizeOtaRoute(route: string | null | undefined): string | null {
   if (typeof route !== 'string') return null;
   const trimmed = route.trim();
@@ -172,18 +87,12 @@ export function normalizeOtaRoute(route: string | null | undefined): string | nu
   return '/' + segments.join('/');
 }
 
-/** True only for a canonical tab root. Unknown / BootGate / nested routes are unsafe. */
 export function isOtaSafeRoute(route: string | null | undefined): boolean {
   const normalized = normalizeOtaRoute(route);
   if (!normalized) return false;
   return OTA_SAFE_ROUTE_SET.has(normalized);
 }
 
-/**
- * Fail-closed safe-boundary evaluation. Every unknown input is unsafe.
- * Order is deterministic for tests: purchase/restore → prompt → camera →
- * walking/propped → foreground → route.
- */
 export function evaluateSafeBoundary(input: OtaSafetyInput): OtaSafeEvaluation {
   if (input.purchaseOrRestoreBusy == null) return { safe: false, reason: 'unknown-purchase-busy' };
   if (input.purchaseOrRestoreBusy) return { safe: false, reason: 'purchase-or-restore-busy' };
@@ -201,7 +110,6 @@ export function evaluateSafeBoundary(input: OtaSafetyInput): OtaSafeEvaluation {
   return { safe: true, reason: 'safe' };
 }
 
-/** Due only when backgrounded long enough AND last check is stale. */
 export function isOtaCheckDue(args: {
   nowMs: number;
   backgroundedAtMs: number | null | undefined;
@@ -255,9 +163,6 @@ export class OtaCorruptEnvelopeError extends OtaStorageError {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Storage factories — required guard/envelope fail closed; last-check best-effort
-// ---------------------------------------------------------------------------
 
 export function createMemoryOtaStorage(initial?: {
   guard?: OtaPersistedGuard | null;
@@ -299,7 +204,6 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
       try {
         raw = await AsyncStorage.getItem(OTA_GUARD_KEY);
       } catch (error) {
-        // Required read failure must deny reload (coordinator catches).
         throw new OtaStorageError(`OTA guard read failed: ${error instanceof Error ? error.message : String(error)}`);
       }
       if (raw == null || raw === '') return null;
@@ -307,7 +211,6 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
       try {
         parsed = JSON.parse(raw);
       } catch {
-        // Corrupt persisted guard must NOT silently reset retry authority.
         throw new OtaCorruptGuardError('OTA guard JSON is corrupt; refusing to reset retry authority');
       }
       const v = parsed as Partial<OtaPersistedGuard> | null;
@@ -317,13 +220,9 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
       return { updateId: v.updateId, launchCount: Math.max(0, Math.floor(v.launchCount as number)) };
     },
     async saveGuard(guard) {
-      // Required write failure must propagate so the coordinator denies reload.
-      // Intentionally NO try/catch here (fail closed, not best-effort).
       await AsyncStorage.setItem(OTA_GUARD_KEY, JSON.stringify(guard));
     },
     async clearGuard() {
-      // Clearing is required for the success milestone; propagate failures
-      // so a stale guard is never silently assumed cleared.
       await AsyncStorage.removeItem(OTA_GUARD_KEY);
     },
     async loadEnvelope() {
@@ -357,12 +256,9 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
       };
     },
     async saveEnvelope(envelope) {
-      // Required write failure must propagate so the coordinator denies reload.
       await AsyncStorage.setItem(OTA_ENVELOPE_KEY, JSON.stringify(envelope));
     },
     async loadLastCheckAtMs() {
-      // Best-effort only (explicitly distinct from required guard/envelope):
-      // read failures and corrupt values yield null (stale) and never deny reload.
       try {
         const raw = await AsyncStorage.getItem(OTA_LAST_CHECK_KEY);
         if (!raw) return null;
@@ -374,21 +270,15 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
       }
     },
     async saveLastCheckAtMs(ms) {
-      // Best-effort only (explicitly distinct): never throws, never denies reload.
       try {
         await AsyncStorage.setItem(OTA_LAST_CHECK_KEY, JSON.stringify(ms));
       } catch {
-        // ignore: last-check cadence is advisory; guard/envelope remain required.
       }
     },
   };
 }
 
-// ---------------------------------------------------------------------------
-// Real client (SDK57 modern calls only)
-// ---------------------------------------------------------------------------
 
-/** Wraps `expo-updates` SDK57: check/fetch/reload + observed ids. */
 export function createExpoUpdatesClient(): OtaUpdatesClient {
   return {
     get isEnabled() {
@@ -434,9 +324,6 @@ export function createExpoUpdatesClient(): OtaUpdatesClient {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Observability context for root/T06 (no direct Sentry/PostHog imports here)
-// ---------------------------------------------------------------------------
 
 export type OtaObservabilityContext = {
   update_id: string | null;
@@ -466,16 +353,11 @@ export function getOtaObservabilityContext(client?: Pick<OtaUpdatesClient, 'curr
   };
 }
 
-// ---------------------------------------------------------------------------
-// Coordinator — LIVE getters, generation-gated observation, pending retry
-// ---------------------------------------------------------------------------
 
 export type OtaForegroundArgs = {
   nowMs: number;
   backgroundedAtMs: number | null | undefined;
-  /** LIVE safety getter (fail closed if it throws). Required. */
   getSafety: OtaSafetyGetter;
-  /** LIVE envelope getter (fail closed if it throws). Optional; null when absent. */
   getEnvelope?: OtaEnvelopeGetter | null;
 };
 
@@ -540,7 +422,6 @@ export class OtaCoordinator {
     this.fetchBudgetMs = deps.fetchBudgetMs ?? OTA_FETCH_BUDGET_MS;
   }
 
-  /** Observe native `ON_LOAD` outcome. Never triggers a network check. */
   observeStartup(args: {
     currentlyRunningUpdateId?: string | null;
     downloadedUpdateId?: string | null;
@@ -552,7 +433,6 @@ export class OtaCoordinator {
     const downloaded = typeof args.downloadedUpdateId === 'string' && args.downloadedUpdateId ? args.downloadedUpdateId : null;
     this.lastDownloadedId = downloaded;
     if (!downloaded) return;
-    // Never stage (or retry) the currently running id.
     try {
       const liveRunning = this.safeRunningId();
       if (liveRunning && downloaded === liveRunning) {
@@ -564,7 +444,6 @@ export class OtaCoordinator {
         return;
       }
     } catch {
-      // If running id is unreadable, fail closed: do not stage.
       return;
     }
     if (running && downloaded === running) {
@@ -575,22 +454,12 @@ export class OtaCoordinator {
       }
       return;
     }
-    // Startup download has immediate authority (no fresh-foreground delay);
-    // it applies at the next safe boundary without a second launch check.
-    // Do not overwrite a different already-staged id (preserve staged state).
     if (this.pendingUpdateId && this.pendingUpdateId !== downloaded) return;
     this.pendingUpdateId = downloaded;
     this.pendingSource = 'startup';
     this.pendingStagedAtSeq = this.foregroundSeq;
   }
 
-  /**
-   * Observe a later native download (`useUpdates().downloadedUpdate`) without
-   * issuing a startup check and without resetting unrelated staged state.
-   * An observed id gains reload authority only on a genuinely new foreground
-   * (`foregroundSeq` advances); the same foreground can never reload it, so a
-   * timed-out fetch result cannot be resurrected through observation.
-   */
   observeDownloadedUpdate(
     downloadedUpdateId: string | null | undefined,
     currentlyRunningUpdateId?: string | null | undefined,
@@ -600,7 +469,6 @@ export class OtaCoordinator {
     if (downloaded) this.lastDownloadedId = downloaded;
     if (runningArg) this.lastRunningId = runningArg;
     if (!downloaded) return;
-    // Never stage the currently running id; clear it if it is pending.
     const liveRunning = runningArg ?? this.safeRunningIdOrNull();
     if (liveRunning && downloaded === liveRunning) {
       if (this.pendingUpdateId === downloaded) {
@@ -610,10 +478,7 @@ export class OtaCoordinator {
       }
       return;
     }
-    // Expo reloads the MOST RECENT native download, not a requested update ID.
-    // A different observed candidate revokes every in-flight attempt for its predecessor.
     if (this.pendingUpdateId && this.pendingUpdateId !== downloaded) this.epoch += 1;
-    // Same id already staged: preserve its original source/seq (authority timing).
     if (this.pendingUpdateId === downloaded) return;
     this.pendingUpdateId = downloaded;
     this.pendingSource = 'observation';
@@ -628,25 +493,17 @@ export class OtaCoordinator {
     return this.pendingUpdateId;
   }
 
-  /**
-   * The ONLY path that clears the reload-loop guard. T10 calls this after the
-   * hydrated stable app milestone (never auto-called on mount). No other
-   * health method clears. Aborted pre-reload reservations can separately restore
-   * the prior guard. Required storage failures propagate (fail closed).
-   */
   async markSuccessfulLaunch(runningUpdateId: string | null | undefined): Promise<void> {
     if (typeof runningUpdateId !== 'string' || !runningUpdateId) return;
     await this.withGuardLock(async () => {
       if (this.safeRunningId() !== runningUpdateId) return;
       const guard = await this.storage.loadGuard();
-      // Re-read after storage: a stale health callback cannot clear a newer candidate.
       if (this.safeRunningId() === runningUpdateId && guard?.updateId === runningUpdateId) {
         await this.storage.clearGuard();
       }
     });
   }
 
-  /** One JS owner serializes reservations, rollback and health acknowledgment. */
   private async withGuardLock<T>(work: () => Promise<T>): Promise<T> {
     const previous = this.guardTail;
     let release!: () => void;
@@ -676,7 +533,6 @@ export class OtaCoordinator {
     try {
       this.report?.(message, extra);
     } catch {
-      // reporting never blocks the guard
     }
   }
 
@@ -700,7 +556,6 @@ export class OtaCoordinator {
     try {
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
-          // Revoke authority so late work cannot reload.
           if (this.epoch === epochAtStart) this.epoch += 1;
           reject(new OtaBudgetTimeoutError(budgetMs));
         }, budgetMs);
@@ -715,8 +570,6 @@ export class OtaCoordinator {
           throw error;
         },
       );
-      // Both branches are guarded by the epoch check above, so a timed-out
-      // loser can never proceed to reload.
       return await Promise.race([guarded, timeout]);
     } finally {
       if (timer !== undefined) clearTimeout(timer);
@@ -724,15 +577,12 @@ export class OtaCoordinator {
   }
 
   private async saveLastCheckBestEffort(ms: number): Promise<void> {
-    // Best-effort only (explicitly distinct): never throws, never denies reload.
     try {
       await this.storage.saveLastCheckAtMs(ms);
     } catch {
-      // ignore
     }
   }
 
-  /** Foreground after background: pending-first, then check→fetch, then reload if safe. */
   async onForeground(args: OtaForegroundArgs): Promise<OtaForegroundResult> {
     if (!this.startupObserved) {
       return { status: 'suppressed-first-launch' };
@@ -752,14 +602,11 @@ export class OtaCoordinator {
     if (this.busy || this.inFlight) {
       return { status: 'busy' };
     }
-    // Acquire synchronously before the first await so concurrent callers see busy.
     this.busy = true;
-    // Advance generation FIRST so observation authority can be gated on it.
     this.foregroundSeq += 1;
     const currentSeq = this.foregroundSeq;
     const nowMs = args.nowMs;
     const backgroundDurationMs = nowMs - (args.backgroundedAtMs as number);
-    // Last-check is best-effort only: failures yield null (stale) and never deny.
     let lastCheckAtMs: number | null = null;
     try {
       lastCheckAtMs = await this.storage.loadLastCheckAtMs();
@@ -768,8 +615,6 @@ export class OtaCoordinator {
     }
     const sinceLastCheckMs = lastCheckAtMs == null ? null : nowMs - lastCheckAtMs;
 
-    // Eligible pending update is attempted FIRST regardless of 6h cadence,
-    // with fresh live safety. Unsafe defers until another foreground.
     if (this.pendingUpdateId) {
       const epochAtStart = this.epoch;
       const operation: Promise<OtaForegroundResult> = (async () => {
@@ -783,7 +628,6 @@ export class OtaCoordinator {
         if (pendingResult.status !== 'no-pending') {
           return pendingResult as OtaForegroundResult;
         }
-        // No pending (cleared as already-running): continue to check if due.
         if (!isOtaCheckDue({ nowMs, backgroundedAtMs: args.backgroundedAtMs, lastCheckAtMs })) {
           return { status: 'suppressed-not-due', backgroundDurationMs, sinceLastCheckMs };
         }
@@ -825,14 +669,11 @@ export class OtaCoordinator {
     epochAtStart: number,
     _currentSeq: number,
   ): Promise<OtaForegroundResult> {
-    // Separate budgets: check first, then fetch. A check timeout revokes the
-    // epoch so the fetch below can never run or reload.
     let check: { isAvailable: boolean; updateId: string | null };
     const checkPromise = this.updates.checkForUpdate();
     try {
       check = await this.withBudget(checkPromise, this.checkBudgetMs, epochAtStart);
     } catch (error) {
-      // Late check resolution must never stage (epoch already revoked).
       void checkPromise.then(
         () => undefined,
         () => undefined,
@@ -863,7 +704,6 @@ export class OtaCoordinator {
       return { status: 'failed', error: 'missing staged update id' };
     }
     if (this.epoch !== epochAtStart) throw new OtaAuthorityRevokedError();
-    // Never stage (or reload) the currently running id.
     try {
       const running = this.safeRunningId();
       if (running && stagedId === running) {
@@ -878,7 +718,6 @@ export class OtaCoordinator {
     this.pendingUpdateId = stagedId;
     this.pendingSource = 'fetch';
     this.pendingStagedAtSeq = this.foregroundSeq;
-    // Attempt apply at the next safe boundary using the same epoch, with LIVE safety.
     const reloadResult = await this.reloadIfSafeInternal(
       args.getSafety,
       args.getEnvelope ?? null,
@@ -892,10 +731,6 @@ export class OtaCoordinator {
     return reloadResult;
   }
 
-  /**
-   * Explicit check→fetch without reload (diagnostics only; never used by the
-   * hook launch path). Same separate budgets. Stages as `fetch` source.
-   */
   async checkAndStage(nowMs?: number): Promise<
     | { status: 'staged'; updateId: string }
     | { status: 'no-update' }
@@ -973,7 +808,6 @@ export class OtaCoordinator {
     }
   }
 
-  /** Attempt reload of the staged update if the LIVE boundary is safe. */
   async tryReloadIfSafe(args: {
     getSafety: OtaSafetyGetter;
     getEnvelope?: OtaEnvelopeGetter | null;
@@ -1110,8 +944,6 @@ export class OtaCoordinator {
     }
     const beforeReload = revalidate();
     if (beforeReload) {
-      // The reservation never became a reload attempt. All writes/health callbacks
-      // share this lock, so restore the exact previous guard, never overwrite a newer owner.
       try {
         if (guard) await this.storage.saveGuard(guard);
         else await this.storage.clearGuard();
@@ -1121,9 +953,6 @@ export class OtaCoordinator {
       }
       return beforeReload;
     }
-    // No await between the last live check and the native call. Expo offers no
-    // atomic reload-by-ID API; later native-only supersession cannot be guaranteed by JS.
-    // A native reload call failure still counts as a real attempted activation.
     await this.updates.reload();
     return { status: 'reloaded', updateId: pending };
   }
@@ -1134,9 +963,6 @@ export function createOtaCoordinator(deps: OtaCoordinatorDeps): OtaCoordinator {
   return new OtaCoordinator(deps);
 }
 
-// ---------------------------------------------------------------------------
-// Hook (mount above guards; DI for tests — LIVE getters via refs)
-// ---------------------------------------------------------------------------
 
 export type OtaCoordinatorHookOptions = {
   coordinator?: OtaCoordinator;
@@ -1156,20 +982,7 @@ const OTA_UNKNOWN_SAFETY: OtaSafetyInput = {
   route: null,
 };
 
-/**
- * Mount at the runtime root above guards. Observes `useUpdates()` once on
- * launch (no duplicate JS check) and observes later native downloads without
- * repeated checks or resetting staged state. Never auto-clears the loop
- * guard on mount — T10 must call `markSuccessfulLaunch(runningId)` after the
- * hydrated stable app milestone. Unknown safety fails closed.
- *
- * Background tracking keeps the FIRST departure from active until the next
- * active (background→inactive does not overwrite), so an iOS
- * inactive-after-6h event cannot reset the duration to zero.
- */
 export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoordinator {
-  // Stable coordinator instance for the hook lifetime (initialized once).
-  // useState initializer runs once and never reads refs during render.
   const [coordinator] = useState<OtaCoordinator>(() =>
     options?.coordinator ??
     createOtaCoordinator({
@@ -1180,8 +993,6 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
     }),
   );
   const observed = Updates.useUpdates();
-  // Keep latest DI via refs so async work always reads fresh values (no stale capture).
-  // Updated in an effect (not during render) to satisfy react-hooks/refs.
   const getSafetyRef = useRef(options?.getSafety);
   const getEnvelopeRef = useRef(options?.getEnvelope);
   const nowRef = useRef(options?.now ?? (() => Date.now()));
@@ -1206,19 +1017,11 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
     if (startupDoneRef.current) return;
     startupDoneRef.current = true;
     coordinator.observeStartup({ currentlyRunningUpdateId: runningId, downloadedUpdateId: downloadedId });
-    // Intentionally NO markSuccessfulLaunch here. T10 calls
-    // `markSuccessfulLaunch(runningId)` after hydrated stable app.
   }, [coordinator, runningId, downloadedId]);
 
   useEffect(() => {
-    // Observe later native downloads without a repeated startup check and
-    // without resetting unrelated staged state. Same-id re-emits preserve
-    // authority timing (the coordinator ignores them).
     if (lastDownloadedRef.current === undefined) {
       lastDownloadedRef.current = downloadedId;
-      // First emission was already handled by observeStartup above; still
-      // route through observeDownloadedUpdate for uniform generation handling
-      // only when it differs (it does not on mount, so this is a no-op).
       if (downloadedId !== null) {
         coordinator.observeDownloadedUpdate(downloadedId, runningId);
       }
@@ -1233,12 +1036,10 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background' || state === 'inactive') {
-        // First departure only: background→inactive must not overwrite.
         if (backgroundedAtRef.current == null) {
           try {
             backgroundedAtRef.current = nowRef.current();
           } catch {
-            // Leave as null (unknown) when the clock throws and no value exists.
           }
         }
         return;
@@ -1246,8 +1047,6 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
       if (state === 'active') {
         const backgroundedAtMs = backgroundedAtRef.current;
         backgroundedAtRef.current = null;
-        // LIVE getters: read latest DI via refs + real AppState.currentState
-        // to reject a stale foreground that has since backgrounded.
         const liveGetSafety: OtaSafetyGetter = () => {
           let base: OtaSafetyInput;
           try {

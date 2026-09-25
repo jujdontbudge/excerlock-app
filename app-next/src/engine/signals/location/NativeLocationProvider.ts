@@ -150,7 +150,6 @@ export class NativeLocationProvider implements LocationProvider {
     return this.lastLocation;
   }
 
-  /** One foreground fix for saving a gym; never requests background access. */
   public async locateForGymSetup(): Promise<LocationSample> {
     const authorization = await this.requestAuthorization();
     if (
@@ -165,7 +164,6 @@ export class NativeLocationProvider implements LocationProvider {
     return sample;
   }
 
-  /** Foreground-only manual check-in; this never requests background access. */
   public async checkIn(region: GeofenceRegion): Promise<boolean> {
     assertGymRegionsAllowed([region]);
     const authorization = await this.requestAuthorization();

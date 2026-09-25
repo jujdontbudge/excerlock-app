@@ -18,12 +18,6 @@ function scrubStacktrace(stacktrace: any) {
     in_app: typeof frame.in_app === 'boolean' ? frame.in_app : undefined,
   })) };
 }
-/**
- * Thrown Errors keep their message: the audit found this codebase's thrown
- * messages free of PII (§3.7), and a redacted message destroys crash triage.
- * The SDK marks exceptions synthesized from non-Error captures as `synthetic`;
- * their text is derived from arbitrary captured values, so it stays redacted.
- */
 function scrubExceptionValue(exception: Record<string, unknown>): string {
   const mechanism = exception.mechanism as { synthetic?: unknown } | undefined;
   if (typeof exception.value === 'string' && mechanism?.synthetic !== true) return exception.value;
@@ -49,8 +43,6 @@ export function scrubSentryBreadcrumb<T extends Record<string, any>>(breadcrumb:
   if (!['lock', 'watchdog', 'ota'].includes(String(breadcrumb.category))) return null;
   return { category: breadcrumb.category, level: breadcrumb.level, data: Object.fromEntries(Object.entries(breadcrumb.data ?? {}).filter(([key, value]) => safeExtra.has(key) && safeDiagnosticValue(value))) } as unknown as T;
 }
-// Sentry treats any numeric tracesSampleRate (including zero) as tracing enabled.
-// Omit both tracing keys for the documented crash-only integration contract.
 export function buildSentryOptions(dsn: string | undefined, metadata: SentryBuildMetadata) {
   if (!dsn) return null;
   const ota = getOtaObservabilityContext();
@@ -71,5 +63,4 @@ export function initializeSentryOnce(
   return true;
 }
 
-/** Test-only reset; runtime composition must never call this. */
 export function resetSentryInitializationForTests() { initialized = false; }

@@ -20,12 +20,6 @@ import { needCopyKey, useSetupNeeds } from './useSetupNeeds';
 export type SetupStep = 'account' | SetupNeed;
 type Step = SetupStep;
 
-/**
- * Sign-in (after the paywall only), then one screen for each thing the conditions still need:
- * a title, one line naming the choice to tap, the iOS alert drawn where it will appear with an
- * arrow at that choice, Continue at the bottom, and a quiet "Not now". A grant refused earlier opens Settings instead, since iOS never asks twice. Saying
- * no moves on; Home keeps one card asking until everything is on (ADR 0043).
- */
 export function SetupFlow({
   account,
   onDone,
@@ -35,7 +29,6 @@ export function SetupFlow({
   account: boolean;
   onDone: () => void;
   onClose?: () => void;
-  /** Called once as each screen opens, so the route can name it for analytics. */
   onStep?: (step: Step) => void;
 }) {
   const runtime = useRuntime(),
@@ -44,7 +37,6 @@ export function SetupFlow({
     signedIn = useSessionStore((s) => s.data.session.kind === 'signedIn'),
     { needs, location, permissions } = useSetupNeeds(),
     [passed, setPassed] = useState<Step[]>([]),
-    // Always location that stays While Using after one ask: iOS offers the upgrade once.
     [upgradeRefused, setUpgradeRefused] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -58,8 +50,7 @@ export function SetupFlow({
   }, [current, onDone]);
   useEffect(() => {
     if (current) onStep?.(current);
-    // Only a new screen reports; a new callback identity is not a new screen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the step changes
   }, [current]);
   const pass = (step: Step) => {
     setError('');
@@ -87,7 +78,6 @@ export function SetupFlow({
       if (need === 'apps') {
         const apps = await runtime.screenTime.presentAppPicker();
         track('screen_time', true);
-        // A dismissed picker leaves the list empty: stay here so Choose apps can be tapped again.
         if (!apps.isEmpty) pass('apps');
       } else if (need === 'motion') {
         track('motion', (await runtime.steps.request()) === 'granted');
@@ -145,7 +135,6 @@ export function SetupFlow({
   );
 }
 
-/** Close on the left when the flow was opened from the app; a quiet Not now on the right. */
 function Header({ onClose, skip }: { onClose?: () => void; skip?: () => void }) {
   return (
     <View

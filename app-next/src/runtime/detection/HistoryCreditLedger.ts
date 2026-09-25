@@ -9,7 +9,6 @@ export type HistoryLedger = {
 };
 export interface HistoryLedgerStorage { getItem(key: string): Promise<string | null>; setItem(key: string, value: string): Promise<void>; }
 const KEY = 'excerlock-next.history-credit-ledger.v1';
-/** A single durable record owns both observed totals and the deduplication cursor. */
 export class HistoryCreditLedger {
   private queue: Promise<unknown> = Promise.resolve();
   constructor(private storage: HistoryLedgerStorage) {}
@@ -22,8 +21,6 @@ export class HistoryCreditLedger {
       if (dayKey(new Date(credit.to - 1).toISOString(), timezone) !== day) throw new Error('History credit must be split at local midnight');
       const previous = await this.load();
       if (previous.through !== null && credit.to <= previous.through) return previous;
-      // A scalar interval total cannot be apportioned across an overlapping edge.
-      // Root must initialize DetectionService's query cursor from this record.
       if (previous.through !== null && credit.from < previous.through) throw new Error('History interval overlaps committed credit');
       const steps = (previous.stepsByDay[day] ?? 0) + credit.steps;
       if (!Number.isSafeInteger(steps)) throw new Error('History total exceeds supported range');
@@ -32,7 +29,6 @@ export class HistoryCreditLedger {
       return next;
     });
   }
-  /** Must be awaited as part of account deletion/local data erasure. */
   reset(): Promise<void> { return this.serialize(() => this.save(empty())); }
   readInstanceMeasurement(key: string): Promise<InstanceStepMeasurement | null> {
     return this.serialize(async () => {
@@ -59,7 +55,6 @@ export class HistoryCreditLedger {
       return sample;
     });
   }
-  /** Call only after the corresponding immutable history rows are durable. */
   pruneBeforeDay(cutoffDay: string): Promise<HistoryLedger> {
     return this.serialize(async () => {
       validateDay(cutoffDay);

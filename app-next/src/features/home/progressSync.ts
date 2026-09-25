@@ -4,9 +4,7 @@ import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { permissionsStore } from '../../state/permissionsStore';
 import { dayKey, windowInstances, currentInstances } from '../../domain/schedule';
 import { applyProgress } from '../../domain/progress';
-/** Synchronizes port observations into persisted per-rule facts; no UI owns counters. */
 export function startProgressSync(runtime: Runtime) {
-  // Production history transactions are root-owned, never driven by Home mounts.
   if (runtime.kind !== 'fake') return () => undefined;
   let active = true,
     steps = 0;

@@ -21,19 +21,15 @@ import { progressContent } from '../home/progressContent';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { inactiveWalkingStatus } from '../../ports/WalkingPort';
 
-/** Photo-real phone frame (condition-demo/gen/PROVENANCE.md); its screen is a transparent hole. */
 const frame = { source: require('../../../assets/phone-frame.png'), width: 703, height: 1442 } as const;
 const hole = { left: 35, top: 29, width: 632, height: 1383, radius: 112 } as const;
 const bodyRadius = 130;
-/** The previewed Home is laid out on a real iPhone canvas, then scaled into the hole. */
 const device = { width: 402, height: (402 * hole.height) / hole.width, insets: { top: 62, bottom: 34, left: 0, right: 0 } } as const;
-/** iOS status bar either side of the frame's Dynamic Island (island centre sits 31 pt down). */
 const statusBar = { centre: 31, time: 68, icons: 334 } as const;
 const granted = { screenTime: 'granted', motion: 'granted', location: 'whenInUse', camera: 'granted', notifications: 'granted' } as const;
 
 export function PlanTrialPreview({ rule }: { rule: Rule }) {
   const [box, setBox] = useState({ width: 0, height: 0 });
-  // Sit just under the title and fill the space above Continue, keeping the phone's proportions.
   const height = Math.min(box.height, (box.width * 0.68 * frame.height) / frame.width);
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: t.space.lg }}>
@@ -50,15 +46,9 @@ export function PlanTrialPreview({ rule }: { rule: Rule }) {
   );
 }
 
-/** The width a phone of this height takes, so a caller can lay things out around it. */
 export const trialPhoneWidth = (height: number) => (height * frame.width) / frame.height;
-/** The height a phone of this width takes. */
 export const trialPhoneHeight = (width: number) => (width * frame.height) / frame.width;
 
-/**
- * The photo-real phone showing the Home screen this rule gives on its first day. `onConditionsEnd`
- * reports where the condition card ends, as a share of the phone's height, so a caller can crop there.
- */
 export function TrialPhone({ rule, height, onConditionsEnd }: {
   rule: Rule;
   height: number;
@@ -90,11 +80,9 @@ export function TrialPhone({ rule, height, onConditionsEnd }: {
   );
 }
 
-/** The real Home pieces for this rule on its first day: nothing done yet, apps blocked. */
 function HomePreview({ rule, scale, onConditionsEnd }: {
   rule: Rule;
   scale: number;
-  /** The condition card's bottom edge, in the previewed device's points. */
   onConditionsEnd?: (bottom: number) => void;
 }) {
   const model = progressContent(rule, { ruleId: rule.id, day: '', progress: 0, met: false, metAt: null }, granted,

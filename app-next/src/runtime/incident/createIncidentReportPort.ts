@@ -2,7 +2,6 @@ import type { IncidentReportPort } from '../../ports/IncidentReportPort';
 import type { IncidentDiagnostics } from './incidentDiagnostics';
 import type { IncidentReportPayload, IncidentReportTransport } from './IncidentReportClient';
 
-/** Pure assembly of the wire payload from the person's words and the app's snapshot. */
 export function buildIncidentReportPayload(input: {
   whatWentWrong: string;
   shouldHaveHappened: string;

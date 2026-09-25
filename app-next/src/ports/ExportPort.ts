@@ -16,8 +16,6 @@ export type ExportPayload = {
   profile: Profile;
 };
 
-/** UI boundary. Native implementations serialize JSON and present the system share sheet. */
 export interface ExportPort {
-  /** The runtime captures account ownership before invoking this asynchronous builder. */
   requestShare(buildPayload: () => Promise<ExportPayload>): Promise<void>;
 }

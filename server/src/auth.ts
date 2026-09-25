@@ -114,10 +114,6 @@ export function supabaseJwtConfigFromEnv(
     return null;
   }
   const jwtSecret = env.supabaseJwtSecret?.trim() || undefined;
-  // Explicit mode selection prevents HS256/JWKS alg confusion. When a legacy
-  // HS256 secret is configured the server accepts ONLY HS256 with that
-  // secret; otherwise it accepts ONLY the configured RS/ES set via JWKS.
-  // The two modes never mix.
   if (jwtSecret) {
     return {
       issuer: supabaseIssuerFor(supabaseUrl),
@@ -215,7 +211,6 @@ export async function verifySupabaseJwt(
   }
 
   if (supabaseConfig.jwtSecret) {
-    // Legacy HS256 path: explicit secret, never JWKS.
     if (headerAlg !== "HS256") {
       throw new Error("Supabase JWT algorithm mismatch for HS256 mode");
     }
@@ -284,9 +279,6 @@ export type AuthMode =
     }
   | { kind: "unconfigured" };
 
-// Dual config without an explicit Clerk issuer is treated as Supabase-only.
-// Legacy Clerk dispatch requires CLERK_ISSUER so routing is explicit and
-// never falls back on verification failure.
 export function resolveAuthMode(
   env: Pick<
     Environment,
@@ -348,7 +340,6 @@ export async function verifyAuthToken(
       isAnonymous: false,
     });
   }
-  // Dual mode: explicit issuer dispatch, no verification-failure fallback.
   const issuer = peekUnverifiedIssuer(token);
   if (issuer === mode.supabase.issuer) {
     return verifySupabaseJwt(token, mode.supabase);
@@ -410,8 +401,6 @@ export async function requireAuth(
   try {
     const identity = await verifyAuthToken(token, config);
     request.authIdentity = identity;
-    // Backwards-compatible alias so existing vendor/support helpers keep
-    // working while they migrate to request.authIdentity.
     request.clerkIdentity = Object.freeze({
       userId: identity.userId,
       roles: identity.roles,

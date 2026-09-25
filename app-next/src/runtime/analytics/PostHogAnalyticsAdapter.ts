@@ -31,8 +31,6 @@ export const POSTHOG_OPTIONS = {
   personProfiles: 'identified_only',
 } as const;
 const forbidden = /email|address|latitude|longitude|receipt|token|user_?id|message|error|url/i;
-// Bounded ids/enums only: no whitespace, no `@`, never longer than 64 chars. Dots are
-// allowed because Adapty product ids are dotted (`a.annual`, `annual.3999.t7`).
 const forbiddenValue = /^[a-z0-9._-]{1,64}$/i;
 export function scrubAnalyticsProps(props: Record<string, unknown> = {}): Record<string, string | number | boolean> {
   const clean: Record<string, string | number | boolean> = {};
@@ -43,12 +41,6 @@ export function scrubAnalyticsProps(props: Record<string, unknown> = {}): Record
   }
   return clean;
 }
-/**
- * The one runtime allowlist for `track()`: exactly the registry's client-owned
- * event names. Adapty owns every subscription/trial lifecycle name, so those
- * stay blocked here even though the client emits the funnel's intent half
- * (`paywall_viewed`, `purchase_started`, `purchase_failed`, `restore_*`).
- */
 export const CLIENT_EVENT_ALLOWLIST: ReadonlySet<string> = new Set(eventsOwnedBy('client'));
 
 export function createPostHogAnalyticsAdapter(options: {
@@ -86,12 +78,6 @@ export function createPostHogAnalyticsAdapter(options: {
   );
   let consentEpoch = 0;
   let shownScreen: string | null = null;
-  // Screens requested while the rail cannot capture yet. Cold start is the
-  // common case: the first route and the step caller both fire while the
-  // identity spine is still in flight, so the event would otherwise be lost.
-  // Only a bounded tail is kept, because a rail that never becomes allowed
-  // (offline identity spine) must not grow this without limit. Consent-off
-  // requests never queue, so nothing is captured before the user opts in.
   const pendingScreens: { key: string; spec: SemanticScreen }[] = [];
   const maxPendingScreens = 24;
   const screenKey = (spec: SemanticScreen) => JSON.stringify([spec.name, spec.props ?? null]);
@@ -100,7 +86,6 @@ export function createPostHogAnalyticsAdapter(options: {
     pendingScreens.push(entry);
     if (pendingScreens.length > maxPendingScreens) pendingScreens.shift();
   };
-  /** Emits the screens kept while the rail was not allowed, oldest first. */
   const replayPendingScreens = () => {
     const started = origin();
     if (!started || !allowed(started) || pendingScreens.length === 0) return;
@@ -146,8 +131,6 @@ export function createPostHogAnalyticsAdapter(options: {
       if (completed.userId !== id || completed.generation !== started.generation) throw new Error('Analytics identity changed during identify');
       committed = { ...completed };
       flags.beginGeneration(beforeIdentify.generation);
-      // Re-identify while the spine is already ready has no later identity
-      // event, so the commit itself is the moment cold-start screens can go.
       replayPendingScreens();
     },
     track(event, props) {
@@ -163,14 +146,8 @@ export function createPostHogAnalyticsAdapter(options: {
     screen(name) {
       const spec = semanticScreenName(name);
       if (!spec) return;
-      // One navigation can report the same screen twice: the root pathname
-      // subscriber fires for every route, and the four step-level callers fire
-      // for their own screen. Deduplicate on the semantic result so a single
-      // navigation emits `$screen` once.
       const key = screenKey(spec);
       if (key === shownScreen) return;
-      // Consent off captures nothing, now or later: the user must enable
-      // analytics while looking at a screen to report it.
       if (!options.analyticsEnabled()) { pendingScreens.length = 0; return; }
       const started = origin();
       if (!allowed(started)) { rememberScreen({ key, spec }); return; }
@@ -180,8 +157,6 @@ export function createPostHogAnalyticsAdapter(options: {
     replayPendingScreens,
     setWalkPlaces(value) {
       const started = origin(); if (!allowed(started)) return;
-      // The installed SDK emits the documented `$set` update. Avoid a flag
-      // reload so an already-mounted surface cannot change underneath the user.
       void emit(started!, () => client.setPersonProperties({ walk_places: value }, false));
     },
     async reset() { committed = null; shownScreen = null; pendingScreens.length = 0; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
@@ -191,7 +166,6 @@ export function createPostHogAnalyticsAdapter(options: {
 }
 
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
-/** Payload flags carry remote configuration, never experiment exposure events. */
 const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true, stride_gate_config: true } as const;
 export type PayloadFlagName = keyof typeof allowedPayloadFlags;
 export type PaywallVariant = 'control' | 'variant_b';
@@ -263,13 +237,6 @@ export class PostHogFlagsController {
     }
     return promise;
   }
-  /**
-   * Reads a payload flag's object (currently the remote shield copy).
-   *
-   * Returns the live SDK payload when flags have already settled and only waits
-   * for the next settlement (or the timeout) when they have not. Exposure events
-   * stay off: this is configuration, not a mounted experiment surface.
-   */
   async getPayload(name: PayloadFlagName, timeoutMs = 2_000): Promise<unknown> {
     const live = this.identity();
     const started = live.userId ? { userId: live.userId, generation: live.generation } : undefined;
@@ -302,8 +269,6 @@ export class PostHogFlagsController {
     const value = this.settled.get(name); const key = `${this.generation}:${name}:${placement}`;
     if (value === undefined || this.exposures.has(key) || !this.eligible(started)) return;
     this.exposures.add(key);
-    // Snapshot the value shown by the mounted surface. Calling getFeatureFlag
-    // here would expose a late SDK value instead of the stable assignment.
     void this.captureExposure(started, { $feature_flag: name, $feature_flag_response: value }).then((captured) => {
       if (!captured) this.exposures.delete(key);
     });
@@ -332,32 +297,20 @@ export function createReviewPresetPort(flags: PostHogFlagsController) {
   };
 }
 
-/** Boolean gate behind every `SignInScreen` mount (`resolveSignInRequired`). */
 export interface SignInRequiredPort {
-  /** `true` makes the sign-in step blocking; an absent or unanswered flag is `false`. */
   isRequired(): Promise<boolean>;
 }
 export function createSignInRequiredPort(flags: PostHogFlagsController): SignInRequiredPort {
-  // The controller answers the false fallback while the identity is not ready,
-  // so an unanswered flag keeps X4 skippable instead of locking the user out.
   return { async isRequired() { return await flags.get('signInRequired') === true; } };
 }
 
-/** A resolved `$screen`: the semantic route name plus its bounded qualifiers. */
 export type SemanticScreen = { name: string; props?: Record<string, string | number | boolean> };
 
-/** Bare ids the two step-level callers pass instead of a route path (HomeScreen, PaywallSlot). */
 const callerScreens: Record<string, string> = { Home: 'home', P: 'paywall' };
 
-/** Onboarding step ids from `src/onboarding/flow.ts`, excluding `P` (which maps to paywall). */
 const onboardingStepPattern = /^(?:O(?:0[1-9]|1[0-9]|2[0-2])|W[0-3]|G(?:[12]|0[FH])|[RB][12]|D|S(?:[1-3]|3[b-d])|T[1-4])$/;
-/**
- * Setup steps: `X1` is where the paywall lands, then each screen after it reports what it asks for,
- * and `done` marks finishing (ADR 0043). `X2`–`X5` are older installs' saved steps.
- */
 const setupStepPattern = /^(?:X\d|account|apps|motion|location|gym|done)$/;
 
-/** Static production routes, keyed by exactly what `usePathname()` returns. */
 const routes: Record<string, string> = {
   '/home': 'home',
   '/conditions': 'conditions',
@@ -379,12 +332,6 @@ const routes: Record<string, string> = {
   '/sign-in': 'sign_in',
 };
 
-/**
- * Dynamic routes. Each entry validates the `[param]` value against the app's
- * own bounded vocabulary and carries it as a prop, so a junk deep link never
- * reaches PostHog (D12). `screenCoverage.test.ts` walks `app/` and fails when a
- * production route has no mapping here.
- */
 const dynamicRoutes: readonly { prefix: string; param: string; name: string; test: RegExp }[] = [
   { prefix: '/onboarding/', param: 'step', name: 'onboarding', test: onboardingStepPattern },
   { prefix: '/setup/', param: 'step', name: 'setup', test: setupStepPattern },
@@ -393,11 +340,6 @@ const dynamicRoutes: readonly { prefix: string; param: string; name: string; tes
   { prefix: '/settings/permission/', param: 'permission', name: 'settings_permission', test: /^(?:screenTime|motion|location|camera|notifications)$/ },
 ];
 
-/**
- * Maps a route path from `usePathname()` — or a bare step id from the four
- * step-level callers — to the semantic `$screen` result. Unmapped input (the
- * launch gate, `/dev`, the lab-only recorder, unknown ids) returns null.
- */
 export function semanticScreenName(path: string): SemanticScreen | null {
   const clean = path.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
   const direct = routes[clean];

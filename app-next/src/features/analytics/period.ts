@@ -1,6 +1,5 @@
 import { addDays } from '../../domain/calendar';
 export type Period = 'Day' | 'Week' | 'Month';
-/** Monday-start calendar week containing `day`. */
 export function weekStart(day: string): string {
   const d = new Date(day + 'T12:00:00Z');
   return addDays(day, -((d.getUTCDay() + 6) % 7));

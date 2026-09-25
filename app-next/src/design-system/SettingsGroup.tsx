@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
-/** `outline` sets the group on the translucent card, for groups that sit over the orange wash. */
 export function SettingsGroup({
   title,
   outline = false,

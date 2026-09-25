@@ -19,18 +19,7 @@ export type LinkedTracePreflight = {
   labStorageIsolated: boolean;
   screenTimeAuthorized: boolean;
   motionReady: boolean;
-  /**
-   * Production's background residency is the location keep-alive, which only
-   * starts under Always authorization; without it the lab suspends and traces
-   * nothing once Walking Recorder is in front.
-   */
   locationAlwaysAuthorized: boolean;
-  /**
-   * iOS never reveals which apps a FamilyActivitySelection holds, so this only
-   * proves the shape: exactly one application, no categories, no web domains.
-   * The one-path UI tells the operator to pick one harmless canary and never a
-   * research app, because no native check can prove that choice.
-   */
   canarySelectionValid: boolean;
   canaryApplicationCount: number;
   canaryCategoryCount: number;
@@ -53,17 +42,10 @@ export type LinkedTraceClient = {
   preflight(): Promise<LinkedTracePreflight>;
   record(eventType: LinkedTraceEventType, payload: LinkedTracePayload, operationId?: string): void;
   stop(sessionId: string, nonce: string): Promise<string>;
-  /** Finalized local traces that can still be shared, newest first. */
   finalized(): Promise<LinkedTraceFinalizedSession[]>;
-  /** Rebuilds the shareable copy from the durable App Group trace. */
   exportSession(sessionId: string): Promise<string>;
   deleteSession(sessionId: string): Promise<void>;
   abandonExpiredSession(sessionId: string): Promise<void>;
-  /**
-   * Stops an active test whose recorder never started or cannot finish. Writes
-   * a durable abandonment record instead of a finalized one, so the unfinished
-   * trace can never be listed or exported.
-   */
   cancelActiveSession(sessionId: string): Promise<void>;
 };
 

@@ -62,7 +62,6 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
           localizedPeriod: 'month',
           localizedMonthlyPrice: '$9.99',
           periodUnit: 'month',
-          // Like the live Monthly product, which has had the same one-week trial as Annual since September 23, 2026.
           offerLabel: '7 days free',
           recommended: false,
         },

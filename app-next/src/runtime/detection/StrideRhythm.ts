@@ -1,44 +1,6 @@
-/**
- * Stride-rhythm discriminator over the raw 50 Hz device-motion stream.
- *
- * Why it exists (measured in gate-proof-s1 / gate-fix-s2 on the recorder
- * captures): CMPedometer counted a deliberate seated shake as 118-134
- * steps/min while real walking in the same capture read 98-110, so cadence
- * magnitude cannot tell a shake from a walk, and CMMotionActivity is 8-15 s
- * late on a cold walk. The raw stream can answer both questions earlier:
- * is this periodic motion a gait, and is it a gait at all.
- *
- * The verdict is deliberately a small set of physical checks, each with a
- * measured margin (data/gate-fix-s2/report.md), not a fitted score:
- *  - vertical (gravity-axis) acceleration RMS: a stepping body moves;
- *  - periodicity: normalized autocorrelation of the band-passed vertical
- *    signal peaks at the step period (lags 0.3-0.85 s);
- *  - step frequency: 1.2-2.3 Hz is walking; the captured shakes ran 2.3-3.3 Hz;
- *  - interval regularity: coefficient of variation of the inter-peak intervals;
- *  - axis purity: a hand shake is a one-dimensional oscillation (principal-axis
- *    share of the 3-D acceleration energy >= 0.92); a walking body accelerates
- *    vertically, forward and sideways (share <= 0.90 in 95 % of walking windows);
- *  - rotation ratio: rotation-rate RMS over vertical RMS; a twisted phone
- *    rotates without translating (and, at >= 1 rad/s and >= 8x the vertical
- *    RMS, is being handled whether or not the motion is periodic).
- *
- * Verdicts: `walking` (confident stride: the checks held for a dwell of eight
- * consecutive evaluations, 1.75 s, at a stable step frequency, the newest
- * second of the window is still stepping, and no non-gait verdict in the
- * preceding 8 s), `notStride` (periodic motion that violates the
- * gait band, purity or rotation bound for two evaluations), `still` (vertical
- * RMS below the still floor over the whole window) and `unknown` (everything
- * else, including no raw data). A still phone never yields `walking`.
- *
- * Every threshold below is a field of `StrideGateParams`; the shipped values
- * and their remote clamps live in `strideGateConfig.ts`, and each function
- * defaults to the shipped gate so callers that do not pass one keep today's
- * measured behaviour exactly.
- */
 import { SHIPPED_STRIDE_GATE, type StrideGateParams } from './strideGateConfig';
 export type StrideVector = { readonly x: number; readonly y: number; readonly z: number };
 
-/** One raw device-motion observation. `t` is the receipt wall clock in ms. */
 export type StrideMotionSample = {
   readonly t: number;
   readonly gravity: StrideVector;
@@ -49,64 +11,27 @@ export type StrideMotionSample = {
 export type StrideVerdict = 'walking' | 'notStride' | 'still' | 'unknown';
 
 export type StrideFeatures = {
-  /** Window span actually covered, ms. */
   readonly windowMs: number;
-  /** RMS of the gravity-axis user acceleration over the whole window, g. */
   readonly verticalRms: number;
-  /** Same RMS over the newest STRIDE_RECENT_MS of the window, g: is the body still stepping right now. */
   readonly recentRms: number;
-  /** Normalized autocorrelation peak of the band-passed vertical signal within the step-lag band. */
   readonly periodicity: number;
-  /** Step frequency implied by the autocorrelation peak lag, Hz. */
   readonly stepHz: number;
-  /** Coefficient of variation of inter-peak intervals (9.9 when fewer than three peaks). */
   readonly intervalCv: number;
-  /** Share of 3-D user-acceleration energy on its principal axis (1 = one-dimensional). */
   readonly axisPurity: number;
-  /** RMS of the rotation-rate magnitude, rad/s. */
   readonly rotationRms: number;
-  /** rotationRms / verticalRms. */
   readonly rotationRatio: number;
 };
 
-/** Per-window classification before dwell/penalty smoothing. */
 export type StrideWindowClass = 'still' | 'stride' | 'nonGait' | 'ambiguous';
 
 export type StrideAssessment = {
   readonly verdict: StrideVerdict;
-  /** Newest raw sample time covered by this assessment (null before any evaluation). */
   readonly at: number | null;
-  /**
-   * Start of the continuously verified stride interval behind a `walking`
-   * verdict (the start of the first analysis window of the run); null otherwise.
-   */
   readonly since: number | null;
   readonly features: StrideFeatures | null;
   readonly windowClass: StrideWindowClass | null;
-  /**
-   * A `notStride` verdict was issued within STRIDE_PENALTY_MS. While set, the
-   * pedometer's cadence must not stand alone: the captured shakes alternated
-   * non-gait phases with 1.5-9.4 s of aperiodic handling during which
-   * CMPedometer kept reporting 118-134 steps/min with steps accruing.
-   */
   readonly recentVeto: boolean;
-  /**
-   * The newest window is shaped like a gait (`gaitShapedWindow`): walking
-   * intensity and tempo, regular, three-dimensional, translating more than it
-   * rotates - every stride check except periodicity. Apple's classifier and
-   * pedometer may corroborate a walk only through such a window while the raw
-   * stream is live (walk-shake-stop-w1: CMMotionActivity kept reporting
-   * walking:high and CMPedometer carried 120.7 steps/min on a phone the raw
-   * stream measured still at 0.052 g for 17.8 s; a seated shake reads 118-134
-   * steps/min on the pedometer). False without an evaluated window.
-   */
   readonly gaitLike: boolean;
-  /**
-   * Start of the stillness behind a `still` verdict: the start of the first
-   * still window of the current uninterrupted run of still evaluations. The
-   * adapter turns `at - stillSince` into the confirmed-stop signal. Null unless
-   * the verdict is `still`.
-   */
   readonly stillSince: number | null;
 };
 
@@ -114,87 +39,35 @@ export const UNKNOWN_STRIDE: StrideAssessment = {
   verdict: 'unknown', at: null, since: null, features: null, windowClass: null, recentVeto: false, gaitLike: false, stillSince: null,
 };
 
-/**
- * The native device-motion stream contract: the module samples at 50 Hz and
- * the analyzer grids onto it. Not remote-tunable on purpose - changing it
- * would decimate or interpolate a physical stream, which is a build change.
- */
 export const STRIDE_SAMPLE_HZ = 50;
 
-// Shipped values, re-exported for readers and tests. The single source of
-// truth is `SHIPPED_STRIDE_GATE` in `strideGateConfig.ts`, where each field
-// also carries its remote clamp.
 export const STRIDE_WINDOW_MS = SHIPPED_STRIDE_GATE.windowMs;
 export const STRIDE_EVALUATION_INTERVAL_MS = SHIPPED_STRIDE_GATE.evaluationIntervalMs;
-/** No raw samples for this long: the stream stopped telling us anything. */
 export const STRIDE_STALENESS_MS = SHIPPED_STRIDE_GATE.stalenessMs;
-/** Band-pass applied before periodicity/peak analysis, Hz. */
 export const STRIDE_FILTER_HZ = Object.freeze({ low: SHIPPED_STRIDE_GATE.filterLowHz, high: SHIPPED_STRIDE_GATE.filterHighHz });
-/** Step-period search band for the autocorrelation peak, ms. */
 export const STRIDE_LAG_MS = Object.freeze({ low: SHIPPED_STRIDE_GATE.lagLowMs, high: SHIPPED_STRIDE_GATE.lagHighMs });
-/** Vertical RMS below this over the window is a still phone (sitting windows: p95 0.07 g incl. handling; walking p5 0.08 g). */
 export const STRIDE_STILL_G = SHIPPED_STRIDE_GATE.stillG;
-/**
- * A stride window must still be stepping in its newest second (recent RMS at
- * or above the still floor): a shake that is dying out looks like walking on
- * every whole-window feature for the two seconds after the hand stops
- * (f09377f9 shake 1, +13.6..+14.4 s: recent RMS 0.049 → 0.007 g), while
- * treadmill/walking stride windows measured 0.061 g at their very lowest and
- * 0.073 g at p1. A verdict must also not outlive the walker's last step.
- */
 export const STRIDE_RECENT_MS = SHIPPED_STRIDE_GATE.recentMs;
-/** A stride verdict needs at least this much vertical motion. */
 export const STRIDE_WALK_MIN_G = SHIPPED_STRIDE_GATE.walkMinG;
-/** A non-gait verdict needs real motion to stand on. */
 export const STRIDE_VETO_MIN_G = SHIPPED_STRIDE_GATE.vetoMinG;
 export const STRIDE_MIN_PERIODICITY = SHIPPED_STRIDE_GATE.minPeriodicity;
 export const STRIDE_WALK_HZ = Object.freeze({ low: SHIPPED_STRIDE_GATE.walkLowHz, high: SHIPPED_STRIDE_GATE.walkHighHz });
-/** Periodic motion faster than this is not a walk (captured shakes: 2.3-3.3 Hz; walking p95 2.08 Hz). */
 export const STRIDE_VETO_HZ = SHIPPED_STRIDE_GATE.vetoHz;
 export const STRIDE_MAX_INTERVAL_CV = SHIPPED_STRIDE_GATE.maxIntervalCv;
-/** Walking windows: p95 0.89, p99 0.91. Captured shakes in their steady phases: 0.87-0.97. */
 export const STRIDE_MAX_AXIS_PURITY = SHIPPED_STRIDE_GATE.maxAxisPurity;
 export const STRIDE_VETO_AXIS_PURITY = SHIPPED_STRIDE_GATE.vetoAxisPurity;
-/** Walking p95 4.6; rotation-dominated shake phases 5-18. */
 export const STRIDE_MAX_ROTATION_RATIO = SHIPPED_STRIDE_GATE.maxRotationRatio;
 export const STRIDE_VETO_ROTATION_RATIO = SHIPPED_STRIDE_GATE.vetoRotationRatio;
-/**
- * A phone twisted about far more than it is lifted (rotation RMS at or above
- * this, and STRIDE_VETO_ROTATION_RATIO times the vertical RMS) is being
- * handled, not carried by a stepping body, periodic or not: 0 of the 1,300
- * walking/treadmill windows inside labels, 58 sitting (handling) windows and
- * 28 shake windows.
- */
 export const STRIDE_VETO_ROTATION_RMS = SHIPPED_STRIDE_GATE.vetoRotationRms;
-/**
- * Consecutive stride evaluations (250 ms apart) before `walking` is published:
- * 8 evaluations = 4.75 s of stride-quality motion from its start. The four
- * captured seated shakes never sustained stride-quality motion for more than
- * five consecutive evaluations (4.0-4.25 s) between changes of rhythm; a
- * steady walk sustains it indefinitely. Three evaluations (0.75 s) of margin.
- */
 export const STRIDE_WALK_DWELL = SHIPPED_STRIDE_GATE.walkDwell;
-/** Consecutive non-gait evaluations before `notStride` is published. */
 export const STRIDE_VETO_DWELL = SHIPPED_STRIDE_GATE.vetoDwell;
-/** A walk does not begin from a shake: no `walking` verdict this soon after a non-gait one. */
 export const STRIDE_PENALTY_MS = SHIPPED_STRIDE_GATE.penaltyMs;
-/** Step frequency must stay within this fraction of the previous evaluation across the dwell. */
 export const STRIDE_HZ_TOLERANCE = SHIPPED_STRIDE_GATE.hzTolerance;
 
-/** Streams the raw device-motion samples the discriminator needs. */
 export interface StrideMotionSource {
   onSample(callback: (sample: StrideMotionSample) => void): () => void;
 }
 
-/**
- * Every stride check except periodicity: a stepping body at walking intensity
- * and tempo, regular, three-dimensional, translating more than it rotates.
- * Measured on the captures (per-window features from this module): the pocket
- * gait 8b91a77d clears it for 15 s straight with periodicity 0.2-0.39; hand-held
- * walks clear it in runs of 7-210 evaluations; the longest run on any seated
- * shake or sitting window is 8 (shakes: 2 of 171 windows on cd592ea2, 6-21 of
- * 30-67 on f09377f9; sitting: 0-17 of 36-2091).
- */
 export function gaitShapedWindow(features: StrideFeatures, gate: StrideGateParams = SHIPPED_STRIDE_GATE): boolean {
   return (
     features.verticalRms >= gate.walkMinG &&
@@ -269,7 +142,6 @@ function biquad(input: readonly number[], c: Biquad): number[] {
   return output;
 }
 
-/** Forward-then-backward band-pass: zero phase, so peaks stay time-aligned. */
 function bandPass(values: readonly number[], sampleRate: number, gate: StrideGateParams): number[] {
   const c = bandPassCoefficients(sampleRate, gate.filterLowHz, gate.filterHighHz);
   return biquad(biquad(values, c).reverse(), c).reverse();
@@ -313,7 +185,6 @@ function intervalCv(signal: readonly number[], sampleRate: number, gate: StrideG
   return average > 0 ? rms(intervals) / average : 9.9;
 }
 
-/** Largest-eigenvalue share of the 3x3 covariance of the acceleration samples (power iteration). */
 function axisPurity(acceleration: readonly StrideVector[]): number {
   const count = acceleration.length;
   if (count === 0) return 0;
@@ -361,10 +232,6 @@ export function computeStrideFeatures(
   };
 }
 
-/**
- * Sliding-window analyzer. Push raw samples as they arrive; it re-evaluates
- * every STRIDE_EVALUATION_INTERVAL_MS and keeps the newest assessment.
- */
 export class StrideRhythmAnalyzer {
   private samples: StrideMotionSample[] = [];
   private assessment: StrideAssessment = UNKNOWN_STRIDE;
@@ -378,7 +245,6 @@ export class StrideRhythmAnalyzer {
 
   constructor(private readonly gate: StrideGateParams = SHIPPED_STRIDE_GATE) {}
 
-  /** Returns the new assessment when this sample triggered an evaluation, else null. */
   push(sample: StrideMotionSample): StrideAssessment | null {
     if (!Number.isFinite(sample.t)) return null;
     const newest = this.samples[this.samples.length - 1];
@@ -392,7 +258,6 @@ export class StrideRhythmAnalyzer {
     return this.assessment;
   }
 
-  /** Newest assessment, or `unknown` when the stream has gone quiet or moved backwards. */
   assessmentAt(at: number): StrideAssessment {
     const observedAt = this.assessment.at;
     if (observedAt === null || at < observedAt || at - observedAt >= this.gate.stalenessMs) return UNKNOWN_STRIDE;
@@ -426,7 +291,6 @@ export class StrideRhythmAnalyzer {
     const features = computeStrideFeatures(grid, span, STRIDE_SAMPLE_HZ, this.gate);
     const windowClass = classifyStrideWindow(features, this.gate);
     const verdict = this.smooth(windowClass, features.stepHz, at);
-    // The still anchor survives only across an uninterrupted run of still windows.
     this.stillSince = windowClass === 'still' ? this.stillSince ?? Math.max(at - this.gate.windowMs, first!.t) : null;
     return {
       verdict,
@@ -440,12 +304,6 @@ export class StrideRhythmAnalyzer {
     };
   }
 
-  /**
-   * Dwell/penalty smoothing: `walking` needs STRIDE_WALK_DWELL consecutive
-   * stride windows at a stable step frequency and no non-gait verdict within
-   * STRIDE_PENALTY_MS; `notStride` needs STRIDE_VETO_DWELL consecutive non-gait
-   * windows; `still` is immediate because the window itself spans 3 s.
-   */
   private smooth(windowClass: StrideWindowClass, stepHz: number, at: number): StrideVerdict {
     const stable = this.walkRunHz === null || Math.abs(stepHz - this.walkRunHz) <= this.gate.hzTolerance * this.walkRunHz;
     if (windowClass === 'stride') {
@@ -468,7 +326,6 @@ export class StrideRhythmAnalyzer {
   }
 }
 
-/** Linear resample onto a uniform 50 Hz grid over [from, to]; null when the window cannot be gridded. */
 export function resample(
   window: readonly StrideMotionSample[],
   from: number,

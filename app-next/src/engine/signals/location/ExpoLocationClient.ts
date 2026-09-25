@@ -24,7 +24,6 @@ type ExpoLocationObject = {
     readonly accuracy: number | null;
     readonly latitude: number;
     readonly longitude: number;
-    /** CLLocation.speed / course; -1 when unknown. */
     readonly speed?: number | null;
     readonly heading?: number | null;
   };
@@ -123,7 +122,6 @@ export class ExpoLocationClient implements NativeLocationClient {
     return this.tasks.getLastLocation();
   }
 
-  /** Foreground fix for gym save and check-in: stays at the current high accuracy. */
   public async getCurrentLocation(): Promise<LocationSample> {
     const location = await this.expo.getCurrentPositionAsync({
       accuracy: this.expo.Accuracy.High,
@@ -176,25 +174,9 @@ export class ExpoLocationClient implements NativeLocationClient {
     return result;
   }
 
-  /**
-   * Lock-window residency keep-alive. `AwakeSession.reconcile` starts this only
-   * while the shield/conditional window is active and stops it outside, so the
-   * coarse accuracy below is scoped to that window; foreground fixes keep
-   * `Accuracy.High`.
-   *
-   * The samples are never read for walking, only the process residency matters,
-   * so coarse accuracy avoids a GPS stream. `showsBackgroundLocationIndicator`
-   * must stay false: an Always-authorized app shows the blue location pill only
-   * when it is true (ADR 0036). The status-bar arrow is system-owned and stays.
-   */
   public async startLocationUpdates(): Promise<void> {
     await this.expo.startLocationUpdatesAsync(WALK_LOCATION_TASK_NAME, {
-      // 1 km (kCLLocationAccuracyKilometer), not 3 km: the report's phone-proof
-      // run C flags very-low accuracy + significant-change as the one
-      // residency risk, and this change ships without that device proof.
       accuracy: this.expo.Accuracy.Low,
-      // Other, not Fitness: nothing here tracks a workout, and Fitness lets iOS
-      // tune the radio for movement this task does not need.
       activityType: this.expo.ActivityType.Other,
       distanceInterval: 500,
       pausesUpdatesAutomatically: false,

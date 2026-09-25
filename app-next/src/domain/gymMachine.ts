@@ -130,8 +130,6 @@ export function gymDwellMs(state: GymDetectionState, regionId: string, now: numb
     .filter((v) => v.regionId === regionId)
     .reduce((sum, visit) => sum + Math.max(0, (visit.exitedAt ?? now) - visit.confirmedAt), 0);
 }
-/** Pure companion for post-seal retention. Keeps open/cross-cutoff visits and
- * the transition boundary required to derive their current state. */
 export function pruneGymHistoryBefore(state: GymDetectionState, cutoffMs: number): GymDetectionState {
   valid(cutoffMs);
   validate(state);

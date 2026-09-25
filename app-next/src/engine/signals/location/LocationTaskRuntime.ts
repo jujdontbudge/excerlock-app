@@ -27,7 +27,6 @@ export type LocationTaskData = {
       readonly accuracy: number | null;
       readonly latitude: number;
       readonly longitude: number;
-      /** expo-location exports CLLocation.speed (m/s) and course (as `heading`, degrees); -1 means unknown. */
       readonly speed?: number | null;
       readonly heading?: number | null;
     };
@@ -35,11 +34,9 @@ export type LocationTaskData = {
   }[];
 };
 
-/** Core Location's "unknown" sentinel is a negative value; expose it as null. */
 const knownOrNull = (value: number | null | undefined): number | null =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 
-/** Shared state between Task Manager callbacks and the foreground adapter. */
 export class LocationTaskRuntime {
   private readonly locationListeners =
     new Set<(sample: LocationSample) => void>();

@@ -41,7 +41,6 @@ export function OnboardingRoute() {
       flow.setAnswer(key, value),
     );
   const advance = async () => {
-    // The reminder promise is kept by asking iOS for notifications right here, once.
     if (flow.step === 'S3d') {
       if (asking) return;
       if (runtime.notifications.status() === 'notDetermined') {
@@ -68,7 +67,6 @@ export function OnboardingRoute() {
     }
     flow.advance();
   };
-  // A pushed route can retain an earlier summary while this shared draft is incomplete.
   if (!focused) return null;
   let body = <PreBranchScreen {...flow} />;
   if (flow.step === 'S1')

@@ -1,15 +1,9 @@
 import type { EmptyProps, EventSpecMap } from '../types'
 
-/** PRD §3.3 — the single earn primitive's three kinds. */
 export type ConditionKind = 'state' | 'event' | 'rate'
 
-/** How an earn credited the balance (§3.3 payout menu + rate crediting). */
 export type PayoutKind = 'fixed_chunk' | 'rest_of_day' | 'set_period' | 'rate_credit'
 
-/**
- * Condition lifecycle + earns — client-owned: the whole economy evaluates
- * on-device (PRD §5), so the client is the authoritative emitter.
- */
 export const conditionEvents = {
   condition_created: { owner: 'client', transmittedProperties: [] },
   condition_edited: { owner: 'client', transmittedProperties: [] },
@@ -23,6 +17,5 @@ export interface ConditionEventProps {
   condition_edited: EmptyProps
   condition_deleted: EmptyProps
   earn_claimed: EmptyProps
-  // D12: the override's free-text reason stays on-device — the event carries nothing.
   sick_day_override_used: EmptyProps
 }

@@ -1,6 +1,5 @@
 import { LockedApps } from '../../domain/types';
 
-/** Dev-only fake selection. Production selections remain opaque. */
 export function finishSelection(ids: string[]): LockedApps {
   const valid = [...new Set(ids.filter(Boolean))];
   if (!valid.length) return { handle: null, isEmpty: true };

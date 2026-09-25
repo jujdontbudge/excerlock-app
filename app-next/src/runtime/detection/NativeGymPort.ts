@@ -13,7 +13,6 @@ export type NativeGymOwner = Readonly<{
 export type NativeGymPort = GymPort & { deletePlace(id: string): Promise<void>; authorizationStatus(): ReturnType<AppLocationProvider['getAuthorizationStatus']> };
 const permission = (s: ReturnType<AppLocationProvider['getAuthorizationStatus']>) => s === 'authorizedAlways' ? 'always' : s === 'authorizedWhenInUse' ? 'whenInUse' : s === 'denied' || s === 'restricted' ? 'denied' : 'notDetermined';
 
-/** Shares the detection factory's one LocationProvider; never registers tasks or owns an AwakeSession. */
 export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
   let mutations: Promise<void> = Promise.resolve();
   const serialize = <T>(work: () => Promise<T>): Promise<T> => { const next = mutations.then(work, work); mutations = next.then(() => undefined, () => undefined); return next; };
@@ -50,7 +49,6 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
       const inside = await location.checkIn({ id, latitude: place.latitude, longitude: place.longitude, radiusMeters: place.radiusMeters });
       if (!inside) throw new Error('Outside saved gym');
     },
-    // Unknown native coverage maps to outside only for this legacy UI port; it never grants confirmed relief.
     observePresence: callback => { callback(presence()); return location.on('region', () => callback(presence())); },
     observeLocation: callback => { const current = location.getLastLocation(); callback(current ? { latitude: current.lat, longitude: current.lon } : null); return location.on('location', sample => callback({ latitude: sample.lat, longitude: sample.lon })); },
     distanceTo: id => { const p = places().find(x => x.id === id), l = location.getLastLocation(); return p && l ? distanceMetres({ latitude: l.lat, longitude: l.lon }, p) : null; },

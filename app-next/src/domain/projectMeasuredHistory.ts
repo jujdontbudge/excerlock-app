@@ -6,7 +6,6 @@ import { windowInstances } from './schedule';
 import { isMetDay } from './streak';
 import { measuredGymMinutesByDay } from './projectGymHistory';
 
-/** Production read model from measured facts only; missing usage is always an explicit gap. */
 export function projectMeasuredHistory(
   stepsByDay: Readonly<Record<string, number>>,
   gymIntervals: readonly GymInterval[],

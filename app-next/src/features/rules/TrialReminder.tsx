@@ -9,14 +9,12 @@ import { useMotion } from '../../motion/useMotion';
 import { planCopy as c } from '../../content/plan';
 
 const bell = art.reminder;
-/** Keyframe stops for the swing, evenly spread after the strike. */
 const swing = Object.fromEntries(
   bell.swing.map((degrees, index) => [`${Math.round(((index + 1) * 100) / (bell.swing.length + 1))}%`, {
     transform: [{ rotate: `${degrees}deg` }],
   }]),
 );
 
-/** S3d: once the trial is offered, a bell rings in the promise that it will not end unannounced. */
 export function TrialReminder() {
   const m = useMotion();
   return (
@@ -32,7 +30,6 @@ export function TrialReminder() {
           width: bell.size,
           height: bell.size,
           transformOrigin: '50% 4%',
-          // One ring as the page lands, like a notification arriving.
           ...m.keyframes(
             { from: { transform: [{ rotate: '0deg' }] }, ...swing, to: { transform: [{ rotate: '0deg' }] } },
             'emphasized',

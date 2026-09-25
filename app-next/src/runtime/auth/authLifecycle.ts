@@ -44,8 +44,6 @@ export class AuthSdkLifecycle {
   }
 
   private async drain(set: Set<Promise<unknown>>): Promise<void> {
-    // Rejection is an operation outcome, not evidence of incomplete cleanup.
-    // Quiescence requires waiting for settlement, regardless of that outcome.
     await Promise.allSettled([...set]);
   }
 }

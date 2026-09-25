@@ -91,7 +91,6 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
             timezone: runtime.clock.timezone(),
           });
           setScheduleError(false);
-          // A condition that needs a permission it does not have asks for it right away (ADR 0043).
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();
         } catch (error) {

@@ -56,8 +56,6 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
     event: Event,
     properties?: PropsOf<Event>,
   ): void {
-    // posthog-node's stateless capture path does not merge registered
-    // properties, so stamp the server super property explicitly as well.
     client?.capture({
       distinctId,
       event,

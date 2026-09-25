@@ -40,7 +40,6 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
   useEffect(() => {
     y.set(m.timing(0, 'emphasized', { curve: 'enter' }));
   }, [y, m]);
-  // Gesture callbacks run on the UI thread; they capture only the worklet helpers.
   const { timing, spring } = m;
   const gesture = useMemo(
     () =>

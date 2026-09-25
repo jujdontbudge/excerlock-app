@@ -41,12 +41,6 @@ const ALREADY_SAVED = 'That test was already saved on this phone, so there is no
 const SAVED_NOTE = 'The trace is saved on this phone. Share it now, or reconnect later — nothing was uploaded.';
 const RETURNED_NOT_SAVED = 'That test link is not an active or saved test on this phone, so there was nothing to finalize. Start test begins a clean run.';
 
-/**
- * The one guided research path: start here, record the ground truth in Walking
- * Recorder, finish there, then save and share both files here. Everything runs
- * and stays on this phone; a Mac is never needed while a test runs, and a
- * finished trace can still be shared after a relaunch.
- */
 export function LinkedTraceScreen() {
   const runtime = useRuntime();
   const entitlementStatus = useEntitlementStore((state) => state.data.entitlement.status);
@@ -66,14 +60,8 @@ export function LinkedTraceScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  // Only a link that Walking Recorder actually sent back means the ground truth
-  // is finished. The link this screen mints for a new test is never evidence of
-  // a return, so a fresh running test can never settle into "save it".
   const returnedLinkRef = useRef<LinkedHandshake | null>(null);
 
-  // A test that survives a Trace Lab relaunch has no in-memory handshake left,
-  // so the persisted lab copy is the only way to reopen the intended Walking
-  // Recorder session. Loading it never marks a test finished.
   const hydrateActiveLink = useCallback(async (current: LinkedTraceStatus) => {
     if (!current.sessionId || !current.active) {
       await clearActiveHandshake();
@@ -94,8 +82,6 @@ export function LinkedTraceScreen() {
     }
   }, []);
 
-  // One live session can only be in one of four states, so the screen always
-  // lands on the current step: running, waiting to be saved, or needing cleanup.
   const settle = useCallback((
     current: LinkedTraceStatus,
     returned: LinkedHandshake | null,
@@ -109,9 +95,6 @@ export function LinkedTraceScreen() {
       setPhase('expired');
       return;
     }
-    // Only a returned test that is actually in the saved list was saved. A
-    // deleted, abandoned, or already-cleaned session gets truthful recovery
-    // wording instead of a false "already saved" claim.
     const returnedIsSaved = returned !== null && saved.some((session) => session.sessionId === returned.sessionId);
     if (saved.length) {
       setPhase('exported');
@@ -140,7 +123,6 @@ export function LinkedTraceScreen() {
     return () => { cancelled = true; };
   }, [settle, hydrateActiveLink]);
 
-  // Walking Recorder returns here with the one-time link when a test is done.
   useEffect(() => {
     if (!handshake) return;
     returnedLinkRef.current = handshake;
@@ -156,18 +138,12 @@ export function LinkedTraceScreen() {
     return () => { cancelled = true; };
   }, [handshake, settle]);
 
-  // The lab walking rule is part of the running test, not a setup step: it is
-  // installed with the trace and removed as soon as no trace is running, so the
-  // canary shows ExcerLock's real block/release behavior only during a test.
   useEffect(() => {
     if (!status) return;
     if (status.sessionId && status.active) ensureLabWalkingRule();
     else removeLabWalkingRule();
   }, [status]);
 
-  // A running test must notice its own two-hour expiry and the return to
-  // foreground. Neither check can turn a running test into "save it"; that only
-  // happens when the recorder's own return link arrives above.
   useEffect(() => {
     if (phase !== 'running') return;
     const sync = () => {
@@ -188,9 +164,6 @@ export function LinkedTraceScreen() {
   const labAccess = entitlementStatus === 'active' || entitlementStatus === 'trial';
   const step = readinessStep({ entitlementStatus, preflight, labAccess, runtime });
 
-  // A system permission sheet takes the app inactive and can settle after the
-  // request call has already returned. The return to active is the moment the
-  // readiness step and its failure line can be re-read from the phone itself.
   useEffect(() => {
     if (phase !== 'ready' && phase !== 'exported') return;
     const subscription = AppState.addEventListener('change', (next) => {
@@ -216,9 +189,6 @@ export function LinkedTraceScreen() {
       return false;
     } finally {
       const latest = await refreshPreflight();
-      // A system prompt can resolve after the request call already rejected;
-      // the refreshed preflight, not the rejection, says whether the step is
-      // still missing.
       if (failed && latest && readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })?.action?.failure !== message) {
         setError(null);
       }
@@ -237,33 +207,20 @@ export function LinkedTraceScreen() {
         setError('The test did not start. Finish the step named above first.');
         return;
       }
-      // Native preflight is the source of truth for the FamilyControls tokens.
-      // JS lockedApps can still be empty after a picker/reconcile race; without
-      // this handle, enforcement publishes an open "disabled" policy and the
-      // canary is never shielded.
       if (latest.canarySelectionValid) {
         rulesStore.getState().patch({
           lockedApps: { handle: { token: NATIVE_LOCKED_SELECTION }, isEmpty: false },
         });
       }
-      // Every start mints a fresh phone-local session id, so the native writer's
-      // durable collision refusal can only be reached by a repeated delivery of
-      // a link this screen never minted twice.
       const link = newLinkedSession();
-      // Readiness guarantee: the real ExcerLock walking rule is in place before
-      // the trace starts, so the canary can produce block/release evidence. The
-      // status effect removes it as soon as no trace is running.
       ensureLabWalkingRule();
       const active = await linkedTrace.start(link.sessionId, link.nonce);
       setStartedLink(link);
       setStatus(active);
       setPhase('running');
       try {
-        // Best effort: a test that is already recording must keep going even if
-        // the lab-local recovery copy cannot be written.
         await saveActiveHandshake(link);
       } catch {
-        // Recovery after a relaunch is the only thing this costs.
       }
       try {
         await Linking.openURL(walkingRecorderSessionLink(link));
@@ -291,8 +248,6 @@ export function LinkedTraceScreen() {
       setStatus(current);
       setFinalized(saved);
       if (current.sessionId && !current.active) {
-        // The native writer refuses to finalize a trace past its two-hour TTL,
-        // so a review screen that outlived the limit resettles to expired.
         setPhase('expired');
         setNote(null);
         return;
@@ -317,8 +272,6 @@ export function LinkedTraceScreen() {
     setBusy(true);
     setError(null);
     try {
-      // The durable copy lives in the lab App Group, so this still works after
-      // a relaunch or after iOS purged the temporary export file.
       const uri = await linkedTrace.exportSession(sessionId);
       await Sharing.shareAsync(uri, { mimeType: 'application/x-ndjson' });
     } catch {
@@ -380,9 +333,6 @@ export function LinkedTraceScreen() {
     setNote('The expired test was cleared. Start test begins a clean run.');
   };
 
-  // The bounded escape for a test whose Walking Recorder never started (for
-  // example the hand-off link could not open) or cannot be finished. It is a
-  // quiet, confirmed action beside the primary hand-off, never the main path.
   const cancelActive = async () => {
     const sessionId = status?.sessionId;
     if (!sessionId || busy) return;
@@ -400,9 +350,6 @@ export function LinkedTraceScreen() {
       setPhase(saved.length ? 'exported' : 'ready');
       setNote('The test was cancelled and its unfinished trace was removed from this phone. Nothing was saved or exported.');
     } catch {
-      // A save that began before an interruption is finished as saved, so a
-      // later cancel is refused. Re-read the phone's own state and land on the
-      // truthful step instead of claiming the test may still be running.
       const [current, saved] = await Promise.all([
         linkedTrace.status().catch(() => null),
         linkedTrace.finalized().catch(() => []),
@@ -607,7 +554,6 @@ function Step({ n, text }: { n: number; text: string }) {
   );
 }
 
-/** A deliberately quiet text action for the one destructive choice on the screen. */
 function SubordinateButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled: boolean }) {
   return (
     <Pressable
@@ -642,7 +588,6 @@ type Readiness = {
   action?: { label: string; failure: string; run: () => Promise<unknown> };
 };
 
-/** The single next thing standing between the operator and a real test. */
 export function readinessStep({
   entitlementStatus,
   preflight,
@@ -662,10 +607,6 @@ export function readinessStep({
     };
   }
   if (!labAccess) {
-    // The standalone lab carries its own local research identity and
-    // entitlement; it never signs in to a production account. A missing local
-    // entitlement means the lab graph did not finish starting, not that the
-    // operator must authenticate.
     return {
       title: 'The isolated lab identity did not start',
       detail: `Trace Lab runs entirely on a lab-local identity and entitlement. Open Trace Lab again before starting the test; production sign-in is not part of this research build (this phone reports “${entitlementStatus}”).`,

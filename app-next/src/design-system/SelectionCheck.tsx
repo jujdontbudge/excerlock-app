@@ -2,7 +2,6 @@ import { View } from 'react-native';
 import { Icon } from '../icons/Icon';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
-/** White badge and orange check remain legible against a solid selected surface. */
 export function SelectionCheck({ size = t.control.indicator }: { size?: number }) {
   return (
     <Reveal>

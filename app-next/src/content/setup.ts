@@ -49,10 +49,6 @@ export const setupCopy = {
   backToOptions: 'Back to sign-in options',
   continue: 'Continue',
   granted: 'Access is on',
-  /**
-   * After the paywall, and whenever a condition needs something new: one screen per grant, each
-   * with the iOS alert drawn where it will appear and the one choice to tap (ADR 0043).
-   */
   notNow: 'Not now',
   flow: {
     apps: {
@@ -82,13 +78,7 @@ export const setupCopy = {
       blocked: '',
     },
   },
-  /** The line under each permission title: the one choice to tap on the iPhone alert below it. */
   tap: (button: string) => `Tap “${button}”`,
-  /**
-   * The iOS alerts, word for word, so the copy drawn on each screen is covered exactly by the real
-   * one (ADR 0043). Messages are the purpose strings in config/native.ts and the motion plugin; a
-   * test keeps them equal. `tap` is the button that turns the permission on.
-   */
   alerts: {
     screenTime: {
       title: '“ExcerLock” Would Like to Access Screen Time',
@@ -120,7 +110,6 @@ export const setupCopy = {
       tap: 1,
       deny: 2,
     },
-    /** iOS offers the step from While Using to Always once, in this alert. */
     alwaysUpgrade: {
       title: 'Allow “ExcerLock” to also use your location even when you are not using the app?',
       message:

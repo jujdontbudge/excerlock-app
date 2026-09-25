@@ -7,9 +7,6 @@ import { suspendGymVisitLogWritesAndReset } from '../engine/signals/location/Asy
 import { RuntimeSafety } from './RuntimeSafety';
 import { eraseProductionData } from './eraseProductionData';
 import { hydrateProductionStores } from './hydrateProductionStores';
-// The identity graph is a compile boundary: research bundles use the
-// lab-local factory via the `@client-services` alias and never the
-// production Supabase/Adapty graph.
 import { createClientServices } from '@client-services';
 import { createNativeDetection } from './detection/createNativeDetection';
 import { createStrideGateConfigPort } from './detection/createStrideGateConfigPort';
@@ -67,10 +64,6 @@ export type RealRuntime = Runtime & {
   disposeAsync(): Promise<void>;
 };
 
-/** Actual native graph. Async by design: no service can consume default stores
- * before hydration. UI and headless bootstrap must share ONE returned instance.
- * Root mounting is kept separate from graph construction for cold task launches.
- */
 export async function createRealRuntime(options: { reportError(error: unknown): void }): Promise<RealRuntime> {
   await hydrateProductionStores();
   markStartupStage('HydrationDone');
@@ -96,7 +89,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     if (cleanupResult) return cleanupResult;
     cleanupResult = (async () => {
       const failures: unknown[] = [];
-      // Continue releasing independent resources even when one native stop fails.
       for (const cleanup of [...cleanups].reverse()) {
         try {
           await cleanup();
@@ -111,18 +103,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   };
   try {
     const userWalkingGraceMs = () => settingsStore.getState().data.stopGrace * 1000;
-    // The PostHog flag rail is bound to the analytics client, which is created
-    // below; the port reads through this late binding so `wakeContext` and the
-    // walking port can ask for the effective grace from the first wake.
     let readStrideGatePayload: (() => Promise<unknown>) | null = null;
     const strideGate = createStrideGateConfigPort({
       readPayload: () => readStrideGatePayload?.() ?? Promise.resolve(undefined),
       apply: (report) => detection.motion.applyStrideGateConfig(report),
       reportError: options.reportError,
     });
-    // The rail is read by `NativeRuntimeEffects` on mount and on every foreground
-    // (the shield-copy convention): the port resolves and clamps the payload
-    // before the adapter sees it, and a rejected payload applies the shipped gate.
     const walkingGraceMs = () => strideGate.walkingGraceMs(userWalkingGraceMs());
     const wakeContext = () => {
       const now = clock.readNow(),
@@ -160,7 +146,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       onError: options.reportError,
     });
     let committedWalking = walking.snapshot();
-    // Last policy the host applied in this JS context; null until the first apply.
     let appliedPolicy: AppliedPolicy | null = null;
     let committedGymPresence = ruleDaysStore.getState().data.gymPresence;
     let deletionSuspended = false;
@@ -171,8 +156,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',
       reportError: options.reportError,
       beforeDelete: async () => {
-        // Auth owns deletion state before invoking this hook. Publish suppression
-        // and clear shields BEFORE stopping tracking; keep auth intact for retries.
         deletionSuspended = true;
         await queue;
         await host.reconcile(true);
@@ -211,9 +194,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     });
     cleanups.push(() => client.dispose());
     readStrideGatePayload = () => client.analytics.flags.getPayload('stride_gate_config');
-    // Remote shield copy: the PostHog payload is validated and written to the
-    // App Group on every foreground once flags settle. The writer owns the
-    // native call so a malformed payload can never reach the shared store.
     const shieldCopy = createShieldCopyWriter({
       readPayload: () => client.analytics.flags.getPayload('shield_copy'),
       write: (json) => native.setShieldCopyOverrides(json),
@@ -253,10 +233,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     });
     cleanups.push(() => host.dispose());
     const gym = createNativeGymPort(detection);
-    // Small persisted ring of lock/unlock transitions so an incident report can say when things last changed.
     const incidentLog = createIncidentLog();
-    // The last decision the runtime acted on. Reports read this rather than `source.read()`,
-    // whose revision bump would supersede an apply that is still in flight.
     let lastEnforcement: ReturnType<typeof source.read> | null = null;
     let insideReconcile = false;
     let projecting = false;
@@ -286,7 +263,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const motion = detection.steps.authorizationStatus();
             const deleting = client.auth.identity().kind === 'deleting';
             if (mode === 'full') {
-              // Grants changed in iOS Settings only show up if we re-read them on the way back in.
               if (wakeSource === 'foreground') await detection.location.refreshAuthorization().catch(() => undefined);
               await ruleDaysStore.retryPersistence();
               await historyStore.retryPersistence();
@@ -402,8 +378,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                 duration.cursor?.verified ? duration.cursor.timezone : undefined,
               ),
             );
-            // Commit unpruned per-rule facts BEFORE an immutable aggregate seal.
-            // A crash between stores must leave reconstructable source rows.
             const finalRows = preserveSealedRuleDays(previous, rows, oldArchive);
             projecting = true;
             try {
@@ -414,8 +388,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             }
             await ruleDaysStore.persistBarrier();
             if (JSON.stringify(archive) !== JSON.stringify(oldArchive)) historyStore.getState().patch(archive);
-            // Persist seals BEFORE pruning the facts they preserve. A failed write
-            // prevents native policy/acknowledgement and is retried on reconciliation.
             await historyStore.persistBarrier();
             const today = dayKey(new Date(now).toISOString(), clock.timezone());
             const retainedRows = retainRuleDays(previous, rows, oldArchive, today);
@@ -504,19 +476,13 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               result: applied,
             });
             if (applied === 'applied' && source.read().revision === snapshot.revision) {
-              // The host is the only writer of native shields, so this is the one
-              // place that knows a lock/unlock really landed — and whether it did
-              // so with the app closed.
               for (const event of enforcementTransitionEvents(appliedPolicy, snapshot, { appState: currentAppState(), source: wakeSource })) {
-                // Static literals per call site (D3), so the emitter guard can read them.
                 if (event.name === 'unlock_completed') client.analytics.track('unlock_completed', event.props);
                 else if (event.name === 'shields_lifted') client.analytics.track('shields_lifted', event.props);
                 else client.analytics.track('shields_applied', event.props);
               }
               appliedPolicy = { state: snapshot.state, relief: snapshot.relief, openReason: snapshot.openReason };
             }
-            // A repaired plan is not proof of native activation. Keep the recovery
-            // notice until apply succeeds and this source revision is still current.
             if (
               applied === 'applied' &&
               !snapshot.scheduleIssue &&
@@ -621,7 +587,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       sensors: detection.sensors,
       review: {
         ...storeReview,
-        // A system sheet is a prompt for the OTA coordinator's purposes (no reload under it).
         requestReview: () => safety.prompt(() => storeReview.requestReview()),
       },
       incidentReports: createIncidentReportPort({
@@ -670,7 +635,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       strideGate,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
-      // No rules-sync endpoint exists yet. Never acknowledge imaginary cloud writes.
       sync: {
         pushRules: async () => {
           throw new Error('Cloud rules synchronization is unavailable');
@@ -691,8 +655,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           return permission;
         },
         presentAppPicker: async () => {
-          // The port asks for Screen Time itself when undecided; mirror the
-          // phone's answer into the store whether the pick succeeds or throws.
           const selection = await safety
             .prompt(() => rawScreenTime.presentAppPicker())
             .finally(() => permissionsStore.getState().patch({ screenTime: rawScreenTime.authorizationStatus() }));
@@ -741,7 +703,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           if (!disposed && !insideReconcile) void reconcile('manual', 'committed').catch(options.reportError);
         }),
       );
-      // Starting auth is bounded by its own provisional/offline boot contract.
       await client.boot();
       if (client.auth.identity().kind !== 'deleting') deletionSuspended = false;
       await reconcile('foreground');

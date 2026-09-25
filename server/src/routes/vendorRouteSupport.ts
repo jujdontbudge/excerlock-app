@@ -41,12 +41,6 @@ async function defaultTombstoneCheck(userId: string): Promise<boolean> {
   return row?.deletedAt != null;
 }
 
-/**
- * Provider-neutral active-user gate. Returns 410 ACCOUNT_DELETED for a
- * tombstoned identity even when the presented JWT is still cryptographically
- * valid. DELETE /v1/user intentionally uses requireRouteUserId instead so a
- * tombstoned caller can still resume the durable erasure workflow.
- */
 export async function requireActiveRouteUserId(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -93,7 +87,6 @@ export function isTombstonedError(error: unknown): boolean {
   ) {
     return true;
   }
-  // Support layer throws plain Errors with this message for deleted rows.
   return (
     typeof message === "string" &&
     (message.includes("User is deleted or missing") ||

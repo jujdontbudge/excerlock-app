@@ -6,7 +6,6 @@ import { tokens as t } from '../../design-system/tokens';
 import { illustrationTokens as art } from '../../design-system/illustrationTokens';
 import { homeCopy as c } from '../../content/home';
 
-/** A centered, rounded lock inspired by the product mark without illustrated effects. */
 export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
   const [width, setWidth] = useState(0);
   const stroke = width * 0.11;

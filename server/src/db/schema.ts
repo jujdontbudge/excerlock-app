@@ -12,16 +12,6 @@ import {
 import type { SupportCategory } from "@excerlock/analytics-events";
 import type { Vendor } from "../vendors/types.js";
 
-/**
- * Canonical Supabase identity spine: this primary key is the Supabase user id
- * (canonical UUID, anonymous or permanent), and simultaneously the Adapty
- * customer_user_id and PostHog distinct_id after provisioning.
- *
- * Legacy Clerk ids (user_*) remain only on historic tombstones. The
- * auth_provider/auth_deleted_at pair records provider-neutral erasure;
- * clerk_deleted_at is retained for audit and must never be treated as proof
- * of Supabase erasure.
- */
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email"),
@@ -101,13 +91,6 @@ export const featureRequestVotes = pgTable(
   ],
 );
 
-/**
- * In-app incident reports: the user's own words plus the diagnostic snapshot
- * the app held at send time. Diagnostics are an opaque JSON document the app
- * builds from non-identifying state (lock decision, detection phases,
- * permissions, recent transitions); the service rejects coordinate, contact,
- * token and app-name keys before anything is written.
- */
 export const incidentReports = pgTable(
   "incident_reports",
   {
@@ -232,18 +215,8 @@ export type NewVendorOAuthState = typeof vendorOAuthStates.$inferInsert;
 export type VendorWebhookEvent = typeof vendorWebhookEvents.$inferSelect;
 export type NewVendorWebhookEvent = typeof vendorWebhookEvents.$inferInsert;
 
-/**
- * Store environment a purchase event originated from. Sandbox rows are
- * TestFlight/StoreKit test purchases; anything that counts revenue or
- * customers must filter to "production".
- */
 export type AdaptyEnvironment = "production" | "sandbox";
 
-/**
- * Minimal Adapty delivery ledger. Payloads, profile ids, transaction ids, and
- * purchase values are deliberately not retained. The stable profile event id
- * is sufficient for retry idempotency.
- */
 export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
   deliveryKey: text("delivery_key").notNull(),
   userId: text("user_id").references(() => users.id, {
@@ -253,15 +226,12 @@ export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
   receivedAt: timestamp("received_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-  // Declared last to mirror the physical column order: it arrived via
-  // ALTER TABLE, and the catalog guardrail checks ordinals.
   environment: text("environment")
     .$type<AdaptyEnvironment>()
     .notNull()
     .default("production"),
 }, (table) => [primaryKey({ columns: [table.environment, table.deliveryKey] })]);
 
-/** Current subscription access mirror for active accounts only. */
 export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
   userId: text("user_id")
     .notNull()
@@ -275,8 +245,6 @@ export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
   eventOccurredAt: timestamp("event_occurred_at", {
     withTimezone: true,
   }).notNull(),
-  // Declared last to mirror the physical column order: it arrived via
-  // ALTER TABLE, and the catalog guardrail checks ordinals.
   environment: text("environment")
     .$type<AdaptyEnvironment>()
     .notNull()

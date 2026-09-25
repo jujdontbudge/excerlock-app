@@ -1,23 +1,5 @@
 import { AuthCancelledError, AuthError } from '../../ports/AuthPort';
 
-/**
- * Google native sign-in via Expo AuthSession code + PKCE + state (SDK57).
- *
- * Supported flow (installed expo-auth-session@57.0.5):
- * - AuthRequest with ResponseType.Code, usePKCE true, codeChallengeMethod S256,
- *   auto-generated state (CSRF), scopes openid/profile/email, clientId = the
- *   iOS client ID from clientAuth (EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID). Never a
- *   web client secret on the client.
- * - promptAsync(discovery) opens the system browser; result.type success with
- *   params.code, otherwise cancel/dismiss -> AuthCancelledError, error/locked
- *   -> AuthError visible retry. State mismatch is an error, never silent.
- * - exchangeCodeAsync (AccessTokenRequest) trades code + codeVerifier +
- *   redirectUri for tokens; id_token is the Supabase linkIdentity token. The
- *   exchange never sends a client secret.
- *
- * This module is injectable for deterministic tests; the real implementation
- * lives in realGoogleSignIn below and is provided by the root.
- */
 
 export type GoogleCredential = {
   idToken: string;
@@ -90,15 +72,14 @@ export async function requestGoogleCredential(deps: GoogleAuthDeps): Promise<Goo
   return { idToken: tokens.idToken, accessToken: tokens.accessToken };
 }
 
-/** Real factory for the root (not used in Jest without native modules). */
 export function buildRealGoogleRequest(clientId: string, redirectUri: string): GoogleAuthDeps {
   return {
     clientId,
     redirectUri,
     buildRequest: () => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { AuthRequest } = require('expo-auth-session') as typeof import('expo-auth-session');
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { ResponseType, CodeChallengeMethod } = require('expo-auth-session') as typeof import('expo-auth-session');
       const req = new AuthRequest({
         clientId,
@@ -110,16 +91,13 @@ export function buildRealGoogleRequest(clientId: string, redirectUri: string): G
       });
       return {
         promptAsync: (discovery) => req.promptAsync(discovery as never) as unknown as Promise<{ type: string; params?: Record<string, string> }>,
-        // AuthRequest prepares PKCE lazily during promptAsync. A snapshot here
-        // is always undefined; expose a getter so requestGoogleCredential reads
-        // the verifier only after the prompt completes.
         get codeVerifier() {
           return (req as unknown as { codeVerifier?: string }).codeVerifier;
         },
       };
     },
     exchangeCode: async ({ code, codeVerifier, redirectUri: redirect }) => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { exchangeCodeAsync } = require('expo-auth-session') as typeof import('expo-auth-session');
       const res = await exchangeCodeAsync(
         { clientId, redirectUri: redirect, code, extraParams: { code_verifier: codeVerifier } },

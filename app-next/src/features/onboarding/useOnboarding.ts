@@ -18,16 +18,11 @@ export function useOnboarding() {
     advancing = useRef(false),
     advanceEpoch = useRef(0),
     mounted = useRef(true),
-    // Seeded from the port's current snapshot, so a remount after the rail
-    // settled keeps the assignment without a setState-in-effect.
     [flowOrder, setFlowOrder] = useState<FlowOrder | null>(() => runtime.onboardingFlow?.order() ?? null),
     [isAdvancing, setIsAdvancing] = useState(false),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const step = params.step ?? resumeStep(state, flowOrder),
     flow = { step, answers: state.answers };
-  // B8: read the `onboarding_variant` order once, in the background. The first
-  // paint above already used the bundled order, and the rail only replaces it
-  // when a payload validates — the user never waits on a flag to see a step.
   useEffect(() => {
     const port = runtime.onboardingFlow;
     if (!port) return;
@@ -97,7 +92,7 @@ export function useOnboarding() {
           });
           useOnboardingStore.getState().patch({ answers: applied });
           if (remote && applied !== live.answers) {
-            try { runtime.reviewPreset?.expose(); } catch { /* Telemetry cannot block onboarding. */ }
+            try { runtime.reviewPreset?.expose(); } catch {}
           }
         }
       }
@@ -133,7 +128,6 @@ export function useOnboarding() {
           const backup = JSON.parse(String(state.answers.editBackup || 'null'));
           if (backup && typeof backup === 'object' && !Array.isArray(backup)) restored = backup as Answers;
         } catch {
-          /* An older draft may not have a saved edit snapshot. */
         }
         useOnboardingStore.getState().patch({ answers: { ...restored, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });

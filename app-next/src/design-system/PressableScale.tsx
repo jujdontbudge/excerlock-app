@@ -21,7 +21,6 @@ export function PressableScale({
   return (
     <Pressable
       {...props}
-      // A control drawn smaller than the touch minimum keeps a 44 x 44pt hit region.
       hitSlop={props.hitSlop ?? slop}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;

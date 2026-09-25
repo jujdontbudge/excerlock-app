@@ -6,7 +6,6 @@ import { welcomeCopy as c } from '../../../content/welcome';
 import { Reveal } from '../../../motion/Reveal';
 import { BrandMark } from '../welcome/BrandMark';
 import { BlockedBadge } from '../welcome/BlockedBadge';
-/** The social apps, locked, in a single row above the activities that unlock them. */
 export function LockedAppsRow() {
   const p = art.welcome.control.locked;
   return (

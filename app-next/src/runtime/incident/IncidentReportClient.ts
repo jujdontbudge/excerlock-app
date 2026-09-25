@@ -1,7 +1,6 @@
 import type { IncidentDiagnostics } from './incidentDiagnostics';
 import type { IncidentReportReceipt } from '../../ports/IncidentReportPort';
 
-/** Exact wire shape of `POST /v1/incident-reports`. The server owns the user id from the bearer. */
 export type IncidentReportPayload = {
   whatWentWrong: string;
   shouldHaveHappened: string;
@@ -24,7 +23,6 @@ export class IncidentReportError extends Error {
   }
 }
 
-/** Bearer-authenticated POST. Never reads tokens itself: `getAuthContext` is the only door and it may say no. */
 export function createIncidentReportTransport(options: {
   apiBaseUrl: string;
   getAuthContext(): Promise<{ accessToken: string; userId: string } | null>;

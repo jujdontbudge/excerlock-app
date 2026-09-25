@@ -29,16 +29,11 @@ export interface AdaptyWebhookService { record(payload: unknown): Promise<{ reco
 export function createAdaptyWebhookService(repository: AdaptyWebhookRepository, now: () => Date = () => new Date(), acceptedEnvironments: readonly ("production" | "sandbox")[] = ["production", "sandbox"]): AdaptyWebhookService {
   return { async record(payload) {
     const envelope = envelopeSchema.parse(payload);
-    // Official Adapty docs define customer_user_id as nullable. Authenticate
-    // and acknowledge before requiring lifecycle-specific properties.
     if (!envelope.customer_user_id) return { recorded: false, unbound: true };
     if (envelope.event_type !== "access_level_updated") return { recorded: false };
     if (envelope.event_properties.access_level_id !== "premium") return { recorded: false };
     const parsed = premiumAccessEventSchema.parse(payload);
     if (!parsed.customer_user_id) return { recorded: false, unbound: true };
-    // Transaction lifecycle events expose profile-wide access, which is not
-    // safe to attribute to one store partition. Only the documented premium
-    // access_level_updated shape is authoritative.
     const properties = parsed.event_properties;
     if (!acceptedEnvironments.includes(properties.environment)) return { recorded: false };
     const observedAt = new Date(parsed.event_datetime);

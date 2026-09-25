@@ -2,7 +2,6 @@ import type { ExcerlockGaitVisionModule } from "./src/ExcerlockGaitVisionModule"
 import type { ComponentType } from "react";
 import type { GaitVisionPreviewProps } from "./src/GaitVisionPreview";
 
-/** Keeps native loading out of fixture and Jest composition roots. */
 export function getExcerlockGaitVisionModule(): ExcerlockGaitVisionModule {
   return (
     require("./src/ExcerlockGaitVisionModule") as {
@@ -11,7 +10,6 @@ export function getExcerlockGaitVisionModule(): ExcerlockGaitVisionModule {
   ).default;
 }
 
-/** Keeps the native view manager out of fixture and Jest composition roots. */
 export function getExcerlockGaitVisionPreview(): ComponentType<GaitVisionPreviewProps> {
   return (
     require("./src/GaitVisionPreview") as {

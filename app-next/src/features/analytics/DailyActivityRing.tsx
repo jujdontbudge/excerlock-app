@@ -22,7 +22,6 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
   const motion = useMotion();
   const ratio = goal > 0 ? Math.max(0, value / goal) : 0;
   useEffect(() => {
-    // A day past its goal fills for longer, up to twice the emphasized duration.
     progress.set(motion.timing(ratio, 'emphasized', { curve: 'enter', stretch: Math.max(1, Math.min(2, ratio)) }));
   }, [motion, progress, ratio]);
   const baseAnimatedProps = useAnimatedProps(() => ({
@@ -138,7 +137,6 @@ const s = StyleSheet.create({
   ring: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   center: { position: 'absolute', top: STROKE, right: STROKE, bottom: STROKE, left: STROKE,
     alignItems: 'center', justifyContent: 'center' },
-  // Captain exception to the orange-text rule: the day caption stays orange (guardrails/design-system.test.ts).
   dayLabel: { color: t.brand.primary },
   value: { marginTop: t.space.xs, marginBottom: -t.space.md },
 });

@@ -12,7 +12,6 @@ export interface MotionModuleSubscription {
   remove(): void;
 }
 
-/** Narrow boundary implemented by the local ExcerlockMotion Expo Module. */
 export interface ExcerlockMotionModuleClient {
   getAvailability(): MotionAvailability;
   getAuthorizationStatus(): MotionAuthStatus;
@@ -34,7 +33,6 @@ export interface ExcerlockMotionModuleClient {
   ): MotionModuleSubscription;
 }
 
-/** Loads JSI only when the iOS dev-client composition root explicitly asks. */
 export function createExcerlockMotionModuleClient(): ExcerlockMotionModuleClient {
   const moduleSurface = require("../../../../modules/excerlock-motion") as {
     getExcerlockMotionModule(): ExcerlockMotionModuleClient;

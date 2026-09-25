@@ -4,7 +4,6 @@ import { tokens as t } from '../design-system/tokens';
 import { illustrationTokens as art } from '../design-system/illustrationTokens';
 import { useMotion } from './useMotion';
 import { popIn, fadeOut, fadeIn, layoutTransition } from './presets';
-/** A floating glyph: a pictogram (`hero`, `card`) or, inline, a UI icon size. */
 export function LivingIcon({
   name,
   size = 'hero',

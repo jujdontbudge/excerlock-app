@@ -35,8 +35,6 @@ export function createConfiguredUserDeletionService(
   }
 
   return createUserDeletionService({
-    // Canonical provider is Supabase; legacy clerkDeletedAt rows are never
-    // treated as Supabase erasure (see drizzleRepository + migration 0006).
     authProvider: "supabase",
     repository: createDrizzleUserDeletionRepository(),
     downstream: createIdentityErasureGateway({

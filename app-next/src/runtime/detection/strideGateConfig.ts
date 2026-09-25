@@ -1,150 +1,46 @@
-/**
- * Remote control surface for the stride gate.
- *
- * The gate itself (`StrideRhythm`) is proven on the recorder captures
- * (data/gate-fix-s3/report.md): every threshold there carries a measured
- * margin. This module is the *only* place those thresholds can be read from
- * remotely, and it is deliberately paranoid:
- *
- *  - `SHIPPED_STRIDE_GATE` is the proven gate, field for field. With no flag,
- *    or with a payload this module rejects, the analyzer runs exactly those
- *    numbers, so "no remote config" is byte-identical to the shipped gate.
- *  - Every field has a hard clamp anchored on the measured distribution of the
- *    captures (p1/p5/p95/p99 in this module's notes). A value outside its clamp
- *    rejects the *whole payload*: nothing is partially applied.
- *  - Cross-field invariants (`strideGateInvariant`) reject combinations that
- *    are individually in range but together impossible (an inverted band, a
- *    dwell longer than the Apple path it exists to beat).
- *  - `killSwitch` drops the raw-stream leg entirely, restoring the Apple-only
- *    cadence/activity behaviour without a build.
- *
- * Nothing here can unlock on a still phone (the still floor and the stride
- * floors may only tighten, and the walking band may never reach the measured
- * shake band) and nothing here can make unlocking impossible (the band stays
- * reachable, the dwell stays inside the Apple path's own latency, and the
- * Apple legs are gated only by the same clamped window checks while the raw
- * stream is live, standing alone whenever it is not - ADR 0041).
- *
- * Measured anchors, from the shipped gate's capture report (walking+treadmill
- * n=1726 windows, shaking n=328, sitting n=3100):
- *   vertical RMS  walking p1/p5/p95 = 0.01 / 0.06 / 0.48 g; shaking p5 0.08;
- *                 sitting p50/p95 = 0.00 / 0.11
- *   recent RMS    walking p5 0.04 / p99 0.74; the spent f09377f9 shake tail
- *                 measured 0.049 g and 0.007 g after the hand stopped
- *   periodicity   walking p1/p5/p50/p95 = 0.15 / 0.26 / 0.67 / 0.81;
- *                 shaking p5/p50/p95 = 0.17 / 0.50 / 0.78
- *   step Hz       walking p1/p5/p95/p99 = 1.25 / 1.47 / 2.08 / 2.78;
- *                 shaking p5/p50/p95 = 1.28 / 2.22 / 3.33
- *   interval CV   walking p5/p95 = 0.04 / 0.37; shaking p50/p95 = 0.20 / 0.70
- *   axis purity   walking p5/p95/p99 = 0.52 / 0.89 / 0.91;
- *                 shaking p50/p95 = 0.86 / 0.96
- *   rotation RMS  walking p95 1.47; sitting p95 0.75; shaking p50 1.04
- *   rot/vertical  walking p5/p95/p99 = 1.12 / 4.46 / 5.68; shaking p95 10.50
- *   longest run of stride-class evaluations: shakes 0 / 8 / 5 / 5 (f09377f9
- *                 shake 1 reaching exactly the 8-evaluation dwell is blocked by
- *                 the 8 s penalty from its own vigorous opening); every
- *                 confirmed walk 14-208.
- */
 import { WALK_GRACE_MAX_MS, WALK_GRACE_MIN_MS, WALK_QUALIFY_MS } from '../../domain/walkingMachine';
 
-/** The one PostHog payload flag that carries this control surface. */
 export const STRIDE_GATE_FLAG_KEY = 'stride_gate_config';
 
-/**
- * The shipped gate, field for field the values proven on the captures. This is
- * the fallback for every rejected payload and the configuration the analyzer
- * runs with when no flag exists. `StrideRhythm` re-exports its legacy
- * constants from here, so there is exactly one copy of each number.
- */
 export const SHIPPED_STRIDE_GATE = Object.freeze({
-  /** Sliding analysis window, ms. */
   windowMs: 3_000,
-  /** Re-evaluation cadence, ms. */
   evaluationIntervalMs: 250,
-  /** No raw samples for this long: the stream stopped telling us anything, ms. */
   stalenessMs: 2_000,
-  /** Band-pass corners applied before periodicity/peak analysis, Hz. */
   filterLowHz: 0.8,
   filterHighHz: 3.5,
-  /** Step-period search band for the autocorrelation peak, ms. */
   lagLowMs: 300,
   lagHighMs: 850,
-  /** Share of the window that must be gridded from real samples. */
   minCoverage: 0.6,
-  /** Window span that must actually be covered before an evaluation, ms. */
   minSpanMs: 2_700,
-  /** Minimum distance between counted peaks, ms. */
   peakMinDistanceMs: 220,
-  /** Peak floor as a fraction of the band-passed RMS. */
   peakHeightFraction: 0.35,
-  /** Vertical RMS below this over the window is a still phone, g. */
   stillG: 0.06,
-  /** Newest slice of the window that must still be stepping ("still stepping now"), ms. */
   recentMs: 1_000,
-  /** A stride verdict needs at least this much vertical motion, g. */
   walkMinG: 0.08,
-  /** A non-gait verdict needs real motion to stand on, g. */
   vetoMinG: 0.1,
-  /** Periodicity floor for a periodic window (stride and periodic veto), 0-1. */
   minPeriodicity: 0.4,
-  /** Walking step-frequency band, Hz. */
   walkLowHz: 1.2,
   walkHighHz: 2.3,
-  /** Periodic motion faster than this is not a walk, Hz. */
   vetoHz: 2.4,
-  /** Ceiling on the coefficient of variation of inter-peak intervals. */
   maxIntervalCv: 0.45,
-  /** Ceilings on the principal-axis energy share: stride at or below `maxAxisPurity`, veto above `vetoAxisPurity`. */
   maxAxisPurity: 0.9,
   vetoAxisPurity: 0.92,
-  /** Ceilings on rotation-RMS / vertical-RMS: stride at or below `maxRotationRatio`, veto above `vetoRotationRatio`. */
   maxRotationRatio: 4.0,
   vetoRotationRatio: 8.0,
-  /** A phone rotated this hard (rad/s) far more than it is lifted is being handled. */
   vetoRotationRms: 1.0,
-  /** Consecutive stride evaluations before `walking` is published. */
   walkDwell: 8,
-  /** Consecutive non-gait evaluations before `notStride` is published. */
   vetoDwell: 2,
-  /** No `walking` verdict this soon after a non-gait one, ms. */
   penaltyMs: 8_000,
-  /** Step frequency must stay within this fraction of the previous evaluation across the dwell. */
   hzTolerance: 0.15,
-  /**
-   * Cap on the verified span a `walking` verdict may claim toward the walking
-   * machine's qualification, ms. `Number.POSITIVE_INFINITY` is the shipped
-   * behaviour (no gate-side cap); a remote value may only *shrink* the claim
-   * inside `WALK_QUALIFY_MS`, which the reducer applies anyway.
-   */
   qualifyCreditMs: Number.POSITIVE_INFINITY,
-  /** Effective walking grace bounds, ms: the user's own stop-grace is clamped into these. */
   graceMinMs: WALK_GRACE_MIN_MS,
   graceMaxMs: WALK_GRACE_MAX_MS,
-  /**
-   * A phone the raw stream has measured motionless (uninterrupted `still`
-   * windows) for this long is a confirmed stop: the walking machine ends relief
-   * at once instead of waiting out the 5 s silence and the user's grace, which
-   * exist to absorb Apple's 8-30 s stop lag, not a measured stillness. Measured
-   * on the captures: the longest stillness inside any walking label is 4.8 s
-   * (treadmill belt ramps at label start); the captain's still phone waited
-   * through 35 s (walk-shake-stop-w1).
-   */
   stillStopMs: 10_000,
 });
 
 export type StrideGateField = keyof typeof SHIPPED_STRIDE_GATE;
-/** The tunable parameters: every field of the shipped gate, as a number. */
 export type StrideGateParams = Readonly<Record<StrideGateField, number>>;
 
-/**
- * `hostile` is the endpoint of the clamp a payload would use to make the gate
- * *more* likely to publish `walking` (or to hand the reducer more credit /
- * relief). The hostile-payload test drives every field to it and proves on the
- * real captures that the envelope still cannot call a shake a walk; the
- * opposite endpoint drives the strict-payload test. Fields whose loosest
- * endpoint is the shipped value (the dying-shake and shake-run margins forbid
- * loosening them) name the shipped value twice on purpose.
- */
 type StrideGateFieldSpec = {
   readonly clamp: readonly [number, number];
   readonly integer?: true;
@@ -324,41 +220,25 @@ export const STRIDE_GATE_FIELD_SPECS: Readonly<Record<StrideGateField, StrideGat
 
 export const STRIDE_GATE_FIELDS = Object.keys(SHIPPED_STRIDE_GATE) as readonly StrideGateField[];
 const STRIDE_GATE_FIELD_SET: ReadonlySet<string> = new Set(STRIDE_GATE_FIELDS);
-/** The one payload key that is not a parameter. */
 const KILL_SWITCH_KEY = 'killSwitch';
 
 export type StrideGateFieldReport = {
-  /** The value the payload asked for, unclamped (null when absent or not a number). */
   readonly requested: number | null;
-  /** The value in effect: the clamped request, the shipped default when rejected, or the shipped default under the kill switch. */
   readonly applied: number;
-  /** Whether the requested value passed its type, integer and clamp checks (absent values are trivially accepted). */
   readonly accepted: boolean;
-  /** Why `applied` differs from `requested` (rejection or kill switch), else null. */
   readonly reason: string | null;
 };
 
 export type StrideGateKillSwitch = { readonly requested: boolean; readonly applied: boolean };
 
-/**
- * `remote`  - a payload was present and is what the app runs.
- * `shipped` - no payload at all (the flag is absent or carries no payload).
- * `rejected`- a payload was present but is not what the app runs; `reason` says why.
- */
 export type StrideGateSource = 'remote' | 'shipped' | 'rejected';
 
-/**
- * The effective configuration, as a report: source and flag key, the kill
- * switch, and every parameter as evaluated versus applied. This is what a
- * future reader needs to reconstruct what the app actually ran with.
- */
 export type StrideGateReport = {
   readonly source: StrideGateSource;
   readonly flagKey: typeof STRIDE_GATE_FLAG_KEY;
   readonly killSwitch: StrideGateKillSwitch;
   readonly effective: StrideGateParams;
   readonly fields: Readonly<Record<StrideGateField, StrideGateFieldReport>>;
-  /** Why the payload was not applied (source `rejected`), else null. */
   readonly reason: string | null;
 };
 
@@ -381,14 +261,8 @@ function shippedReport(): StrideGateReport {
   });
 }
 
-/** The shipped configuration as a report: what the analyzer runs with no remote input. */
 export const SHIPPED_STRIDE_GATE_REPORT: StrideGateReport = shippedReport();
 
-/**
- * Cross-field invariants: combinations that are individually in range but
- * together cannot describe the proven gate. Returns the first violated rule as
- * a message, or null when the parameter set is usable.
- */
 export function strideGateInvariant(params: StrideGateParams): string | null {
   const fail = (rule: string): string => rule;
   if (params.minSpanMs > params.windowMs - 20) return fail('minSpanMs must stay at least 20 ms below windowMs (the analyzer can only cover a span just under the window)');
@@ -410,18 +284,11 @@ export function strideGateInvariant(params: StrideGateParams): string | null {
 }
 
 type FieldEvaluation = {
-  /** The clamped candidate set; only used when the payload is applied. */
   readonly values: StrideGateParams;
   readonly fields: Record<StrideGateField, StrideGateFieldReport>;
-  /** The first reason this payload cannot be applied, or null. */
   readonly rejected: string | null;
 };
 
-/**
- * Clamps one requested map onto the shipped defaults. A rejected payload keeps
- * its per-field evaluation (what was asked, which field failed and why) so a
- * reader can see the rejected request even though nothing was applied.
- */
 function evaluateFields(requested: Readonly<Record<string, unknown>>): FieldEvaluation {
   const values = { ...SHIPPED_STRIDE_GATE } as Record<StrideGateField, number>;
   const fields = {} as Record<StrideGateField, StrideGateFieldReport>;
@@ -464,7 +331,6 @@ const emptyEvaluation = (): FieldEvaluation => ({ values: SHIPPED_STRIDE_GATE, f
 
 const KILL_SWITCH_APPLIED_REASON = 'kill switch in effect: the raw-stream gate is off';
 export const KILL_SWITCH_FIELD_REASON = KILL_SWITCH_APPLIED_REASON;
-/** Per-field reason when an accepted value is not in effect because the payload as a whole was rejected. */
 export const REJECTED_FIELD_REASON = 'payload rejected: the shipped gate applies';
 
 function reportFrom(
@@ -494,10 +360,6 @@ function reportFrom(
   });
 }
 
-/**
- * Reads a kill-switch request from a payload object. Only `true`/`false` are
- * accepted; anything else (a string, a number) is a malformed payload.
- */
 function readKillSwitch(payload: Record<string, unknown>): { readonly requested: boolean } | { readonly rejected: string } {
   const raw = payload[KILL_SWITCH_KEY];
   if (raw === undefined) return { requested: false };
@@ -510,23 +372,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 export type StrideGateInput = {
-  /** The PostHog payload as read from the flag rail (any JSON value). */
   readonly payload?: unknown;
-  /** An explicit parameter map: the production path unwraps the payload's object into it. */
   readonly params?: Readonly<Record<string, unknown>>;
-  /** Explicit kill switch, equivalent to `{ "killSwitch": true }` in the payload. */
   readonly killSwitch?: boolean;
 };
 
-/**
- * The only producer of a `StrideGateReport`.
- *
- * No payload at all is the shipped gate. A payload must be a plain JSON object
- * whose keys are parameter names plus the optional `killSwitch` boolean: an
- * unknown key, a wrong type, a value outside its clamp or a violated invariant
- * rejects the whole payload and runs the shipped gate. Nothing is ever
- * partially applied, and this function never throws on hostile input.
- */
 export function resolveStrideGateConfig(input: StrideGateInput = {}): StrideGateReport {
   try {
     const hasParams = input.params !== undefined;
@@ -564,16 +414,10 @@ export function resolveStrideGateConfig(input: StrideGateInput = {}): StrideGate
   }
 }
 
-/** Field-for-field equality of two parameter sets (`Number.POSITIVE_INFINITY` equals itself). */
 export function sameStrideGateParams(a: StrideGateParams, b: StrideGateParams): boolean {
   return STRIDE_GATE_FIELDS.every((field) => a[field] === b[field]);
 }
 
-/**
- * A one-line, log-safe description of the effective configuration: source, flag
- * key, kill switch, every field the payload changed, and every rejection. The
- * full detail stays in the report itself.
- */
 export function describeStrideGateReport(report: StrideGateReport): string {
   const render = (value: number): string => (value === Number.POSITIVE_INFINITY ? 'unbounded' : `${value}`);
   const changed = STRIDE_GATE_FIELDS.filter((field) => report.fields[field].requested !== null).map((field) => {
@@ -592,12 +436,8 @@ export function describeStrideGateReport(report: StrideGateReport): string {
     .join(' ');
 }
 
-/** The grace the reducer will see: the user's preference inside the accepted bounds and the reducer contract. */
 export function effectiveWalkingGraceMs(params: StrideGateParams, userGraceMs: number): number {
   const requested = Number.isFinite(userGraceMs) ? userGraceMs : WALK_GRACE_MAX_MS;
   const bounded = Math.min(Math.max(requested, params.graceMinMs), params.graceMaxMs);
-  // The reducer validates [WALK_GRACE_MIN_MS, WALK_GRACE_MAX_MS] and throws
-  // outside it; the bounds above are already clamped into that contract, and
-  // this last clamp makes the guarantee independent of the bounds.
   return Math.min(Math.max(bounded, WALK_GRACE_MIN_MS), WALK_GRACE_MAX_MS);
 }

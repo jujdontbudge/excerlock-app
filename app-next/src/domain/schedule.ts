@@ -9,8 +9,6 @@ export function windowInstances(rule: Rule, day: DayKey, timezone: string): Wind
   const end = w.kind === 'allDay' ? 1440 : w.endMinute;
   const resolvedStart = resolveLocalInstant(day, start, timezone);
   const resolvedEnd = resolveLocalInstant(end <= start || end === 1440 ? addDays(day, 1) : day, end === 1440 ? 0 : end, timezone);
-  // A wall-clock range can collapse or invert when one endpoint is in a DST
-  // gap. Do not silently broaden it into a different blocking interval.
   if (Date.parse(resolvedEnd.instant) <= Date.parse(resolvedStart.instant)) return [];
   return [
     {

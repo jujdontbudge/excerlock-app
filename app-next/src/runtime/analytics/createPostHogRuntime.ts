@@ -28,8 +28,6 @@ export function bindPostHogClient(client: SdkClient): PostHogClientBoundary {
     optIn: () => client.optIn(),
     optOut: () => client.optOut(),
     async clearPendingQueues() {
-      // reset() intentionally preserves these queues in RN 4.61.2. These are
-      // public persisted properties; flushStorage persists without uploading.
       client.setPersistedProperty(PostHogPersistedProperty.Queue, []);
       client.setPersistedProperty(PostHogPersistedProperty.AiQueue, []);
       client.setPersistedProperty(PostHogPersistedProperty.LogsQueue, []);
@@ -40,8 +38,6 @@ export function bindPostHogClient(client: SdkClient): PostHogClientBoundary {
     screen: (name, properties) => client.screen(name, properties),
     onFeatureFlags: (callback) => client.onFeatureFlags(callback),
     getFeatureFlag: (key, options) => client.getFeatureFlag(key, options),
-    // The SDK's single-evaluation payload read; unused options stay forwarded
-    // so the adapter controls `sendEvent` (always false for configuration flags).
     getFeatureFlagResult: (key, options) => client.getFeatureFlagResult(key, options),
   };
 }

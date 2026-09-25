@@ -2,12 +2,12 @@ export type OpaqueSelectionHandle = { readonly token: string };
 export type Activity = 'walking' | 'gym';
 
 export type Rule = {
-  id: string; // uuid
+  id: string;
   activity: Activity;
   mode: RuleMode;
   schedule: Schedule;
-  enabled: boolean; // false = paused; a paused rule never locks and never counts
-  createdAt: string; // ISO
+  enabled: boolean;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -17,50 +17,47 @@ export type RuleMode =
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
   | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number };
 
-export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, JS convention
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export type Schedule = {
-  days: Weekday[]; // non-empty
+  days: Weekday[];
   window: { kind: 'allDay' } | { kind: 'range'; startMinute: number; endMinute: number };
-  // startMinute/endMinute are minutes after local midnight, 0..1439.
-  // endMinute <= startMinute means the window crosses midnight and ends the next day.
-  // startMinute === endMinute is invalid.
 };
 
 export type LockedApps = {
-  handle: OpaqueSelectionHandle | null; // never contains app names or bundle ids
-  isEmpty: boolean; // the only UI-visible selection metadata
+  handle: OpaqueSelectionHandle | null;
+  isEmpty: boolean;
 };
 
-export type DayKey = string; // 'YYYY-MM-DD' in local time
+export type DayKey = string;
 
 export type RuleDay = {
   ruleId: string;
   day: DayKey;
-  progress: number; // steps, minutes, km/mi — in the rule's own metric unit
+  progress: number;
   met: boolean;
-  metAt: string | null; // ISO, local instant when it became met
+  metAt: string | null;
 };
 
 export type WalkingDetection = { state: 'active' | 'inactive' | 'unknown'; since: string | null };
 export type PlacementEvidence = { state: 'propped' | 'handheld' | 'unknown'; liveRelief: boolean; since: string | null };
 
 export type GymPresence = {
-  placeId: string; // the saved gym being confirmed or occupied
-  startedAt: string; // ISO, when the presence confirmation began
-  confirmedAt: string | null; // ISO once presence held for the full confirmation; null while confirming
+  placeId: string;
+  startedAt: string;
+  confirmedAt: string | null;
 };
 
 export type Profile = {
   name: string;
-  referralSource: string; // one of the referral options
-  ageBand: string; // option id
-  occupation: string; // option id
+  referralSource: string;
+  ageBand: string;
+  occupation: string;
   improveFirst: 'exercise' | 'screenTime' | 'wellness';
-  mainReason: string; // option id from the motivation screen
-  estimatedDailyMinutes: number; // from the scrolling-hours screen; permanent
-  units: 'km' | 'mi'; // default from device locale; editable in Settings
-  walkPlaces: Array<'treadmill' | 'outside'>; // preference/analytics only; never enforcement policy
+  mainReason: string;
+  estimatedDailyMinutes: number;
+  units: 'km' | 'mi';
+  walkPlaces: Array<'treadmill' | 'outside'>;
 };
 
 export type Entitlement = {

@@ -9,8 +9,6 @@ export const ruleDaysStore = createPersistedStore<{ days: RuleDay[]; gymPresence
   {
     sanitize: (value) => {
       if (!Array.isArray(value.days)) return value;
-      // Unknown legacy keys (including walkingSession/leaseUntil) are omitted by
-      // createPersistedStore's declared-key merge and never become public state.
       return { days: value.days.filter(validDayRow), gymPresence: value.gymPresence };
     },
   },

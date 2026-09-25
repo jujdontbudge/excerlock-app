@@ -20,9 +20,6 @@ export class SchedulePlanError extends Error {
   }
 }
 
-/** Validates the complete enabled-rule union without broadening or truncating it.
- * Production callers must provide their ClockPort context. The fixed default keeps
- * pure compatibility tests deterministic without reaching for the system clock. */
 export function assertScheduleRepresentable(
   rules: readonly Rule[],
   context: SchedulePlanContext = FIXED_REPRESENTATIVE_CONTEXT,

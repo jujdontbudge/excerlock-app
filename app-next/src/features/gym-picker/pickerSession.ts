@@ -1,4 +1,3 @@
-// Only callbacks live here; the route URL carries the session id, never a function.
 const sessions = new Map<string, (saved: boolean) => void>();
 let sequence = 0;
 export function createPickerSession(callback: (saved: boolean) => void) {

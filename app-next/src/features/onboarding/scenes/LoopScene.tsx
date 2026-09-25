@@ -15,14 +15,11 @@ import { loopSceneCopy } from '../../../content/onboarding';
 import { ClayLock } from '../condition-demo/Phone';
 import { stride } from '../condition-demo/model';
 
-/** Design canvas; the whole scene scales uniformly to the width it is given. */
 export const LOOP_SCENE = { width: 360, height: 350 } as const;
 const figure = { left: 20, top: 20, width: 210, height: 313 };
 const phone = { left: 226, top: 24, width: 124, height: 226 };
-/** Endless-feed panels: one swipe up every beat, wrapping seamlessly. */
 const panels = [art.demo.videoSubject, art.demo.trunk, art.demo.avatar];
 const swipeBeat = 1.1;
-/** Wavy wisps run from the phone's screen into the eyes and face (drawn phone → face). */
 const tendrils = [
   'M232 98 C214 84 198 104 182 98 C172 94 166 102 158 108',
   'M232 124 C216 136 200 112 184 120 C174 125 168 116 158 118',
@@ -47,11 +44,6 @@ const Tendril = Animated.createAnimatedComponent(Path);
 
 type Weights = readonly [SharedValue<number>, SharedValue<number>, SharedValue<number>];
 
-/**
- * O16–O18 as one stage: the person scrolls helplessly with the feed's tendrils in their head,
- * ExcerLock locks the phone and the tendrils let go, then the phone goes away and they walk.
- * Each phase change is a single event on one duration; afterwards only small idle loops run.
- */
 export function LoopScene({ phase, width }: { phase: number; width: number }) {
   const m = useMotion(),
     time = useSharedValue(0),
@@ -95,7 +87,6 @@ function Ground({ time, weights: [, , w2] }: { time: SharedValue<number>; weight
   const baseline = figure.top + figure.height;
   const shadow = useAnimatedStyle(() => ({ transform: [{ translateX: w2.get() * walkShift }] }));
   const track = useAnimatedStyle(() => ({ opacity: w2.get() }));
-  // Dashes slide back under the feet so walking in place reads as moving forward.
   const dashes = useAnimatedStyle(() => ({ transform: [{ translateX: -((time.get() * 90) % 40) }] }));
   return (
     <>
@@ -137,7 +128,6 @@ function Figure({ time, weights: [w0, w1, w2] }: { time: SharedValue<number>; we
           source={source}
           opacity={(now) => {
             'worklet';
-            // The thumb flicks twice a beat: the second frame pulses over the first.
             const flick = Math.max(0, Math.min(1, Math.sin(now * Math.PI * 1.6) * 3));
             return w0.get() * (i === 0 ? 1 : flick);
           }}
@@ -183,7 +173,6 @@ function FigureFrame({
 }
 
 function Tendrils({ time, weights: [w0], reduced }: { time: SharedValue<number>; weights: Weights; reduced: boolean }) {
-  // Anchored at the phone edge, the bundle sways a few degrees while it holds on.
   const sway = useAnimatedStyle(() => ({
     transform: [{ rotate: `${reduced ? 0 : Math.sin(time.get() * 1.3) * 3}deg` }],
   }));
@@ -201,7 +190,6 @@ function Tendrils({ time, weights: [w0], reduced }: { time: SharedValue<number>;
 }
 
 function TendrilPath({ d, index, grip }: { d: string; index: number; grip: SharedValue<number> }) {
-  // Letting go pulls each tendril back into the phone along its own path.
   const props = useAnimatedProps(() => ({ strokeDashoffset: tendrilLength * (1 - grip.get()) }));
   return (
     <Tendril
@@ -218,7 +206,6 @@ function TendrilPath({ d, index, grip }: { d: string; index: number; grip: Share
 }
 
 function MiniPhone({ time, weights: [, w1, w2] }: { time: SharedValue<number>; weights: Weights }) {
-  // Going away: the phone shrinks toward the corner as the walk begins.
   const body = useAnimatedStyle(() => ({
     opacity: 1 - w2.get(),
     transform: [{ translateX: w2.get() * 40 }, { translateY: w2.get() * 60 }, { scale: 1 - 0.45 * w2.get() }],

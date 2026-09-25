@@ -6,8 +6,6 @@ export const GYM_VISIT_LOG_ACCEPTANCE_KEY = '@excerlock/location/gym-transitions
 export const GYM_VISIT_LOG_PRUNED_THROUGH_KEY = '@excerlock/location/gym-transitions-pruned-through/v1';
 type GymVisitAcceptance = Readonly<{ epoch: number; regionIds: readonly string[] }>;
 
-// TaskManager and the foreground runtime intentionally construct separate log
-// objects. Their storage operations must nevertheless have one ordering spine.
 let sharedWrites: Promise<unknown> = Promise.resolve();
 
 function serialize<T>(work: () => Promise<T>): Promise<T> {
@@ -16,8 +14,6 @@ function serialize<T>(work: () => Promise<T>): Promise<T> {
   return write;
 }
 
-/** Persistently reject task deliveries until the next account explicitly
- * registers its gyms. The marker survives a cold headless task process. */
 export function suspendGymVisitLogWritesAndReset(): Promise<void> {
   return serialize(async () => {
     const previous = parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
@@ -27,8 +23,6 @@ export function suspendGymVisitLogWritesAndReset(): Promise<void> {
   });
 }
 
-/** Accept only regions successfully registered for the next account. An empty
- * registration deliberately remains suspended. */
 export function resumeGymVisitLogWrites(regionIds: readonly string[]): Promise<void> {
   return serialize(async () => {
     const previous = parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
@@ -45,8 +39,6 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
     const safe = coordinateFree(record);
     return serialize(async () => {
       const storedAcceptance = await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY);
-      // A missing marker preserves pre-upgrade behavior. Once deletion writes an
-      // epoch, every later callback must belong to that epoch's registered set.
       if (storedAcceptance !== null) {
         const acceptance = parseAcceptance(storedAcceptance);
         if (!acceptance?.regionIds.includes(safe.regionId)) return;
@@ -67,7 +59,6 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
     return serialize(() =>
       AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY, GYM_VISIT_LOG_PRUNED_THROUGH_KEY]));
   }
-  /** Call only after intervals before cutoff are sealed into retained history. */
   pruneBefore(cutoffMs: number): Promise<readonly GymTransitionRecord[]> {
     return serialize(async () => {
       if (!Number.isFinite(cutoffMs)) throw new Error('Invalid gym retention cutoff');
@@ -75,8 +66,6 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
       const effectiveCutoff = Math.max(cutoffMs, previousCutoff ?? -Infinity);
       const records = await readRetainedStored(previousCutoff);
       const retained = retainGymTransitions(records, effectiveCutoff);
-      // Cursor first is conservative: after a partial failure, reads and appends
-      // still enforce the new boundary even if physical compaction retries later.
       await AsyncStorage.setItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY, String(effectiveCutoff));
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify(retained));
       await AsyncStorage.removeItem(LEGACY_GYM_VISIT_LOG_STORAGE_KEY);

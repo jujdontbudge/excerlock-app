@@ -15,14 +15,12 @@ export function registerHeadlessDetectionHandler(next: Handler): () => void {
   };
 }
 
-/** Registers the cold-launch initializer. It must install a handler before resolving. */
 export function registerHeadlessDetectionBootstrap(next: Bootstrap): () => void {
   const generation = ++bootstrapGeneration;
   bootstrap = next;
   return () => {
     if (bootstrapGeneration === generation) {
       bootstrap = null;
-      // Do not cancel an initializer already executing; invalidate only reuse.
       if (initialization?.generation === generation) initialization = null;
     }
   };

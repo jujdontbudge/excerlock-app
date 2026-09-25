@@ -8,7 +8,6 @@ import { RuleDraft } from './draft';
 const answered = (value: unknown) => value !== undefined && value !== '' && Number.isFinite(Number(value));
 const number = (value: number) => value.toLocaleString('en-US');
 
-/** The window and days, appended once the schedule question is on screen. */
 function scheduleTail(schedule: Schedule): string {
   const window =
     schedule.window.kind === 'allDay'
@@ -24,10 +23,6 @@ function scheduleTail(schedule: Schedule): string {
   return window + when;
 }
 
-/**
- * Plain English for the condition as it is being built. Until the user chooses a value,
- * the sentence uses the visible control's default so the preview is always complete.
- */
 export function conditionSentence(
   answers: Answers,
   draft: RuleDraft,
@@ -39,7 +34,6 @@ export function conditionSentence(
 }
 
 function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string | null {
-  // Before the mode question the draft default stands in, so the card is on every step of the flow.
   if (d.activity === 'walking') {
     if (d.walkingMode === 'state') return c.unless(c.walking);
     if (d.walkingMode === 'minutes') return c.until(c.walkMinutes(number(d.walkMinutes)));

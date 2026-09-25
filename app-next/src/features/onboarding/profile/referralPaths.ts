@@ -1,4 +1,3 @@
-/** Font Awesome Free 6.x, CC BY 4.0. See FOUNDRY.md. */
 export const referralPaths = {
   'app-store-ios': {
     viewBox: '0 0 448 512',

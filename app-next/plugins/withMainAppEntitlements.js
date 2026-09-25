@@ -18,21 +18,6 @@ function buildConfigurations(project, target) {
   });
 }
 
-/**
- * Ledger guard: every app-target build configuration's CODE_SIGN_ENTITLEMENTS
- * must point at ios/ExcerLock/ExcerLock.entitlements. A stale or
- * `undefined.entitlements` reference ships an executable without its
- * capabilities (Family Controls, HealthKit, App Groups, Sign in with Apple,
- * push, associated domains). Fails prebuild otherwise.
- *
- * Finalized so it reads the generated project after every other Xcode
- * mutation has linked the entitlements file. Both this guard and the Screen
- * Time validator use `withFinalizedMod` postconditions; neither relies on
- * plugin-list position for ordering (Expo does not guarantee global LIFO
- * across interceptor kinds).
- *
- * @param {import("expo/config").ExpoConfig} config
- */
 function withMainAppEntitlements(config) {
   return withFinalizedMod(config, ["ios", (modConfig) => {
     const project = IOSConfig.XcodeUtils.getPbxproj(

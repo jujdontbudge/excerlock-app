@@ -4,7 +4,6 @@ import { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { tokens as t } from '../design-system/tokens';
 import { useMotion } from './useMotion';
 
-/** Absolute sheets must resize their scroll area as well as lift their footer. */
 export function useSheetKeyboard(height: number) {
   const [inset, setInset] = useState(0),
     motion = useMotion();

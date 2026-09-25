@@ -10,16 +10,9 @@ import {
   type SensorStreamSmokeResult,
 } from '../../runtime/detection/sensorStreams';
 
-/**
- * Preview/dev-only proof that JS can reach every native sensor stream in this
- * binary: start, count, stop, and judge each answer against its availability
- * flag. No product behaviour depends on this screen; the e2e harness reads it.
- */
 export function SensorSmokeScreen({ onBack = () => {}, sampleWindowMs = 1_500 }: { onBack?: () => void; sampleWindowMs?: number }) {
   const runtime = useRuntime(),
     sensors = runtime.sensors,
-    // Each run is numbered; a report belongs to the run that produced it, so
-    // "Run again" is a counter bump and the effect never sets state synchronously.
     [runId, setRunId] = useState(0),
     [result, setResult] = useState<{ runId: number; report: SensorStreamSmokeReport } | null>(null);
   useEffect(() => {

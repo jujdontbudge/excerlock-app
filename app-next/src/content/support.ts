@@ -1,5 +1,4 @@
 export const supportEmail = 'johansardar77@gmail.com';
-/** Form labels stay on the device. Later server kinds are documented here only. */
 export const supportServerCategory = {
   Problem: 'bug',
   Question: 'support',

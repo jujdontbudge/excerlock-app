@@ -15,7 +15,6 @@ interface IncidentReportRouteDependencies {
   reports: IncidentReportService;
 }
 
-/** Serialized diagnostics cap in JSON characters; a snapshot is a summary, never a log dump. */
 export const MAX_DIAGNOSTICS_CHARS = 32_768;
 
 const text = z.string().trim().min(1).max(4_000);

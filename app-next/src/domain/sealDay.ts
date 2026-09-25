@@ -6,8 +6,6 @@ import { windowInstances } from './schedule';
 export type SealedHistoryDay = HistoryDay & { sealedAt: string };
 export type HistoryArchive = { startedDay: string | null; days: SealedHistoryDay[] };
 
-/** Calendar ownership, not elapsed 24-hour timers. Existing seals are immutable,
- * including after timezone travel, rule edits and late sensor history. */
 export function sealDays(
   archive: HistoryArchive,
   measured: readonly HistoryDay[],
@@ -23,8 +21,6 @@ export function sealDays(
   const facts = new Map(measured.map((row) => [row.day, row]));
   for (let day = startedDay < cutoff ? cutoff : startedDay; day < today; day = addDays(day, 1)) {
     if (existing.has(day) || (deferUntil[day] ?? -Infinity) > Date.parse(now)) continue;
-    // Calendar rollover cannot finalize an accounting day whose overnight
-    // instance still accepts timestamped progress on this alive path.
     if (
       rules.some((rule) =>
         windowInstances(rule, day, timezone).some((instance) => Date.parse(instance.end) > Date.parse(now)),
@@ -48,7 +44,6 @@ export function sealDays(
   return { startedDay, days: [...existing.values()].sort((a, b) => a.day.localeCompare(b.day)) };
 }
 
-/** Never re-create pruned or sealed accounting from today's rule definitions. */
 export function retainRuleDays(
   previous: readonly RuleDay[],
   projected: readonly RuleDay[],
@@ -61,7 +56,6 @@ export function retainRuleDays(
     .sort((a, b) => a.day.localeCompare(b.day) || a.ruleId.localeCompare(b.ruleId));
 }
 
-/** Phase-one accounting write keeps all source rows until the archive is durable. */
 export function preserveSealedRuleDays(
   previous: readonly RuleDay[],
   projected: readonly RuleDay[],

@@ -6,15 +6,12 @@ export type IncidentLogEvent = {
   state: EnforcementSnapshot['state'];
   openReason: EnforcementSnapshot['openReason'] | null;
   relief: EnforcementSnapshot['relief'] | null;
-  /** What native reported back for the apply; 'failed' when the host threw. */
   result: 'applied' | 'preserved' | 'superseded' | 'failed';
 };
 
 export type IncidentLog = {
-  /** Keeps the event only when the decision differs from the previous one, so the ring holds transitions, not ticks. */
   record(event: IncidentLogEvent): void;
   read(): IncidentLogEvent[];
-  /** Resolves once the persisted ring (if any) has been loaded. */
   ready(): Promise<void>;
 };
 
@@ -46,7 +43,6 @@ export function createIncidentLog(storage: Storage = AsyncStorage, limit = INCID
       if (!raw) return;
       const parsed: unknown = JSON.parse(raw);
       if (!Array.isArray(parsed)) return;
-      // Anything recorded before the load finished stays newest.
       events = [...parsed.filter(isEvent), ...events].slice(-limit);
     })
     .catch(() => undefined);

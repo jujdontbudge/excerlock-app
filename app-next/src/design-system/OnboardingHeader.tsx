@@ -60,7 +60,6 @@ export function OnboardingHeader({
           ]}
         />
       </View> : <View style={{ flex: 1 }} />}
-      {/* Mirror the back slot so the progress bar stays centred on the screen. */}
       {onClose ? <CloseButton onPress={onClose} /> : <View style={{ width: t.control.inline }} />}
     </View>
   );

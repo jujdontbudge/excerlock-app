@@ -1,4 +1,3 @@
-/** Copy for the preview/dev-only `/diagnostics/*` routes; never shown in a prod binary. */
 export const sensorSmokeCopy = {
   title: 'Sensor smoke',
   support: 'Starts and stops every native stream once and checks each answer against its availability flag.',

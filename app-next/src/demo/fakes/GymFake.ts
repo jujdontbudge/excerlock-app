@@ -22,7 +22,6 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       await ctx.request('location');
       return permissionsStore.getState().data.location;
     },
-    // Mirrors iOS: a refused Always upgrade keeps While Using; a refused first ask is denied.
     requestBackgroundLocation: async () => {
       const mode = ctx.snapshot().promptMode;
       const granted =

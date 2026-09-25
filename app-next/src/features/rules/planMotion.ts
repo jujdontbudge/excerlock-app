@@ -1,4 +1,3 @@
-/** Milliseconds measured against the reference replay; presentation, not server progress. */
 export const PLAN_MOTION = {
   count: 6000,
   ready: 6000,
@@ -7,15 +6,12 @@ export const PLAN_MOTION = {
   buildDone: 6270,
   gap: 70,
   badgeIn: 280,
-  // The burst starts soon after the badge lands, so the screen is never idle for long.
   burst: 600,
   covered: 900,
   reveal: 1070,
   done: 1370,
 } as const;
-/** Loading-ring geometry on the build screen. */
 export const PLAN_RING = { size: 224, radius: 96, stroke: 16, topFraction: 0.14 } as const;
-/** Celebration badge at the screen centre: disc, white coin and check glyph sizes. */
 export const PLAN_BADGE = { size: 80, coin: 48, glyph: 36, ripple: 300 } as const;
 function clamp(n: number) { 'worklet'; return Math.max(0, Math.min(1, n)); }
 export function smooth(n: number) { 'worklet'; const x = clamp(n); return x * x * (3 - 2 * x); }
@@ -23,10 +19,6 @@ export function planPercentLabel(value: number) {
   'worklet';
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
-/**
- * A completed pill drifts toward an alternating side as it fades. The following pills
- * glide upward during the exit, keeping the gesture visible without flinging the row.
- */
 export function taskMotion(index: number, elapsed: number) {
   'worklet';
   let shifted = 0;

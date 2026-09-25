@@ -2,7 +2,6 @@ import type { Entitlement } from './types';
 export type LocalNotificationId = 'trial_ending' | 'open_to_unlock' | 'shield_open';
 export type NotificationLanding = 'excerlock://home' | 'excerlock://unlock/propped' | 'excerlock://paywall';
 export type LocalNotificationPlan = { id: Exclude<LocalNotificationId, 'shield_open'>; at: number; title: string; body: string; url: NotificationLanding };
-/** Two days before authoritative Adapty access expiry, never guessed from install time. */
 export function trialReminderPlan(entitlement: Entitlement, now: number): LocalNotificationPlan | null {
   if (entitlement.status !== 'trial' || !entitlement.accessExpiresAt) return null;
   const at = Date.parse(entitlement.accessExpiresAt) - 2 * 86400000;
@@ -13,7 +12,6 @@ export function openToUnlockPlan(input: { now: number; alwaysDenied: boolean; ta
   if (!Number.isFinite(input.now) || !input.alwaysDenied || !input.targetMetWhileClosed) return null;
   return { id: 'open_to_unlock', at: input.now, title: 'Your walking goal is complete', body: 'Open ExcerLock to update your app access.', url: 'excerlock://home' };
 }
-/** Allowlist only; arbitrary remote URLs and dev routes are never notification destinations. */
 export function notificationLanding(value: unknown): '/home' | '/unlock/treadmill' | '/paywall' | null {
   switch (value) {
     case 'excerlock://home': return '/home';

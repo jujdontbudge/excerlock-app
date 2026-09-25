@@ -17,9 +17,7 @@ export interface LocationSample {
   readonly lon: number;
   readonly accuracy: number;
   readonly atMs: number;
-  /** CLLocation.speed in m/s; null when Core Location reports it unknown (-1). Not read by any gate yet. */
   readonly speedMps: number | null;
-  /** CLLocation.course in degrees clockwise from true north; null when unknown (-1). */
   readonly courseDeg: number | null;
 }
 
@@ -33,10 +31,8 @@ export type LocationUnsubscribe = () => void;
 
 export interface LocationProvider {
   requestAuthorization(): Promise<LocationAuthorizationStatus>;
-  /** Foreground first, then the Always prompt: the walk keep-alive needs Always. */
   requestAlwaysAuthorization(): Promise<LocationAuthorizationStatus>;
   getAuthorizationStatus(): LocationAuthorizationStatus;
-  /** Re-reads the OS grant without prompting; iOS Settings can change it while the app is backgrounded. */
   refreshAuthorization(): Promise<LocationAuthorizationStatus>;
   startMonitoringRegions(regions: readonly GeofenceRegion[]): Promise<void>;
   stopMonitoringRegions(regionIds?: readonly string[]): Promise<void>;

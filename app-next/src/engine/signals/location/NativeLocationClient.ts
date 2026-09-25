@@ -6,7 +6,6 @@ import type {
   RegionTransition,
 } from "./LocationProvider";
 
-/** Narrow boundary implemented by Expo Location and replaced at the OS edge in tests. */
 export interface NativeLocationClient {
   hydrateState(): Promise<void>;
   getAuthorizationStatus(): LocationAuthorizationStatus;

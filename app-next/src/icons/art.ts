@@ -1,6 +1,5 @@
 import { IconName, paths } from './paths';
 import { solidGlyphs } from './solidGlyphs';
-/** Compatibility flags never select alternate geometry: one name, one silhouette. */
 export function iconXml(name: IconName, _utility = false, _monochrome = false) {
   const body =
     solidGlyphs[name] ??

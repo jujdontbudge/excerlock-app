@@ -9,7 +9,6 @@ export interface IdentityErasureConfiguration {
   posthogApiHost: string;
   supabaseUrl: string;
   supabaseServiceRoleKey: string;
-  /** @deprecated Legacy Clerk secret for the deprecated deleteClerkUser path. */
   clerkSecretKey?: string;
   fetch?: Fetch;
   timeoutMs?: number;
@@ -37,8 +36,6 @@ function timeoutSignal(timeoutMs: number | undefined): AbortSignal | undefined {
   if (!timeoutMs || timeoutMs <= 0) {
     return undefined;
   }
-  // Node 22 is the declared runtime. This signal remains armed after response
-  // headers arrive, so response.json()/body consumption is bounded too.
   return AbortSignal.timeout(timeoutMs);
 }
 
@@ -75,8 +72,6 @@ export function createIdentityErasureGateway(
       },
       timeoutMs,
     );
-    // Provider not-found is idempotent success so lost-response retries
-    // after auth erasure still checkpoint.
     requireSuccess(response, "Supabase", true);
   }
 
@@ -134,11 +129,6 @@ export function createIdentityErasureGateway(
     },
 
     async deleteClerkUser(userId) {
-      // Deprecated alias: historic Clerk rows used the Clerk admin API.
-      // New Supabase rows must use deleteAuthUser. When a Clerk secret is
-      // still configured this preserves the legacy endpoint for explicit
-      // clerk-provider retries; otherwise it delegates to Supabase so old
-      // callers cannot silently skip Supabase erasure.
       if (configuration.clerkSecretKey) {
         const response = await fetchWithTimeout(
           fetch,

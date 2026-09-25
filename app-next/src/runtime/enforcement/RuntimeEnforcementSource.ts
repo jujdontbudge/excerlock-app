@@ -13,10 +13,6 @@ export type RuntimeEnforcementInput = {
   screenTimeAuthorized: boolean; selection: LockedApps; selectionVersion: string;
 };
 
-/** Read synchronously from LIVE owners even while an awaited native operation is
- * in flight. A policy change must revoke its revision before queued JS catches up.
- * Construct only after hydration, seeded from the native durable revision.
- */
 export class RuntimeEnforcementSource {
   private revision: number;
   private signature: string | null = null;
@@ -45,13 +41,9 @@ export class RuntimeEnforcementSource {
     });
     if (!plan.ok) {
       const clearing = ['deleting', 'disabled', 'lapsed'].includes(projected.openReason ?? '');
-      // Keep boot and repair UI available without publishing an inexact policy.
-      // Explicit lifecycle cleanup must still revoke the old native protection.
       if (!clearing) projected = { ...projected, state: 'unknown',
         scheduleIssue: { reason: plan.reason, required: plan.required } };
     }
-    // Clock ticks and progress below a target do not churn native registrations.
-    // A rule edit still invalidates callbacks even if its current decision matches.
     const signature = JSON.stringify({
       rules: input.rules, timezone: input.timezone, account: input.accountGeneration,
       selection: input.selectionVersion, state: projected.state, reason: projected.openReason,

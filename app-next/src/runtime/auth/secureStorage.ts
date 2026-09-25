@@ -6,7 +6,6 @@ export type SecureStoreBackend = {
   deleteItemAsync(key: string): Promise<void>;
 };
 export const SUPABASE_STORAGE_KEY = 'excerlock-supabase-auth-v1';
-/** Conservative UTF-8 byte budget; not a claim of a universal Keychain limit. */
 export const SECURE_CHUNK_SIZE = 1800;
 export const SECURE_MAX_CHUNKS = 32;
 type Bank = 'a' | 'b';
@@ -15,8 +14,6 @@ const queues = new WeakMap<SecureStoreBackend, Map<string, Promise<unknown>>>();
 const corrupt = () => new Error('SecureStore session corrupt; retry without replacing identity');
 const chunkKey = (key: string, index: number, bank?: Bank) => `${key}__chunk__${bank ? `${bank}__` : ''}${index}`;
 
-// Integrity check detects torn/mixed writes, not hostile tampering. Keychain owns
-// confidentiality/integrity against other apps; no token-derived hash is logged.
 function checksum(value: string): string {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i++) hash = Math.imul(hash ^ value.charCodeAt(i), 16777619);
@@ -39,9 +36,6 @@ function deleted(raw: string): boolean {
   return !!value && typeof value === 'object' && '__secureDeleted' in value && value.__secureDeleted === true;
 }
 function validateSession(key: string, value: string): string {
-  // auth-js 2.116 silently maps malformed JSON to "absent". Reject it here
-  // before that helper can create a new anonymous account. PKCE auxiliary keys
-  // and general storage keys retain SupportedStorage's arbitrary-string contract.
   if (key === SUPABASE_STORAGE_KEY) {
     const session = parse(value);
     if (!session || typeof session !== 'object' || Array.isArray(session) ||
@@ -66,17 +60,10 @@ function split(value: string): string[] {
   return chunks;
 }
 async function defaultBackend(): Promise<SecureStoreBackend> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   return require('expo-secure-store') as SecureStoreBackend;
 }
 
-/**
- * Copy-on-write two-bank storage: write inactive chunks, commit ONE manifest,
- * then reclaim old chunks. A failed replacement never overwrites committed
- * chunks. Reads/writes/removes serialize per backend/key, across adapter instances.
- * Keychain single-item atomic replacement is the underlying durability boundary.
- * Legacy manifests read unchanged and migrate on the next successful write.
- */
 export class SecureSupabaseStorage implements SupportedStorage {
   private backendPromise: Promise<SecureStoreBackend>;
   constructor(backend?: SecureStoreBackend | Promise<SecureStoreBackend>) {
@@ -91,8 +78,6 @@ export class SecureSupabaseStorage implements SupportedStorage {
     try { return await result; } finally { if (map.get(key) === result) map.delete(key); }
   }
   private async cleanup(store: SecureStoreBackend, key: string, keep?: Bank): Promise<void> {
-    // Scan every bounded slot, not just a contiguous prefix: interrupted cleanup
-    // can leave holes. Never silently report successful erasure of leftover secrets.
     for (const bank of [undefined, 'a', 'b'] as const) {
       if (keep !== undefined && bank === keep) continue;
       for (let i = 0; i < SECURE_MAX_CHUNKS; i++) {
@@ -105,8 +90,6 @@ export class SecureSupabaseStorage implements SupportedStorage {
     return this.exclusive(key, async (store) => {
       const raw = await store.getItemAsync(key);
       if (raw === null) {
-        // Interrupted first write is not "no session". Fail closed even after
-        // cleanup holes, and propagate unavailable Keychain reads unchanged.
         for (const bank of [undefined, 'a', 'b'] as const) {
           for (let i = 0; i < SECURE_MAX_CHUNKS; i++) {
             if (await store.getItemAsync(chunkKey(key, i, bank)) !== null) throw corrupt();
@@ -136,8 +119,6 @@ export class SecureSupabaseStorage implements SupportedStorage {
       const previous = raw === null || deleted(raw) ? null : manifest(raw);
       if (chunks.length === 1) {
         await store.setItemAsync(key, value);
-        // Logical write committed; cleanup failure cannot invalidate it. Explicit
-        // removeItem scans all banks later and reports every erasure failure.
         await this.cleanup(store, key).catch(() => undefined);
         return;
       }
@@ -150,8 +131,6 @@ export class SecureSupabaseStorage implements SupportedStorage {
   }
   removeItem(key: string): Promise<void> {
     return this.exclusive(key, async (store) => {
-      // First invalidate logically. An interrupted erasure stays tombstoned,
-      // never reloads a partially erased old token; callers still receive error.
       await store.setItemAsync(key, JSON.stringify({ __secureDeleted: true }));
       await this.cleanup(store, key);
       await store.deleteItemAsync(key);

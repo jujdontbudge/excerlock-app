@@ -7,7 +7,6 @@ export class IncidentUserNotFoundError extends Error {
   }
 }
 
-/** The diagnostics document carried a key the app must never send. */
 export class IncidentDiagnosticsRejectedError extends Error {
   readonly code = "DIAGNOSTICS_REJECTED";
 

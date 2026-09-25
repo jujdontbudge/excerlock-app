@@ -45,7 +45,6 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       }
     };
     void sample();
-    // Coming back from Settings after granting location re-samples so "access is off" clears on its own.
     const app = AppState.addEventListener('change', (state) => {
       if (state === 'active') void sample();
     });
@@ -96,7 +95,6 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const unlock = async () => {
     if (working || lifted || checking) return;
     if (!inside) {
-      // Manual fallback: force a fresh fix; presence observers update `inside` when it lands at the gym.
       setChecking(true);
       runtime.analytics.track('gym_unlock_checked', { distance, preview });
       try {
@@ -134,7 +132,6 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       }
     }
   };
-  // The app-level presence engine may confirm on its own; mirror its session so both routes share one ceremony.
   const autoConfirming = !preview && !!session && !session.confirmedAt && !working;
   const autoLifted = !preview && !!session?.confirmedAt;
   const shown = {

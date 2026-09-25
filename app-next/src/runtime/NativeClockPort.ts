@@ -7,7 +7,6 @@ export class NativeClockPort implements ClockPort {
   private listeners = new Set<() => void>(); private timer: ReturnType<typeof setInterval>|null=null; private active: boolean; private snapshot: string; private zone: string; private appState: {remove():void}; private disposed=false;
   constructor(private deps: ClockDeps = nativeDeps) { this.active=deps.initialAppState==='active'; this.snapshot=this.isoSecond(deps.nowMs()); this.zone=deps.timezone(); this.appState=deps.observeAppState(s=>this.onAppState(s)); }
   now = (): string => this.snapshot;
-  /** Fresh wall clock for imperative foreground/headless reconciliation. */
   readNow = (): string => new Date(this.deps.nowMs()).toISOString();
   timezone = (): string => this.zone;
   subscribe = (callback:()=>void) => { if(this.disposed) throw new Error('NativeClockPort disposed'); this.listeners.add(callback); this.reconcileTimer(); return ()=>{this.listeners.delete(callback);this.reconcileTimer()}; };

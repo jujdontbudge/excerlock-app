@@ -11,11 +11,6 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useLockDecision } from '../../state/selectors';
 import { activityTruthStore as useActivityTruthStore } from '../../state/activityTruthStore';
 
-/**
- * Two questions and Send. The runtime attaches the diagnostic snapshot; this screen never sees it.
- * Send is always pressable (except mid-send): a tap with a missing answer says which one, a failed
- * send shows its reason on screen and keeps the words for a retry. Nothing is swallowed.
- */
 export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const runtime = useRuntime(),
     lockState = useLockDecision().state,

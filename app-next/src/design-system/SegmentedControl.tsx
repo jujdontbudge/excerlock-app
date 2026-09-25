@@ -17,7 +17,6 @@ export function SegmentedControl({
   value: string;
   onChange: (value: string) => void;
   prominent?: boolean;
-  /** Every variant renders the app-wide look: black hairline track, full-height orange pill, white text on it. */
   variant?: 'default' | 'prominent' | 'outline';
 }) {
   void variant;

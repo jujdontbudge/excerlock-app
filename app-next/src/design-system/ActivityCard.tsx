@@ -7,11 +7,6 @@ import { tokens as t } from './tokens';
 import { View } from 'react-native';
 import { SelectionCheck } from './SelectionCheck';
 import { useMotion } from '../motion/useMotion';
-/**
- * How a selected choice reads. `solid` (orange fill, white text) marks a full-screen
- * commitment in onboarding and the condition builder; `outline` (orange border on the
- * selected surface) marks a reversible preference. See design/UI-STYLE.md.
- */
 export type ChoiceEmphasis = 'solid' | 'outline';
 export function ActivityCard({
   activity,

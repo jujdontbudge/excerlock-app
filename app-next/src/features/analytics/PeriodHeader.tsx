@@ -3,7 +3,6 @@ import { Label } from '../../design-system';
 import { Icon } from '../../icons/Icon';
 import { tokens as t } from '../../design-system/tokens';
 
-/** Period total with its range and the average-against-last-period pill, as on the reference dashboard. */
 export function PeriodHeader({ range, total, average, rising, unit }: {
   range: string;
   total: string;

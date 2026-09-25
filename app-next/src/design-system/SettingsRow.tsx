@@ -26,7 +26,6 @@ export function SettingsRow({
   onToggle?: (value: boolean) => void;
   destructive?: boolean;
   flat?: boolean;
-  /** A green (on) or muted (off) dot beside the value. */
   status?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale;

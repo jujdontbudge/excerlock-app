@@ -34,13 +34,6 @@ export function createUserRoutes(
     );
 
     app.put("/user", async (request, reply) => {
-      // Identity comes ONLY from the verified token. Any userId in the
-      // body is ignored by design: callers cannot provision or migrate an
-      // arbitrary source UID. Existing-account recovery adopts the
-      // destination session UID via returning-account sign-in; there is no
-      // silent subscription transfer endpoint (see userDeletion README and
-      // T04 contract). Tombstoned callers receive 410 even with a
-      // not-yet-expired JWT.
       const userId = await requireActiveRouteUserId(request, reply);
       if (!userId) {
         return;
@@ -67,10 +60,6 @@ export function createUserRoutes(
     });
 
     app.delete("/user", async (request, reply) => {
-      // DELETE intentionally uses the non-tombstone gate: a tombstoned
-      // caller with a still-valid JWT must be able to resume the durable
-      // workflow to completion. The worker finishes provider-last gaps
-      // without any client token.
       const userId = await requireRouteUserId(request, reply);
       if (!userId) {
         return;

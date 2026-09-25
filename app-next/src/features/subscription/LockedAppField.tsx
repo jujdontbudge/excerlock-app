@@ -9,13 +9,6 @@ import { BlockedBadge } from '../onboarding/welcome/BlockedBadge';
 const field = art.paywall;
 type FieldBrand = keyof typeof field.brands;
 
-/**
- * A wall of locked social apps behind the paywall phone, in straight rows. The columns beside the
- * phone are centred on its edges so each tile there is half tucked behind it; further columns run
- * out past the screen edges. Every app appears once: spots are filled row by row, the most visible
- * columns first so the best-known feeds show whole, and any spots beyond the list stay empty at the
- * bottom, where the fade covers them.
- */
 export function LockedAppField({
   width,
   height,
@@ -35,7 +28,6 @@ export function LockedAppField({
     if (left + size > 0) columns.push({ x: left, ring });
     if (right < width) columns.push({ x: right, ring });
   }
-  // How much of a tile in this column shows, clear of the screen edges and the phone.
   const shown = (x: number) =>
     Math.min(x + size, width, Math.max(x, phone.left)) -
     Math.max(x, 0) +
@@ -49,7 +41,6 @@ export function LockedAppField({
       spots.push({ x: column.x, y: top + row * pitch, brand });
     }
   return (
-    // The wall holds still and fades in once with the page; only the phone and the offer move.
     <Animated.View
       entering={fadeIn}
       pointerEvents="none"

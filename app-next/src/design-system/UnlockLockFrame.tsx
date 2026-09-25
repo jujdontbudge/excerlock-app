@@ -35,7 +35,6 @@ export function UnlockLockFrame({
       lift.value = 0;
       return;
     }
-    // The shackle lifts a press after the hold completes, with the success haptic; confetti follows.
     lift.value = m.delay(m.duration.press, m.timing(1, 'emphasized'));
     scale.value = m.sequence(m.timing(m.scale.pressed, 'press'), m.timing(1, 'press'));
     const haptic = setTimeout(() => feedback('success'), m.duration.press);

@@ -100,8 +100,6 @@ export function createDrizzleUserDeletionRepository(
         if (!state?.deletedAt) {
           throw new Error("Deletion tombstone was not persisted");
         }
-        // Checkpoint writes are serialized by the surrounding transaction
-        // row lock; concurrent callers replay the same idempotent steps.
         return {
           deletedAt: state.deletedAt,
           adaptyErasedAt: state.adaptyErasedAt,

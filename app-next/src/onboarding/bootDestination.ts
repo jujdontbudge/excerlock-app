@@ -1,8 +1,4 @@
 import { Entitlement } from '../domain/types';
-/**
- * Where launch sends the user. After the paywall come sign-in and the permissions the conditions
- * need (ADR 0043), so an entitled user who has not finished setup resumes there.
- */
 export function bootDestination(
   complete: boolean,
   step: string,

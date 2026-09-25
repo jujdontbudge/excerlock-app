@@ -2,7 +2,6 @@ import { PressableScale } from './PressableScale';
 import { Icon } from '../icons/Icon';
 import { tokens as t } from './tokens';
 import { controls as c } from '../content/controls';
-/** The one dismiss control: a brand-orange stroked cross on a 44pt touch target. */
 export function CloseButton({
   onPress,
   label = c.close,

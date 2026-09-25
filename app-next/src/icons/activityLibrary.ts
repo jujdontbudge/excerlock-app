@@ -1,4 +1,3 @@
-/** Font Awesome Free 6.x: CC BY 4.0, Fonticons, Inc. See FOUNDRY.md. */
 export const activityPaths = {
   'person-walking': {
     viewBox: '0 0 320 512',

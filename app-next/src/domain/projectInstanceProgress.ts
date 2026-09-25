@@ -10,8 +10,6 @@ export type StepMeasurementRange = { key: string; from: number; to: number; time
 export type VerifiedDurationSegment = { from: number; to: number; day: string; timezone: string };
 type AccountingInstance = { rule: Rule; day: string; from: number; to: number; end: number };
 
-/** B8 accounting starts at midnight of the instance's start day, not window start.
- * Adjacent instances may legitimately measure overlapping activity. */
 function accountingInstances(rules: readonly Rule[], now: string, timezone: string): AccountingInstance[] {
   const today = dayKey(now, timezone);
   const at = Date.parse(now);
@@ -56,8 +54,6 @@ export function planStepInstanceMeasurements(
   return [...ranges.values()];
 }
 
-/** Only exact native range counts or clipped verified-duration instants earn new
- * progress. Legacy aggregate totals are intentionally NOT allocated across dates. */
 export function projectInstanceProgress(
   rules: readonly Rule[],
   previous: readonly RuleDay[],
@@ -121,8 +117,6 @@ export function projectInstanceProgress(
     if (index < 0) rows.push(next);
     else rows[index] = next;
   }
-  // Walking sessions retain their source timezone. Travel between recording
-  // and projection must not move the same evidence into another accounting day.
   const walkingGroups = new Map<string, { rule: Rule; day: string; intervals: { from: number; to: number }[] }>();
   for (const segment of walking) {
     if (segment.from >= Date.parse(now) || (sealedDays.has(segment.day) && sealedDays.has(addDays(segment.day, -1))))
@@ -190,7 +184,6 @@ function clippedDuration(
   return { milliseconds, thresholdAt };
 }
 
-/** Keep a source-zone overnight accounting day open after east/west travel. */
 export function walkingAccountingDeadlines(
   rules: readonly Rule[],
   segments: readonly VerifiedDurationSegment[],

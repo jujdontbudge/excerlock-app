@@ -3,8 +3,6 @@ const path = require("node:path");
 const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
 const { appGroupIdentifier, bundleIdentifier, researchEnabled } = require("./linkedRecorderResearchConfig");
 
-// Main app + FOUR Screen Time appex. The App Intent lives in the main app
-// target (see plugins/withMainAppIntent.js); there is no fifth appex.
 function expectedAppexTargets() {
   return [
     {
@@ -30,10 +28,6 @@ function expectedAppexTargets() {
 const EXPECTED_APP_COUNT = 1;
 const EXPECTED_APPEX_COUNT = expectedAppexTargets().length;
 
-// Capabilities that belong to the main app only and must never be demanded
-// on (or leak onto) an extension. Provisioning/signing-generated entries
-// (application-identifier, team identifier, keychain-access-groups,
-// get-task-allow) are always permitted wherever the signer adds them.
 const MAIN_ONLY_CAPABILITIES = [
   "com.apple.developer.healthkit",
   "com.apple.developer.applesignin",
@@ -67,8 +61,6 @@ function materializeMonitorSources(projectRoot) {
     "DeviceActivityMonitorExtension",
   );
   fs.mkdirSync(targetRoot, { recursive: true });
-  // The guarded extension is repo-owned in targetRoot. Remove the old package
-  // materialization so it can never contribute a second, unguarded delegate.
   fs.rmSync(path.join(targetRoot, "DeviceActivityMonitorExtension.generated.swift"), { force: true });
   fs.rmSync(path.join(targetRoot, "PackageRuntime.generated.swift"), { force: true });
   fs.rmSync(path.join(targetRoot, LINKED_TRACE_MONITOR_SOURCE.destination), { force: true });
@@ -181,24 +173,12 @@ function assertTargetCountsClassic(project) {
   }
 }
 
-/**
- * T01 port adaptation (B12): `react-native-device-activity@0.6.1` generates
- * its appex through `@kingstinct/expo-apple-targets`, which edits the Xcode
- * project in the `@bacons/xcode` Beta model and writes the file after
- * finalized mods run. The classic `getPbxproj` disk read therefore sees the
- * template on clean prebuilds (never the new targets), so it cannot be the
- * prebuild-fail-fast mechanism. Read the Beta in-memory project that the
- * provider saved to `_internal.modResults.ios.xcodeProjectBeta2` instead;
- * the classic disk read stays only as a diagnostic fallback.
- */
 function betaProjectFromInternal(modConfig) {
   const internal = modConfig._internal ?? modConfig.modRequest?._internal;
   const saved = internal?.modResults?.ios?.xcodeProjectBeta2;
   if (!saved) {
     return null;
   }
-  // saveToInternal stores `{ modResults }`-shaped results; the saved value is
-  // the provider's modResults. Unwrap one level when it is a wrapper.
   return saved.modResults ?? saved;
 }
 
@@ -291,13 +271,6 @@ function assertTargetCountsBeta(betaProject) {
   }
 }
 
-/**
- * The `generated.entitlements` files are written to disk by the apple-targets
- * config phase (before finalized mods run), so their contents are honestly
- * assertable here: Family Controls + App Groups, and none of the main-only
- * privileged capabilities. Signing-generated entries (application-identifier,
- * team identifier, keychain-access-groups, get-task-allow) are permitted.
- */
 function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   const file = path.join(projectRoot, "targets", directory, "generated.entitlements");
   if (!fs.existsSync(file)) {
@@ -312,9 +285,6 @@ function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   }
   for (const privileged of MAIN_ONLY_CAPABILITIES) {
     if (privileged === "com.apple.developer.healthkit") {
-      // Exact-key match: the background-delivery subkey contains the parent
-      // string and belongs on extensions that need it — but ours must not
-      // carry either; match the parent key line precisely.
       if (/(<key>|["'])com\.apple\.developer\.healthkit(<\/key>|["'])/.test(text)) {
         throw new Error(
           `${displayName} generated.entitlements must not carry main-only ${privileged}`,
@@ -330,16 +300,6 @@ function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   }
 }
 
-/**
- * Postcondition for the installed Screen Time package's Apple-target plugin.
- * It intentionally validates rather than recreates the package-owned
- * generator. Registered with `withFinalizedMod` so it reads the generated
- * project after every other Xcode mutation; its position in the plugin list
- * is a readability convention, not an ordering mechanism (Expo does not
- * guarantee global LIFO across interceptor kinds).
- *
- * @param {import("expo/config").ExpoConfig} config
- */
 function withScreenTimeExtensionValidation(config) {
   return withFinalizedMod(config, ["ios", (modConfig) => {
     materializeMonitorSources(modConfig.modRequest.projectRoot);

@@ -11,15 +11,9 @@ export function BootGate() {
     runtimeState = useRuntimeStatus(),
     { complete, step, setupComplete } = useOnboardingStore((s) => s.data),
     { entitlement } = useEntitlementStore((s) => s.data);
-  // The research Trace Lab build exists to run one linked test on the phone, so
-  // it boots straight into that test instead of production onboarding or a
-  // paywall. Ordinary bundles compile this branch out.
   if (__LINKED_RECORDER_TRACE__) return <Redirect href="/linked-trace" />;
   const destination = bootDestination(complete, step, entitlement.status, setupComplete);
   const redirecting = Boolean(hydrated && runtimeState.hydrated && !runtimeState.loading && destination);
-  // Diagnostic stage boundary: mark the commit that issues the redirect. The
-  // mark cannot wait for an effect because <Redirect> navigates BootGate away
-  // in that same commit; the JS wrapper is idempotent and bounds stage order.
   if (redirecting) markStartupStage('BootGateRedirect');
   return redirecting ? <Redirect href={destination as Href} /> : <BootScreen />;
 }

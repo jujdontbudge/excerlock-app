@@ -63,13 +63,6 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     }
     return this.activation;
   }
-  /**
-   * B3: the bundled fallback must be registered before the first placement load,
-   * so a first launch with no network still renders plans. Failing to register
-   * only ever removes that offline guarantee, so the failure is reported instead
-   * of failing activation — which would also take down every online purchase and
-   * the identity spine — and a paywall load error stays the visible path.
-   */
   private async registerFallback(): Promise<void> {
     try {
       await this.deps.sdk.setFallback({ ios: { fileName: ADAPTY_FALLBACK_FILE_NAME } });

@@ -24,9 +24,6 @@ export function createSubscriptionResyncService(options: { repository: AdaptyWeb
   return { async resync(userId: string): Promise<SubscriptionResyncResult> {
     const syncedAt = now();
     await options.gateway.fetchProfile(userId);
-    // The documented server-side profile schema does not prove a store
-    // environment for each premium access-level aggregate. Until Adapty
-    // documents that binding, resync is deliberately read-only/fail-closed.
     const markUnavailable = (value: EnvironmentObservation | null) => value ? { ...value, syncState: "unavailable" as const } : null;
     const production = await options.repository.readSubscriptionState(userId, "production");
     const sandbox = markUnavailable(await options.repository.readSubscriptionState(userId, "sandbox"));

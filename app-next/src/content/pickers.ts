@@ -1,5 +1,4 @@
 export const pickerCopy = {
-  /** Apple's picker, as the simulator demo draws it: its title, buttons, search and categories. */
   title: 'Choose Activities',
   cancel: 'Cancel',
   search: 'Search',

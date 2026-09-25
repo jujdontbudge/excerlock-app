@@ -32,13 +32,10 @@ export interface DeletionRetryWorker {
 
 function sanitizeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  // Never persist secrets or raw vendor payloads; keep only the short
-  // processor-level reason with an identifier-free prefix.
   return message.slice(0, 200) || "deletion retry failed";
 }
 
 function backoffMs(attempts: number): number {
-  // Safe bounded backoff: 30s, 60s, 120s, 240s, capped at 10m with jitter.
   const base = 30_000 * 2 ** Math.min(attempts, 4);
   const capped = Math.min(base, 600_000);
   return capped + Math.floor(Math.random() * 5_000);
@@ -134,17 +131,12 @@ export function createDeletionRetryWorker(
       }
       try {
         await service.deleteAccount(userId);
-        // Keep the successful lease until its short expiry. Another replica
-        // may already hold a stale candidate list; releasing immediately
-        // would let it replay the just-completed job.
         processed.push(userId);
         options.onProcessed?.({ userId });
       } catch (error) {
         failures.push(userId);
         options.onError?.({ userId, error });
         try {
-          // Transient errors are retained for retry via next_retry_at with
-          // bounded backoff; no secret or raw vendor payload is logged.
           const nextRetryAt = new Date(now().getTime() + backoffMs(attempts));
           await repository.recordDeletionFailure(
             userId,
@@ -154,7 +146,6 @@ export function createDeletionRetryWorker(
             ownerId,
           );
         } catch {
-          // Failure bookkeeping must never mask the original error.
         }
       }
     }
@@ -167,7 +158,6 @@ export function createDeletionRetryWorker(
       return timer !== null;
     },
     async runOnce() {
-      // Single-flight local: concurrent ticks collapse onto one run.
       if (inFlight) {
         await inFlight;
         return { processed: [], failures: [] };
@@ -189,8 +179,6 @@ export function createDeletionRetryWorker(
       };
       timer = setInterval(tick, intervalMs);
       timer.unref?.();
-      // Initial pass shortly after boot so provider-last gaps close even
-      // when the original request lost its response after auth erasure.
       startupTimer = setTimeout(tick, Math.min(2_000, intervalMs));
       startupTimer.unref?.();
     },

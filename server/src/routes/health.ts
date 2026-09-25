@@ -33,15 +33,6 @@ export async function checkServiceReady(
   return { ready: true };
 }
 
-/**
- * Liveness and readiness are deliberately two routes.
- *
- * `/health` answers "is this process running" and must never touch the
- * database — the deploy restart loop and Caddy both depend on it staying
- * answerable during a database outage. `/ready` answers "can this process
- * actually serve requests", which is the question nobody was asking while the
- * production database sat empty behind a green `/health` for days.
- */
 export function createHealthRoutes(
   dependencies: HealthRouteDependencies = {},
 ): FastifyPluginAsync {

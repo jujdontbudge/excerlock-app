@@ -34,38 +34,19 @@ export type Runtime = {
   notifications: NotificationsPort;
   sync: SyncPort;
   support: SupportPort;
-  /** In-app 'Something not working?' report: two answers plus the app's diagnostic snapshot, to our API. */
   incidentReports: IncidentReportPort;
-  /** StoreKit's system rating sheet. When to ask is JS policy (OTA); the binary only carries the call. */
   review: StoreReviewPort;
   dataExport: ExportPort;
   clock: ClockPort;
   status: RuntimeStatusPort;
   reviewPreset?: ReviewPresetPort;
-  /** PostHog `paywall_variant` rail read by the mounted paywall. */
   experiments?: PaywallExperimentPort;
-  /** PostHog `signInRequired` gate behind every `SignInScreen` mount. */
   signInRequired?: SignInRequiredPort;
-  /** PostHog `onboarding_variant` flow rail; absent means the bundled order. */
   onboardingFlow?: OnboardingFlowPort;
-  /** Remote shield copy rail; absent means no payload flag consumer is wired. */
   shieldCopy?: ShieldCopyPort;
-  /**
-   * Remote stride-gate configuration rail (`stride_gate_config`); absent means
-   * no payload flag consumer is wired and the adapter runs the shipped gate.
-   * `report()` is the effective configuration: source, flag key, kill switch,
-   * and every parameter as evaluated versus applied.
-   */
   strideGate?: StrideGateConfigPort;
-  /** Live production safety; absent means unknown, never safe by default. */
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
-  /**
-   * Every Core Motion stream the binary exposes (attitude, altimeter, magnetometer,
-   * pedometer events, sensor recorder). Collected and exposed for diagnostics and a
-   * later OTA; no gate reads it yet. Absent in the fake runtime.
-   */
   sensors?: SensorStreamModuleClient;
-  /** Simulation-only surface. Real runtimes do not implement it. */
   dev?: RuntimeControls;
   dispose: () => void;
 };

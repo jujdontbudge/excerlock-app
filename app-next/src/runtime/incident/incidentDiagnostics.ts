@@ -9,13 +9,10 @@ import { addDays, dayKey } from '../../domain/calendar';
 import type { ActivityTruth } from '../../state/activityTruthStore';
 import type { SensorSnapshot } from '../detection/sensorStreams';
 
-/** The Home chip the person held: their own word for what they were doing, and how long before Send. */
 export type ActivityTruthSnapshot = { activity: ActivityTruth; heldAt: string; ageSeconds: number };
 
 export type { SensorSnapshot };
 
-/** What the app believed when the person pressed Send. Everything here is state the app already keeps;
- * nothing names an app, a place on a map, an address or a token. */
 export type IncidentDiagnostics = {
   capturedAt: string;
   timezone: string;
@@ -28,7 +25,6 @@ export type IncidentDiagnostics = {
     scheduleIssue: EnforcementSnapshot['scheduleIssue'] | null;
     futureEnforcementEligible: boolean;
   };
-  /** From the transition log: when the runtime last applied a shield, and last applied an open or conditional relief. */
   lastLockedAt: string | null;
   lastUnlockedAt: string | null;
   walking: WalkingStatus & {
@@ -58,18 +54,14 @@ export type IncidentDiagnostics = {
     millisecondsByDay: Record<string, number>;
   };
   detection: { generation: number; observedAt: string | null };
-  /** Newest last. Lock/unlock transitions the runtime applied, so a report shows what changed and when. */
   events: IncidentLogEvent[];
-  /** Ground truth from the person, not a sensor: null when nothing fresh was held. */
   activityTruth: ActivityTruthSnapshot | null;
-  /** Null when the native module could not be asked (never a guess). */
   sensors: SensorSnapshot | null;
 };
 
 export type IncidentDiagnosticsInput = {
   now: number;
   timezone: string;
-  /** Null before the first reconcile finished. */
   enforcement: EnforcementSnapshot | null;
   walking: WalkingStatus;
   walkingDetails: { steps: number; walkingSeconds: number };

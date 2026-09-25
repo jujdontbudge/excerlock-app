@@ -5,10 +5,6 @@ export interface UserDeletionState {
   deletedAt: Date;
   adaptyErasedAt: Date | null;
   posthogErasedAt: Date | null;
-  /**
-   * Legacy Clerk checkpoint, retained for audit. Must never be treated as
-   * proof of Supabase erasure.
-   */
   clerkDeletedAt: Date | null;
   authProvider: AuthErasureProvider | string | null;
   authDeletedAt: Date | null;
@@ -20,10 +16,6 @@ export interface UserDeletionRepository {
   prepareDeletion(userId: string, deletedAt: Date, provider?: AuthErasureProvider | string): Promise<UserDeletionState>;
   markAdaptyErased(userId: string, erasedAt: Date): Promise<void>;
   markPosthogErased(userId: string, erasedAt: Date): Promise<void>;
-  /**
-   * @deprecated Retained for audit of historic Clerk rows. New code must use
-   * markAuthDeleted. Never treat clerkDeletedAt as Supabase erasure.
-   */
   markClerkDeleted(userId: string, deletedAt: Date): Promise<void>;
   markAuthDeleted(
     userId: string,

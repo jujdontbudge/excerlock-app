@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-/** Phase-1 capture controls preserve the mounted Home so its state transition is visible. */
 export function useDemoProgress() {
   const { steps, advance, presence, placement } = useLocalSearchParams<{
       steps?: string;

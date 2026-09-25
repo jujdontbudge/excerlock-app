@@ -1,18 +1,8 @@
 import module from './src/ExcerlockStartupModule';
 
-/**
- * Ordered cold-start stage boundaries, named exactly as the native os_signpost
- * events (`modules/excerlock-startup/ios/ExcerlockStartupModule.swift`). The
- * JS contract test reads that Swift source and fails on drift.
- */
 export const STARTUP_STAGES = ['FirstReactRender', 'HydrationDone', 'RuntimeReady', 'BootGateRedirect'] as const;
 export type StartupStage = (typeof STARTUP_STAGES)[number];
 
-/**
- * Diagnostic-only: one mark per stage. Stage boundaries may skip a stage (a
- * headless launch reaches hydration and runtime before React ever renders) but
- * must never report an earlier boundary after a later one.
- */
 const marked = new Set<StartupStage>();
 let highestMarkedIndex = -1;
 

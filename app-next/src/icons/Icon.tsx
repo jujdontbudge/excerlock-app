@@ -4,11 +4,6 @@ import { iconXml } from './art';
 import { paths, IconName } from './paths';
 export type { IconName } from './paths';
 export const iconNames = Object.keys(paths) as IconName[];
-/**
- * The one tint rule. An icon is orange on light surfaces (`accent`, the default),
- * white on an orange fill (`onAccent`), grey when inactive or unavailable (`muted`),
- * and green or red only to mean success or a destructive action.
- */
 export type IconTone = 'accent' | 'onAccent' | 'muted' | 'success' | 'danger';
 const toneColor: Record<IconTone, string> = {
   accent: tokens.brand.primary,

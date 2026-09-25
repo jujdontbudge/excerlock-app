@@ -3,7 +3,6 @@ import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { paths } from '../icons/paths';
 import { controls as c } from '../content/controls';
-/** The one back affordance: a brand-orange chevron on a 44pt target, top left. */
 export function BackButton({
   onPress,
   label = c.back,
@@ -11,7 +10,6 @@ export function BackButton({
   testID,
 }: {
   onPress: () => void;
-  /** A more specific spoken destination, such as "Back to search". */
   label?: string;
   disabled?: boolean;
   testID?: string;

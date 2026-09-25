@@ -14,7 +14,6 @@ const CENTER = SIZE / 2;
 const RADIUS = 154;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-/** Drag either endpoint around a 24-hour clock; tap the times for precise wheel entry. */
 export function ScheduleDial({
   startMinute, endMinute, allDay, onChange, onChoose,
 }: {
@@ -27,7 +26,6 @@ export function ScheduleDial({
   const { width } = useWindowDimensions();
   const size = Math.min(width - t.layout.page * 2, 420);
   const [preview, setPreview] = useState({ start: startMinute, end: endMinute });
-  // Rendering reads `dragging`; the gesture callbacks read the refs at event time.
   const [dragging, setDragging] = useState(false);
   const active = useRef<ScheduleHandle | null>(null);
   const origin = useRef({ x: 0, y: 0 });
@@ -39,8 +37,6 @@ export function ScheduleDial({
     if (!active.current) setPreview({ start: startMinute, end: endMinute });
   }, [startMinute, endMinute]);
 
-  // View responder props, not PanResponder: the dial reads only native touch positions,
-  // and the handlers read the refs at event time, never during render.
   const responders: ViewProps = {
     onStartShouldSetResponder: (event) => {
       const scale = SIZE / live.current.size;
@@ -56,7 +52,6 @@ export function ScheduleDial({
       active.current = nearestHandle(minute, live.current.preview.start, live.current.preview.end);
       setDragging(true);
       feedback();
-      // Returning true blocks the native responder (the enclosing scroll view) for the drag.
       return true;
     },
     onResponderMove: (event) => {

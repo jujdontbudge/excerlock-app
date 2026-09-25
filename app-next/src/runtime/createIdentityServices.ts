@@ -10,11 +10,9 @@ type AnalyticsIdentityHooks = {
   identify(id: string): Promise<void>;
   reset(): Promise<void>;
   getDistinctId(): string | null;
-  /** Emits screens kept while the analytics rail could not capture (cold start). */
   replayPendingScreens(): void;
   dispose(): void | Promise<void>;
 };
-/** One identity graph: callbacks close over services, never create competing gates. */
 export async function createIdentityServices(options: {
   config: Pick<AuthServiceConfig, 'supabaseUrl' | 'supabaseAnonKey' | 'apiBaseUrl' | 'googleIosClientId' | 'googleRedirectUri'>;
   adaptyPublicKey: string;
@@ -65,15 +63,10 @@ export async function createIdentityServices(options: {
   }
   let disposed = false;
   let disposal: Promise<void> | null = null;
-  // A cold start asks for its first screen before the spine commits, and the
-  // rail holds it until consent and readiness allow capture. Every identity
-  // event (the `ready` flip included) gives the rail that chance; auth disposal
-  // clears the listener set (`SupabaseAuthAdapter.beginDispose`).
   authServices.auth.subscribeIdentity(() => { analytics.replayPendingScreens(); });
   analytics.replayPendingScreens();
   return {
     auth: authServices.auth, subscription, analytics,
-    /** Bearer for our own API only; null while provisional, deleting-mismatched or after disposal. */
     getAuthContext: () => (disposed ? Promise.resolve(null) : authServices!.auth.getAuthContext()),
     boot: () => authServices!.auth.boot(),
     waitForIdentityReady: authServices.waitForIdentityReady,

@@ -17,7 +17,6 @@ export function TextField({
   error?: string;
   hideLabel?: boolean;
   labelTone?: 'primary' | 'secondary';
-  /** Centred caption, value and error for a field that is the screen's hero number. */
   centered?: boolean;
 }) {
   const m = useMotion();

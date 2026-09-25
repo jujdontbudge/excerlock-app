@@ -6,10 +6,6 @@ import { homeCopy as c } from '../../content/home';
 import { Reveal } from '../../motion/Reveal';
 import { needCopyKey, permissionsHref, useSetupNeeds } from '../setup/useSetupNeeds';
 
-/**
- * The one card at the top of Home while a condition is missing something it needs: what is not
- * working yet, and one button that opens the same screens as after the paywall (ADR 0043).
- */
 export function SetupReminder() {
   const router = useRouter(),
     { needs, location } = useSetupNeeds(),

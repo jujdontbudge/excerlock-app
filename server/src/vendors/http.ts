@@ -28,7 +28,6 @@ export const fetchVendorHttpClient: VendorHttpClient = {
       try {
         body = JSON.parse(responseText) as unknown;
       } catch {
-        // Some revoke endpoints intentionally return text or an empty body.
       }
     } else {
       body = null;

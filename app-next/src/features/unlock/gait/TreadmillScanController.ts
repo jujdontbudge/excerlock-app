@@ -23,7 +23,6 @@ const IDLE: TreadmillScanSnapshot = Object.freeze({
   confidence: 0,
 });
 
-/** Owns one foreground pose scan and its recoverable framing grace. */
 export class TreadmillScanController {
   private detector: GaitPeriodicityDetector | undefined;
   private failureDeadlineMs: number | undefined;

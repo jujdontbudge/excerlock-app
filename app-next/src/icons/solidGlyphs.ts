@@ -13,7 +13,6 @@ const activity = (name: keyof typeof activityPaths) => {
 const fill = (d: string) => `<path fill="currentColor" fill-rule="evenodd" d="${d}"/>`;
 const rect = (x: number, y: number, w: number, h: number, r: number) =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="currentColor"/>`;
-/** Shared 24-unit rounded silhouettes; never copy these into screens. */
 export const solidGlyphs: Partial<Record<IconName, string>> = {
   male: gender('male'),
   female: gender('female'),

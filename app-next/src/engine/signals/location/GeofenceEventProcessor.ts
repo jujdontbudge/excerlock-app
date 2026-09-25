@@ -7,7 +7,6 @@ type Options = {
   readonly onTransition: (transition: RegionTransition) => void;
   readonly now?: () => number;
 };
-/** Persists raw callbacks before notification. Confirmation is settled on a later actual wake. */
 export class GeofenceEventProcessor {
   private rawPresence = new Map<string, boolean>();
   constructor(private readonly options: Options) {}

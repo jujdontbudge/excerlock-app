@@ -56,7 +56,6 @@ export function WalkingScreen({
                   selected={selected}
                   compact
                   onPress={() => {
-                    // "Both" is the pair; picking a single place narrows back to it.
                     const next: ('outside' | 'treadmill')[] = both
                       ? ['outside', 'treadmill']
                       : [p.id as 'outside' | 'treadmill'];

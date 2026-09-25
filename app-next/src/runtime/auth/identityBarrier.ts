@@ -1,4 +1,3 @@
-/** Globally serializes identity/vendor transitions across canonical UIDs. */
 export type RunIdentityOperation = <T>(operation: () => Promise<T>) => Promise<T>;
 
 export function createIdentityBarrier(): RunIdentityOperation {

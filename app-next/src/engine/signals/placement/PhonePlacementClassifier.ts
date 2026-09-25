@@ -4,26 +4,15 @@ import type {
 } from "./PhonePlacementProvider";
 
 export const PLACEMENT_OBSERVATION_WINDOW_MS = 1_000;
-/** Set-down: a propped phone must read propped this long before it counts. */
 export const PLACEMENT_TRANSITION_DEBOUNCE_MS = 1_500;
-/** Pickup: a real pickup stays in hand far longer than a console rattle. */
 export const PICKUP_DEBOUNCE_MS = 3_000;
 
 const INITIAL_PLACEMENT_DEBOUNCE_MS = 400;
 const MIN_SAMPLE_PAIRS = 8;
-/** Per-window features are pooled over this horizon before deciding. */
 const FEATURE_HORIZON_MS = 3_000;
 const GRAVITY_STILL_DELTA = 0.006;
 const GYRO_STILL_DELTA = 0.11;
 const PROPPED_EVIDENCE_RATIO = 0.8;
-/**
- * Measured on a physical treadmill (2026-09-05, #128): a hand holding a phone
- * while walking swings gravity by ≥0.039 g per second in 95 % of windows and
- * rotates at a median ≥0.32 rad/s, whereas a phone propped on the running
- * console stays within 0.015 g and 0.26 rad/s except for sub-second jolts.
- * The medians below sit between those bands; the pooled horizon absorbs the
- * jolts.
- */
 const IN_HAND_GRAVITY_RANGE = 0.03;
 const IN_HAND_ROTATION_RATE = 0.45;
 
@@ -53,9 +42,7 @@ interface PlacementCandidate {
 
 interface WindowFeatures {
   readonly timestampMs: number;
-  /** Largest deviation of gravity from the window mean, in g. */
   readonly gravityRange: number;
-  /** Median rotation-rate magnitude, rad/s. */
   readonly rotationRate: number;
   readonly quietAndStill: boolean;
 }
@@ -137,9 +124,6 @@ export class PhonePlacementClassifier {
       this.pending = { placement: candidate, sinceMs: sample.timestampMs };
       return this.result(null);
     }
-    // Leaving propped mode costs more evidence than entering it: short bursts
-    // recur on a running console, while a real pickup remains in-hand for far
-    // longer than this hysteresis window.
     const debounceMs =
       candidate === "inHand"
         ? PICKUP_DEBOUNCE_MS
@@ -212,10 +196,6 @@ export class PhonePlacementClassifier {
       ({ timestampMs }) => timestampMs >= latest - FEATURE_HORIZON_MS,
     );
 
-    // A running deck creates fast, jagged gyro deltas and sub-second jolts,
-    // but the phone's pose stays put. A hand cannot hold a pose that steadily
-    // while its owner walks: gravity swings with every stride. Pooling the
-    // per-window features over a few seconds lets one jolt pass unnoticed.
     const pooledRange = median(this.features.map((f) => f.gravityRange));
     const pooledRotation = median(this.features.map((f) => f.rotationRate));
     if (

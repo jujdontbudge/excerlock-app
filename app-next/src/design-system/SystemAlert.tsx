@@ -6,7 +6,6 @@ import { illustrationTokens as art } from './illustrationTokens';
 const systemAlert = art.systemAlert,
   a = systemAlert;
 
-/** An iOS alert word for word: `tap` turns the permission on and `deny` refuses it. */
 export type SystemAlertCopy = {
   title: string;
   message: string;
@@ -15,13 +14,6 @@ export type SystemAlertCopy = {
   deny: number;
 };
 
-/**
- * The iOS 26 system alert, drawn to Apple's measurements: a light rounded card, a bold title and
- * grey message aligned left, and grey pill buttons, side by side when two short labels fit and
- * stacked otherwise. With `guide`, the button to tap gets an orange outline and an orange arrow
- * in the margin beside the alert (ADR 0043). With `onPress` the buttons answer, for the simulator
- * demo that stands in for the real alert; without it this is a picture.
- */
 export function SystemAlert({
   alert,
   guide = false,
@@ -35,7 +27,6 @@ export function SystemAlert({
 }) {
   const { title, message, buttons, tap } = alert,
     row = buttons.length === 2 && buttons.every((label) => label.length <= a.rowLabel),
-    // The arrow sits in the margin nearest the button: left only for the left one of a row.
     left = row && tap === 0;
   return (
     <View
@@ -92,10 +83,8 @@ export function SystemAlert({
   );
 }
 
-/** The hand-drawn arrow, its tip level with the middle of the button and just clear of the alert. */
 function Arrow({ left }: { left: boolean }) {
   const { width, height, stroke, tip, offset, curve, head } = a.arrow,
-    // The arrow's box is placed from the button's inner edge, inside its outline.
     side = left
       ? ({ right: '100%', marginRight: offset + a.ring } as const)
       : ({ left: '100%', marginLeft: offset + a.ring } as const);

@@ -8,10 +8,6 @@ export interface ManualGymCheckIn {
   checkIn(region: GeofenceRegion): Promise<boolean>;
 }
 
-/**
- * One foreground fix taken while the user stands in the gym they are saving.
- * Requests When-In-Use permission on first use; never background access.
- */
 export interface GymSetupLocator {
   locateForGymSetup(): Promise<LocationSample>;
 }

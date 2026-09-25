@@ -2,7 +2,6 @@ import { GymPort } from '../ports/GymPort';
 import { Coordinates } from '../ports/PlaceSearch';
 import { nativePlaceSearch, requestNativeLocation } from './NativePlaceSearch';
 import { distanceMetres } from '../features/gym-picker/geometry';
-/** Foreground native coordinates; reward storage remains owned by the demo GymPort. */
 export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' | 'outside') => void): GymPort {
   let last: Coordinates | null = null,
     presence: 'inside' | 'outside' = 'outside';

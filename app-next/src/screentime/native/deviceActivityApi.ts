@@ -2,7 +2,6 @@ import * as DeviceActivity from "react-native-device-activity";
 
 import type { DeviceActivityApi } from "./deviceActivityTypes";
 
-/** The one file allowed to translate ExcerLock operations into package calls. */
 export const deviceActivityApi: DeviceActivityApi = {
   authorizationStatus: DeviceActivity.getAuthorizationStatus,
   requestAuthorization: DeviceActivity.requestAuthorization,

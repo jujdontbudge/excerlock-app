@@ -10,7 +10,6 @@ export function O01() {
   return (
     <View style={{ flexGrow: 1, paddingTop: t.space.xl }}>
       <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="display" />
-      {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.hero }}>
         <WelcomeArtwork />
       </View>

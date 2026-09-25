@@ -5,7 +5,6 @@ import type { Runtime } from '../Runtime';
 
 const MAX_NATIVE_MARK_ATTEMPTS = 8;
 
-/** Diagnostic only: AppDelegate entry to a laid-out, hydrated real Home. */
 export function useInteractiveHomeMarker(runtime: Runtime, ready: boolean) {
   const laidOut = useRef(false);
   const marked = useRef(false);

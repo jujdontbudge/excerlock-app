@@ -2,7 +2,6 @@ import Svg, { G, Path } from 'react-native-svg';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { brandPaths } from './brandPaths';
 export type Brand = keyof typeof brandPaths;
-/** Library geometry; app-tile background and motion are separate components. */
 export function BrandMark({ brand, color, outline }: { brand: Brand; color?: string; outline?: string }) {
   const path = brandPaths[brand];
   return (

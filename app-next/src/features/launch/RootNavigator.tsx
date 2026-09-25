@@ -46,13 +46,6 @@ export function RootNavigator() {
         <Stack.Protected guard={__LINKED_RECORDER_TRACE__ && linkedTrace.enabled}>
           <Stack.Screen name="linked-trace" />
         </Stack.Protected>
-        {/* One lab-off guard owns the whole production surface. When the
-            research flag is compiled in, expo-router collects every production
-            screen name below as protected and removes it from the lab
-            navigator, so onboarding, paywall, setup, the gym picker, tabs,
-            settings and sign-in cannot be reached by navigation or deep link.
-            In an ordinary build the guard is true and the routes behave
-            exactly as before. */}
         <Stack.Protected guard={!__LINKED_RECORDER_TRACE__}>
           <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
@@ -83,7 +76,6 @@ export function RootNavigator() {
             <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
-          {/* Harness-only proof of the native sensor surface: preview and dev builds, never prod. */}
           <Stack.Protected guard={diagnosticsRoutesEnabled(Constants.expoConfig?.extra?.environment, __DEV__)}>
             <Stack.Screen name="diagnostics/sensors" />
           </Stack.Protected>

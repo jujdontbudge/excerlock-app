@@ -1,5 +1,4 @@
 import { DayKey, Rule, RuleDay } from './types';
-// Integrity floor retained from packages/condition-model; no runtime dependency.
 export const WALKING_STREAK_MINUTES = 10;
 export type StreakDay = { day: DayKey; scheduled: boolean; met: boolean };
 export function isMetDay(rules: Rule[], rows: RuleDay[], walkingMinutes: number): boolean {

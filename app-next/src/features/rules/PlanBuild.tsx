@@ -21,7 +21,6 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
 }) {
   const style = useAnimatedStyle(() => {
     const m = taskMotion(index, elapsed.get());
-    // Every pill, the closing one included, fills, checks and swipes away in turn.
     const exit = m.exit;
     const fill = Math.max(0, Math.min(1, (elapsed.get() - Math.max(index * 1000, 150)) / 140));
     return {
@@ -32,7 +31,6 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
     };
   });
   const titleStyle = useAnimatedStyle(() => ({
-    // Keep readable dark text until the fill has become dark enough for white.
     color: elapsed.get() >= Math.max(index * 1000, 150) + 105 ? t.text.onAccent : t.text.primary,
   }));
   return <Animated.View accessible accessibilityRole="checkbox" accessibilityLabel={title} accessibilityState={{ checked }}
@@ -49,7 +47,6 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
   </Animated.View>;
 }
 
-/** Assembles the already-selected rule facts; the percentage is a presentation sequence. */
 export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => void }) {
   const m = useMotion();
   const { height, fontScale } = useWindowDimensions();
@@ -62,7 +59,6 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   const taskCount = tasks.length;
   useEffect(() => { callback.current = onComplete; }, [onComplete]);
   useEffect(() => {
-    // Continue through the post-100% hold and fade; stopping at `ready` leaves the loading UI stranded onscreen.
     elapsed.set(withTiming(PLAN_MOTION.buildDone, { duration: m.reduced ? m.duration.standard : PLAN_MOTION.buildDone, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);
   }, [elapsed, m.duration.standard, m.reduced]);
@@ -81,7 +77,6 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
     const pct = Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100));
     return { text: planPercentLabel(pct), defaultValue: '0%' };
   });
-  // At 100% the screen holds one beat, then everything fades out together before the celebration.
   const content = useAnimatedStyle(() => ({
     opacity: m.reduced ? 1 : 1 - smooth((elapsed.get() - (PLAN_MOTION.count + PLAN_MOTION.hold)) / PLAN_MOTION.fadeout),
   }));
@@ -97,7 +92,6 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
       </Svg>
       <Counter editable={false} accessible={false} pointerEvents="none" defaultValue="0%" animatedProps={counter}
         style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'],
-          // The native field adds its own lift on top of Baloo's descent; together they need the extra step.
           transform: [{ translateY: t.type.metric.fontSize * t.optical.centre + t.space.sm }] }]} />
     </View>
     <View style={{ width: '100%', height: m.reduced ? (rowHeight + 12) * tasks.length : (rowHeight + 12) * 3 }}>
