@@ -69,6 +69,16 @@ export function phasesFor(s: Scenario): Phase[] {
     { name: 'leave', duration: s.kind === 'gym-presence' ? 3 : 2 },
   ];
 }
+export function readyAfter(s: Scenario): number {
+  const phases = phasesFor(s);
+  const startOf = (name: string) => phases.slice(0, phases.findIndex((phase) => phase.name === name))
+    .reduce((sum, phase) => sum + phase.duration, 0);
+  if (s.kind === 'walk-steps' || s.kind === 'walk-minutes' || s.kind === 'gym-minutes')
+    return startOf('unlocked');
+  if (s.kind === 'gym-arrival') return startOf('unlocked') + Math.min(1, phases.find((phase) => phase.name === 'unlocked')!.duration / 2);
+  const finalPhase = s.kind === 'walk-state' ? 'blocked' : 'leave';
+  return startOf(finalPhase) + Math.min(1, phases.find((phase) => phase.name === finalPhase)!.duration / 2);
+}
 export function initialDemo(): DemoState {
   'worklet';
   return { time: 0, walkTime: 0, distance: 0, manual: null, manualTime: 0 };

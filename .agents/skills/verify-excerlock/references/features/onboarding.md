@@ -2,7 +2,7 @@
 id: onboarding
 title: Onboarding questions and plan preview
 routes: [onboarding/[step]]
-scenarios: [fresh-install, onboarding-walking-resume]
+scenarios: [fresh-install, onboarding-walking-resume, condition-demo-walk-steps, condition-demo-walk-minutes, condition-demo-walk-state-outside, condition-demo-walk-state-treadmill, condition-demo-gym-arrival, condition-demo-gym-presence, condition-demo-gym-minutes]
 events: [onboarding_screen_viewed]
 depends: [conditions]
 ---
@@ -32,6 +32,64 @@ name: resume-walking-goal
 scenario: onboarding-walking-resume
 open: /
 expect: Set your walking goal | Daily step goal | Continue
+```
+
+The Condition demo's Continue stays disabled until the goal or state change plays. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/condition-demo-gate/INDEX.md`.
+
+```proof
+name: demo-walk-steps-gated
+scenario: condition-demo-walk-steps
+open: /onboarding/S3b
+tap: Continue
+expect: Once you hit 10,000 steps | Continue
+```
+
+```proof
+name: demo-walk-minutes-gated
+scenario: condition-demo-walk-minutes
+open: /onboarding/S3b
+tap: Continue
+expect: Once you walk for 20 minutes | Continue
+```
+
+```proof
+name: demo-walk-state-outside-gated
+scenario: condition-demo-walk-state-outside
+open: /onboarding/S3b
+tap: Continue
+expect: Once you start walking | Continue
+```
+
+```proof
+name: demo-walk-state-treadmill-gated
+scenario: condition-demo-walk-state-treadmill
+open: /onboarding/S3b
+tap: Continue
+expect: Once you start walking | Continue
+```
+
+```proof
+name: demo-gym-arrival-gated
+scenario: condition-demo-gym-arrival
+open: /onboarding/S3b
+tap: Continue
+expect: Once you arrive at the gym | Continue
+```
+
+```proof
+name: demo-gym-presence-gated
+scenario: condition-demo-gym-presence
+open: /onboarding/S3b
+tap: Continue
+expect: While you're at the gym | Continue
+```
+
+```proof
+name: demo-gym-minutes-gated
+scenario: condition-demo-gym-minutes
+open: /onboarding/S3b
+tap: Continue
+expect: Once you spend 30 minutes | Continue
 ```
 
 ## Gotchas
