@@ -43,7 +43,7 @@ export const demoHelp = `excer demo <scenario> [--open <path>] [--prompt grant|d
 excer demo list
 
 Starts the app with a scripted demo scenario (fake adapters, same code paths) and
-optionally opens a route. The app cold-launches before the load so no screen state\nleaks between scenarios. Fake system prompts auto-grant unless --prompt says otherwise.\nScenario ids live in app-next/src/demo/scenarios.`;
+optionally opens a route. The app cold-launches before the load so no screen state\nleaks between scenarios. Fake system prompts auto-grant unless --prompt says otherwise.\nScenario ids live in app-next/src/packages/dev-harness/lib/scenarios.`;
 
 export async function simCommand(args: string[]): Promise<number> {
   const [command, ...rest] = args;
