@@ -1,19 +1,36 @@
-# App Review Information — draft (not submitted)
+# App Review notes (live for version 1.0, Build 12)
 
-ExcerLock uses Apple's Family Controls / Screen Time APIs to shield apps selected by the user until the user completes an exercise condition. On first run, grant Screen Time authorization and select apps to shield when prompted.
+The exact text in App Store Connect review details `15958994-c459-4b32-9327-242dda3b6cb5`, set 2026-09-26. Update this file whenever the live notes change.
 
-For a desk-reviewable walking condition, on the setup name screen enter the exact name **App Review**. The release build creates an all-day, 20-step walking rule for today's device-local weekday; it recurs weekly rather than creating a date-only condition, and steps already counted today may satisfy the goal. Continue setup, select at least one app, then walk with the review iPhone until the goal is met. Walking verification requires a physical device; Simulator does not provide representative motion/HealthKit data.
+```text
+GUIDELINE 2.5.1: Like Build 11, this build (12) ships without HealthKit. The binary does not link the HealthKit framework and carries no HealthKit entitlement or Health usage descriptions. ExcerLock never offered an Apple Health feature: steps and walking are measured on device with Core Motion (Motion & Fitness).
 
-Gym automation uses background location only to detect arrival/departure at the gym chosen by the user. Location is processed on device; coordinates are not sent to analytics. “Always” access permits detection while the app is not open.
+ExcerLock uses Apple's Family Controls / Screen Time APIs to shield apps the user selects until the user completes a movement condition (walking or gym). It is a self-control tool for the user's own device, not a parental-control app and not a medical app.
 
-No demo account is required. Sign in with Apple is available; anonymous use must remain supported where shown. Account deletion, data export, analytics opt-out, restore purchases, support, Terms, and Privacy Policy are reachable from Settings.
+QUICK REVIEW PATH (about 5 minutes, physical iPhone required)
+1. Fresh install. Tap Get started through the three intro pages.
+2. On the name screen ("What should we call you?") enter exactly: App Review (case-sensitive). This applies a reviewer preset: an all-day walking condition with a 20-step goal for today's weekday. It is an ordinary user rule, editable later; it grants no bypass.
+3. Answer the remaining questions (Walking and "Reach a step goal" are already selected). The plan screen reads "Your apps are blocked until you walk 20 steps all day". Tap Import, then Continue.
+4. Subscription: the paywall offers ExcerLock Premium Annual / Monthly with a free trial. Purchase with a Sandbox Apple ID. Restore purchases is on the paywall and in Settings.
+5. Sign-in is optional: tap Skip for now.
+6. Choose apps to lock: allow Screen Time when asked and pick at least one app in Apple's app picker. Then allow Motion & Fitness.
+7. Open a selected app: it is shielded. Walk with the iPhone for about 30 seconds (20 steps): the condition completes and the app opens. Steps already counted today also satisfy the goal.
 
-If Screen Time permission is denied or no apps are selected, the app shows that state and provides recovery guidance.
+PERMISSIONS
+- Screen Time (Family Controls): required to shield apps. If denied or no apps are chosen, Home shows a card naming what is not set up, with a button to finish it or open Settings.
+- Motion & Fitness: counts steps and detects walking on device.
+- Location While Using: recognizes arrival at the gym the user saved. Location Always (optional): keeps walk detection and gym auto-detect running while ExcerLock is closed. Both are asked only when a condition needs them; manual Check in and Check walking remain available.
+- Camera (optional): when the phone is propped up, the camera checks walking movement on device. Nothing is recorded or uploaded.
+- Notifications: trial reminder only.
+No location, steps or app selections are sent to our servers.
 
-The app uses Expo OTA (`expo-updates`) to deliver JavaScript-only fixes within the reviewed feature set: an update carries no native code, no new or changed permissions, and no feature the reviewed binary does not already contain.
+ACCOUNT
+No demo account is needed: the app works anonymously. Sign in with Apple, Google and email code are optional. Account deletion and data export are in Settings.
 
-Remote configuration (PostHog) only tunes analytics-driven copy, step order and thresholds; its defaults are exactly the reviewed behavior above, and it does not enable, disable or unlock any capability.
+The Simulator does not provide motion data, so walking verification must be checked on a device.
 
-The app is self-control for the signed-in adult on this device: it is not a parent/child product, not MDM, and does not manage anyone else's device. Shielding is done through Apple's Family Controls and ManagedSettings — not through a VPN and not through MDM.
-
-Canonical support and privacy URLs are now entered in App Store Connect. Reviewer contact and phone must still be entered before submission. This file remains a draft and is not evidence that the `App Review` preset is present/active.
+TECHNICAL NOTES
+- The app uses Expo Updates (expo-updates) to deliver JavaScript-only fixes inside the already-reviewed feature set. It cannot change native code, permissions, entitlements or capabilities. Any new capability requires a new App Store build and review.
+- Remote configuration (PostHog) only tunes copy, plan order and detection thresholds. Its defaults are exactly the behavior described above, and it can be switched off.
+- ExcerLock is for a self-managing adult on their own device. It is not a parent/child or family-management app and not an MDM/VPN product. Shielding uses Apple Family Controls + ManagedSettings.
+```
