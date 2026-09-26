@@ -26,12 +26,7 @@ capabilities; prebuild fails instead.
 `openAppWhenRun` intent, no Family Controls, no Siri entitlement) into the
 MAIN app target with explicit `AppIntents.framework` membership, idempotently.
 
-`withHealthKitBackgroundBootstrap` keeps the HealthKit background-delivery
-entitlement and cold-launch observer setup while isolating Nitro's C++ headers
-in an Objective-C++ bridge. The upstream HealthKit plugin remains responsible
-for usage descriptions and the base HealthKit entitlement, but its direct
-Swift AppDelegate import is disabled (`background: false` + local patch)
-because that import cannot compile in the Expo application target.
+The app ships without HealthKit (ADR 0048); no plugin adds a Health entitlement or usage string.
 
 ## Invariants
 

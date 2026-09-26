@@ -37,26 +37,11 @@ export const NATIVE_BUNDLE_IDS: Record<string, string> = {
 
 type ExpoPlugin = NonNullable<ExpoConfig["plugins"]>[number];
 
-export const healthKitPlugin: ExpoPlugin = [
-  "@kingstinct/react-native-healthkit",
-  {
-    background: false,
-    NSHealthShareUsageDescription:
-      "ExcerLock reads your activity to detect completed fitness conditions on this device.",
-    // The SDK links HealthKit write APIs even though ExcerLock requests only
-    // read access, so App Store static validation still requires this key.
-    NSHealthUpdateUsageDescription:
-      "ExcerLock uses Health access only to read completed activities and does not write data to Health.",
-  },
-];
-
 export const nativePlugins: ExpoPlugin[] = [
   "./plugins/withScreenTimeExtensionValidation",
   "./plugins/withMainAppEntitlements",
   "./plugins/withPrivacyManifest",
   "./plugins/withMainAppIntent",
-  healthKitPlugin,
-  "./plugins/withHealthKitBackgroundBootstrap",
   "./modules/excerlock-startup/app.plugin",
   [
     "react-native-device-activity",
@@ -133,8 +118,6 @@ export const nativeConfig: {
     associatedDomains: ["applinks:excerlock.com"],
     entitlements: {
       "com.apple.developer.family-controls": true,
-      "com.apple.developer.healthkit": true,
-      "com.apple.developer.healthkit.background-delivery": true,
       "com.apple.security.application-groups": [NATIVE_APP_GROUP],
       "com.apple.developer.applesignin": ["Default"],
       "com.apple.developer.associated-domains": ["applinks:excerlock.com"],

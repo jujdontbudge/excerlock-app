@@ -11,9 +11,7 @@ TEAM = 'AX3C2B78YD'
 BUNDLE = 'com.johansardar.excerlock'
 GROUP = 'group.' + BUNDLE
 EXT_REQUIRED = {'com.apple.developer.family-controls': True, 'com.apple.security.application-groups': [GROUP]}
-MAIN_REQUIRED = {**EXT_REQUIRED, 'com.apple.developer.healthkit': True,
-                 'com.apple.developer.healthkit.background-delivery': True,
-                 'com.apple.developer.applesignin': ['Default'], 'aps-environment': 'production',
+MAIN_REQUIRED = {**EXT_REQUIRED, 'com.apple.developer.applesignin': ['Default'], 'aps-environment': 'production',
                  'com.apple.developer.associated-domains': ['applinks:excerlock.com']}
 SIGNING_KEYS = {'application-identifier', 'com.apple.developer.team-identifier', 'keychain-access-groups',
                 'get-task-allow', 'beta-reports-active'}
@@ -25,7 +23,7 @@ EXTENSIONS = {
 }
 USAGE_KEYS = ['NSMotionUsageDescription', 'NSCameraUsageDescription', 'NSLocationWhenInUseUsageDescription',
               'NSLocationAlwaysAndWhenInUseUsageDescription', 'NSLocationAlwaysUsageDescription',
-              'NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription', 'NSFaceIDUsageDescription',
+              'NSFaceIDUsageDescription',
               'NSPhotoLibraryUsageDescription']
 
 def require(condition, message):
@@ -38,6 +36,9 @@ def verify_info(info):
     require('en' in info.get('CFBundleLocalizations', []), 'Missing English localization')
     require('NSUserTrackingUsageDescription' not in info, 'Unexpected ATT declaration')
     require('CFBundleAlternateIcons' not in info, 'Unexpected alternate icons')
+    # No HealthKit (Guideline 2.5.1, ADR 0048): no Health purpose strings.
+    for key in ['NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription', 'NSHealthClinicalHealthRecordsShareUsageDescription']:
+        require(key not in info, 'Unexpected Health usage description: ' + key)
 
 def allowed(actual, permitted):
     if isinstance(actual, list):

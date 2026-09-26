@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0048: Ship without HealthKit](0048-ship-without-healthkit.md) — **accepted**.
 - [0047: Remove Clerk authentication from the API](0047-remove-clerk-authentication.md) — **accepted**.
 - [0046: Concept packages in strict layers](0046-concept-packages-in-strict-layers.md) — **accepted**.
 - [0045: Verify through the real app and static checks; no tests, no comments](0045-verification-over-tests-and-no-comments.md) — **accepted**.
