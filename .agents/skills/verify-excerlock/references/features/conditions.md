@@ -29,7 +29,7 @@ expect: Conditions | Add condition | Walk 5,000 steps
 name: builder-first-step
 scenario: home-unlocked-met
 open: /builder
-expect: What exercise should unlock your apps? | Walking | Gym
+expect: What exercise do you want to do more of? | Walking | Gym
 ```
 
 ```proof
