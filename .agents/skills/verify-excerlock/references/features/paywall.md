@@ -2,13 +2,14 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [trial-active, trial-expired, billing-issue]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
+- Three promise rows reflect the selected fat/muscle targets, the goal chosen at O08, and the O10 screen-time estimate. When both body targets are selected, they take two rows and the time estimate takes the third; otherwise the goal choice fills the remaining row.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -18,6 +19,76 @@ Finish onboarding and the paywall appears. A subscriber reaches it through Setti
 
 ## Driving it with excer
 Dev controls change outcomes without touching StoreKit: add `&outcome=success|cancel|error` or `&restore=restored|notFound` to the dev URL. For example, `./excer sim open "dev?scenario=trial-expired&outcome=error"`.
+
+```proof
+name: premium-headline
+scenario: fresh-install
+open: /onboarding/S3
+tap: Import
+expect: Once you hit 10,000 steps, your apps will unlock. | Continue
+then-open: /paywall
+then-expect: Become ADDICTED to exercise | Feel stronger and healthier every week | Make time for what matters | Save 46 days a year | Start for free
+```
+
+```proof
+name: personalized-fat-goal
+scenario: fresh-install
+open: /onboarding/O08
+tap: Less screen time | Continue | Lose fat | Continue | Continue
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Lose 15.0 pounds of fat | Spend less time scrolling | Save 46 days a year
+```
+
+```proof
+name: personalized-muscle-goal
+scenario: fresh-install
+open: /onboarding/O08
+tap: More exercise | Continue | Gain muscle | Continue | Continue
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Gain 10.0 pounds of muscle | Make movement part of your day | Save 46 days a year
+```
+
+```proof
+name: personalized-both-goals
+scenario: fresh-install
+open: /onboarding/O08
+tap: More exercise | Continue | Gain muscle | Lose fat | Continue | Continue | Continue
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Save 46 days a year
+```
+
+```proof
+name: personalized-maintain-goal
+scenario: fresh-install
+open: /onboarding/O08
+tap: Overall wellness | Continue | Maintain | Continue
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Stay fit, strong and healthy for life | Make room for your wellbeing | Save 46 days a year
+```
+
+```proof
+name: personalized-other-goal
+scenario: fresh-install
+open: /onboarding/O08
+tap: Something else | Continue | Maintain | Continue
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Stay fit, strong and healthy for life | Make time for what matters | Save 46 days a year
+```
+
+```proof
+name: personalized-screen-time-estimate
+scenario: fresh-install
+open: /onboarding/O10
+tap: 4 to 6 hours
+expect: How many hours do you currently spend scrolling each day?
+then-open: /paywall
+then-expect: Save 76 days a year
+```
 
 ```proof
 name: subscription-billing-issue

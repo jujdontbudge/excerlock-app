@@ -28,7 +28,22 @@ ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must b
 
 ## iOS simulator
 
-Work headless. Keep Simulator.app closed. `./excer sim` drives the one simulator it owns (`ExcerLock-Next`, or set `EXCER_SIM`) through `xcrun simctl` and `idb`. Reuse the installed app or an existing build. Build only when the binary is missing or native code changed, and keep caches. Shut down only simulators you booted. Headless Xcode commands: `~/.local/share/agent-ios/GUIDE.md`.
+Work headless. Keep Simulator.app closed. `./excer sim` drives one simulator (`ExcerLock-Next` by default, or `EXCER_SIM`) through `xcrun simctl` and `idb`, and starts that simulator's `idb_companion` when needed. Metro serves on `EXCER_METRO_PORT` (default 8091). Reuse the installed app or an existing build. Build only when the binary is missing or native code changed, and keep caches. Shut down only simulators you booted. Headless Xcode commands: `~/.local/share/agent-ios/GUIDE.md`.
+
+`ExcerLock-Next` on port 8091 belongs to the lead session in the main checkout, where the user watches it. Workers never use it.
+
+### Spawning workers
+
+Every spawned worker gets its own worktree, its own simulator and its own Metro port. Two agents never share a checkout or a simulator.
+
+1. Create the worktree off `main` (`orca worktree create --name <task> --no-parent --setup skip`), then run `npm ci` in it. Orca's repo setup hook runs `pnpm install`; this repo uses npm.
+2. Create the simulator `ExcerLock-<task>` in the hidden worker set, never the default set: `S=~/.local/share/excer/worker-simulators; xcrun simctl --set $S create ExcerLock-<task> com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro <runtime>`. Boot it headless (`xcrun simctl --set $S boot <udid>`), slim it with `simslim --set $S on <udid> --except family` (keeps Screen Time; about 1 GB idle instead of about 4.5 GB), and install the existing build (`EXCER_SIM=<udid> ./excer sim install`). Do not rebuild for it. Simulators in the default set appear in Orca and Simulator.app; the user sees only `ExcerLock-Next` unless they ask to watch a worker. `./excer` finds worker simulators by name and refuses to run a worktree against any simulator outside the worker set. Raw `simctl` calls on a worker simulator need `--set $S`.
+3. Pick a free Metro port from 8092 upward, unique among running workers.
+4. Launch the agent with `EXCER_SIM=ExcerLock-<task> EXCER_METRO_PORT=<port>` set in its terminal command, and repeat both values in its brief.
+5. On a fresh simulator the first deep link asks "Open in ExcerLock?" and the dev menu appears; tap Open, then Continue and Close.
+6. Keep at most five worker simulators running on this 24 GB Mac. When a worker finishes, shut down and delete its simulator (`xcrun simctl --set ~/.local/share/excer/worker-simulators delete <udid>`).
+
+A worker commits only to its own worktree branch. It never pushes, merges or touches another checkout.
 
 ## UI
 

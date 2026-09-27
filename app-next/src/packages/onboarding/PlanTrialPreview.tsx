@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { Label } from '../ui/Label';
+import { BackButton } from '../ui/BackButton';
 import { SettingsRow } from '../ui/SettingsRow';
 import { SecondaryButton } from '../ui/SecondaryButton';
 import { SetupPresentation } from '../ui/SetupPresentation';
@@ -28,14 +29,18 @@ const device = { width: 402, height: (402 * hole.height) / hole.width, insets: {
 const statusBar = { centre: 31, time: 68, icons: 334 } as const;
 const granted = { screenTime: 'granted', motion: 'granted', location: 'whenInUse', camera: 'granted', notifications: 'granted' } as const;
 
-export function PlanTrialPreview({ rule }: { rule: Rule }) {
+export function PlanTrialPreview({ rule, onBack }: { rule: Rule; onBack: () => void }) {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const height = Math.min(box.height, (box.width * 0.68 * frame.height) / frame.width);
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: t.space.lg }}>
-      <Label accessibilityRole="header" variant="display" style={{ textAlign: 'center', maxWidth: 330 }}>
-        {c.trialTitle}
-      </Label>
+      <View style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'flex-start' }}>
+        <BackButton onPress={onBack} />
+        <Label accessibilityRole="header" variant="display" style={{ flex: 1, textAlign: 'center' }}>
+          {c.trialTitle}
+        </Label>
+        <View style={{ width: t.control.inline }} />
+      </View>
       <View
         testID="trial-phone-box"
         style={{ flex: 1, alignSelf: 'stretch', alignItems: 'center' }}

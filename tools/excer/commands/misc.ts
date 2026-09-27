@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { appRoot, rel } from '../lib/paths.ts';
 import { flag, has, option, out, run, UsageError } from '../lib/shell.ts';
-import { appCandidates, devices, metroRunning } from '../lib/sim.ts';
+import { appCandidates, devices, metroPort, metroRunning } from '../lib/sim.ts';
 import { serverSmokeCommand, serverSmokeHelp } from './serverSmoke.ts';
 
 export const serverHelp = `excer server health|ready [--prod] [--url <base>]
@@ -59,7 +59,7 @@ export async function doctorCommand(): Promise<number> {
   report(simOk, `simulator ${wanted}`, `xcrun simctl create ${wanted} "iPhone 17 Pro"`);
   const builds = appCandidates();
   report(builds.length > 0, `reusable build ${builds[0] ? rel(builds[0]) : ''}`, 'cd app-next && CI=1 npx expo run:ios --device generic --configuration Debug --no-bundler --output ./build');
-  out.info(`metro ${(await metroRunning()) ? 'running on :8091' : 'stopped (excer sim start launches it)'}`);
+  out.info(`metro ${(await metroRunning()) ? `running on :${metroPort}` : 'stopped (excer sim start launches it)'}`);
   for (const cli of ['gh', 'eas', 'asc', 'supabase', 'sentry', 'posthog-cli', 'adapty', 'gcloud']) out.info(`${cli.padEnd(12)}${has(cli) ? 'installed' : 'missing'}`);
   return failures === 0 ? 0 : 1;
 }

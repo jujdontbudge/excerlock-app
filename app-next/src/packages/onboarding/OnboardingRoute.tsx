@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
 import { useOnboarding } from './lib/useOnboarding';
@@ -31,7 +31,9 @@ export function OnboardingRoute() {
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
     [scheduleError, setScheduleError] = useState(false),
     [celebrating, setCelebrating] = useState(false),
-    [asking, setAsking] = useState(false);
+    [asking, setAsking] = useState(false),
+    [demoReady, setDemoReady] = useState(false);
+  const onDemoReady = useCallback(() => setDemoReady(true), []);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -41,6 +43,7 @@ export function OnboardingRoute() {
       flow.setAnswer(key, value),
     );
   const advance = async () => {
+    if (flow.step === 'S3b' && !demoReady) return;
     if (flow.step === 'S3d') {
       if (asking) return;
       if (runtime.notifications.status() === 'notDetermined') {
@@ -65,6 +68,7 @@ export function OnboardingRoute() {
         return;
       }
     }
+    if (flow.step === 'S3b') setDemoReady(false);
     flow.advance();
   };
   if (!focused) return null;
@@ -86,17 +90,17 @@ export function OnboardingRoute() {
         {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
-  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
-  if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} />;
+  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
+  if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} />;
   if (flow.step === 'S3d') body = <TrialReminder />;
   return (
     <OnboardingShell
       step={flow.step}
       progress={flow.progress}
       direction={flow.direction}
-      onBack={flow.back}
+      onBack={() => { if (flow.step === 'S3b') setDemoReady(false); flow.back(); }}
       onContinue={() => void advance()}
-      valid={canContinue(flow.step, flow.answers)}
+      valid={canContinue(flow.step, flow.answers) && (flow.step !== 'S3b' || demoReady)}
       continuing={flow.isAdvancing || asking}
       continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? c.trialCta : undefined}
       hideContinue={flow.step === 'S2' || playback.hideContinue}

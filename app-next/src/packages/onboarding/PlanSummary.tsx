@@ -32,7 +32,7 @@ export function PlanSummary({
   if (answers) {
     const goals = planGoals(answers);
     return <>
-      <Heading title={c.S3} />
+      <Heading title={c.projected} />
       <ConditionPreview icon={draft.activity} schedule={schedule} sentence={conditionSentence(answers, draft, { schedule, goalChosen: true })} />
       <View style={{ gap: t.space.md }}>
         {goals.map((goal, index) => <Reveal key={goal.id} index={index}>

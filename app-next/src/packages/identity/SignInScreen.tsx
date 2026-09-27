@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import {
-  AppleAuthenticationButton,
-  AppleAuthenticationButtonStyle,
-  AppleAuthenticationButtonType,
-} from 'expo-apple-authentication';
+import { Image, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { BackButton, Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../ui';
 import { signInCopy as c } from './lib/signInCopy';
 import { tokens as t } from '../ui/tokens';
@@ -19,9 +15,11 @@ import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRe
 export function SignInScreen({
   onContinue,
   signInRequired,
+  onExit,
 }: {
   onContinue: () => void;
   signInRequired?: SignInRequiredSource;
+  onExit?: () => void;
 }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
@@ -120,14 +118,17 @@ export function SignInScreen({
     );
   return (
     <Reveal key={phase} style={{ flexGrow: 1, gap: t.space.xl }}>
-      {phase !== 'options' ? (
+      {phase !== 'options' || onExit ? (
         <View style={{ marginLeft: -(t.control.inline - t.icon.md) / 2, marginBottom: -t.space.lg }}>
           <BackButton
-            label={c.backToOptions}
+            label={phase === 'options' ? undefined : c.backToOptions}
             disabled={busy}
             onPress={() => {
-              setPhase('options');
-              setError('');
+              if (phase === 'options') onExit?.();
+              else {
+                setPhase('options');
+                setError('');
+              }
             }}
           />
         </View>
@@ -144,8 +145,29 @@ export function SignInScreen({
         />
       ) : (
         <>
-          <Heading title={phase === 'email' ? c.emailTitle : c.X4} support={c.authBody} />
-          <LivingIcon name="person" />
+          {phase === 'options' ? (
+            <View style={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: t.space.md }}>
+              <Reveal>
+                <Image
+                  source={require('../../../assets/running-lock-primary.png')}
+                  resizeMode="contain"
+                  accessible={false}
+                  style={{ width: t.control.row, height: t.control.row }}
+                />
+              </Reveal>
+              <Heading title={c.X4} centered />
+              <Label tone="secondary" style={{ textAlign: 'center' }}>
+                {c.authBody}
+              </Label>
+            </View>
+          ) : (
+            <>
+              <Heading title={c.emailTitle} centered />
+              <Label tone="secondary" style={{ textAlign: 'center' }}>
+                {c.authBody}
+              </Label>
+            </>
+          )}
           {phase === 'email' ? (
             <>
               <TextField
@@ -161,25 +183,33 @@ export function SignInScreen({
               <PrimaryButton label={c.sendCode} disabled={!validEmail} loading={busy} onPress={send} />
             </>
           ) : (
-            <>
-              <AppleAuthenticationButton
-                buttonType={AppleAuthenticationButtonType.CONTINUE}
-                buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
-                cornerRadius={t.radius.pill}
-                style={{ width: '100%', height: t.control.full }}
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel={c.apple}
-                accessibilityState={{ disabled: busy, busy }}
-                onPress={() => {
-                  if (!busy) void signIn('apple');
-                }}
-                onAccessibilityTap={() => {
-                  if (!busy) void signIn('apple');
-                }}
-              />
-              <SecondaryButton label={c.google} disabled={busy} onPress={() => signIn('google')} />
+            <View style={{ gap: t.space.md }}>
               <SecondaryButton
+                label={c.apple}
+                disabled={busy}
+                leading={<SymbolView name="apple.logo" size={t.icon.md} tintColor={t.text.primary} />}
+                onPress={() => void signIn('apple')}
+              />
+              <SecondaryButton
+                label={c.google}
+                disabled={busy}
+                leading={
+                  <Image
+                    source={require('../../../assets/google-g.png')}
+                    accessible={false}
+                    style={{ width: t.icon.md, height: t.icon.md }}
+                  />
+                }
+                onPress={() => void signIn('google')}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+                <View style={{ flex: 1, height: t.stroke.hairline, backgroundColor: t.border.divider }} />
+                <Label variant="support" tone="secondary">
+                  {c.or}
+                </Label>
+                <View style={{ flex: 1, height: t.stroke.hairline, backgroundColor: t.border.divider }} />
+              </View>
+              <PrimaryButton
                 label={c.email}
                 disabled={busy}
                 onPress={() => {
@@ -187,7 +217,7 @@ export function SignInScreen({
                   setError('');
                 }}
               />
-            </>
+            </View>
           )}
           {error ? (
             <Reveal>

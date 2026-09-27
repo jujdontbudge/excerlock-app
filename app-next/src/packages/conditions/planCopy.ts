@@ -9,6 +9,7 @@ export const planCopy = {
   S2: 'Setting up your plan…',
   S3: 'Your plan is ready',
   summaryBody: 'A little movement. More room for your life.',
+  projected: 'Projected results',
   activity: 'Activity & goal',
   schedule: 'Days & times',
   edit: 'Edit',

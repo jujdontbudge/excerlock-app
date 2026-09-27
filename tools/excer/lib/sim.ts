@@ -1,33 +1,69 @@
 import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { appRoot, stateDir, timestamp } from './paths.ts';
 import { walk } from './files.ts';
 import { must, run, sleep } from './shell.ts';
 
 export const bundleId = 'com.johansardar.excerlock';
-export const metroPort = 8091;
+function configuredMetroPort(): number {
+  const raw = process.env.EXCER_METRO_PORT;
+  if (raw === undefined || raw === '') return 8091;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error(`EXCER_METRO_PORT must be a port number from 1024 to 65535, got "${raw}"`);
+  return port;
+}
+export const metroPort = configuredMetroPort();
 const defaultSimName = 'ExcerLock-Next';
 
-type Device = { udid: string; name: string; state: string };
+export const workerSimSet = join(homedir(), '.local', 'share', 'excer', 'worker-simulators');
+
+type Device = { udid: string; name: string; state: string; set?: string };
+
+const knownSets = new Map<string, string | undefined>();
+
+function listSet(set?: string): Device[] {
+  const args = set ? ['simctl', '--set', set, 'list', 'devices', 'available', '-j'] : ['simctl', 'list', 'devices', 'available', '-j'];
+  const parsed = JSON.parse(must('xcrun', args)) as { devices: Record<string, Device[]> };
+  return Object.values(parsed.devices).flat().map((device) => ({ ...device, set }));
+}
 
 export function devices(): Device[] {
-  const parsed = JSON.parse(must('xcrun', ['simctl', 'list', 'devices', 'available', '-j'])) as { devices: Record<string, Device[]> };
-  return Object.values(parsed.devices).flat();
+  const all = [...(existsSync(workerSimSet) ? listSet(workerSimSet) : []), ...listSet()];
+  for (const device of all) if (!knownSets.has(device.udid)) knownSets.set(device.udid, device.set);
+  return all;
+}
+
+export function deviceSet(udid: string): string | undefined {
+  if (!knownSets.has(udid)) devices();
+  return knownSets.get(udid);
+}
+
+export function simctlArgs(udid: string, args: string[]): string[] {
+  const set = deviceSet(udid);
+  return set ? ['simctl', '--set', set, ...args] : ['simctl', ...args];
+}
+
+function isMainCheckout(): boolean {
+  const [gitDir, commonDir] = run('git', ['rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir']).stdout.trim().split('\n');
+  return Boolean(gitDir) && gitDir === commonDir;
 }
 
 export function ownedDevice(): Device {
   const wanted = process.env.EXCER_SIM ?? defaultSimName;
   const device = devices().find((candidate) => candidate.udid === wanted || candidate.name === wanted);
   if (!device) throw new Error(`No simulator named or with UDID "${wanted}". Set EXCER_SIM, or create one: xcrun simctl create ${defaultSimName} "iPhone 17 Pro"`);
+  if (!isMainCheckout() && device.set !== workerSimSet)
+    throw new Error(`${device.name} is not a worker simulator. A worktree must set EXCER_SIM to its own simulator in ${workerSimSet} (see AGENTS.md "Spawning workers"); ${defaultSimName} belongs to the lead session.`);
   return device;
 }
 
 export async function boot(): Promise<Device> {
   const device = ownedDevice();
   if (device.state !== 'Booted') {
-    must('xcrun', ['simctl', 'boot', device.udid]);
-    must('xcrun', ['simctl', 'bootstatus', device.udid, '-b']);
+    must('xcrun', simctlArgs(device.udid, ['boot', device.udid]));
+    must('xcrun', simctlArgs(device.udid, ['bootstatus', device.udid, '-b']));
     writeFileSync(join(stateDir(), 'booted-by-excer'), device.udid);
   }
   return { ...device, state: 'Booted' };
@@ -36,12 +72,12 @@ export async function boot(): Promise<Device> {
 export function shutdown(): string {
   const device = ownedDevice();
   if (device.state !== 'Booted') return `${device.name} is already shut down`;
-  must('xcrun', ['simctl', 'shutdown', device.udid]);
+  must('xcrun', simctlArgs(device.udid, ['shutdown', device.udid]));
   return `${device.name} shut down`;
 }
 
 export function installed(udid: string): boolean {
-  return run('xcrun', ['simctl', 'get_app_container', udid, bundleId]).code === 0;
+  return run('xcrun', simctlArgs(udid, ['get_app_container', udid, bundleId])).code === 0;
 }
 
 export function appCandidates(): string[] {
@@ -57,14 +93,14 @@ export function appCandidates(): string[] {
 export function install(udid: string, path?: string): string {
   const app = path ?? appCandidates()[0];
   if (!app) throw new Error('No simulator build found. Build once with: cd app-next && CI=1 npx expo run:ios --device generic --configuration Debug --no-bundler --output ./build');
-  must('xcrun', ['simctl', 'install', udid, app]);
+  must('xcrun', simctlArgs(udid, ['install', udid, app]));
   grantPermissions(udid);
   return app;
 }
 
 export function grantPermissions(udid: string): void {
   for (const service of ['location-always', 'motion', 'camera', 'photos'])
-    run('xcrun', ['simctl', 'privacy', udid, 'grant', service, bundleId]);
+    run('xcrun', simctlArgs(udid, ['privacy', udid, 'grant', service, bundleId]));
 }
 
 export async function metroRunning(): Promise<boolean> {
@@ -141,7 +177,7 @@ export function stopMetro(): string {
 
 export function openUrl(udid: string, target: string): string {
   const url = /^[a-z][\w+.-]*:/.test(target) ? target : `excerlock://${target.replace(/^\/+/, '')}`;
-  must('xcrun', ['simctl', 'openurl', udid, url]);
+  must('xcrun', simctlArgs(udid, ['openurl', udid, url]));
   return url;
 }
 
@@ -150,13 +186,33 @@ export function launchDevClient(udid: string): void {
 }
 
 export function screenshot(udid: string, path = join(stateDir('shots'), `${timestamp()}.png`)): string {
-  must('xcrun', ['simctl', 'io', udid, 'screenshot', path]);
+  must('xcrun', simctlArgs(udid, ['io', udid, 'screenshot', path]));
   return path;
 }
 
 export type AxNode = { AXLabel?: string | null; AXValue?: string | null; type?: string; frame: { x: number; y: number; width: number; height: number } };
 
+const companionSocket = (udid: string) => `/tmp/idb/${udid}_companion.sock`;
+
+export function ensureCompanion(udid: string): void {
+  if (run('idb', ['ui', 'describe-all', '--udid', udid]).code === 0) return;
+  const socket = companionSocket(udid);
+  run('/bin/mkdir', ['-p', '/tmp/idb']);
+  run('/bin/rm', ['-f', socket]);
+  const log = openSync(join(stateDir(), `idb-companion-${udid}.log`), 'w');
+  const set = deviceSet(udid);
+  const child = spawn('idb_companion', ['--udid', udid, '--grpc-domain-sock', socket, ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
+  child.unref();
+  closeSync(log);
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (existsSync(socket) && run('idb', ['ui', 'describe-all', '--udid', udid]).code === 0) return;
+    run('/bin/sleep', ['0.5']);
+  }
+  throw new Error(`idb_companion did not start for ${udid}; see ${join(stateDir(), `idb-companion-${udid}.log`)}`);
+}
+
 export function tree(udid: string): AxNode[] {
+  ensureCompanion(udid);
   return JSON.parse(must('idb', ['ui', 'describe-all', '--udid', udid])) as AxNode[];
 }
 
@@ -203,7 +259,7 @@ export async function metroClients(): Promise<number> {
 }
 
 async function connect(udid: string): Promise<boolean> {
-  run('xcrun', ['simctl', 'terminate', udid, bundleId]);
+  run('xcrun', simctlArgs(udid, ['terminate', udid, bundleId]));
   launchDevClient(udid);
   for (let attempt = 0; attempt < 30; attempt += 1) {
     if ((await metroClients()) > 0) return true;
@@ -218,7 +274,7 @@ export async function ensureApp(options: { reinstall?: boolean } = {}): Promise<
   else grantPermissions(device.udid);
   await ensureFreshMetro();
   if ((await metroClients()) === 0 && !(await connect(device.udid))) {
-    run('xcrun', ['simctl', 'uninstall', device.udid, bundleId]);
+    run('xcrun', simctlArgs(device.udid, ['uninstall', device.udid, bundleId]));
     install(device.udid);
     if (!(await connect(device.udid))) throw new Error(`The app did not attach to Metro; see ${metroLog()}`);
   }

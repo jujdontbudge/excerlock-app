@@ -1,7 +1,7 @@
 import { createPersistedStore } from '../persistence/createPersistedStore';
 import { isOnboardingStepId } from './lib/stepId';
 import * as v from '../persistence/validation';
-export type Answers = Record<string, string | number | boolean | number[]>;
+export type Answers = Record<string, string | number | boolean | number[] | string[]>;
 export type OnboardingState = {
   step: string;
   answers: Answers;
@@ -15,7 +15,7 @@ const answers = (value: unknown) =>
   v.object(value) &&
   Object.entries(value).every(([key, x]) => key === 'currentDailySteps'
     ? v.number(0, 20000)(x)
-    : v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x));
+    : v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x) || v.array(v.text)(x));
 export const onboardingStore = createPersistedStore<OnboardingState>(
   'onboarding',
   { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false, winbackDeclined: false },

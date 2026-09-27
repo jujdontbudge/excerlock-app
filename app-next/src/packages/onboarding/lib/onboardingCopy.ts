@@ -6,10 +6,8 @@ export const onboardingCopy = {
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
   O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
-  O21: { title: 'What exercise would you like to do more of?', body: 'Pick the one you’re most interested in.' },
   O07: { title: 'What is your gender?', body: '' },
-  O22: { title: 'What is your body goal?', body: '' },
-  O09: { title: 'How many hours of exercise do you do per week?', body: '' },
+  O22: { title: 'What are your body goals?', body: '' },
   O10: {
     title: 'How many hours do you currently spend scrolling each day?',
     body: 'Don’t worry about the exact number. Just give your best guess.',
@@ -25,7 +23,7 @@ export const onboardingCopy = {
   O16: { title: 'You’re stuck in a loop', body: 'An urge. A quick scroll. A little reward. Then, again.' },
   O17: { title: 'We’ll change the loop', body: 'Put a little movement between the urge and the app.' },
   O18: { title: 'You become ADDICTED to exercise', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
-  O20: { title: 'What exercise should unlock your apps?', body: 'Pick the one you will really do.' },
+  O20: { title: 'What exercise do you want to do more of?', body: 'Pick the one you will really do.' },
 } as const;
 export const finalLoopTitle = { before: 'You become ', emphasis: 'ADDICTED', after: ' to exercise' } as const;
 export const loopSceneCopy = {

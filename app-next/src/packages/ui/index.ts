@@ -10,6 +10,7 @@ export { ChoiceGrid } from './lib/ChoiceGrid';
 export { TextField } from './lib/TextField';
 export { NumberField } from './lib/NumberField';
 export { Slider } from './lib/Slider';
+export { RulerSlider } from './lib/RulerSlider';
 export { DayPicker } from './lib/DayPicker';
 export { TimeRangeRow } from './lib/TimeRangeRow';
 export { SegmentedControl } from './lib/SegmentedControl';

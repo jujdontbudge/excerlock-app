@@ -1,6 +1,6 @@
 import { IconName } from '../../ui/paths';
 export type OnboardingChoice = { id: string; title: string; icon?: IconName };
-export const choiceQuestions: { [step: string]: { key: string; options: OnboardingChoice[] } } = {
+export const choiceQuestions: { [step: string]: { key: string; options: OnboardingChoice[]; multiple?: boolean } } = {
   O05: {
     key: 'referralSource',
     options: [
@@ -25,19 +25,6 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
       { id: 'other', title: 'Something else', icon: 'more' },
     ],
   },
-  O21: {
-    key: 'exercisePreference',
-    options: [
-      { id: 'walking', title: 'Walking', icon: 'walking' },
-      { id: 'lifting', title: 'Lifting', icon: 'gym' },
-      { id: 'pilates', title: 'Pilates', icon: 'person' },
-      { id: 'yoga', title: 'Yoga', icon: 'heart' },
-      { id: 'running', title: 'Running', icon: 'flame' },
-      { id: 'cycling', title: 'Cycling', icon: 'clock' },
-      { id: 'swimming', title: 'Swimming', icon: 'person' },
-      { id: 'other', title: 'Something else', icon: 'more' },
-    ],
-  },
   O07: {
     key: 'gender',
     options: [
@@ -49,21 +36,11 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
   },
   O22: {
     key: 'bodyGoal',
+    multiple: true,
     options: [
-      { id: 'gain', title: 'Gain weight', icon: 'gym' },
-      { id: 'lose', title: 'Lose weight', icon: 'flame' },
+      { id: 'gain', title: 'Gain muscle', icon: 'gym' },
+      { id: 'lose', title: 'Lose fat', icon: 'flame' },
       { id: 'maintain', title: 'Maintain', icon: 'heart' },
-    ],
-  },
-  O09: {
-    key: 'weeklyExerciseHours',
-    options: [
-      { id: 'none', title: 'None yet' },
-      { id: 'under-1', title: 'Less than 1 hour' },
-      { id: '1-2', title: '1–2 hours' },
-      { id: '3-4', title: '3–4 hours' },
-      { id: '5-6', title: '5–6 hours' },
-      { id: '7-plus', title: '7+ hours' },
     ],
   },
 };

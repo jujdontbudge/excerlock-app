@@ -14,7 +14,10 @@ export function canContinue(step: string, answers: Answers): boolean {
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
   if (choiceQuestions[step]) {
     const question = choiceQuestions[step];
-    return question.options.some((o) => o.id === answers[question.key]);
+    const value = answers[question.key];
+    if (question.multiple)
+      return Array.isArray(value) && value.length > 0 && value.every((id) => question.options.some((o) => o.id === id));
+    return question.options.some((o) => o.id === value);
   }
   if (step === 'O20') return ['walking', 'gym'].includes(String(answers.activity));
   if (step === 'O10') {

@@ -18,6 +18,7 @@ import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
 import { defaultPlanHandle } from './paywallVariant';
 import { paywallPromises } from './paywallPromises';
 import { PaywallHero } from './PaywallHero';
+import { paywallCopy as copy } from './paywallCopy';
 export function PaywallScreen({
   placement,
   reportError,
@@ -126,30 +127,44 @@ export function PaywallScreen({
         <View
           style={{
             paddingHorizontal: t.layout.page,
-            height: t.layout.header,
+            height: placement === 'onboarding' ? t.type.display.lineHeight * 2 : t.layout.header,
+          }}>
+          <View style={{
+            height: placement === 'onboarding' ? t.type.display.lineHeight : t.layout.header,
             flexDirection: 'row',
             alignItems: 'center',
           }}>
-          <View style={{ width: t.control.row }}>
-            {onClose ? (
-              <CloseButton label="Close" onPress={onClose} />
-            ) : onBack ? (
-              <BackButton onPress={onBack} />
-            ) : null}
-          </View>
-          <View style={{ flex: 1 }} />
-          <View style={{ width: t.control.row, alignItems: 'flex-end' }}>
-            <PressableScale
-              label={subscriptionCopy.restore}
-              accessibilityState={{ disabled: busy !== null }}
-              onPress={() => {
-                if (busy === null) void restore();
-              }}>
-              <Label variant="support" tone="secondary">
-                {subscriptionCopy.restoreShort}
+            <View style={{ width: t.control.full }}>
+              {onClose ? (
+                <CloseButton label="Close" onPress={onClose} />
+              ) : onBack ? (
+                <BackButton onPress={onBack} />
+              ) : null}
+            </View>
+            {placement === 'onboarding' ? (
+              <Label accessibilityRole="header" accessibilityLabel={copy.title} variant="display" style={{ flex: 1, textAlign: 'center' }}>
+                {copy.before.trim()}
               </Label>
-            </PressableScale>
+            ) : <View style={{ flex: 1 }} />}
+            <View style={{ width: t.control.full, alignItems: 'flex-end' }}>
+              <PressableScale
+                label={subscriptionCopy.restore}
+                accessibilityState={{ disabled: busy !== null }}
+                onPress={() => {
+                  if (busy === null) void restore();
+                }}>
+                <Label variant="support" tone="secondary">
+                  {subscriptionCopy.restoreShort}
+                </Label>
+              </PressableScale>
+            </View>
           </View>
+          {placement === 'onboarding' ? (
+            <Label accessible={false} variant="display" numberOfLines={1} adjustsFontSizeToFit style={{ textAlign: 'center', paddingRight: t.space.xxl }}>
+              <Label variant="display" style={{ color: t.brand.primary }}>{copy.emphasis}</Label>
+              {copy.after}
+            </Label>
+          ) : null}
         </View>
       }
       footer={

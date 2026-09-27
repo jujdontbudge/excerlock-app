@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
@@ -13,7 +13,8 @@ export function SecondaryButton({
   disabled,
   variant = 'secondary',
   testID,
-}: ButtonProps & { variant?: 'secondary' | 'tertiary' }) {
+  leading,
+}: ButtonProps & { variant?: 'secondary' | 'tertiary'; leading?: ReactNode }) {
   const [pressed, setPressed] = useState(false);
   const m = useMotion();
   return (
@@ -33,6 +34,7 @@ export function SecondaryButton({
         style={{
           minHeight: t.control.full,
           padding: t.space.md,
+          paddingHorizontal: leading ? t.control.inline : t.space.md,
           borderRadius: t.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
@@ -42,6 +44,19 @@ export function SecondaryButton({
           transform: [{ scale: pressed ? m.scale.pressed : 1 }],
           ...m.transition(['transform', 'backgroundColor', 'borderColor'], 'press'),
         }}>
+        {leading ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: t.space.lg,
+              width: t.icon.md,
+              height: t.icon.md,
+              justifyContent: 'center',
+            }}>
+            {leading}
+          </View>
+        ) : null}
         <Label variant="label" style={{ color: disabled ? t.state.disabledText : t.text.primary, textAlign: 'center' }}>
           {label}
         </Label>

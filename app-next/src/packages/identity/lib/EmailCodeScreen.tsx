@@ -1,7 +1,6 @@
 import { Heading, TextField, PrimaryButton, SecondaryButton, Label } from '../../ui';
 import { signInCopy as c } from './signInCopy';
 import { tokens as t } from '../../ui/tokens';
-import { LivingIcon } from '../../ui/LivingIcon';
 import { Reveal } from '../../ui/Reveal';
 export function EmailCodeScreen({
   code,
@@ -22,8 +21,8 @@ export function EmailCodeScreen({
 }) {
   return (
     <>
-      <Heading title={c.codeTitle} support={c.codeBody} />
-      <LivingIcon name="mail" />
+      <Heading title={c.codeTitle} centered />
+      <Label tone="secondary" style={{ textAlign: 'center' }}>{c.codeBody}</Label>
       <TextField
         label={c.codeLabel}
         value={code}

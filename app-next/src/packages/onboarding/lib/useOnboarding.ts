@@ -66,7 +66,7 @@ export function useOnboarding() {
     direction,
     isAdvancing,
     progress: progressFraction(flow, flowOrder),
-    setAnswer: (key: string, value: string | number | boolean | number[]) => {
+    setAnswer: (key: string, value: string | number | boolean | number[] | string[]) => {
       if (key === 'name') advanceEpoch.current += 1;
       useOnboardingStore.getState().patch({ answers: { ...useOnboardingStore.getState().data.answers, [key]: value } });
     },

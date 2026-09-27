@@ -5,10 +5,12 @@ import {
   appCandidates,
   boot,
   ensureApp,
+  ensureCompanion,
   install,
   installed,
   labels,
   metroLog,
+  metroPort,
   metroRunning,
   relaunch,
   openUrl,
@@ -52,7 +54,7 @@ export async function simCommand(args: string[]): Promise<number> {
       const device = ownedDevice();
       console.log(`simulator  ${device.name} ${device.udid} ${device.state}`);
       console.log(`app        ${device.state === 'Booted' ? (installed(device.udid) ? 'installed' : 'not installed') : 'unknown (simulator not booted)'}`);
-      console.log(`metro      ${(await metroRunning()) ? 'running on :8091' : 'stopped'}`);
+      console.log(`metro      ${(await metroRunning()) ? `running on :${metroPort}` : 'stopped'}`);
       console.log(`builds     ${appCandidates().join('\n           ') || 'none found'}`);
       return 0;
     }
@@ -85,6 +87,7 @@ export async function simCommand(args: string[]): Promise<number> {
       console.log(await tap(ownedDevice().udid, rest.join(' ')));
       return 0;
     case 'type':
+      ensureCompanion(ownedDevice().udid);
       must('idb', ['ui', 'text', '--udid', ownedDevice().udid, rest.join(' ')]);
       console.log('typed');
       return 0;

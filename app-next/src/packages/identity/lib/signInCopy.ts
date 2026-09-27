@@ -3,6 +3,7 @@ export const signInCopy = {
   authBody: 'Keep your plan connected to you.',
   apple: 'Continue with Apple',
   google: 'Continue with Google',
+  or: 'or',
   email: 'Continue with email',
   emailLabel: 'Email address',
   sendCode: 'Send code',

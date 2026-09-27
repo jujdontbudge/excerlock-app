@@ -1,4 +1,4 @@
-import { Answers, FlowState } from '../../model/answers';
+import { Answers, bodyGoals, FlowState } from '../../model/answers';
 
 import type { FlowOrder } from '../../ports/OnboardingFlowPort';
 export const preBranch = [
@@ -11,8 +11,8 @@ export const preBranch = [
   'O06',
   'O08',
   'O22',
-  'O21',
-  'O09',
+  'O23',
+  'O24',
   'O10',
   'O11',
   'O12',
@@ -36,8 +36,17 @@ function branchFor(answers: Answers): string[] {
   }
 }
 
+function applies(step: string, answers: Answers): boolean {
+  if (step === 'O23') return bodyGoals(answers).includes('gain');
+  if (step === 'O24') return bodyGoals(answers).includes('lose');
+  return true;
+}
+
 export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
-  return [...(order?.preBranch ?? preBranch), ...branchFor(answers), ...(order?.tail ?? tail)];
+  const pre = (order?.preBranch ?? preBranch)
+    .filter((step) => step !== 'O23' && step !== 'O24')
+    .flatMap((step) => step === 'O22' ? [step, ...(['O23', 'O24'].filter((target) => applies(target, answers)))] : [step]);
+  return [...pre, ...branchFor(answers), ...(order?.tail ?? tail)];
 }
 
 function applicableOrder(state: FlowState, order?: FlowOrder | null): FlowOrder | null {

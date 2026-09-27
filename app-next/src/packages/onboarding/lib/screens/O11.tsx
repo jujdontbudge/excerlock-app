@@ -23,7 +23,8 @@ export function O11({ answers }: AnswerProps) {
           borderColor: t.border.outline,
           backgroundColor: t.surface.card,
           padding: t.space.xl,
-          gap: t.space.lg,
+          gap: t.space.md,
+          alignItems: 'center',
         }}>
         {[
           { value: summary.hours, label: c.daily },

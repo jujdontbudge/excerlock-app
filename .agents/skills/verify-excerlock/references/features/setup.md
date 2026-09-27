@@ -2,7 +2,7 @@
 id: setup
 title: Setup, sign-in and permissions
 routes: [setup/[step], permissions/[step], sign-in]
-scenarios: [home-permission-needed, home-no-apps, home-walking-session]
+scenarios: [home-permission-needed, home-no-apps, home-walking-session, trial-active]
 events: [permission_resolved]
 depends: [paywall, conditions]
 ---
@@ -30,6 +30,39 @@ name: reminder-card-walking
 scenario: home-walking-session
 open: /home
 expect: Walks cannot open your apps yet | Turn on
+```
+
+```proof
+name: sign-in-provider-options
+scenario: trial-active
+open: dev?setup=X1
+expect: ExcerLock
+then-open: /setup/X1
+then-expect: Save your progress | Keep your plan connected to you. | Continue with Apple | Continue with Google | Continue with email | Skip for now
+```
+
+```proof
+name: sign-in-email
+scenario: trial-active
+open: /sign-in
+tap: Continue with email
+expect: Sign in with email | Email address | Send code | Back to sign-in options
+```
+
+```proof
+name: sign-in-google-action
+scenario: trial-active
+open: /sign-in
+tap: Continue with Google
+expect: Home | Locked
+```
+
+```proof
+name: sign-in-apple-action
+scenario: trial-active
+open: /sign-in
+tap: Continue with Apple
+expect: Home | Locked
 ```
 
 ## Gotchas

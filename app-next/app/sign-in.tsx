@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SettingsPage } from '../src/packages/ui/SettingsPage';
+import { ScreenShell } from '../src/packages/ui';
 import { SignInScreen } from '../src/packages/identity/SignInScreen';
 import { useSignInRequiredSource } from '../src/packages/identity/useSignInRequiredSource';
 export default function SignInRoute() {
@@ -8,9 +8,9 @@ export default function SignInRoute() {
   const signInRequired = useSignInRequiredSource();
   return (
     <SafeAreaProvider>
-      <SettingsPage onBack={() => r.back()}>
-        <SignInScreen onContinue={() => r.back()} signInRequired={signInRequired} />
-      </SettingsPage>
+      <ScreenShell>
+        <SignInScreen onContinue={() => r.back()} onExit={() => r.back()} signInRequired={signInRequired} />
+      </ScreenShell>
     </SafeAreaProvider>
   );
 }
