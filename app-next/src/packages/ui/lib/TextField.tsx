@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TextInput, TextInputProps, View } from 'react-native';
+import { Keyboard, TextInput, TextInputProps, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { tokens as t } from '../tokens';
 import { Label } from '../Label';
@@ -53,6 +53,8 @@ export function TextField({
           }}
           placeholderTextColor={t.text.secondary}
           selectionColor={t.brand.primary}
+          returnKeyType={props.keyboardType === 'number-pad' || props.keyboardType === 'decimal-pad' ? undefined : props.returnKeyType ?? (props.multiline ? 'default' : 'done')}
+          onSubmitEditing={props.onSubmitEditing ?? (props.multiline ? undefined : Keyboard.dismiss)}
           allowFontScaling
           maxFontSizeMultiplier={t.a11y.textScale}
           style={[
@@ -61,10 +63,13 @@ export function TextField({
               minHeight: t.control.full,
               color: t.text.primary,
               paddingHorizontal: t.space.lg,
-              paddingVertical: t.space.lg,
+              paddingVertical: props.multiline ? t.space.md : 0,
+              textAlignVertical: props.multiline ? 'top' : 'center',
             },
+            !props.multiline && { height: t.control.full, lineHeight: undefined },
             centered && { textAlign: 'center' },
             props.style,
+            !props.multiline && { lineHeight: undefined, paddingVertical: 0 },
           ]}
         />
       </Animated.View>

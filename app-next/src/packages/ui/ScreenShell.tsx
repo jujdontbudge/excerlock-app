@@ -1,5 +1,5 @@
 import { PropsWithChildren, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, LayoutChangeEvent, ScrollView, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, LayoutChangeEvent, ScrollView, TextInput, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tokens as t } from './tokens';
@@ -47,8 +47,14 @@ export function ScreenShell({
     return () => cancelAnimationFrame(frame);
   }, [scrollResetKey]);
   useEffect(() => {
-    if (!scrollToEndOnKeyboard) return;
-    const listener = Keyboard.addListener('keyboardDidShow', () => scroll.current?.scrollToEnd({ animated: true }));
+    const listener = Keyboard.addListener('keyboardDidShow', () => {
+      if (scrollToEndOnKeyboard) {
+        scroll.current?.scrollToEnd({ animated: true });
+      } else {
+        const field = TextInput.State.currentlyFocusedInput();
+        if (field) scroll.current?.scrollResponderScrollNativeHandleToKeyboard(field, t.space.xl, true);
+      }
+    });
     return () => listener.remove();
   }, [scrollToEndOnKeyboard]);
   return (
@@ -78,6 +84,7 @@ export function ScreenShell({
             ref={scroll}
             scrollEnabled={scrollEnabled}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={[
               s.content,
               dock && { paddingBottom: t.layout.tabHeight + insets.bottom + t.space.xl },
@@ -87,7 +94,15 @@ export function ScreenShell({
               contentStyle,
             ]}
             showsVerticalScrollIndicator={false}>
-            {children}
+            <View
+              onTouchStart={(event) => {
+                const focused = TextInput.State.currentlyFocusedInput();
+                const { pageX, pageY } = event.nativeEvent;
+                focused?.measureInWindow((x, y, width, height) => {
+                  if (pageX < x || pageX > x + width || pageY < y || pageY > y + height) Keyboard.dismiss();
+                });
+              }}
+              style={s.contentBody}>{children}</View>
           </ScrollView>
           {footer ? (
             <View
@@ -121,6 +136,7 @@ const s = StyleSheet.create({
     maxWidth: t.layout.maxWidth,
     alignSelf: 'center',
   },
+  contentBody: { flexGrow: 1, gap: t.space.xl },
   footer: {
     position: 'absolute',
     left: 0,

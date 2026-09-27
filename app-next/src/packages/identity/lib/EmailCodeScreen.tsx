@@ -28,6 +28,7 @@ export function EmailCodeScreen({
         value={code}
         onChangeText={(value) => onCode(value.replace(/\D/g, '').slice(0, 6))}
         keyboardType="number-pad"
+        maxLength={6}
         textContentType="oneTimeCode"
         autoFocus
         error={error || undefined}

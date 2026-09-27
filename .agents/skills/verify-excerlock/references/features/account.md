@@ -31,6 +31,14 @@ open: /settings/account
 expect: Not signed in | Sign in
 ```
 
+```proof
+name: email-entry
+scenario: trial-active
+open: /sign-in
+tap: Continue with email
+expect: Sign in with email | Email address | Send code
+```
+
 ## Gotchas
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
 - The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.

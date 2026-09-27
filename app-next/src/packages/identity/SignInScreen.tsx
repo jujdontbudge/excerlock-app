@@ -177,6 +177,9 @@ export function SignInScreen({
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
+                maxLength={254}
+                returnKeyType="send"
+                onSubmitEditing={() => void send()}
                 autoFocus
                 error={email && !validEmail ? c.emailError : undefined}
               />

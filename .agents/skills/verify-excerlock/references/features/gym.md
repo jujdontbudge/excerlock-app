@@ -31,6 +31,14 @@ open: /gym-picker
 expect: Pick your gym | Search for a gym or address | Arrival radius | Save gym
 ```
 
+```proof
+name: search-field
+scenario: trial-active
+open: /gym-picker
+tap: Search for a gym or address
+expect: Search | Search for a gym or address | Find gyms near me
+```
+
 ## Gotchas
 - `unlock-gym-inside` says "Location not at gym" unless the simulator location is set inside the gym, because the iOS dev runtime swaps in real foreground location.
 - Presence confirmation is one app-fixed 30 s constant, `PRESENCE_CONFIRM_MS` in `activity/presence.ts` (PRD §3.7, decided 2026-07-28). Background geofence arrivals (`gymMachine`), the Home presence sync and the check-in ceremony all use it; do not add a second timing.

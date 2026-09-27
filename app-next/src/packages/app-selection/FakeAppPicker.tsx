@@ -43,6 +43,7 @@ export function FakeAppPicker({
         </View>
         <ScrollView
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{ padding: t.space.md, gap: t.space.md }}>
           <TextInput
             accessibilityLabel={c.search}
@@ -51,10 +52,15 @@ export function FakeAppPicker({
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
+            returnKeyType="search"
+            maxLength={80}
             style={[
               appPicker.label,
               {
                 height: p.searchHeight,
+                paddingVertical: 0,
+                textAlignVertical: 'center',
+                lineHeight: undefined,
                 borderRadius: p.searchRadius,
                 paddingHorizontal: t.space.md,
                 backgroundColor: p.search,
