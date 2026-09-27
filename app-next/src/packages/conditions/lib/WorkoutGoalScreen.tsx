@@ -6,7 +6,7 @@ import { tokens as t } from '../../ui/tokens';
 import { workoutCopy as c } from './workoutRulesCopy';
 import { RuleDraft, DraftAction } from '../draft';
 import { goalRange, validGoal } from '../goalRange';
-import { feedback } from '../../ui/haptics';
+import { haptic } from '../../ui/haptics';
 const ITEM = 52;
 function MinutesWheel({
   value,
@@ -28,26 +28,32 @@ function MinutesWheel({
     selected = options.indexOf(current),
     list = useRef<FlatList<number>>(null),
     [active, setActive] = useState(selected),
-    [prevSelected, setPrevSelected] = useState(selected);
+    [prevSelected, setPrevSelected] = useState(selected),
+    detent = useRef(selected);
   if (prevSelected !== selected) {
     setPrevSelected(selected);
     setActive(selected);
   }
+  const indexAt = (y: number) => Math.min(options.length - 1, Math.max(0, Math.round(y / ITEM)));
   const settle = (y: number) => {
-    const index = Math.min(options.length - 1, Math.max(0, Math.round(y / ITEM)));
+    const index = indexAt(y);
     setActive(index);
-    if (options[index] !== value) {
-      feedback();
-      onChange(options[index]);
-    }
+    if (options[index] !== value) onChange(options[index]);
   };
   const scroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => settle(e.nativeEvent.contentOffset.y);
+  const track = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = indexAt(e.nativeEvent.contentOffset.y);
+    if (index === detent.current) return;
+    detent.current = index;
+    haptic('detent');
+  };
   const step = (delta: number) => {
     const index = Math.min(options.length - 1, Math.max(0, active + delta));
+    detent.current = index;
     list.current?.scrollToOffset({ offset: index * ITEM, animated: true });
     setActive(index);
     if (options[index] !== value) {
-      feedback();
+      haptic('select');
       onChange(options[index]);
     }
   };
@@ -85,12 +91,14 @@ function MinutesWheel({
           snapToAlignment="start"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingVertical: ITEM * 2 }}
+          onScroll={track}
+          scrollEventThrottle={16}
           onMomentumScrollEnd={scroll}
           onScrollEndDrag={scroll}
           renderItem={({ item, index }) => {
             const isActive = index === active;
             return (
-              <PressableScale label={`${item} ${c.minutes}`} onPress={() => step(index - active)}>
+              <PressableScale label={`${item} ${c.minutes}`} haptic="none" onPress={() => step(index - active)}>
                 <View style={{ height: ITEM, alignItems: 'center', justifyContent: 'center' }}>
                   <Label
                     variant={isActive ? 'section' : 'body'}

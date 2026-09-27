@@ -11,6 +11,7 @@ import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
+import { haptic } from '../ui/haptics';
 
 export function SignInScreen({
   onContinue,
@@ -67,12 +68,15 @@ export function SignInScreen({
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
-      if (result.kind === 'signedIn') onContinue();
-      else setError(c.cancelled);
+      if (result.kind === 'signedIn') {
+        haptic('success');
+        onContinue();
+      } else setError(c.cancelled);
     } catch (caught) {
       if (isAuthCancelled(caught)) {
         setError(c.cancelled);
       } else if (isAuthRecoveryRequired(caught)) {
+        haptic('warning');
         if (caught.provider === 'email') {
           setPhase('code');
           setError(caught.message);
@@ -81,6 +85,7 @@ export function SignInScreen({
           setError(caught.message);
         }
       } else {
+        haptic('error');
         setError(provider === 'email' ? c.codeError : c.authError);
       }
     } finally {
@@ -101,6 +106,7 @@ export function SignInScreen({
         setPhase('code');
         setError(caught.message);
       } else {
+        haptic('error');
         setError(c.authError);
       }
     } finally {

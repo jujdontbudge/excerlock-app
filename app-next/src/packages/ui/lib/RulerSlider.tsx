@@ -4,7 +4,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedReaction, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useMotion } from '../useMotion';
-import { feedback } from '../haptics';
+import { haptic } from '../haptics';
 import { tokens as t } from '../tokens';
 import { Label } from '../Label';
 
@@ -44,8 +44,9 @@ export function RulerSlider({
     start = useSharedValue(0);
   const tick = useCallback((index: number) => {
     setShown(Number((min + index * step).toFixed(1)));
-    if (index % precision === 0) feedback('selection');
-  }, [min, step]);
+    if (index === 0 || index === count) haptic('tap');
+    else if (index % precision === 0) haptic('detent');
+  }, [min, step, count]);
   const commit = useCallback((index: number) => onChange(Number((min + index * step).toFixed(1))), [min, step, onChange]);
   useAnimatedReaction(
     () => Math.min(count, Math.max(0, Math.round(offset.get() / stepWidth))),

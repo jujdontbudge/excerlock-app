@@ -6,7 +6,11 @@ import { Reveal } from '../../../ui/Reveal';
 import { onboardingLabels as c } from '../onboardingCopy';
 import { trendCopy } from '../trendCopy';
 import { TrendCurves } from './TrendCurves';
+import { useMotion } from '../../../ui/useMotion';
+import { useHapticCue } from '../../../ui/haptics';
 export function TrendHero() {
+  const m = useMotion();
+  useHapticCue('beat', m.reduced ? m.duration.standard : m.duration.emphasized * 2);
   return (
     <View style={{ gap: t.space.xl }}>
       <Reveal>

@@ -33,6 +33,10 @@ open: /home
 expect: Locked | 3,200 / 5,000 steps
 ```
 
+Home plays the unlock haptic once, for a new unlock seen while Home is focused and settled. In the real runtime that means a shield lift the native layer acknowledged (`RuntimeStatusSnapshot.shieldLifts`). The demo runtime has no shields, so it follows the Lock decision instead.
+
+To see it, load `trial-active` on `/home`, wait two seconds, open `/home?steps=5000`, then read the dev menu's "Haptics log".
+
 ## Gotchas
 - `home-locked-walking` shows **Unlocked**: its 15,000 steps meet the 5,000 goal. `trial-active` is the one with an open goal.
 - A step or minute target accrues Progress but never opens apps before the goal is met. Only the walking state opens them live.

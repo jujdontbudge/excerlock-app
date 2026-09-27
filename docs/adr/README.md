@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0049: One semantic haptics language in `ui/haptics`](0049-semantic-haptics-language.md) — **proposed**.
 - [0048: Ship without HealthKit](0048-ship-without-healthkit.md) — **accepted**.
 - [0047: Remove Clerk authentication from the API](0047-remove-clerk-authentication.md) — **accepted**.
 - [0046: Concept packages in strict layers](0046-concept-packages-in-strict-layers.md) — **accepted**.

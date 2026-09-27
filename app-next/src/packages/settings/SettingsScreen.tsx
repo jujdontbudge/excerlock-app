@@ -11,6 +11,7 @@ import { supportCopy as s } from '../support/supportCopy';
 import { incidentCopy as i } from '../support/incidentCopy';
 import { openSupportEmail } from '../support/SupportDelivery';
 import { useRuntime } from '../ports/useRuntime';
+import { haptic } from '../ui/haptics';
 
 export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev?: () => void }) {
   const name = useProfileStore((s) => s.data.name),
@@ -25,7 +26,8 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     useSettingsStore.getState().patch({ notificationsEnabled: on });
     if (!on || notificationStatus === 'granted') return;
     const status = notificationStatus === 'notDetermined' ? await runtime.notifications.request() : notificationStatus;
-    if (status !== 'granted') void Linking.openSettings();
+    if (status === 'granted') haptic('success');
+    else void Linking.openSettings();
   };
   const version = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (

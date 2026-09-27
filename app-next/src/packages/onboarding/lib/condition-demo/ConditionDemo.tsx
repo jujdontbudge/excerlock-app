@@ -15,7 +15,8 @@ import { tokens as t } from '../../../ui/tokens';
 import { illustrationTokens as art } from '../../../ui/illustrationTokens';
 import { BackButton } from '../../../ui/BackButton';
 import { useMotion } from '../../../ui/useMotion';
-import { feedback } from '../../../ui/haptics';
+import { haptic } from '../../../ui/haptics';
+import { freshDemoCues, nextDemoCue } from './demoHaptics';
 import { Confetti } from '../../../ui/Confetti';
 import { RuleDraft } from '../../../conditions/draft';
 import { Schedule } from '../../../model/types';
@@ -91,14 +92,17 @@ function DemoScene({
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
   const [burst, setBurst] = useState(0);
   const loaded = useRef(0);
+  const cues = useRef(freshDemoCues());
+  const cueMode = useRef({ reduced, paused: !!control?.paused });
+  useEffect(() => {
+    cueMode.current = { reduced, paused: !!control?.paused };
+  }, [reduced, control?.paused]);
   const gym = useSettingsStore((s) => s.data.gymPlaces[0]);
   const gymName = gym?.name ?? 'West Loop Fitness';
   const publish = useCallback((next: ReturnType<typeof snapshot>, celebrate: boolean) => {
     setFrame(next);
-    if (celebrate) {
-      setBurst((n) => n + 1);
-      feedback('success');
-    }
+    if (celebrate) setBurst((n) => n + 1);
+    if (!cueMode.current.paused) haptic(nextDemoCue(cues.current, next, cueMode.current.reduced));
   }, []);
   useEffect(() => {
     if (reduced || control?.paused) onReady();

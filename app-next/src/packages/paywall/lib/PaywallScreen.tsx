@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
 import { useMotion } from '../../ui/useMotion';
+import { haptic } from '../../ui/haptics';
 import { tokens as t } from '../../ui/tokens';
 import { Icon } from '../../ui/Icon';
 import { Reveal } from '../../ui/Reveal';
@@ -88,7 +89,9 @@ export function PaywallScreen({
     setMessage('');
     try {
       const result = await runtime.subscription.purchase(selected);
-      if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
+      if (result.type === 'success' && (result.entitlement.status === 'trial' || result.entitlement.status === 'active'))
+        haptic('success');
+      else if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
       else if (result.type === 'user_cancelled') {
         runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
         setMessage('Choose a plan to continue.');
@@ -97,6 +100,7 @@ export function PaywallScreen({
       runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
       reportError(error, 'purchase');
       setMessage('Purchase could not finish. Please retry.');
+      haptic('error');
     } finally {
       setBusy(null);
     }
@@ -107,9 +111,11 @@ export function PaywallScreen({
     setMessage('');
     try {
       if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') setMessage('No active purchase was found.');
+      else haptic('success');
     } catch (error) {
       reportError(error, 'restore');
       setMessage('Restore could not finish. Please retry.');
+      haptic('error');
     } finally {
       setBusy(null);
     }
@@ -150,6 +156,7 @@ export function PaywallScreen({
               <PressableScale
                 label={subscriptionCopy.restore}
                 accessibilityState={{ disabled: busy !== null }}
+                haptic={busy === null ? 'tap' : 'none'}
                 onPress={() => {
                   if (busy === null) void restore();
                 }}>
@@ -179,7 +186,7 @@ export function PaywallScreen({
             <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md }}>
               {paywall.products.map((item, index) => (
                 <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
-                  <PlanCard product={item} selected={selected === item.handle} onPress={() => choose(item.handle)} />
+                  <PlanCard product={item} selected={selected === item.handle} locked={busy !== null} onPress={() => choose(item.handle)} />
                 </Reveal>
               ))}
             </View>
@@ -231,7 +238,7 @@ export function PaywallScreen({
   );
 }
 
-function PlanCard({ product, selected, onPress }: { product: PaywallProduct; selected: boolean; onPress: () => void }) {
+function PlanCard({ product, selected, locked, onPress }: { product: PaywallProduct; selected: boolean; locked: boolean; onPress: () => void }) {
   const m = useMotion(),
     ink = selected ? t.text.onAccent : t.text.primary,
     price = product.localizedMonthlyPrice
@@ -242,6 +249,7 @@ function PlanCard({ product, selected, onPress }: { product: PaywallProduct; sel
       label={planRowTitle(product)}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
+      haptic={selected || locked ? 'none' : 'select'}
       onPress={onPress}>
       <Animated.View
         style={{

@@ -22,6 +22,7 @@ import { useImpactPlayback } from './lib/impact/useImpactPlayback';
 import { useRuntime } from '../ports/useRuntime';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
 import { Label } from '../ui';
+import { haptic } from '../ui/haptics';
 import { tokens as t } from '../ui/tokens';
 export function OnboardingRoute() {
   const focused = useIsFocused();
@@ -49,7 +50,7 @@ export function OnboardingRoute() {
       if (runtime.notifications.status() === 'notDetermined') {
         setAsking(true);
         try {
-          await runtime.notifications.request();
+          if ((await runtime.notifications.request()) === 'granted') haptic('success');
         } finally {
           setAsking(false);
         }
@@ -62,9 +63,11 @@ export function OnboardingRoute() {
           timezone: runtime.clock.timezone(),
         });
         setScheduleError(false);
+        haptic('commit');
       } catch (error) {
         if (!(error instanceof SchedulePlanError)) throw error;
         setScheduleError(true);
+        haptic('error');
         return;
       }
     }

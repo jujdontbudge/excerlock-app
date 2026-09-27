@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Rule } from '../../model/types';
 import { homeCopy as c } from '../homeCopy';
-import { feedback } from '../../ui/haptics';
+import { haptic } from '../../ui/haptics';
 import { UnlockEntry } from '../../unlock/UnlockEntry';
 
 export function WalkingCheckButton({
@@ -15,13 +15,13 @@ export function WalkingCheckButton({
   const check = () => {
     void checkWalking(rule).then((observed) => {
       if (observed) {
-        feedback('success');
+        haptic('success');
         setResult('detected');
       } else {
-        feedback('error');
+        haptic('warning');
         setResult('missed');
       }
-    }).catch(() => { feedback('error'); setResult('missed'); });
+    }).catch(() => { haptic('error'); setResult('missed'); });
   };
   return (
     <UnlockEntry

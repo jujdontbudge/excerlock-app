@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { useMotion } from './useMotion';
-import { feedback } from './haptics';
+import { haptic, HapticIntent } from './haptics';
 export type ButtonProps = {
   label: string;
   accessibilityLabel?: string;
@@ -14,6 +14,7 @@ export type ButtonProps = {
   loading?: boolean;
   testID?: string;
   shape?: 'pill' | 'rounded';
+  haptic?: HapticIntent;
 };
 export function PrimaryButton({
   label,
@@ -23,6 +24,7 @@ export function PrimaryButton({
   loading = false,
   testID,
   shape = 'pill',
+  haptic: intent = 'tap',
 }: ButtonProps) {
   const [pressed, setPressed] = useState(false);
   const m = useMotion();
@@ -37,7 +39,7 @@ export function PrimaryButton({
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={() => {
-        feedback('press');
+        haptic(intent);
         onPress();
       }}>
       <Animated.View

@@ -5,7 +5,6 @@ import { tokens as t } from '../tokens';
 import { Label } from '../Label';
 import { PressableScale } from '../PressableScale';
 import { controls } from '../controlsCopy';
-import { feedback } from '../haptics';
 import { useMotion } from '../useMotion';
 
 export function TimeRangeRow({
@@ -51,10 +50,7 @@ export function TimeRangeRow({
             accessibilityRole="switch"
             accessibilityLabel={controls.allDay}
             value={allDay}
-            onValueChange={(v) => {
-              feedback();
-              onAllDay(v);
-            }}
+            onValueChange={onAllDay}
             trackColor={{ true: t.state.switchOn, false: t.border.divider }}
           />
         </View>

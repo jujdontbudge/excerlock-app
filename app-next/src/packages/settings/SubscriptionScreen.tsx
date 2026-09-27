@@ -7,6 +7,7 @@ import { entitlementStore as useEntitlementStore } from '../subscription/entitle
 import { useRuntime } from '../ports/useRuntime';
 import { Reveal } from '../ui/Reveal';
 import { SettingsPage } from '../ui/SettingsPage';
+import { haptic } from '../ui/haptics';
 export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
   const entitlement = useEntitlementStore((s) => s.data.entitlement),
     runtime = useRuntime(),
@@ -16,9 +17,12 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
     if (busy) return;
     setBusy(true);
     try {
-      setNote((await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored' ? c.restored : c.noRestore);
+      const restored = (await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored';
+      setNote(restored ? c.restored : c.noRestore);
+      if (restored) haptic('success');
     } catch {
       setNote(c.error);
+      haptic('error');
     } finally {
       setBusy(false);
     }

@@ -9,6 +9,7 @@ import { useRuntime } from '../../ports/useRuntime';
 import { openSupportEmail } from '../SupportDelivery';
 import { SupportCategory } from '../../ports/SupportPort';
 import { IconName } from '../../ui/Icon';
+import { haptic } from '../../ui/haptics';
 
 export function SupportFormScreen({
   onBack = () => {},
@@ -43,8 +44,10 @@ export function SupportFormScreen({
     try {
       const { via } = await runtime.support.send(category, `Reply email: ${replyEmail.trim()}\n\n${message.trim()}`);
       setState(via === 'mail' ? 'handedOff' : 'sent');
+      if (via !== 'mail') haptic('success');
     } catch {
       setState('error');
+      haptic('error');
     }
   };
   const emailInstead = async () => {

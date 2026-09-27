@@ -8,6 +8,7 @@ import { defaultCentre } from '../../gyms/usePicker';
 import { PRESENCE_CONFIRM_MS } from '../../activity/presence';
 import { ruleDaysStore as useRuleDaysStore } from '../../conditions/ruleDaysStore';
 import { useClock } from '../../lock/selectors';
+import { haptic } from '../../ui/haptics';
 export { PRESENCE_CONFIRM_MS };
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(),
@@ -101,8 +102,10 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
         const p = await runtime.gym.currentLocation(true);
         setLocation(p);
         setDenied(!p);
+        if (!p) haptic('warning');
       } catch {
         setDenied(true);
+        haptic('warning');
       } finally {
         setChecking(false);
       }
@@ -129,6 +132,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
         setWorking(false);
         setValue(0);
         setError('Could not check in. Please try again.');
+        haptic('error');
       }
     }
   };

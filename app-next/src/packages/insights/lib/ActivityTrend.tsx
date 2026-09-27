@@ -1,15 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { LayoutChangeEvent, NativeSyntheticEvent, StyleSheet, View, ViewProps } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { Label } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
 import { nearestEnabledTrendIndex, TrendPoint } from './trendModel';
+import { haptic } from '../../ui/haptics';
 
 const HEIGHT = 156;
 const INSET = 14;
 const TOP = 32;
 const BOTTOM = 146;
 const BUBBLE = 46;
+const SCRUB_TICK_GAP = 120;
 
 type TouchEvent = NativeSyntheticEvent<{ locationX: number }>;
 
@@ -20,17 +22,25 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   onSelect: (offset: number) => void;
 }) {
   const [width, setWidth] = useState(0);
+  const lastTick = useRef(0);
   const plotWidth = Math.max(120, width);
   const selectedIndex = Math.max(0, points.findIndex((point) => point.offset === selectedOffset));
   const geometry = useMemo(() => graphGeometry(points, plotWidth), [points, plotWidth]);
   const selectAt = useCallback((event: TouchEvent) => {
     const index = nearestEnabledTrendIndex(points, event.nativeEvent.locationX, width);
     const point = points[index];
-    if (point && point.offset !== selectedOffset) onSelect(point.offset);
+    if (!point || point.offset === selectedOffset) return;
+    const now = Date.now();
+    if (now - lastTick.current >= SCRUB_TICK_GAP) {
+      lastTick.current = now;
+      haptic('detent');
+    }
+    onSelect(point.offset);
   }, [onSelect, points, selectedOffset, width]);
   const changeSelection = useCallback((direction: -1 | 1) => {
     for (let index = selectedIndex + direction; index >= 0 && index < points.length; index += direction) {
       if (!points[index]?.disabled) {
+        haptic('select');
         onSelect(points[index].offset);
         return;
       }

@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { ButtonProps } from './PrimaryButton';
-import { feedback } from './haptics';
+import { haptic } from './haptics';
 import { useMotion } from './useMotion';
 export function SecondaryButton({
   label,
@@ -14,6 +14,7 @@ export function SecondaryButton({
   variant = 'secondary',
   testID,
   leading,
+  haptic: intent = 'tap',
 }: ButtonProps & { variant?: 'secondary' | 'tertiary'; leading?: ReactNode }) {
   const [pressed, setPressed] = useState(false);
   const m = useMotion();
@@ -27,7 +28,7 @@ export function SecondaryButton({
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={() => {
-        feedback();
+        haptic(intent);
         onPress();
       }}>
       <Animated.View

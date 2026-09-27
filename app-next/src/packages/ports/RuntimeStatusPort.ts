@@ -6,6 +6,7 @@ export type RuntimeStatusSnapshot = {
   loading: boolean;
   history: HistoryDay[];
   scheduleIssue?: ScheduleIssue;
+  shieldLifts?: { earned: number; source: 'foreground' | 'background' | 'geofence' | 'manual' | null };
 };
 
 export interface RuntimeStatusPort {

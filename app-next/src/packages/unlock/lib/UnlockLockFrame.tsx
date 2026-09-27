@@ -8,7 +8,7 @@ import { tokens as t } from '../../ui/tokens';
 import { illustrationTokens as art } from '../../ui/illustrationTokens';
 import { useUnlockMotion } from './useUnlockMotion';
 import { Confetti } from '../../ui/Confetti';
-import { feedback } from '../../ui/haptics';
+import { scheduleHaptic } from '../../ui/haptics';
 export type UnlockPhase = 'idle' | 'working' | 'lifted';
 export function UnlockLockFrame({
   surface,
@@ -37,12 +37,12 @@ export function UnlockLockFrame({
     }
     lift.value = m.delay(m.duration.press, m.timing(1, 'emphasized'));
     scale.value = m.sequence(m.timing(m.scale.pressed, 'press'), m.timing(1, 'press'));
-    const haptic = setTimeout(() => feedback('success'), m.duration.press);
+    const cancelHaptic = scheduleHaptic('unlock', reduced ? 0 : m.duration.press);
     const confetti = setTimeout(() => {
       if (!reduced && celebrate) setBurst(true);
     }, m.duration.emphasized);
     return () => {
-      clearTimeout(haptic);
+      cancelHaptic();
       clearTimeout(confetti);
     };
   }, [phase, reduced, celebrate, lift, scale, m]);

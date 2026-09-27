@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { tokens as t } from '../ui/tokens';
 import {
@@ -20,7 +20,8 @@ import { Reveal } from '../ui/Reveal';
 import { ConfirmSheet } from '../ui/ConfirmSheet';
 import { toggleRule, deleteRule } from './lib/mutations';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
-import { useRuntimeStatus } from '../lock/selectors';
+import { useLockDecision, useRuntimeStatus } from '../lock/selectors';
+import { haptic } from '../ui/haptics';
 import { useLockListPicker } from '../app-selection/useLockListPicker';
 import { ruleNeedsSetup } from '../permissions/useSetupNeeds';
 export function ConditionsScreen({
@@ -37,7 +38,15 @@ export function ConditionsScreen({
     { open: openLockList } = useLockListPicker(),
     { scheduleIssue } = useRuntimeStatus(),
     [deleting, setDeleting] = useState<string | null>(null),
-    [scheduleError, setScheduleError] = useState(false);
+    [scheduleError, setScheduleError] = useState(false),
+    decision = useLockDecision(),
+    toggled = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (toggled.current === null) return;
+    const resumed = toggled.current;
+    toggled.current = null;
+    haptic(resumed && decision.state === 'locked' ? 'lock' : 'commit');
+  }, [rules, decision.state]);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <ScreenShell dock
@@ -54,6 +63,7 @@ export function ConditionsScreen({
             if (deleting) {
               deleteRule(deleting);
               runtime.analytics.track('condition_deleted');
+              haptic('commit');
             }
             setDeleting(null);
           }}
@@ -134,10 +144,12 @@ export function ConditionsScreen({
                       timezone: runtime.clock.timezone(),
                     });
                     setScheduleError(false);
+                    toggled.current = value;
                     if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
                   } catch (error) {
                     if (!(error instanceof SchedulePlanError)) throw error;
                     setScheduleError(true);
+                    haptic('error');
                   }
                 }}
                 onDelete={() => setDeleting(rule.id)}

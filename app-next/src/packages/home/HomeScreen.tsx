@@ -44,7 +44,7 @@ export function HomeScreen() {
     decision = useLockDecision(now),
     progress = useTodayProgress(now),
     streak = useStreak(now);
-  const { scheduleIssue, loading, hydrated } = useRuntimeStatus();
+  const { scheduleIssue, loading, hydrated, shieldLifts } = useRuntimeStatus();
   const markHomeLayout = useInteractiveHomeMarker(runtime, !loading && hydrated);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
@@ -59,7 +59,7 @@ export function HomeScreen() {
       now,
       timezone: runtime.clock.timezone(),
     }),
-    glyph = useUnlockMoment(status.state);
+    glyph = useUnlockMoment(status.state, shieldLifts);
   const { open: chooseApps } = useLockListPicker();
   const add = () => router.push('/builder');
   useEffect(() => {

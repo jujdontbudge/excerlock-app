@@ -6,6 +6,7 @@ import { sessionStore as useSessionStore } from '../identity/sessionStore';
 import { useRuntime } from '../ports/useRuntime';
 import { LivingIcon } from '../ui/LivingIcon';
 import { Reveal } from '../ui/Reveal';
+import { haptic } from '../ui/haptics';
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
   const session = useSessionStore((s) => s.data.session),
     runtime = useRuntime(),
@@ -21,8 +22,10 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         setNote(c.deleted);
       } else await runtime.auth.signOut();
       setConfirm(false);
+      haptic('commit');
     } catch {
       setNote(c.error);
+      haptic('error');
     } finally {
       setBusy(false);
     }

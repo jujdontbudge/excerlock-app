@@ -9,6 +9,7 @@ import { Reveal } from '../ui/Reveal';
 import { useRuntime } from '../ports/useRuntime';
 import { useLockDecision } from '../lock/selectors';
 import { activityTruthStore as useActivityTruthStore } from '../activity/activityTruthStore';
+import { haptic } from '../ui/haptics';
 
 export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const runtime = useRuntime(),
@@ -29,6 +30,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
     const nag = missing();
     if (nag) {
       setMessage({ text: nag });
+      haptic('warning');
       return;
     }
     Keyboard.dismiss();
@@ -38,8 +40,10 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
       await runtime.incidentReports.send({ whatWentWrong: whatWentWrong.trim(), shouldHaveHappened: shouldHaveHappened.trim() });
       runtime.analytics.track('incident_report_sent', { source: 'settings', activity: held, lock_state: lockState });
       setState('sent');
+      haptic('success');
     } catch (error) {
       setState('idle');
+      haptic('error');
       setMessage({ text: i.error, reason: error instanceof Error ? error.message : String(error) });
     }
   };

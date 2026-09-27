@@ -7,7 +7,7 @@ import { Label } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
 import { gymPickerCopy as c } from './gymPickerCopy';
 import { useMotion } from '../../ui/useMotion';
-import { feedback } from '../../ui/haptics';
+import { haptic } from '../../ui/haptics';
 import { Coordinates } from '../../ports/PlaceSearch';
 import { MapRegion, metresToPoints, regionForRadius } from '../geometry';
 const Ring = Animated.createAnimatedComponent(Circle);
@@ -103,7 +103,7 @@ export function PickerMap({
         onRegionChangeComplete={(next) => {
           region.set(next);
           onSettle({ latitude: next.latitude, longitude: next.longitude });
-          if (moving.current) feedback();
+          if (moving.current) haptic('tap');
           moving.current = false;
           lift.set(m.spring(0, 'control'));
         }}

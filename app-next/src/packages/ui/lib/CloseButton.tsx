@@ -16,6 +16,7 @@ export function CloseButton({
       label={label}
       testID={testID}
       onPress={onPress}
+      haptic="select"
       style={{ width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' }}>
       <Icon name="close" variant="utility" size={t.icon.md} />
     </PressableScale>

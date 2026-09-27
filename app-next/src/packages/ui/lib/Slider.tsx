@@ -4,7 +4,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useMotion } from '../useMotion';
 import { scheduleOnRN } from 'react-native-worklets';
-import { feedback } from '../haptics';
+import { haptic } from '../haptics';
 import { tokens as t } from '../tokens';
 export function Slider({
   label,
@@ -31,8 +31,9 @@ export function Slider({
   }, [value, min, max, ratio, last, m]);
   const commit = useCallback(
     (next: number) => {
-      feedback();
-      onChange(Math.min(max, Math.max(min, next)));
+      const bounded = Math.min(max, Math.max(min, next));
+      haptic(bounded === min || bounded === max ? 'tap' : 'detent');
+      onChange(bounded);
     },
     [max, min, onChange],
   );

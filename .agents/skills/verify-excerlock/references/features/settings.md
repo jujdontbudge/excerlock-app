@@ -24,6 +24,25 @@ open: /settings
 expect: Settings | Manage subscription | Something not working? | Legal
 ```
 
+Haptics live under Preferences: a switch and a "Feel an unlock" preview row, shown only while haptics are on. The dev menu's "Haptics log" lists the intents that would have played, which is the simulator's evidence. The simulator cannot play or feel haptics.
+
+```proof
+name: haptics-preference
+scenario: trial-active
+open: /settings/preferences
+expect: Haptics | Feel choices, saves and unlocks | Feel an unlock
+```
+
+```proof
+name: haptics-preview
+scenario: trial-active
+open: /settings/preferences
+tap: Feel an unlock
+expect: Haptics | Feel an unlock
+then-open: /dev
+then-expect: Haptics log | Haptic unlock
+```
+
 ```proof
 name: legal
 scenario: trial-active
@@ -32,5 +51,6 @@ expect: Privacy Policy | Terms of Use
 ```
 
 ## Gotchas
+- The Haptics switch adds no app haptic, because the native switch plays its own. Turning it off cancels scheduled beats immediately. Account deletion resets it to on.
 - Changing units relabels saved distance goals but does not convert them. An out-of-range goal blocks the change.
 - The legal documents are placeholders (`app-next/src/packages/settings/lib/legalCopy.ts`).

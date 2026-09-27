@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Href, useRouter } from 'expo-router';
 import { useRuntime } from '../../ports/useRuntime';
 import { requireRuntimeControls } from '../../ports/Runtime';
@@ -7,11 +7,13 @@ import { ScreenShell, Heading, SettingsGroup, SettingsRow, SecondaryButton, Labe
 import { DevControls } from './DevControls';
 import { devCopy as c } from './devCopy';
 import { LivingIcon } from '../../ui/LivingIcon';
+import { recentHaptics, subscribeHaptics } from '../../ui/haptics';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
     router = useRouter(),
     view = useDevSnapshot(),
+    haptics = useSyncExternalStore(subscribeHaptics, recentHaptics, recentHaptics),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
@@ -59,6 +61,13 @@ export function DevMenu() {
           ))
         ) : (
           <Label>{c.emptyEvents}</Label>
+        )}
+      </SettingsGroup>
+      <SettingsGroup title={c.haptics}>
+        {haptics.length ? (
+          haptics.map((entry, i) => <Label key={`${entry.at}-${i}`}>{c.hapticEntry(entry.kind)}</Label>)
+        ) : (
+          <Label>{c.emptyHaptics}</Label>
         )}
       </SettingsGroup>
       <SettingsGroup title={c.record}>

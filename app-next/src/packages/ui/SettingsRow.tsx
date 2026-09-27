@@ -4,7 +4,7 @@ import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { ValueReveal } from './lib/ValueReveal';
-import { feedback } from './haptics';
+import type { HapticIntent } from './haptics';
 export function SettingsRow({
   title,
   value,
@@ -16,6 +16,7 @@ export function SettingsRow({
   destructive = false,
   flat = false,
   status,
+  haptic = 'tap',
 }: {
   title: string;
   value?: string;
@@ -27,6 +28,7 @@ export function SettingsRow({
   destructive?: boolean;
   flat?: boolean;
   status?: boolean;
+  haptic?: HapticIntent;
 }) {
   const fontScale = useWindowDimensions().fontScale;
   const stacked = !!subtitle || fontScale > 1;
@@ -78,10 +80,7 @@ export function SettingsRow({
           accessibilityRole="switch"
           accessibilityLabel={title}
           value={toggle}
-          onValueChange={(v) => {
-            feedback();
-            onToggle(v);
-          }}
+          onValueChange={onToggle}
           trackColor={{ true: t.brand.primary, false: t.border.divider }}
         />
       ) : onPress ? (
@@ -90,7 +89,7 @@ export function SettingsRow({
     </View>
   );
   return onPress && !onToggle ? (
-    <PressableScale label={detail ? `${title}, ${detail}` : title} onPress={onPress}>
+    <PressableScale label={detail ? `${title}, ${detail}` : title} haptic={haptic} onPress={onPress}>
       {content}
     </PressableScale>
   ) : (

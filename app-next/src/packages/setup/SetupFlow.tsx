@@ -16,6 +16,7 @@ import { systemAlert } from '../permissions/systemAlerts';
 import { SignInScreen } from '../identity/SignInScreen';
 import { useSignInRequiredSource } from '../identity/useSignInRequiredSource';
 import { needCopyKey, useSetupNeeds } from '../permissions/useSetupNeeds';
+import { haptic } from '../ui/haptics';
 
 export type SetupStep = 'account' | SetupNeed;
 type Step = SetupStep;
@@ -68,8 +69,10 @@ export function SetupFlow({
   const need = current,
     copy = c.flow[needCopyKey(need, location)],
     settings = needBlocked(need, permissions) || (need === 'location' && upgradeRefused);
-  const track = (permission: 'screen_time' | 'motion' | 'location', granted: boolean) =>
+  const track = (permission: 'screen_time' | 'motion' | 'location', granted: boolean) => {
     runtime.analytics.track('permission_resolved', { permission, outcome: granted ? 'granted' : 'denied' });
+    if (permission !== 'screen_time') haptic(granted ? 'success' : 'warning');
+  };
   const ask = async () => {
     if (need === 'gym') return router.push('/gym-picker');
     setBusy(true);
@@ -78,7 +81,10 @@ export function SetupFlow({
       if (need === 'apps') {
         const apps = await runtime.screenTime.presentAppPicker();
         track('screen_time', true);
-        if (!apps.isEmpty) pass('apps');
+        if (!apps.isEmpty) {
+          haptic('success');
+          pass('apps');
+        }
       } else if (need === 'motion') {
         track('motion', (await runtime.steps.request()) === 'granted');
         pass('motion');
@@ -96,8 +102,12 @@ export function SetupFlow({
     } catch (caught) {
       if (caught instanceof ScreenTimeAuthorizationError) {
         track('screen_time', false);
+        haptic('warning');
         pass('apps');
-      } else setError(caught instanceof Error ? caught.message : String(caught));
+      } else {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        haptic('error');
+      }
     } finally {
       setBusy(false);
     }

@@ -8,6 +8,7 @@ import { useRuntime } from '../ports/useRuntime';
 import { SettingsPage } from '../ui/SettingsPage';
 import { tokens as t } from '../ui/tokens';
 import { useLockListPicker } from '../app-selection/useLockListPicker';
+import { haptic } from '../ui/haptics';
 const graceSeconds = [30, 60, 120, 180, 300];
 export function PreferencesScreen({ navigate, onBack }: { navigate: (path: string) => void; onBack: () => void }) {
   const s = useSettingsStore((s) => s.data),
@@ -54,6 +55,22 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label>
         ) : null}
       </SettingsGroup>
+      <SettingsGroup>
+        <SettingsRow
+          title={c.haptics}
+          subtitle={c.hapticsBody}
+          toggle={s.haptics}
+          onToggle={(enabled) => useSettingsStore.getState().patch({ haptics: enabled })}
+        />
+        {s.haptics ? (
+          <SettingsRow
+            title={c.hapticsPreview}
+            subtitle={c.hapticsPreviewBody}
+            haptic="none"
+            onPress={() => haptic('unlock')}
+          />
+        ) : null}
+      </SettingsGroup>
       <View style={{ gap: t.space.sm }}>
         <Label accessibilityRole="header" variant="section">
           {c.walkPlaces}
@@ -69,6 +86,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             title={title}
             multiple
             selected={walkPlaces.includes(place)}
+            haptic={walkPlaces.length === 1 && walkPlaces.includes(place) ? 'none' : 'select'}
             onPress={() => {
               const next = walkPlaces.includes(place)
                 ? walkPlaces.filter((value) => value !== place)

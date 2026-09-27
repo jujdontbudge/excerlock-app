@@ -9,6 +9,7 @@ import { unlockCopy as c } from './lib/unlockCopy';
 import { TreadmillScanController, TreadmillScanSnapshot } from './lib/gait/TreadmillScanController';
 import { useCeremony } from './lib/useCeremony';
 import { UnlockLayout, Detected } from './lib/UnlockLayout';
+import { haptic } from '../ui/haptics';
 export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const runtime = useRuntime(),
     router = useRouter();
@@ -44,6 +45,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       onPermissionDenied: () => {
         if (!preview) runtime.walking.stop();
         runtime.analytics.track('treadmill_scan_failed', { reason: 'denied' });
+        haptic('warning');
       },
       onExpired: () => {
         if (!preview) runtime.walking.stop();
@@ -65,7 +67,10 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           await controller.start();
         }
       } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : 'Could not start the scan.');
+        if (active) {
+          setError(e instanceof Error ? e.message : 'Could not start the scan.');
+          haptic('error');
+        }
       }
     };
     void startScan();

@@ -6,7 +6,7 @@ import { PressableScale } from '../ui/PressableScale';
 import { tokens as t } from '../ui/tokens';
 import { controls } from '../ui/controlsCopy';
 import { minuteLabel } from './scheduleLabel';
-import { feedback } from '../ui/haptics';
+import { haptic } from '../ui/haptics';
 import { boundedMinute, dialMinute, dialPoint, nearestHandle, ScheduleHandle } from './lib/scheduleDialMath';
 
 const SIZE = 360;
@@ -51,7 +51,7 @@ export function ScheduleDial({
       const minute = dialMinute(e.locationX * scale, e.locationY * scale, CENTER);
       active.current = nearestHandle(minute, live.current.preview.start, live.current.preview.end);
       setDragging(true);
-      feedback();
+      haptic('select');
       return true;
     },
     onResponderMove: (event) => {
@@ -63,6 +63,7 @@ export function ScheduleDial({
       const p = live.current.preview;
       const value = boundedMinute(which, minute, p.start, p.end);
       if (p[which] === value) return;
+      if (Math.floor(p[which] / 60) !== Math.floor(value / 60)) haptic('detent');
       const next = { ...p, [which]: value };
       live.current.preview = next;
       setPreview(next);
@@ -71,7 +72,7 @@ export function ScheduleDial({
       const which = active.current;
       active.current = null;
       setDragging(false);
-      if (which) { live.current.onChange(which, live.current.preview[which]); feedback(); }
+      if (which) { live.current.onChange(which, live.current.preview[which]); haptic('select'); }
     },
     onResponderTerminationRequest: () => false,
     onResponderTerminate: () => {
