@@ -36,7 +36,7 @@ name: search-field
 scenario: trial-active
 open: /gym-picker
 tap: Search for a gym or address
-expect: Search | Search for a gym or address | Find gyms near me
+expect: Search | Search for a gym or address | Use my current location | Gyms near you
 ```
 
 ## Gotchas
