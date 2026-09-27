@@ -22,7 +22,7 @@ import { Schedule } from '../../../model/types';
 import { Answers } from '../../../model/answers';
 import { profileStore as useProfileStore } from '../../../preferences/profileStore';
 import { settingsStore as useSettingsStore } from '../../../preferences/settingsStore';
-import { advanceDemo, initialDemo, phasesFor, scenarioFor, snapshot } from './model';
+import { advanceDemo, initialDemo, phasesFor, readyAfter, scenarioFor, snapshot } from './model';
 import { Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
@@ -38,11 +38,13 @@ export function ConditionDemo({
   schedule,
   answers,
   onBack,
+  onReady,
 }: {
   draft: RuleDraft;
   schedule: Schedule;
   answers: Answers;
   onBack: () => void;
+  onReady: () => void;
 }) {
   const places = useProfileStore((s) => s.data.walkPlaces.join(','));
   const scenario = useMemo(() => scenarioFor(draft, places), [draft, places]);
@@ -55,7 +57,7 @@ export function ConditionDemo({
   return (
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
-      {...{ scenario, control, onBack }}
+      {...{ scenario, control, onBack, onReady }}
     />
   );
 }
@@ -63,10 +65,12 @@ function DemoScene({
   scenario,
   control,
   onBack,
+  onReady,
 }: {
   scenario: ReturnType<typeof scenarioFor>;
   control: ReturnType<typeof demoTestControl>;
   onBack: () => void;
+  onReady: () => void;
 }) {
   const { reduced: initialReduced } = useMotion();
   const [reduced, setReduced] = useState(initialReduced);
@@ -76,9 +80,12 @@ function DemoScene({
   }, []);
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const initial = advanceDemo(initialDemo(), scenario, control?.time ?? 0);
+  const readyTime = readyAfter(scenario);
   const clock = useSharedValue(initial);
   const running = useSharedValue(AppState.currentState === 'active');
-  const ready = useSharedValue(scenario.kind.startsWith('gym'));
+  const imagesReady = useSharedValue(scenario.kind.startsWith('gym'));
+  const elapsed = useSharedValue(0);
+  const reportedReady = useSharedValue(false);
   const lastPublish = useSharedValue(0);
   const [frame, setFrame] = useState(() => snapshot(initial, scenario));
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
@@ -93,10 +100,19 @@ function DemoScene({
       feedback('success');
     }
   }, []);
+  useEffect(() => {
+    if (reduced || control?.paused) onReady();
+  }, [reduced, control?.paused, onReady]);
   const animation = useFrameCallback((info) => {
-    if (!running.value || !ready.value || (control?.paused && !clock.value.manual)) return;
+    if (!running.value || !imagesReady.value || (control?.paused && !clock.value.manual)) return;
     const before = snapshot(clock.value, scenario);
-    clock.value = advanceDemo(clock.value, scenario, Math.min(0.1, (info.timeSincePreviousFrame ?? 0) / 1000));
+    const delta = Math.min(0.1, (info.timeSincePreviousFrame ?? 0) / 1000);
+    clock.value = advanceDemo(clock.value, scenario, delta);
+    elapsed.value += delta;
+    if (!reportedReady.value && elapsed.value >= readyTime) {
+      reportedReady.value = true;
+      scheduleOnRN(onReady);
+    }
     const next = snapshot(clock.value, scenario);
     if (before.phase !== next.phase || info.timestamp - lastPublish.value >= 100) {
       lastPublish.value = info.timestamp;
@@ -115,8 +131,8 @@ function DemoScene({
   }, [animation, running]);
   const onLoad = useCallback(() => {
     loaded.current += 1;
-    if (loaded.current >= 8) ready.set(true);
-  }, [ready]);
+    if (loaded.current >= 8) imagesReady.set(true);
+  }, [imagesReady]);
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
   const isGym = scenario.kind.startsWith('gym');
   const unlockPromise = scenario.kind === 'walk-steps'

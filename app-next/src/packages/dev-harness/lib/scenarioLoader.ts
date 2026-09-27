@@ -25,7 +25,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
     complete,
     setupComplete: complete,
     answers: scenario.onboarding.startsWith('resumeAt:')
-      ? { activity: 'walking', walkingMode: 'steps', goal: 5000 }
+      ? { activity: 'walking', walkingMode: 'steps', goal: 5000, ...scenario.onboardingAnswers }
       : {},
   });
 }

@@ -30,6 +30,7 @@ export type Scenario = {
   id: string;
   title: string;
   onboarding: 'fresh' | `resumeAt:${string}` | 'complete';
+  onboardingAnswers?: Record<string, string | number | boolean | number[]>;
   profile?: Partial<Profile>;
   rules: Rule[];
   lockedApps: LockedApps;

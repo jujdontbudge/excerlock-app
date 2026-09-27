@@ -1,4 +1,5 @@
 import { scenario0 } from './fresh-install';
+import { conditionDemoScenarios } from './condition-demo-gate';
 import { unlockScenarios } from './unlock';
 import { scenario1 } from './onboarding-walking-resume';
 import { scenario2 } from './home-locked-walking';
@@ -51,4 +52,5 @@ export const scenarios = [
   scenario25,
   scenario26,
   ...unlockScenarios,
+  ...conditionDemoScenarios,
 ];
