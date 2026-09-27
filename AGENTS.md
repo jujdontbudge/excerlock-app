@@ -22,7 +22,7 @@ ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must b
 `./excer` is the control and verification CLI; `./excer --help` lists commands.
 
 1. `./excer check` must pass: typecheck, lint, repository invariants, and ratchets that only go down. There are no tests by design (`ARCHITECTURE.md` rule 7).
-2. For a behavior or UI change, follow the `verify-excerlock` skill. Find the feature (`./excer feature show <id>`), drive it (`./excer demo <scenario> --open <route>`), then run `./excer prove <feature>`. Add or update the feature's proof block when visible behavior changes.
+2. For a behavior or UI change, follow the `verify-excerlock` skill. Find the feature (`./excer feature show <id>`), drive it (`./excer demo <scenario> --open <route>`), and run only the changed proof with `./excer prove <feature> --proof <name>`. Add or update its proof block when visible behavior changes. Full feature suites and cross-feature sweeps require the user's explicit request. After integration, run `./excer check` and focused changed proofs; do not silently rerun every feature touched by the merged branches. Timebox simulator verification to five minutes per proof, show progress, and report a stalled proof as blocked instead of extending the run.
 3. For a server change, run the server locally, confirm `./excer server ready`, and assert the route's effect in the database.
 4. Say exactly what you verified, with the evidence path. Report blocked verification as blocked.
 
