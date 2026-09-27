@@ -40,6 +40,9 @@ export function NumberField({
   emphasis?: ChoiceEmphasis;
 }) {
   const [open, setOpen] = useState(false);
+  const fractionalDigits = String(step).split('.')[1]?.length ?? 0;
+  const integerDigits = max === undefined ? 8 : String(Math.ceil(max)).length;
+  const maxLength = integerDigits + (fractionalDigits ? fractionalDigits + 1 : 0);
   return (
     <View style={{ gap: t.space.lg }}>
       <View
@@ -69,8 +72,16 @@ export function NumberField({
               onChange(String(Math.min(max ?? Infinity, Math.max(min, Number(next.toFixed(4))))));
             }}
             value={value}
-            onChangeText={onChange}
-            keyboardType="decimal-pad"
+            onChangeText={(text) => {
+              const cleaned = text.replace(fractionalDigits ? /[^\d.]/g : /\D/g, '');
+              const [whole, ...fraction] = cleaned.split('.');
+              onChange(
+                whole.slice(0, integerDigits) +
+                  (fractionalDigits && fraction.length ? `.${fraction.join('').slice(0, fractionalDigits)}` : ''),
+              );
+            }}
+            maxLength={maxLength}
+            keyboardType={fractionalDigits ? 'decimal-pad' : 'number-pad'}
             error={error}
             style={{ ...t.type.metricSmall, fontVariant: ['tabular-nums'] }}
           />
@@ -82,7 +93,7 @@ export function NumberField({
             </Label>
           </PressableScale>
         ) : (
-          <Label>{unit}</Label>
+          <Label style={centered ? { textAlign: 'center' } : undefined}>{unit}</Label>
         )}
       </View>
       {open ? (

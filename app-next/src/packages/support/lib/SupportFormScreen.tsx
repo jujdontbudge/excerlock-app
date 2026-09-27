@@ -89,6 +89,8 @@ export function SupportFormScreen({
         onChangeText={setReplyEmail}
         placeholder={s.replyEmailPlaceholder}
         keyboardType="email-address"
+        autoComplete="email"
+        maxLength={254}
         autoCapitalize="none"
         error={replyEmail.length > 0 && !emailValid ? s.replyEmailInvalid : undefined}
       />

@@ -29,7 +29,7 @@ expect: Something not working? | What went wrong? | What should have happened? |
 name: feedback-form
 scenario: trial-active
 open: /settings/feedback
-expect: Feedback | Your feedback | Submit feedback | Email support instead
+expect: Feedback | Reply email | Your feedback | Submit feedback | Email support instead
 ```
 
 ## Gotchas

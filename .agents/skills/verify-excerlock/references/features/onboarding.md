@@ -34,6 +34,21 @@ open: /
 expect: Set your walking goal | Daily step goal | Continue
 ```
 
+```proof
+name: walking-minutes-entry
+scenario: onboarding-walking-resume
+open: /onboarding/W2
+tap: Walk for a set time | Continue
+expect: Set your walking goal | Daily walking time | minutes
+```
+
+```proof
+name: profile-name-entry
+scenario: fresh-install
+open: /onboarding/O04
+expect: What should we call you? | First name
+```
+
 ## Gotchas
 - Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
 - The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).

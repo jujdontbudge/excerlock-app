@@ -32,6 +32,14 @@ open: /builder
 expect: What exercise should unlock your apps? | Walking | Gym
 ```
 
+```proof
+name: builder-walking-goal-field
+scenario: trial-active
+open: /builder
+tap: Walking | Continue | Continue | Reach a step goal | Continue
+expect: Set your walking goal | Daily step goal | steps
+```
+
 ## Gotchas
 - Stored keys still say `rule` (`rulesStore`, `ruleDays`). That is a persisted invariant. Use "Condition" everywhere else.
 - Running and biking were removed (B38). Do not bring them back through old copy or scenarios.

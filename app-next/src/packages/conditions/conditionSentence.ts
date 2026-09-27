@@ -4,6 +4,7 @@ import { minuteLabel } from '../schedule/scheduleLabel';
 import { domainCopy } from '../schedule/domainCopy';
 import { conditionPreviewCopy as c } from './lib/conditionPreviewCopy';
 import { RuleDraft } from './draft';
+import { isValidStepGoal } from './stepGoal';
 
 const answered = (value: unknown) => value !== undefined && value !== '' && Number.isFinite(Number(value));
 const number = (value: number) => value.toLocaleString('en-US');
@@ -36,8 +37,8 @@ export function conditionSentence(
 function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string | null {
   if (d.activity === 'walking') {
     if (d.walkingMode === 'state') return c.unless(c.walking);
-    if (d.walkingMode === 'minutes') return c.until(c.walkMinutes(number(d.walkMinutes)));
-    return c.until(c.steps(number(d.stepGoal)));
+    if (d.walkingMode === 'minutes') return Number.isInteger(d.walkMinutes) && d.walkMinutes >= 5 && d.walkMinutes <= 180 ? c.until(c.walkMinutes(number(d.walkMinutes))) : null;
+    return isValidStepGoal(d.stepGoal) ? c.until(c.steps(number(d.stepGoal))) : null;
   }
   if (d.activity === 'gym') {
     if (d.gymMode === 'arrival' || d.gymMode === 'presence') return c.unless('are at the gym');
