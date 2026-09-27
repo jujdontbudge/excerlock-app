@@ -2,17 +2,30 @@ import { StyleSheet, View } from 'react-native';
 import { Label } from '../../ui';
 import { Icon } from '../../ui/Icon';
 import { tokens as t } from '../../ui/tokens';
+import { analyticsCopy as c } from './analyticsCopy';
+import { Period } from './period';
+import { PageDirection } from './periodSwipe';
 
-export function PeriodHeader({ range, total, average, rising, unit }: {
+export function PeriodHeader({ range, total, average, rising, unit, period, onPage }: {
   range: string;
   total: string;
   average: string;
   rising: boolean;
   unit: string;
+  period: Period;
+  onPage: (direction: PageDirection) => void;
 }) {
   return (
     <View style={s.header}>
-      <View style={s.totals} accessible accessibilityLabel={`${range}: ${total} ${unit}`}>
+      <View
+        testID="Analytics period total"
+        style={s.totals}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={`${range}: ${total} ${unit}`}
+        accessibilityHint={c.pageHint(period)}
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        onAccessibilityAction={(event) => onPage(event.nativeEvent.actionName === 'increment' ? 1 : -1)}>
         <Label variant="support" numberOfLines={1}>{range}</Label>
         <Label variant="metricSmall" numberOfLines={1}>{total}</Label>
       </View>

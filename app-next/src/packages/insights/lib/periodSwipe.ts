@@ -1,7 +1,10 @@
-export const PERIOD_SWIPE_THRESHOLD = 56;
+import { tokens as t } from '../../ui/tokens';
 
-export function offsetAfterPeriodSwipe(offset: number, translationX: number): number {
-  if (translationX >= PERIOD_SWIPE_THRESHOLD) return offset - 1;
-  if (translationX <= -PERIOD_SWIPE_THRESHOLD) return Math.min(0, offset + 1);
-  return offset;
+export type PageDirection = -1 | 1;
+
+export function shouldTurnPage(translationX: number, velocityX: number, travel: number): boolean {
+  'worklet';
+  const far = Math.abs(translationX) >= Math.max(t.control.full, travel / 4);
+  const flung = Math.abs(velocityX) >= t.motion.velocity.dismiss && Math.sign(velocityX) === Math.sign(translationX);
+  return far || flung;
 }

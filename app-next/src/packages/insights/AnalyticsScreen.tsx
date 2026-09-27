@@ -2,8 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
 import { Icon } from '../ui/Icon';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { fadeIn } from '../ui/presets';
 import { tokens as t } from '../ui/tokens';
 import { useClock, useHistory } from '../lock/selectors';
@@ -23,7 +22,8 @@ import { ActivityStats, ActivityStat } from './lib/ActivityStats';
 import { ActivityTrend } from './lib/ActivityTrend';
 import { PeriodHeader } from './lib/PeriodHeader';
 import { trendPoints } from './lib/trendModel';
-import { offsetAfterPeriodSwipe } from './lib/periodSwipe';
+import { PageDirection } from './lib/periodSwipe';
+import { PeriodPager } from './lib/PeriodPager';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const duration = (minutes: number) => {
@@ -94,8 +94,8 @@ export function AnalyticsScreen() {
       ? 'Yesterday'
       : new Date(`${model.start}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const trend = useMemo(
-    () => trendPoints(period, today, history, primaryActivity),
-    [period, today, history, primaryActivity],
+    () => trendPoints(period, today, history, primaryActivity, offset),
+    [period, today, history, primaryActivity, offset],
   );
   const previousModel = useMemo(
     () => analyticsModel(history, today, period, offset - 1, baseline, { rules, ruleDays }),
@@ -110,16 +110,9 @@ export function AnalyticsScreen() {
     ? previousValues.reduce((total, value) => total + value, 0) / previousValues.length
     : 0;
   const metricUnit = primaryActivity === 'walking' ? 'steps' : 'minutes';
-  const movePeriod = useCallback((translationX: number) => {
-    setOffset((current) => offsetAfterPeriodSwipe(current, translationX));
+  const turnPage = useCallback((direction: PageDirection) => {
+    setOffset((current) => Math.min(0, current + direction));
   }, []);
-  const periodSwipe = useMemo(
-    () => Gesture.Pan()
-      .activeOffsetX([-24, 24])
-      .failOffsetY([-18, 18])
-      .onEnd((event) => { runOnJS(movePeriod)(event.translationX); }),
-    [movePeriod],
-  );
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
@@ -133,8 +126,9 @@ export function AnalyticsScreen() {
         </View>
       </View>
       <View testID="Analytics period content" style={s.periodContent}>
-          <GestureDetector gesture={periodSwipe}>
-            <View testID="Analytics period swipe" style={s.swipeArea}>
+        <PeriodPager canNext={offset < 0} onPage={turnPage}>
+          {(page) => (
+            <>
               {period === 'Day' ? null : (
                 <PeriodHeader
                   range={rangeLabel(period, model.start, model.end, offset)}
@@ -142,37 +136,39 @@ export function AnalyticsScreen() {
                   average={integer(average)}
                   rising={average >= previousAverage}
                   unit={metricUnit}
+                  period={period}
+                  onPage={page}
                 />
               )}
-              <Animated.View
-                key={period}
-                entering={fadeIn}
-                style={s.chart}>
-              {period === 'Day' ? (
-                <View style={s.dayStage}>
-                  <PeriodStep direction="back" onPress={() => setOffset(offset - 1)} />
-                  <DailyActivityRing value={movementTotal} goal={goal} unit={metricUnit} dayLabel={dayLabel} />
-                  <PeriodStep direction="next" onPress={() => setOffset(offset + 1)} disabled={offset >= 0} />
-                </View>
-              ) : period === 'Month' ? (
-                <MonthGrid
-                  data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
-                  goal={goal}
-                  unit={metricUnit}
-                />
-              ) : (
-                <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
-              )}
+              <Animated.View key={period} entering={fadeIn} style={s.chart}>
+                {period === 'Day' ? (
+                  <View style={s.dayStage}>
+                    <PeriodStep direction="back" onPress={() => page(-1)} />
+                    <DailyActivityRing value={movementTotal} goal={goal} unit={metricUnit} dayLabel={dayLabel} />
+                    <PeriodStep direction="next" onPress={() => page(1)} disabled={offset >= 0} />
+                  </View>
+                ) : period === 'Month' ? (
+                  <MonthGrid
+                    data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
+                    goal={goal}
+                    unit={metricUnit}
+                  />
+                ) : (
+                  <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
+                )}
               </Animated.View>
-              <ActivityStats stats={stats} />
-            </View>
-          </GestureDetector>
-          <ActivityTrend
-            label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
-            points={trend}
-            selectedOffset={offset}
-            onSelect={setOffset}
-          />
+            </>
+          )}
+        </PeriodPager>
+        <ActivityStats stats={stats} />
+        <ActivityTrend
+          label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
+          unit={metricUnit}
+          period={period}
+          points={trend}
+          selectedOffset={offset}
+          onSelect={setOffset}
+        />
       </View>
     </ScreenShell>
   );
@@ -236,7 +232,7 @@ function gymStats(streak: number, minutes: number, values: (number | null)[]): A
 }
 
 function streakStat(streak: number): ActivityStat {
-  return { label: 'Streak', value: `${streak}`, glyph: 'flame', a11y: `Streak: ${streak} days` };
+  return { label: 'Streak', value: `${streak}`, a11y: `Streak: ${streak} days` };
 }
 
 const s = StyleSheet.create({
@@ -244,7 +240,6 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
   periodControl: { width: 200 },
   periodContent: { gap: t.space.lg },
-  swipeArea: { gap: t.space.lg },
   chart: { width: '100%' },
   dayStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   step: { width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' },

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
@@ -13,43 +13,40 @@ export function MetricBars({ title, data, unit }: { title: string; data: MetricP
   const measured = data.flatMap((point) => point.value === null ? [] : [point.value]);
   const max = Math.max(1, ...measured);
   const average = measured.length ? measured.reduce((total, value) => total + value, 0) / measured.length : 0;
-  const width = Math.max(300, data.length * 46);
   return (
     <View accessible accessibilityLabel={`${title} chart, ${unit}`} style={s.card}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ minWidth: '100%' }}>
-        <View style={{ width, gap: t.space.sm }}>
-          <View style={s.plot}>
-            {average > 0 ? (
-              <View style={[s.average, { bottom: PLOT * (average / max) }]} />
-            ) : null}
-            <View style={s.columns}>
-              {data.map((point, index) => (
-                <View key={`${point.label}-${index}`} style={s.column}>
-                  <View style={s.track}>
-                    {point.value === null ? null : (
-                      <SmoothBar value={point.value} max={max} selected={point.selected} delay={index * t.motion.stagger.list} />
-                    )}
-                  </View>
-                  <BarValue
-                    value={point.value}
-                    max={max}
-                    delay={index * t.motion.stagger.list}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
-          <View style={s.labels}>
+      <View style={s.body}>
+        <View style={s.plot}>
+          {average > 0 ? (
+            <View style={[s.average, { bottom: PLOT * (average / max) }]} />
+          ) : null}
+          <View style={s.columns}>
             {data.map((point, index) => (
-              <View key={`${point.label}-label-${index}`} style={s.labelCell}>
-                <Label variant="micro" tone={point.selected ? 'primary' : 'secondary'} style={{ textAlign: 'center' }}>
-                  {point.label}
-                </Label>
+              <View key={`${point.label}-${index}`} style={s.column}>
+                <View style={s.track}>
+                  {point.value === null ? null : (
+                    <SmoothBar value={point.value} max={max} selected={point.selected} delay={index * t.motion.stagger.list} />
+                  )}
+                </View>
+                <BarValue
+                  value={point.value}
+                  max={max}
+                  delay={index * t.motion.stagger.list}
+                />
               </View>
             ))}
           </View>
         </View>
-      </ScrollView>
+        <View style={s.labels}>
+          {data.map((point, index) => (
+            <View key={`${point.label}-label-${index}`} style={s.labelCell}>
+              <Label variant="micro" tone={point.selected ? 'primary' : 'secondary'} style={{ textAlign: 'center' }}>
+                {point.label}
+              </Label>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -91,16 +88,17 @@ function BarValue({ value, max, delay }: { value: number | null; max: number; de
 const s = StyleSheet.create({
   card: { backgroundColor: t.surface.card, borderRadius: t.radius.card,
     borderWidth: t.stroke.hairline, borderColor: t.border.outline, padding: t.space.lg, gap: t.space.sm },
+  body: { gap: t.space.sm },
   plot: { height: PLOT + 22, justifyContent: 'flex-end' },
   average: { position: 'absolute', left: 0, right: 0, height: t.stroke.hairline,
     borderTopWidth: t.stroke.hairline, borderColor: t.chart.grid, borderStyle: 'dashed' },
   columns: { height: PLOT, flexDirection: 'row', gap: t.space.sm },
-  column: { width: 38, flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  column: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   track: { height: '100%', width: 22, justifyContent: 'flex-end', borderRadius: t.radius.pill,
     backgroundColor: t.surface.selected, overflow: 'hidden' },
   bar: { width: '100%', borderRadius: t.radius.pill },
   valueSlot: { position: 'absolute', left: -12, right: -12, alignItems: 'center' },
   value: { color: t.text.primary, textAlign: 'center' },
   labels: { flexDirection: 'row', gap: t.space.sm },
-  labelCell: { width: 38, flex: 1 },
+  labelCell: { flex: 1 },
 });
