@@ -1,6 +1,7 @@
 import type { FakeRuntimeInstance } from '../../dev-harness/FakeRuntime';
 import type { Runtime } from '../../ports/Runtime';
 import { getProductionRuntime } from '../productionRuntime';
+import { createAccountDataCoordinator, createMemoryAccountDataStorage } from '../AccountDataCoordinator';
 export type { Runtime } from '../../ports/Runtime';
 export function createRuntime(): FakeRuntimeInstance;
 export function createRuntime(mode: 'fake'): FakeRuntimeInstance;
@@ -12,7 +13,9 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
     const { FakeRuntime } = require('../../dev-harness/FakeRuntime') as typeof import('../../dev-harness/FakeRuntime');
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
     const { Platform } = require('react-native') as typeof import('react-native');
-    const runtime = FakeRuntime();
+    const runtime = FakeRuntime({
+      createAccountData: () => createAccountDataCoordinator(createMemoryAccountDataStorage()),
+    });
     if (Platform.OS === 'ios' && process.env.NODE_ENV !== 'test') {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { foregroundGym } = require('../../gyms/ForegroundGym') as typeof import('../../gyms/ForegroundGym');

@@ -1,10 +1,14 @@
 import { FakeContext } from '../FakeContext';
-import { createIdentityLab, type IdentityLab } from './IdentityLab';
+import { createIdentityLab, type IdentityLab, type IdentityLabAccountHooks } from './IdentityLab';
 
 type Method = (...args: unknown[]) => unknown;
 const synchronous = new Set<PropertyKey>(['session', 'identity', 'subscribe', 'subscribeIdentity', 'dispose', 'entitlement', 'operation']);
 
-export function identityLabHost(ctx: FakeContext, runtimeReady: () => Promise<unknown>) {
+export function identityLabHost(
+  ctx: FakeContext,
+  runtimeReady: () => Promise<unknown>,
+  accountHooks?: IdentityLabAccountHooks & { prepare(): Promise<void> },
+) {
   let run = 0;
   let current: IdentityLab | null = null;
   let starting: Promise<IdentityLab | null> = Promise.resolve(null);
@@ -20,7 +24,7 @@ export function identityLabHost(ctx: FakeContext, runtimeReady: () => Promise<un
     const script = ctx.scenario.identityLab;
     const mine = ++run;
     starting = script
-      ? createIdentityLab(ctx, script).then(async (lab) => {
+      ? Promise.resolve(accountHooks?.prepare()).then(() => createIdentityLab(ctx, script, accountHooks)).then(async (lab) => {
           if (mine !== run) {
             await lab.dispose().catch(() => undefined);
             return null;

@@ -27,6 +27,8 @@ export type AuthServiceConfig = {
   setIntegrationIdentifier: (key: string, value: string) => Promise<void>;
   onBeforeDelete: () => Promise<void>;
   onAfterDelete: () => Promise<void>;
+  beforeAccountSwitch?: () => Promise<void>;
+  prepareAccount?: (identity: AuthIdentity) => Promise<void>;
   bootTimeoutMs?: number;
 };
 
@@ -101,6 +103,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   const setIntegrationIdentifier = config.setIntegrationIdentifier;
 
   const onAccountSwitchReset = async () => {
+    await config.beforeAccountSwitch?.();
     await analyticsReset();
     await subscriptionReset();
   };
@@ -173,6 +176,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     analyticsIdentify,
     subscriptionIdentify,
     attachIntegration,
+    prepareAccount: config.prepareAccount,
     onTombstone: async () => {
       await auth.handleTombstone();
     },

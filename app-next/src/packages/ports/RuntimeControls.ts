@@ -18,6 +18,11 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
   presence: 'inside' | 'outside';
   motion: 'walking' | 'still';
   placement?: 'propped' | 'handheld';
+  accountData?: {
+    active: 'A' | 'B' | 'Checkout' | 'None';
+    legacyQuarantined: boolean;
+    checkpoints?: string;
+  };
 };
 export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
@@ -36,6 +41,9 @@ export interface RuntimeControls extends RuntimeStatusPort {
   setSession(session: Session): void;
   setRestoreOutcome(outcome: DevSnapshot['restoreOutcome']): void;
   setOutcome(outcome: DevSnapshot['outcome']): void;
+  useLabAccount(account: 'A' | 'B'): Promise<void>;
+  seedLabAccount(account: 'A' | 'B'): Promise<void>;
+  runLabAccountIsolation(): Promise<void>;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

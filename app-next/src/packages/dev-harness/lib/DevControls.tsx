@@ -11,6 +11,8 @@ import { SettingsGroup, SettingsRow, TextField, Label, SegmentedControl, Primary
 import { devCopy as c } from './devCopy';
 import { Permissions } from '../../model/types';
 import { onboardingStore } from '../../onboarding/onboardingStore';
+import { historyStore } from '../../progress/historyStore';
+import { profileStore } from '../../preferences/profileStore';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -22,8 +24,30 @@ export function DevControls() {
     planStaged = onboardingStore.getState().data.answers.ruleCommitted === false,
     [time, setTime] = useState(now),
     [error, setError] = useState('');
+  const runAccountAction = async (action: () => Promise<void>) => {
+    try {
+      await action();
+      setError('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
   return (
     <>
+      <SettingsGroup title="Account data">
+        <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
+        <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
+        <SettingsRow title={`Legacy data ${view.accountData?.legacyQuarantined ? 'Quarantined' : 'None'}`} />
+        <SettingsRow title={`Condition owner ${rulesStore.getState().data.rules[0]?.id === 'account-a' ? 'Account A' : rulesStore.getState().data.rules[0]?.id === 'account-b' ? 'Account B' : 'None'}`} />
+        <SettingsRow title={`History Days ${String(historyStore.getState().data.days.length)}`} />
+        <SettingsRow title={`Profile ${profileStore.getState().data.name || 'None'}`} />
+        <SettingsRow title={`Checkpoints ${view.accountData?.checkpoints ?? 'None'}`} />
+        <SettingsRow title="Use account A" onPress={() => void runAccountAction(() => dev.useLabAccount('A'))} />
+        <SettingsRow title="Seed account A" onPress={() => void runAccountAction(() => dev.seedLabAccount('A'))} />
+        <SettingsRow title="Use account B" onPress={() => void runAccountAction(() => dev.useLabAccount('B'))} />
+        <SettingsRow title="Seed account B" onPress={() => void runAccountAction(() => dev.seedLabAccount('B'))} />
+        {error ? <Label>{error}</Label> : null}
+      </SettingsGroup>
       <SettingsGroup title="Journey data">
         <SettingsRow title="Conditions" value={String(conditionCount)} />
         <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />

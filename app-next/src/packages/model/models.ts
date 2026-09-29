@@ -55,6 +55,7 @@ export type IdentityLabScript = {
   userSync?: 'ok' | 'failFirst' | 'slow';
   plans?: 'ok' | 'failFirst' | 'empty';
   appleLink?: 'ok' | 'conflict';
+  googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'cancel' | 'error';
   restore?: 'restored' | 'notFound';
 };

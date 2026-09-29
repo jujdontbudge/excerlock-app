@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation]
 depends: [launch]
 ---
 ## Sub-features
@@ -21,6 +21,14 @@ name: dev-menu
 scenario: trial-active
 open: /dev
 expect: Developer menu | Local scenarios and component previews.
+```
+
+```proof
+name: account-data-a-b-a-isolation
+scenario: identity-lab-account-isolation
+open: /dev
+tap: Run A B A isolation
+expect: Account data | Active account A | Legacy data Quarantined | Condition owner Account A | History Days 1 | Profile Account A | Checkpoints A account-a/1/Account A · B account-b/1/Account B · A account-a/1/Account A
 ```
 
 ## Gotchas

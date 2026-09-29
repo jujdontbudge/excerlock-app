@@ -12,6 +12,10 @@ const atOnboardingPaywall = {
   steps: { today: 0 },
 };
 export const identityLabScenarios = [
+  base('identity-lab-account-isolation', 'Identity lab · account data isolation', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success' },
+  }),
   base('identity-lab-user-sync-failed', 'Identity lab · user sync fails once', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst' },

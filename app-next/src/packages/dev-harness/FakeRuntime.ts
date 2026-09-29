@@ -24,15 +24,52 @@ import { AnalyticsFake } from './lib/fakes/AnalyticsFake';
 import { NotificationsFake } from './lib/fakes/NotificationsFake';
 import { SyncFake } from './lib/fakes/SyncFake';
 import { identityLabHost } from './lib/fakes/identityLabHost';
+import { historyStore } from '../progress/historyStore';
+import { profileStore } from '../preferences/profileStore';
+import { makeRule } from './lib/scenarios/base';
+import { rulesStore } from '../conditions/rulesStore';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
-export function FakeRuntime(): FakeRuntimeInstance {
+export type FakeRuntimeOptions = {
+  createAccountData(): {
+    prepare(): Promise<void>;
+    deactivate(): Promise<void>;
+    activate(userId: string): Promise<void>;
+    snapshot(): { activeUserId: string | null; legacyQuarantined: boolean };
+  };
+};
+export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
+  let accountData = options.createAccountData();
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
     gait = GaitFake(),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
-    identityLab = identityLabHost(ctx, () => ready),
+    accountLabel = (userId: string | null) =>
+      userId === 'lab-user-a' ? 'A' as const : userId === 'lab-user-b' ? 'B' as const : userId ? 'Checkout' as const : 'None' as const,
+    updateAccountDataView = () => {
+      const snapshot = accountData.snapshot();
+      ctx.update({ accountData: {
+        active: accountLabel(snapshot.activeUserId),
+        legacyQuarantined: snapshot.legacyQuarantined,
+        checkpoints: ctx.snapshot().accountData?.checkpoints,
+      } });
+    },
+    identityLab = identityLabHost(ctx, () => ready, {
+      prepare: async () => {
+        await accountData.prepare();
+        updateAccountDataView();
+      },
+      beforeAccountSwitch: async () => {
+        await accountData.deactivate();
+        updateAccountDataView();
+      },
+      prepareAccount: async (identity) => {
+        if (!identity.userId) throw new Error('Account identity is missing');
+        await accountData.activate(identity.userId);
+        updateAccountDataView();
+      },
+    }),
     ready = persistence.ready.then(async () => {
       await Promise.all(
         stores
@@ -56,6 +93,31 @@ export function FakeRuntime(): FakeRuntimeInstance {
       );
     });
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
+  const auth = identityLab.route(AuthFake(ctx), (lab) => lab.auth);
+  const seedAccount = async (account: 'A' | 'B') => {
+    const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
+    if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
+    const day = account === 'A' ? '2026-09-01' : '2026-09-02';
+    rulesStore.getState().patch({ rules: [makeRule(`account-${account.toLowerCase()}`)] });
+    historyStore.getState().patch({
+      startedDay: day,
+      days: [{
+        day,
+        sealedAt: `${day}T23:59:59.000Z`,
+        usageMinutes: account === 'A' ? 30 : 45,
+        activity: { walking: account === 'A' ? 5000 : 7000, gym: 0 },
+        met: true,
+        scheduled: true,
+      }],
+    });
+    profileStore.getState().patch({ name: `Account ${account}` });
+    await Promise.all([
+      rulesStore.persistBarrier(),
+      historyStore.persistBarrier(),
+      profileStore.persistBarrier(),
+    ]);
+    updateAccountDataView();
+  };
   const dev: FakeRuntimeInstance['dev'] = {
       ready: () => ready,
       flush: persistence.flush,
@@ -70,6 +132,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
         ctx.resolve(false);
         await identityLab.stop();
         await loadScenario(scenario, keepEdits);
+        if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
         identityLab.start();
         gait.set(scenario.gait ?? 'none');
@@ -98,6 +161,26 @@ export function FakeRuntime(): FakeRuntimeInstance {
       },
       setSession: (session) => sessionStore.getState().patch({ session }),
       setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }), setOutcome: (outcome) => ctx.update({ outcome }),
+      useLabAccount: async (account) => {
+        await accountData.activate(account === 'A' ? 'lab-user-a' : 'lab-user-b');
+        updateAccountDataView();
+      },
+      seedLabAccount: seedAccount,
+      runLabAccountIsolation: async () => {
+        await accountData.activate('lab-user-a');
+        await seedAccount('A');
+        const a = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        await accountData.activate('lab-user-b');
+        await seedAccount('B');
+        const b = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        await accountData.activate('lab-user-a');
+        updateAccountDataView();
+        const restored = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        ctx.update({ accountData: {
+          ...ctx.snapshot().accountData!,
+          checkpoints: `A ${a} · B ${b} · A ${restored}`,
+        } });
+      },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,
     };
   return {
@@ -108,7 +191,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
     walking,
     gait,
     gym,
-    auth: identityLab.route(AuthFake(ctx), (lab) => lab.auth),
+    auth,
     subscription: identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription),
     analytics: AnalyticsFake(ctx),
     reviewPreset: { isEnabled: async () => false, expose: () => undefined },

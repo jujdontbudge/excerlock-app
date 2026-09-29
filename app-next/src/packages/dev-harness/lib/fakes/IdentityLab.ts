@@ -23,6 +23,11 @@ export type IdentityLab = {
   dispose(): Promise<void>;
 };
 
+export type IdentityLabAccountHooks = {
+  beforeAccountSwitch(): Promise<void>;
+  prepareAccount(identity: AuthIdentity): Promise<void>;
+};
+
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 function labProduct(vendorProductId: string, title: string, amount: number, unit: 'year' | 'month'): AdaptyPaywallProduct {
@@ -40,7 +45,11 @@ function labProduct(vendorProductId: string, title: string, amount: number, unit
   } as unknown as AdaptyPaywallProduct;
 }
 
-export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScript): Promise<IdentityLab> {
+export async function createIdentityLab(
+  ctx: FakeContext,
+  script: IdentityLabScript,
+  accountHooks?: IdentityLabAccountHooks,
+): Promise<IdentityLab> {
   const attempts = { anonymous: 0, userSync: 0, flow: 0 };
   let storeAccess: 'trial' | 'active' | null = null;
   let users = 0;
@@ -49,16 +58,21 @@ export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScr
   let customerUserId: string | undefined;
   let profileListener: ((profile: AdaptyProfile) => void) | null = null;
   let services: AuthServices | undefined;
+  const providerUsers = new Map<string, LabUser>();
 
   const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
   const newUser = (provider?: string): LabUser => {
+    const existing = provider ? providerUsers.get(provider) : undefined;
+    if (existing) return existing;
     users += 1;
-    return {
-      id: `lab-user-${users}`,
+    const user: LabUser = {
+      id: provider === 'apple' ? 'lab-user-a' : provider === 'google' ? 'lab-user-b' : `lab-checkout-${users}`,
       is_anonymous: !provider,
       identities: provider ? [{ provider }] : [],
-      app_metadata: provider ? { provider } : {},
+      app_metadata: provider ? { provider } : {} as Record<string, string>,
     };
+    if (provider) providerUsers.set(provider, user);
+    return user;
   };
   const signedIn = (user: LabUser) => {
     stored = { access_token: `lab-token-${user.id}`, user };
@@ -119,8 +133,13 @@ export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScr
   const googleDeps: LabGoogleDeps = {
     clientId: 'identity-lab',
     redirectUri: 'identity-lab:/oauth',
-    buildRequest: () => ({ promptAsync: async () => ({ type: 'cancel' }) }),
-    exchangeCode: async () => ({}),
+    buildRequest: () => ({
+      promptAsync: async () => script.googleSignIn === 'success'
+        ? { type: 'success', params: { code: 'lab-google-code' } }
+        : { type: 'cancel' },
+      codeVerifier: 'lab-google-verifier',
+    }),
+    exchangeCode: async () => ({ idToken: 'lab-google-id-token', accessToken: 'lab-google-access-token' }),
   };
 
   const profile = (): AdaptyProfile => {
@@ -222,6 +241,8 @@ export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScr
     setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
     onBeforeDelete: async () => undefined,
     onAfterDelete: async () => undefined,
+    beforeAccountSwitch: accountHooks?.beforeAccountSwitch,
+    prepareAccount: accountHooks?.prepareAccount,
   });
   const auth = services.auth;
   const subscription: SubscriptionPort = {

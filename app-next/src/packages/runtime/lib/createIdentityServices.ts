@@ -20,6 +20,8 @@ export async function createIdentityServices(options: {
   analyticsFactory(getIdentity: () => AuthIdentity): AnalyticsIdentityHooks;
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
+  beforeAccountSwitch?(): Promise<void>;
+  prepareAccount?(identity: AuthIdentity): Promise<void>;
   sdk?: AdaptySdkPort;
 }) {
   let authServices: AuthServices | undefined;
@@ -51,6 +53,8 @@ export async function createIdentityServices(options: {
       setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
       onBeforeDelete: options.beforeDelete,
       onAfterDelete: options.afterDelete,
+      beforeAccountSwitch: options.beforeAccountSwitch,
+      prepareAccount: options.prepareAccount,
     });
   } catch (error) {
     const cleanup = await Promise.allSettled([
