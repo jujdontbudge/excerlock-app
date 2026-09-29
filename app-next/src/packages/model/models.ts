@@ -60,5 +60,6 @@ export type IdentityLabScript = {
   googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'cancel' | 'error' | 'pending';
   restore?: 'restored' | 'notFound';
+  delayedCallbacks?: boolean;
 };
 export type Unsubscribe = () => void;

@@ -83,5 +83,10 @@ export function identityLabHost(
         };
       },
     });
-  return { start, stop, route };
+  const runDelayedCallbackIsolation = async () => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runDelayedCallbackIsolation();
+  };
+  return { start, stop, route, runDelayedCallbackIsolation };
 }

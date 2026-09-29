@@ -247,6 +247,21 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           switchOrdering: accountTransitions.join(' · '),
         } });
       },
+      runLabDelayedCallbackIsolation: async () => {
+        const result = await identityLab.runDelayedCallbackIsolation();
+        const selected = auth.identity();
+        const admission = selected.kind === 'canonical' && selected.userId
+          ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
+          : { type: 'unavailable' as const };
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+        } });
+      },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,
     };
   return {

@@ -103,6 +103,7 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
       beginPaywall();
       return 'unpaid';
     }
+    await runtime.subscription.clearRecovery();
     set({ phase: 'setup', entryIntent: state.entryIntent, admission: selected, error: null });
     return 'paid';
   } catch {

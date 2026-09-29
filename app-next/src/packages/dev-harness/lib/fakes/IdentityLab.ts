@@ -22,6 +22,13 @@ export type IdentityLab = {
   auth: AuthPort;
   subscription: SubscriptionPort;
   booted: Promise<void>;
+  runDelayedCallbackIsolation(): Promise<{
+    identity: string;
+    entitlement: string;
+    recovery: string;
+    queued: number;
+    delivered: number;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -52,8 +59,10 @@ export async function createIdentityLab(
   script: IdentityLabScript,
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
-  const attempts = { anonymous: 0, userSync: 0, flow: 0 };
-  let storeAccess: 'trial' | 'active' | null = null;
+  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0 };
+  const ownership = new Map<string, 'trial' | 'active'>();
+  const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
+  let deliveredProfiles = 0;
   let users = 0;
   let stored: LabSession | null = null;
   let distinctId = ANONYMOUS_DISTINCT_ID;
@@ -144,11 +153,20 @@ export async function createIdentityLab(
     exchangeCode: async () => ({ idToken: 'lab-google-id-token', accessToken: 'lab-google-access-token' }),
   };
 
-  const profile = (): AdaptyProfile => {
-    const status = customerUserId ? storeAccess : null;
+  const updateSubscriptionLab = () => ctx.update({
+    subscriptionLab: {
+      purchases: attempts.purchase,
+      restores: attempts.restore,
+      queued: queuedProfiles.length,
+      delivered: deliveredProfiles,
+      callbackIsolation: ctx.snapshot().subscriptionLab?.callbackIsolation,
+    },
+  });
+  const profile = (owner = customerUserId): AdaptyProfile => {
+    const status = owner ? ownership.get(owner) : undefined;
     const days = status === 'trial' ? 7 : 30;
     return {
-      customerUserId,
+      customerUserId: owner,
       accessLevels: status
         ? {
             premium: {
@@ -188,19 +206,34 @@ export async function createIdentityLab(
       script.plans === 'empty' ? [] : [labProduct('lab.annual', 'Lab annual', 49.99, 'year'), labProduct('lab.monthly', 'Lab monthly', 9.99, 'month')],
     logShowFlow: async () => undefined,
     makePurchase: async () => {
+      attempts.purchase += 1;
       const result = script.purchase ?? ctx.snapshot().outcome;
-      ctx.log('lab_purchase', { result });
+      const owner = customerUserId;
+      ctx.log('lab_purchase', { result, owner });
       if (result === 'error') throw networkError('Purchase failed');
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
-      storeAccess = 'trial';
-      return { type: 'success', profile: profile() } as unknown as AdaptyPurchaseResult;
+      if (!owner) throw new Error('Purchase owner unavailable');
+      ownership.set(owner, 'trial');
+      const purchased = profile(owner);
+      if (script.delayedCallbacks) {
+        queuedProfiles.push({ operation: 'purchase', owner, profile: purchased });
+        updateSubscriptionLab();
+        return { type: 'pending' } as AdaptyPurchaseResult;
+      }
+      updateSubscriptionLab();
+      return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
     },
     restorePurchases: async () => {
+      attempts.restore += 1;
       const result = script.restore ?? ctx.snapshot().restoreOutcome;
-      ctx.log('lab_restore', { result });
-      if (result === 'restored') storeAccess = 'active';
-      return profile();
+      const owner = customerUserId;
+      ctx.log('lab_restore', { result, owner });
+      if (result === 'restored' && owner) ownership.set(owner, 'active');
+      const restored = profile(owner);
+      if (script.delayedCallbacks && owner) queuedProfiles.push({ operation: 'restore', owner, profile: restored });
+      updateSubscriptionLab();
+      return restored;
     },
     setIntegrationIdentifier: async () => undefined,
   };
@@ -288,6 +321,33 @@ export async function createIdentityLab(
       () => undefined,
       () => undefined,
     ),
+    runDelayedCallbackIsolation: async () => {
+      const paywall = await adapter.loadPaywall('onboarding');
+      const purchase = await adapter.purchase(paywall.products[0]!.handle);
+      if (purchase.type !== 'pending') throw new Error('Delayed purchase did not remain pending');
+      await auth.recoverWithApple();
+      await services?.waitForIdentityReady();
+      ctx.update({ restoreOutcome: 'restored' });
+      await adapter.restore();
+      await auth.recoverWithGoogle();
+      const selected = await services?.waitForIdentityReady();
+      if (!selected?.userId) throw new Error('Target account did not become ready');
+      const callbacks = queuedProfiles.splice(0);
+      callbacks.forEach(({ operation, owner, profile: queued }) => {
+        deliveredProfiles += 1;
+        ctx.log('lab_delayed_profile', { operation, owner, selected: selected.userId });
+        profileListener?.(queued);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      updateSubscriptionLab();
+      return {
+        identity: selected.userId,
+        entitlement: adapter.entitlement().status,
+        recovery: adapter.recovery().type,
+        queued: callbacks.length,
+        delivered: deliveredProfiles,
+      };
+    },
     dispose: async () => {
       adapter.dispose();
       await services?.dispose();

@@ -1,6 +1,6 @@
 import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/launchSignInGate';
-import { beginPaywall } from '../../journey/index';
+import { beginOnboarding, beginPaywall } from '../../journey/index';
 import { RuntimeControls } from '../../ports/RuntimeControls';
 export type DevParams = { scenario?: string; restore?: string; outcome?: string; prompt?: string; setup?: string; journey?: string };
 export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
@@ -9,7 +9,10 @@ export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
     authorizeDemoScenario(true);
     onboardingStore.getState().patch({ complete: true, setupComplete: false, setupStep: p.setup });
   }
-  if (p.journey === 'paywall') beginPaywall();
+  if (p.journey === 'paywall') {
+    beginOnboarding();
+    beginPaywall();
+  }
   if (p.restore === 'restored' || p.restore === 'notFound') dev.setRestoreOutcome(p.restore);
   if (p.outcome === 'success' || p.outcome === 'cancel' || p.outcome === 'error') dev.setOutcome(p.outcome);
   if (p.prompt === 'grant' || p.prompt === 'deny' || p.prompt === 'ask') dev.setPromptMode(p.prompt);

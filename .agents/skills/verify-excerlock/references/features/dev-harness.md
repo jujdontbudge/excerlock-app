@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks]
 depends: [launch]
 ---
 ## Sub-features
@@ -38,6 +38,15 @@ open: /dev
 tap: Run account switch ordering
 wait: 30
 expect: Account data | Active account A | Condition owner Account A | Saved Gym Gym A | Switch ordering Preserved while unready · B loaded before ready · Screen Time rotated after target loaded · B ready · Preserved while unready · A loaded before ready · Screen Time rotated after target loaded · A ready
+```
+
+```proof
+name: delayed-subscription-callbacks-fail-closed
+scenario: identity-lab-delayed-callbacks
+open: /dev
+tap: Run delayed callback isolation
+wait: 30
+expect: Purchase operations 1 | Restore operations 1 | Delayed callbacks 0/2 | Callback isolation lab-user-b Entitlement none admission ineligible recovery pending callbacks 2/2
 ```
 
 ## Gotchas

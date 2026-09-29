@@ -25,6 +25,13 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     switchOrdering?: string;
     activityCheckpoints?: string;
   };
+  subscriptionLab?: {
+    purchases: number;
+    restores: number;
+    queued: number;
+    delivered: number;
+    callbackIsolation?: string;
+  };
 };
 export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
@@ -47,6 +54,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   seedLabAccount(account: 'A' | 'B'): Promise<void>;
   runLabAccountIsolation(): Promise<void>;
   runLabAccountSwitchOrdering(): Promise<void>;
+  runLabDelayedCallbackIsolation(): Promise<void>;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

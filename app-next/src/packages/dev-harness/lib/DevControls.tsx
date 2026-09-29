@@ -38,6 +38,7 @@ export function DevControls() {
       <SettingsGroup title="Account data">
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
         <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
+        <SettingsRow title="Run delayed callback isolation" onPress={() => void runAccountAction(() => dev.runLabDelayedCallbackIsolation())} />
         <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
         <SettingsRow title={`Legacy data ${view.accountData?.legacyQuarantined ? 'Quarantined' : 'None'}`} />
         <SettingsRow title={`Condition owner ${rulesStore.getState().data.rules[0]?.id === 'account-a' ? 'Account A' : rulesStore.getState().data.rules[0]?.id === 'account-b' ? 'Account B' : 'None'}`} />
@@ -56,6 +57,11 @@ export function DevControls() {
       <SettingsGroup title="Journey data">
         <SettingsRow title="Conditions" value={String(conditionCount)} />
         <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
+        <SettingsRow title={`Purchase recovery ${runtime.subscription.recovery().type}`} />
+        <SettingsRow title={`Purchase operations ${String(view.subscriptionLab?.purchases ?? 0)}`} />
+        <SettingsRow title={`Restore operations ${String(view.subscriptionLab?.restores ?? 0)}`} />
+        <SettingsRow title={`Delayed callbacks ${String(view.subscriptionLab?.queued ?? 0)}/${String(view.subscriptionLab?.delivered ?? 0)}`} />
+        <SettingsRow title={`Callback isolation ${view.subscriptionLab?.callbackIsolation ?? 'Not run'}`} />
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />

@@ -3,6 +3,12 @@ import { emptyPermissions } from '../../../permissions/permissionsStore';
 
 const atOnboardingPaywall = {
   onboarding: 'resumeAt:P' as const,
+  onboardingAnswers: {
+    ruleId: 'identity-lab-staged-condition',
+    ruleCreatedAt: '2026-09-07T15:00:00.000Z',
+    ruleCommitted: false,
+    ruleCommittedFor: '',
+  },
   permissions: emptyPermissions,
   lockedApps: { handle: null, isEmpty: true },
   ruleDays: [],
@@ -44,6 +50,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },
     purchaseRecovery: 'accountConnection',
+  }),
+  base('identity-lab-delayed-callbacks', 'Identity lab · delayed purchase and restore callbacks', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', delayedCallbacks: true },
   }),
   base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
     ...atOnboardingPaywall,

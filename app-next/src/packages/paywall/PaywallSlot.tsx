@@ -57,7 +57,6 @@ export function PaywallSlot() {
     }
     const result = await verifySelectedAccount(runtime);
     if (result === 'paid') {
-      await runtime.subscription.clearRecovery();
       router.replace('/setup/X1');
     }
     else if (result === 'unpaid') router.replace('/paywall');
