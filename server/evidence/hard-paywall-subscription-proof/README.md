@@ -5,7 +5,7 @@ dashboard, data, purchase or deployment was touched.
 
 ## Latest local run
 
-`./excer server smoke` passed on September 29, 2026 against a fresh throwaway
+`./excer server smoke` passed on commit `32094000` on September 29, 2026 against a fresh throwaway
 Postgres 16 container. The exact case mapping is in
 `docs/plans/hard-paywall-local-proof-inventory.md`; this file is the durable
 server evidence record because the smoke intentionally retains no database,
