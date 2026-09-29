@@ -69,12 +69,23 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
       if (denied.missing.length > 0) break;
     }
   }
-  if (proof.thenOpen && result.missing.length === 0) {
+  if ((proof.thenTap?.length || proof.thenOpen) && result.missing.length === 0) {
     screenshot(udid, join(dir, `${proof.name}.before.png`));
-    openUrl(udid, proof.thenOpen);
-    await sleep(1500);
+    for (const label of proof.thenTap ?? []) {
+      try {
+        await tap(udid, label);
+      } catch {
+        result.missing.push(`tap "${label}"`);
+        break;
+      }
+      await sleep(1000);
+    }
+    if (proof.thenOpen && result.missing.length === 0) {
+      openUrl(udid, proof.thenOpen);
+      await sleep(1500);
+    }
     const then = await waitForLabels(udid, proof.thenExpect ?? [], proof.wait);
-    result.missing = then.missing;
+    result.missing = [...result.missing, ...then.missing];
     result.nodes = then.nodes;
   }
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));

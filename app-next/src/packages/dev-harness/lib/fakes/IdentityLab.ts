@@ -17,6 +17,15 @@ type LabSession = { access_token: string; refresh_token: string; user: LabUser }
 type LabSupabase = NonNullable<AuthServiceConfig['supabase']>;
 type LabAppleDeps = NonNullable<AuthServiceConfig['appleDeps']>;
 type LabGoogleDeps = NonNullable<AuthServiceConfig['googleDeps']>;
+type DeletionIsolationResult = {
+  identity: string;
+  deletedIdentity: string;
+  entitlement: string;
+  recovery: string;
+  queued: number;
+  delivered: number;
+  tombstonePreserved: boolean;
+};
 
 export type IdentityLab = {
   auth: AuthPort;
@@ -29,15 +38,11 @@ export type IdentityLab = {
     queued: number;
     delivered: number;
   }>;
-  runDeletionCallbackIsolation(seedDeletedAccount: () => Promise<void>): Promise<{
-    identity: string;
-    deletedIdentity: string;
-    entitlement: string;
-    recovery: string;
-    queued: number;
-    delivered: number;
-    tombstonePreserved: boolean;
-  }>;
+  prepareDeletionCallbackIsolation(
+    seedDeletedAccount: () => Promise<void>,
+    completed: (result: DeletionIsolationResult) => void | Promise<void>,
+  ): Promise<void>;
+  runDeletionCallbackIsolation(seedDeletedAccount: () => Promise<void>): Promise<DeletionIsolationResult>;
   runEstablishedTransfer(
     seedAccount: (account: 'A' | 'B') => Promise<void>,
     accountCheckpoint: () => string,
@@ -392,6 +397,54 @@ export async function createIdentityLab(
     await accountHooks?.seedAccount?.('B');
     updateSubscriptionLab();
   });
+  const stageDeletionCallbackIsolation = async (seedDeletedAccount: () => Promise<void>) => {
+    const paywall = await adapter.loadPaywall('onboarding');
+    const purchase = await adapter.purchase(paywall.products[0]!.handle);
+    if (purchase.type !== 'pending') throw new Error('Delayed purchase did not remain pending');
+    await auth.recoverWithApple();
+    const deleted = await services?.waitForIdentityReady();
+    if (!deleted?.userId) throw new Error('Deleted account did not become ready');
+    await seedDeletedAccount();
+    ctx.update({ restoreOutcome: 'restored' });
+    await adapter.restore();
+    return deleted.userId;
+  };
+  const finishDeletionCallbackIsolation = async (deletedIdentity: string): Promise<DeletionIsolationResult> => {
+    await auth.recoverWithApple();
+    await new Promise<void>((resolve, reject) => {
+      const finish = (identity: AuthIdentity) => {
+        if (identity.kind !== 'canonical' || !identity.ready || !identity.userId || identity.userId === deletedIdentity) return;
+        clearTimeout(timer);
+        stop();
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        stop();
+        reject(new Error('Deleted account tombstone did not settle to a fresh identity'));
+      }, 15_000);
+      const stop = auth.subscribeIdentity(finish);
+      finish(auth.identity());
+    });
+    const selected = auth.identity();
+    if (selected.kind !== 'canonical' || !selected.userId) throw new Error('Fresh identity did not become ready');
+    const callbacks = queuedProfiles.splice(0);
+    callbacks.forEach(({ operation, owner, profile: queued }) => {
+      deliveredProfiles += 1;
+      ctx.log('lab_deleted_profile', { operation, owner, selected: selected.userId });
+      profileListener?.(queued);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    updateSubscriptionLab();
+    return {
+      identity: selected.userId,
+      deletedIdentity,
+      entitlement: adapter.entitlement().status,
+      recovery: adapter.recovery().type,
+      queued: callbacks.length,
+      delivered: deliveredProfiles,
+      tombstonePreserved: tombstones.has(deletedIdentity),
+    };
+  };
   return {
     auth,
     subscription,
@@ -426,51 +479,30 @@ export async function createIdentityLab(
         delivered: deliveredProfiles,
       };
     },
+    prepareDeletionCallbackIsolation: async (seedDeletedAccount, completed) => {
+      const deletedIdentity = await stageDeletionCallbackIsolation(seedDeletedAccount);
+      let finishing = false;
+      let stop: () => void = () => undefined;
+      stop = auth.subscribeIdentity((identity) => {
+        if (
+          finishing ||
+          !tombstones.has(deletedIdentity) ||
+          identity.kind !== 'canonical' ||
+          !identity.ready ||
+          !identity.userId ||
+          identity.userId === deletedIdentity
+        ) return;
+        finishing = true;
+        stop();
+        void finishDeletionCallbackIsolation(deletedIdentity).then(completed).catch((error) => {
+          ctx.log('lab_deletion_callback_failed', { message: message(error) });
+        });
+      });
+    },
     runDeletionCallbackIsolation: async (seedDeletedAccount) => {
-      const paywall = await adapter.loadPaywall('onboarding');
-      const purchase = await adapter.purchase(paywall.products[0]!.handle);
-      if (purchase.type !== 'pending') throw new Error('Delayed purchase did not remain pending');
-      await auth.recoverWithApple();
-      const deleted = await services?.waitForIdentityReady();
-      if (!deleted?.userId) throw new Error('Deleted account did not become ready');
-      await seedDeletedAccount();
-      ctx.update({ restoreOutcome: 'restored' });
-      await adapter.restore();
+      const deletedIdentity = await stageDeletionCallbackIsolation(seedDeletedAccount);
       await auth.deleteAccount();
-      await auth.recoverWithApple();
-      await new Promise<void>((resolve, reject) => {
-        const finish = (identity: AuthIdentity) => {
-          if (identity.kind !== 'canonical' || !identity.ready || !identity.userId || identity.userId === deleted.userId) return;
-          clearTimeout(timer);
-          stop();
-          resolve();
-        };
-        const timer = setTimeout(() => {
-          stop();
-          reject(new Error('Deleted account tombstone did not settle to a fresh identity'));
-        }, 15_000);
-        const stop = auth.subscribeIdentity(finish);
-        finish(auth.identity());
-      });
-      const selected = auth.identity();
-      if (selected.kind !== 'canonical' || !selected.userId) throw new Error('Fresh identity did not become ready');
-      const callbacks = queuedProfiles.splice(0);
-      callbacks.forEach(({ operation, owner, profile: queued }) => {
-        deliveredProfiles += 1;
-        ctx.log('lab_deleted_profile', { operation, owner, selected: selected.userId });
-        profileListener?.(queued);
-      });
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      updateSubscriptionLab();
-      return {
-        identity: selected.userId,
-        deletedIdentity: deleted.userId,
-        entitlement: adapter.entitlement().status,
-        recovery: adapter.recovery().type,
-        queued: callbacks.length,
-        delivered: deliveredProfiles,
-        tombstonePreserved: tombstones.has(deleted.userId),
-      };
+      return finishDeletionCallbackIsolation(deletedIdentity);
     },
     runEstablishedTransfer: async (seedAccount, accountCheckpoint, verifyCurrent) => {
       await auth.recoverWithApple();

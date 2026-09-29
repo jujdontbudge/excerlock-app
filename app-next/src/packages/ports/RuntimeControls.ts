@@ -61,6 +61,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabAccountIsolation(): Promise<void>;
   runLabAccountSwitchOrdering(): Promise<void>;
   runLabDelayedCallbackIsolation(): Promise<void>;
+  prepareLabDeletionCallbackIsolation(): Promise<void>;
   runLabDeletionCallbackIsolation(): Promise<void>;
   runLabEstablishedTransfer(): Promise<void>;
   deliverNotification(destination: 'home' | 'unlock'): void;

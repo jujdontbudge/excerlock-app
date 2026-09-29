@@ -49,7 +49,7 @@ export type Scenario = {
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
   purchaseRecovery?: 'pending' | 'accountConnection';
-  subscriptionProof?: 'matching' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
+  subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;
 };

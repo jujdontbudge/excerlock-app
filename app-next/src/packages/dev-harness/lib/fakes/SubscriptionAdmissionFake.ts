@@ -28,6 +28,10 @@ export function SubscriptionAdmissionFake(
         lease = null;
         return { type: 'unavailable' };
       }
+      if (proof === 'ineligible') {
+        lease = null;
+        return { type: 'ineligible' };
+      }
       const entitlement = subscription.entitlement();
       const expiresAt = entitlement.accessExpiresAt ?? entitlement.renewsAt;
       if (!['active', 'trial'].includes(entitlement.status) || !expiresAt || Date.parse(expiresAt) <= Date.parse(ctx.clock.now())) {

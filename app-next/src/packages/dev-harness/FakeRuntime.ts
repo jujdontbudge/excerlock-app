@@ -275,6 +275,29 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
         } });
       },
+      prepareLabDeletionCallbackIsolation: async () => {
+        await identityLab.prepareDeletionCallbackIsolation(() => seedAccount('A'), async (result) => {
+          const selected = auth.identity();
+          const admission = selected.kind === 'canonical' && selected.userId
+            ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
+            : { type: 'unavailable' as const };
+          const accountDataErased =
+            rulesStore.getState().data.rules.length === 0 &&
+            historyStore.getState().data.days.length === 0 &&
+            profileStore.getState().data.name.length === 0 &&
+            settingsStore.getState().data.gymPlaces.length === 0;
+          const current = ctx.snapshot().subscriptionLab;
+          ctx.update({ subscriptionLab: {
+            purchases: current?.purchases ?? 0,
+            restores: current?.restores ?? 0,
+            queued: current?.queued ?? 0,
+            delivered: current?.delivered ?? 0,
+            callbackIsolation: current?.callbackIsolation,
+            deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+            transferIsolation: current?.transferIsolation,
+          } });
+        });
+      },
       runLabDeletionCallbackIsolation: async () => {
         const result = await identityLab.runDeletionCallbackIsolation(() => seedAccount('A'));
         const selected = auth.identity();

@@ -69,6 +69,18 @@ then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | subscription_management_opened {} | export_requested {"rules":1,"days":1,"earnedUnlocks":0,"visits":0} | restore {} | Protected route mounts | None
 ```
 
+```proof
+name: deletion-and-late-callbacks-user-path
+scenario: identity-lab-deletion-callbacks
+open: /dev
+tap: Prepare deletion callback user path | Sign in to manage your account | Continue with Apple | Account and help | Account and deletion | Delete account
+expect: Delete your account forever? | Deleting your account does not cancel an App Store subscription. | Delete account forever
+then-tap: Delete account forever
+then-open: /dev
+then-expect: Journey welcome · paid no · admitted no | Active account Checkout | Condition owner None | History Days 0 | Profile None | Saved Gym None | Purchase operations 1 | Restore operations 1 | Delayed callbacks 0/2 | Deletion isolation lab-user-a deleted tombstone preserved fresh lab-checkout- | Entitlement none admission ineligible data erased recovery pending callbacks 2/2 | Protected route mounts | None
+wait: 30
+```
+
 ## Gotchas
 - A restored signed-in session is not launch approval. `/settings/account` deep links redirect to sign-in until Apple, Google or an email code is completed in this process (ADR 0049; setup/returning-settings-blocked).
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.

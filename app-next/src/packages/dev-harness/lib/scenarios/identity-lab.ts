@@ -58,6 +58,7 @@ export const identityLabScenarios = [
   base('identity-lab-deletion-callbacks', 'Identity lab · deletion and delayed callbacks', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', delayedCallbacks: true },
+    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-established-transfer', 'Identity lab · established account restore transfer', {
     ...atOnboardingPaywall,

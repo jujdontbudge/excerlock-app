@@ -14,9 +14,11 @@ import { onboardingStore } from '../../onboarding/onboardingStore';
 import { historyStore } from '../../progress/historyStore';
 import { profileStore } from '../../preferences/profileStore';
 import { settingsStore } from '../../preferences/settingsStore';
+import { useRouter } from 'expo-router';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
+    router = useRouter(),
     now = useClock(),
     view = useDevSnapshot(),
     permissions = usePermissionsStore((s) => s.data),
@@ -39,6 +41,10 @@ export function DevControls() {
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
         <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
         <SettingsRow title="Run delayed callback isolation" onPress={() => void runAccountAction(() => dev.runLabDelayedCallbackIsolation())} />
+        <SettingsRow title="Prepare deletion callback user path" onPress={() => void runAccountAction(async () => {
+          await dev.prepareLabDeletionCallbackIsolation();
+          router.replace('/recovery');
+        })} />
         <SettingsRow title="Run deletion callback isolation" onPress={() => void runAccountAction(() => dev.runLabDeletionCallbackIsolation())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
         <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
