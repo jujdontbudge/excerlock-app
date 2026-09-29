@@ -68,6 +68,16 @@ then-expect: Protected route mounts | None
 ```
 
 ```proof
+name: forged-onboarding-return-and-paywall-back-blocked
+scenario: returning-unpaid
+open: /onboarding/S3d?returnTo=%2Fhome
+tap: Continue | Back
+expect: We'll send you a reminder before your trial ends | No payment due now
+then-open: /dev
+then-expect: Journey onboarding | Protected route mounts | None
+```
+
+```proof
 name: returning-paid-after-signin
 scenario: returning-signed-in
 open: /

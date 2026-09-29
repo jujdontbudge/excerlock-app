@@ -11,6 +11,10 @@ import { useRuntime } from '../../ports/useRuntime';
 import { Answers } from '../../model/answers';
 import { applyReviewPreset, isReviewPresetName } from './reviewPreset';
 import { beginPaywall } from '../../journey/index';
+
+const onboardingReturnDestination = (...values: unknown[]) =>
+  values.find((value): value is 'S3' => value === 'S3') ?? '';
+
 export function useOnboarding() {
   const params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
     router = useRouter(),
@@ -100,7 +104,7 @@ export function useOnboarding() {
       if (step === 'O10' && state.answers.estimatedDailyMinutes === undefined)
         useOnboardingStore.getState().patch({ answers: { ...state.answers, estimatedDailyMinutes: 180 } });
       const currentAnswers = useOnboardingStore.getState().data.answers;
-      const destination = params.returnTo || String(currentAnswers.returnTo || '');
+      const destination = onboardingReturnDestination(params.returnTo, currentAnswers.returnTo);
       if (destination) {
         useOnboardingStore.getState().patch({ answers: { ...currentAnswers, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });
@@ -122,7 +126,7 @@ export function useOnboarding() {
       router.setParams({ step: target, returnTo: 'S3' });
     },
     back: () => {
-      const destination = params.returnTo || String(state.answers.returnTo || '');
+      const destination = onboardingReturnDestination(params.returnTo, state.answers.returnTo);
       if (destination) {
         let restored = state.answers;
         try {
