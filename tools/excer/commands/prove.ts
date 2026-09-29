@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { findFeature, protectedAppRoutes, type Proof } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, screenshot, swipeBack, tap, waitForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, screenshot, swipeBack, tap, typeText, waitForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
 
@@ -18,7 +18,8 @@ Exit 0 only when every expectation was seen. Feature files:
 type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[] };
 type NotificationAttempt = { destination: 'home' | 'unlock'; ok: boolean; missing: string[] };
 type GestureAttempt = { gesture: 'back'; result: string };
-type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[] };
+type ActionAttempt = { action: 'tap' | 'type'; value: string; result: string };
+type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[] };
 
 async function runProof(feature: string, proof: Proof, dir: string): Promise<Outcome> {
   let udid: string;
@@ -29,6 +30,17 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
     await sleep(1500);
   }
   const failedTaps: string[] = [];
+  const actionAttempts: ActionAttempt[] = [];
+  for (const action of proof.actions ?? []) {
+    try {
+      const result = action.kind === 'tap' ? await tap(udid, action.value) : typeText(udid, action.value);
+      actionAttempts.push({ action: action.kind, value: action.kind === 'type' ? `${action.value.length} characters` : action.value, result });
+    } catch {
+      failedTaps.push(`${action.kind} "${action.value}"`);
+      break;
+    }
+    await sleep(1000);
+  }
   for (const label of proof.tap ?? []) {
     try {
       await tap(udid, label);
@@ -91,7 +103,7 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));
   const treePath = join(dir, `${proof.name}.labels.txt`);
   writeFileSync(treePath, labels(result.nodes).join('\n'));
-  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}) };
+  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(actionAttempts.length ? { actionAttempts } : {}), ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}) };
 }
 
 export async function proveCommand(args: string[]): Promise<number> {

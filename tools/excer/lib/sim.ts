@@ -240,13 +240,20 @@ export async function tap(udid: string, label: string): Promise<string> {
   if (missing.length > 0) throw new Error(`No accessible element labelled "${label}"`);
   const matches = nodes.filter((node) => labels([node])[0]?.includes(normalise(label)));
   const exact = (node: AxNode) => Number(labels([node])[0] !== normalise(label));
-  matches.sort((a, b) => exact(a) - exact(b) || Number(a.type !== 'Button') - Number(b.type !== 'Button'));
+  const interactionRank = (node: AxNode) => node.type === 'Button' ? 0 : node.type === 'TextField' ? 1 : 2;
+  matches.sort((a, b) => exact(a) - exact(b) || interactionRank(a) - interactionRank(b));
   const frame = matches[0]?.frame;
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);
   const y = Math.round(frame.y + frame.height / 2);
   must('idb', ['ui', 'tap', '--udid', udid, String(x), String(y)]);
   return `tapped "${label}" at ${x},${y}`;
+}
+
+export function typeText(udid: string, value: string): string {
+  ensureCompanion(udid);
+  must('idb', ['ui', 'text', '--udid', udid, value]);
+  return `typed ${value.length} characters`;
 }
 
 export function swipeBack(udid: string): string {

@@ -36,6 +36,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     concurrentRestoreIsolation?: string;
     providerLinking?: string;
     providerAttempts?: string;
+    emailChallenges?: string;
     providerConflict?: string;
     localSignOutIsolation?: string;
   };

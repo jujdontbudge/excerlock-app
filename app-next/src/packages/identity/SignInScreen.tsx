@@ -90,6 +90,7 @@ export function SignInScreen({
         setRecoveryProvider(provider);
         setError(caught.message);
       } else {
+        if (provider === 'email') setCode('');
         setError(provider === 'email' ? c.codeError : c.authError);
       }
     } finally {
@@ -103,6 +104,7 @@ export function SignInScreen({
     setRecoveryProvider(null);
     try {
       await runtime.auth.sendEmailCode(email.trim());
+      setCode('');
       if (phase === 'code') setNote(c.resent);
       setPhase('code');
     } catch (caught) {

@@ -85,6 +85,11 @@ export const identityLabScenarios = [
     identityLab: { googleSignIn: 'success', providerAttempts: true },
     subscriptionProof: 'ineligible',
   }),
+  base('identity-lab-email-challenges', 'Identity lab · email code resilience', {
+    ...atOnboardingPaywall,
+    identityLab: { emailChallenges: true },
+    subscriptionProof: 'ineligible',
+  }),
   base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedProviderConflict: true },

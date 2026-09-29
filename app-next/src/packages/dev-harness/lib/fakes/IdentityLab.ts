@@ -153,6 +153,7 @@ export async function createIdentityLab(
     peerProof: 0,
     appleCredential: 0,
     googleCredential: 0,
+    emailSend: 0,
   };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   const tombstones = new Set<string>();
@@ -175,6 +176,7 @@ export async function createIdentityLab(
   let services: AuthServices | undefined;
   const providerUsers = new Map<string, LabUser>();
   const usersById = new Map<string, LabUser>();
+  const emailChallengeOutcomes: string[] = [];
 
   const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
   const newUser = (provider?: string): LabUser => {
@@ -255,8 +257,44 @@ export async function createIdentityLab(
         return result;
       },
       signInWithOtp: unscripted,
-      verifyOtp: unscripted,
-      updateUser: unscripted,
+      verifyOtp: async ({ token }: { email: string; token: string; type: string }) => {
+        if (!script.emailChallenges || !stored) return unscripted();
+        const outcome = token === '111111'
+          ? 'invalid'
+          : token === '222222'
+            ? 'expired'
+            : token === '333333'
+              ? 'superseded'
+              : token === '444444' && attempts.emailSend === 2
+                ? 'success'
+                : 'invalid';
+        const challenge = outcome === 'superseded' ? 1 : attempts.emailSend;
+        emailChallengeOutcomes.push(outcome);
+        ctx.log('lab_email_challenge', {
+          challenge,
+          result: outcome,
+          account: stored.user.id,
+          grants: grants.size,
+        });
+        updateSubscriptionLab();
+        if (outcome !== 'success')
+          return { data: { user: null, session: null }, error: Object.assign(new Error(`Email code ${outcome}`), { code: `otp_${outcome}` }) };
+        const linked: LabUser = {
+          ...stored.user,
+          is_anonymous: false,
+          identities: [...stored.user.identities.filter((identity) => identity.provider !== 'email'), { provider: 'email' }],
+          app_metadata: { provider: 'email' },
+        };
+        providerUsers.set('email', linked);
+        usersById.set(linked.id, linked);
+        return signedIn(linked);
+      },
+      updateUser: async ({ email: _email }: { email: string }) => {
+        if (!script.emailChallenges || !stored) return unscripted();
+        attempts.emailSend += 1;
+        ctx.log('lab_email_code_sent', { challenge: attempts.emailSend, account: stored.user.id });
+        return { data: { user: stored.user }, error: null };
+      },
     },
   } as unknown as LabSupabase;
 
@@ -339,6 +377,9 @@ export async function createIdentityLab(
       providerAttempts: script.providerAttempts && attempts.googleCredential >= 2
         ? `Apple canceled · Google failed · Google success · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
         : ctx.snapshot().subscriptionLab?.providerAttempts,
+      emailChallenges: script.emailChallenges && emailChallengeOutcomes.length >= 4
+        ? `${emailChallengeOutcomes.join(' · ')} · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
+        : ctx.snapshot().subscriptionLab?.emailChallenges,
       localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`

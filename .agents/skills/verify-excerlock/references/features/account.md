@@ -2,7 +2,7 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-established-provider-conflict]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict]
 server: [PUT /v1/user, DELETE /v1/user]
 depends: [setup]
 ---
@@ -28,6 +28,17 @@ wait: 30
 expect: Become ADDICTED to exercise
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Provider attempts Apple canceled · Google failed · Google success · account lab-checkout-1 · grants 0 | lab_provider_attempt {"provider":"apple","attempt":1,"result":"cancelled","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":1,"result":"failed","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":2,"result":"success","account":"lab-checkout-1","grants":0} | lab_link_identity {"provider":"google","result":"ok"} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
+```
+
+```proof
+name: email-code-failures-use-only-current-challenge
+scenario: identity-lab-email-challenges
+open: dev?journey=signIn
+actions: tap Continue with email | type a@b.co | tap Send code | tap Verification code | type 111111 | tap Verify code | tap Verification code | type 222222 | tap Verify code | tap Resend code | tap Verification code | type 333333 | tap Verify code | tap Verification code | type 444444 | tap Verify code
+wait: 30
+expect: Become ADDICTED to exercise
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Email challenges invalid · expired · superseded · success · account lab-checkout-1 · grants 0 | lab_email_challenge {"challenge":1,"result":"invalid","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"expired","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"superseded","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":2,"result":"success","account":"lab-checkout-1","grants":0} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
 ```
 
 ```proof

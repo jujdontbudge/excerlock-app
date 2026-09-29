@@ -20,6 +20,7 @@ import {
   startMetro,
   stopMetro,
   tap,
+  typeText,
   tree,
   waitForLabels,
 } from '../lib/sim.ts';
@@ -87,9 +88,7 @@ export async function simCommand(args: string[]): Promise<number> {
       console.log(await tap(ownedDevice().udid, rest.join(' ')));
       return 0;
     case 'type':
-      ensureCompanion(ownedDevice().udid);
-      must('idb', ['ui', 'text', '--udid', ownedDevice().udid, rest.join(' ')]);
-      console.log('typed');
+      console.log(typeText(ownedDevice().udid, rest.join(' ')));
       return 0;
     case 'wait': {
       const result = await waitForLabels(ownedDevice().udid, rest, 15);
