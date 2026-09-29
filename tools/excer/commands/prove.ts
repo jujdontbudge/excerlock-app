@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { findFeature, type Proof } from '../lib/features.ts';
+import { findFeature, protectedAppRoutes, type Proof } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
 import { ensureApp, labels, openUrl, screenshot, tap, waitForLabels } from '../lib/sim.ts';
@@ -15,7 +15,8 @@ accessibility tree and result.json under .excer/proof/<feature>/<time>/.
 Exit 0 only when every expectation was seen. Feature files:
 .agents/skills/verify-excerlock/references/features/<feature>.md`;
 
-type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string };
+type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[] };
+type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; routeAttempts?: RouteAttempt[] };
 
 async function runProof(feature: string, proof: Proof, dir: string): Promise<Outcome> {
   let udid: string;
@@ -37,6 +38,18 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   }
   const result = await waitForLabels(udid, proof.expect, failedTaps.length > 0 ? 1 : proof.wait);
   result.missing = [...failedTaps, ...result.missing];
+  const routeAttempts: RouteAttempt[] = [];
+  if (proof.denyRoutes === 'protected' && result.missing.length === 0) {
+    for (const candidate of protectedAppRoutes()) {
+      openUrl(udid, candidate.href);
+      await sleep(500);
+      const denied = await waitForLabels(udid, proof.denyExpect ?? [], proof.wait);
+      routeAttempts.push({ ...candidate, ok: denied.missing.length === 0, missing: denied.missing });
+      out.info(`${candidate.href}  ${denied.missing.length === 0 ? 'denied' : `missing: ${denied.missing.join(', ')}`}`);
+      result.missing.push(...denied.missing.map((label) => `${candidate.href}: ${label}`));
+      if (denied.missing.length > 0) break;
+    }
+  }
   if (proof.thenOpen && result.missing.length === 0) {
     screenshot(udid, join(dir, `${proof.name}.before.png`));
     openUrl(udid, proof.thenOpen);
@@ -48,7 +61,7 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));
   const treePath = join(dir, `${proof.name}.labels.txt`);
   writeFileSync(treePath, labels(result.nodes).join('\n'));
-  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath };
+  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(routeAttempts.length ? { routeAttempts } : {}) };
 }
 
 export async function proveCommand(args: string[]): Promise<number> {

@@ -54,6 +54,7 @@ Proof fields:
 - `tap`: labels to tap in order after `open`, separated by `|`. Use it to change state without a deep link, because opening a URL rebuilds navigation and remounts screens.
 - `wait`: how many seconds to wait. The default is 15.
 - `then-open` and `then-expect`: after `expect` is met, open another route and expect more labels. Use it to read a side effect, such as the fake analytics events on `dev`. The first screen is saved as `<name>.before.png`.
+- `deny-routes: protected` and `deny-expect`: derive every paid route from the Expo route files, deep-link each one, and require the denial labels before continuing. Route attempts are recorded in `result.json`.
 
 Metro runs without a file watcher. Before driving the app, `excer` restarts Metro whenever a file under `app-next/src`, `app` or `modules` is newer than Metro's start, and it refuses to continue if the bundle does not build. Without this, the dev client silently runs its last cached bundle and a proof passes against old code. If you drive Metro some other way, check the bundle yourself.
 

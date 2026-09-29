@@ -35,6 +35,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     transferIsolation?: string;
     providerConflict?: string;
   };
+  protectedRouteMounts: string[];
 };
 export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
@@ -60,6 +61,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabDelayedCallbackIsolation(): Promise<void>;
   runLabDeletionCallbackIsolation(): Promise<void>;
   runLabEstablishedTransfer(): Promise<void>;
+  recordProtectedRouteMount(route: string): void;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

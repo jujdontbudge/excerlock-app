@@ -64,6 +64,9 @@ export function DevMenu() {
           <Label>{c.emptyEvents}</Label>
         )}
       </SettingsGroup>
+      <SettingsGroup title="Protected route mounts">
+        <Label>{view.protectedRouteMounts.length ? view.protectedRouteMounts.join(' · ') : 'None'}</Label>
+      </SettingsGroup>
       <SettingsGroup title={c.record}>
         <Label>{c.recordCommand}</Label>
       </SettingsGroup>

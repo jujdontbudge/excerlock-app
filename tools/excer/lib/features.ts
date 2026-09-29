@@ -5,7 +5,7 @@ import { read, walk } from './files.ts';
 
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
-export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[] };
+export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[] };
 
 export type Feature = {
   id: string;
@@ -63,6 +63,8 @@ function parseProofs(body: string): Proof[] {
     if (fields.relaunch === 'true') proof.relaunch = true;
     if (fields['then-open']) proof.thenOpen = fields['then-open'];
     if (fields['then-expect']) proof.thenExpect = fields['then-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields['deny-routes'] === 'protected') proof.denyRoutes = 'protected';
+    if (fields['deny-expect']) proof.denyExpect = fields['deny-expect'].split('|').map((item) => item.trim()).filter(Boolean);
     if (fields.tap) proof.tap = fields.tap.split('|').map((item) => item.trim()).filter(Boolean);
     return proof;
   });
@@ -104,6 +106,28 @@ export function appRoutes(): string[] {
     .map((file) => relative(routesDir, file).replace(/\.tsx?$/, ''))
     .filter((route) => !/(^|\/)_layout$/.test(route) && !route.endsWith('+not-found'))
     .sort();
+}
+
+export function protectedAppRoutes(): { route: string; href: string }[] {
+  return appRoutes()
+    .filter((route) =>
+      route.startsWith('(tabs)/') ||
+      route === 'builder' ||
+      route === 'gym-picker' ||
+      route.startsWith('permissions/') ||
+      route.startsWith('settings/') ||
+      route.startsWith('unlock/') ||
+      route.startsWith('diagnostics/'),
+    )
+    .map((route) => ({
+      route,
+      href: `/${route}`
+        .replace(/\/\([^/]+\)/g, '')
+        .replace(/\/index$/, '')
+        .replace('[step]', 'X1')
+        .replace('[doc]', 'privacy')
+        .replace('[name]', 'motion'),
+    }));
 }
 
 export function scenarioIds(): string[] {

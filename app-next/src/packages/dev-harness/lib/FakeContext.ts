@@ -25,6 +25,7 @@ export class FakeContext {
       restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
       presence: scenario.gym?.presence ?? 'outside',
       motion: scenario.motion ?? 'still',
+      protectedRouteMounts: [],
     };
   }
   snapshot = () => this.view;

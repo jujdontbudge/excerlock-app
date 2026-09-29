@@ -56,6 +56,18 @@ then-expect: Start for free | Restore purchases
 ```
 
 ```proof
+name: all-protected-deep-links-blocked
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+deny-routes: protected
+deny-expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Protected route mounts | None
+```
+
+```proof
 name: returning-paid-after-signin
 scenario: returning-signed-in
 open: /

@@ -178,7 +178,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           stepsOverride: undefined, placement: 'propped', loading: false, scenarioId: id, outcome: 'success',
           restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
           promptMode: scenario.fakeSystemPrompts, history: scenario.history, events: [], accessibility: scenario.accessibility,
-          presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still',
+          presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still', protectedRouteMounts: [],
         });
         walking.resume();
       },
@@ -312,6 +312,10 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers} data A ${result.sourceData} data B ${result.targetData}`,
           providerConflict: current?.providerConflict,
         } });
+      },
+      recordProtectedRouteMount: (route) => {
+        const current = ctx.snapshot().protectedRouteMounts;
+        if (!current.includes(route)) ctx.update({ protectedRouteMounts: [...current, route] });
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,
     };

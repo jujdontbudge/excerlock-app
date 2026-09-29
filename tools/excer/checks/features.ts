@@ -28,6 +28,7 @@ export function featureProblems(): string[] {
     for (const proof of feature.proofs) {
       if (!proof.scenario && !proof.open) problems.push(`${where}: proof ${proof.name} needs a scenario or open`);
       if (proof.expect.length === 0) problems.push(`${where}: proof ${proof.name} expects nothing`);
+      if (proof.denyRoutes && !proof.denyExpect?.length) problems.push(`${where}: proof ${proof.name} deny-routes needs deny-expect`);
     }
   }
   for (const route of appRoutes()) if (!claimed.has(route)) problems.push(`route ${route} belongs to no feature`);
