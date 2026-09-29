@@ -10,6 +10,7 @@ import { entitlementStore as useEntitlementStore } from '../../subscription/enti
 import { SettingsGroup, SettingsRow, TextField, Label, SegmentedControl, PrimaryButton } from '../../ui';
 import { devCopy as c } from './devCopy';
 import { Permissions } from '../../model/types';
+import { onboardingStore } from '../../onboarding/onboardingStore';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -17,10 +18,16 @@ export function DevControls() {
     view = useDevSnapshot(),
     permissions = usePermissionsStore((s) => s.data),
     entitlement = useEntitlementStore((s) => s.data.entitlement),
+    conditionCount = rulesStore.getState().data.rules.length,
+    planStaged = onboardingStore.getState().data.answers.ruleCommitted === false,
     [time, setTime] = useState(now),
     [error, setError] = useState('');
   return (
     <>
+      <SettingsGroup title="Journey data">
+        <SettingsRow title="Conditions" value={String(conditionCount)} />
+        <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
+      </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />
         <SettingsRow title="Still / needs framing" onPress={() => dev.setGait('still')} />

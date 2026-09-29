@@ -68,6 +68,16 @@ expect: Projected results | 150% more steps | 50% less screen time
 ```
 
 ```proof
+name: plan-staged-before-admission
+scenario: fresh-install
+open: /onboarding/S3
+tap: Import
+expect: Once you hit 10,000 steps | Continue
+then-open: /dev
+then-expect: Conditions | 0 | Onboarding plan | Staged
+```
+
+```proof
 name: trial-preview-back
 scenario: fresh-install
 open: /onboarding/S3c
