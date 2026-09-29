@@ -12,11 +12,20 @@ import { authorizeDemoScenario } from '../../identity/launchSignInGate';
 import { beginWelcome } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
+import { createAsyncStorageOtaStorage } from '../../updates/updates';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
   beginWelcome();
   authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
+  const otaStorage = createAsyncStorageOtaStorage();
+  if (scenario.otaResumeRoute) {
+    await otaStorage.saveEnvelope({
+      route: scenario.otaResumeRoute,
+      draftIds: [],
+      savedAtMs: Date.parse(scenario.clock.now),
+    });
+  } else await otaStorage.clearEnvelope();
   if (scenario.purchaseRecovery) {
     const startedAt = scenario.clock.now;
     await AsyncStorage.setItem(PURCHASE_RECOVERY_KEY, JSON.stringify({

@@ -50,6 +50,7 @@ export type Scenario = {
   identityLab?: IdentityLabScript;
   purchaseRecovery?: 'pending' | 'accountConnection';
   subscriptionProof?: 'matching' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
+  otaResumeRoute?: string;
   launchSignInRequired?: boolean;
 };
 export type IdentityLabScript = {

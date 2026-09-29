@@ -37,6 +37,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
   };
   protectedRouteMounts: string[];
   notificationResponses: { delivered: ('home' | 'unlock')[]; handled: number };
+  otaResume: { route: string; outcome: 'denied' | 'restored' } | null;
 };
 export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
@@ -63,6 +64,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabDeletionCallbackIsolation(): Promise<void>;
   runLabEstablishedTransfer(): Promise<void>;
   deliverNotification(destination: 'home' | 'unlock'): void;
+  recordOtaResume(route: string, outcome: 'denied' | 'restored'): void;
   recordProtectedRouteMount(route: string): void;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;

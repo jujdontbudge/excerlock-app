@@ -10,6 +10,7 @@ import { PrimaryButton } from '../../ui/PrimaryButton';
 import { tokens } from '../../ui/tokens';
 import { RuntimeContext } from '../../ports/useRuntime';
 import { NotificationLandingHost } from './NotificationLandingHost';
+import { OtaResumeHost } from './OtaResumeHost';
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
   const [runtime, setRuntime] = useState<Runtime | null>(
     () =>
@@ -67,6 +68,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
     <RuntimeContext.Provider value={runtime}>
       {children}
       <NotificationLandingHost />
+      <OtaResumeHost />
       {runtime.kind === 'real' ? <NativePickerHost /> : null}
     </RuntimeContext.Provider>
   );

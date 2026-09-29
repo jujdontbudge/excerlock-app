@@ -17,6 +17,8 @@ The response is an online account-bound mirror proof, not proof that the profile
 
 Purchase recovery is separate from admission. Subscription owns the versioned local `excerlock-next.purchase-recovery.v1` journal, which stores only an operation kind, opaque operation ID, checkout canonical UID and timestamps. Pending or store-confirmed recovery survives process interruption, never grants Home, and blocks a second checkout until restore/reconciliation either clears it or authenticated account-bound verification succeeds. It contains no receipt, transaction payload, provider credential or activity data.
 
+An OTA resume envelope is navigation continuity only. It is consumed once and cleared before navigation, and it can restore only an existing OTA-safe tab root after the current Journey independently admits the selected account. It cannot restore Identity, Entitlement, Journey admission, unlock routes or payment authority.
+
 ## Context
 
 TestFlight build 14 implemented ADR 0049's explicit sign-in on launch but opened sign-in immediately for a returning install, then entered Home after authentication without an account-bound subscription check. ADR 0024 deliberately allowed post-Setup Home after lapse. Both conflict with the owner's explicit hard Paywall request. ADR 0043's payment-then-sign-in order remains the default full-Onboarding path; a Welcome sign-in is the shortcut for existing subscribers.

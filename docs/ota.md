@@ -56,7 +56,11 @@ foreground captured before a 75s check/fetch can never reload:
   clears the guard — T10 calls it after hydrated stable app; the hook never
   auto-clears on mount. A pending id equal to the currently running id is
   rejected and cleared (`already-running`), never retried.
-- Persist a `resumeEnvelope` (`route` + `draftIds`) before every reload.
+- Persist a `resumeEnvelope` (`route` + `draftIds`) before every reload. On the
+  next hydrated launch, consume it once and clear it before navigation. A route
+  resumes only when the current Journey already admits the selected account and
+  the route is one of the existing safe tab roots. The envelope never restores
+  Identity, Entitlement, Journey admission, unlock routes, or payment authority.
 - `checkAndStage` is diagnostics-only (never used by the hook launch path);
   it stages without reloading and respects the same budgets/running guard.
 - Observability: `getOtaObservabilityContext()` exposes `update_id` and

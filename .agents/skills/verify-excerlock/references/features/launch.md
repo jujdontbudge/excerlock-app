@@ -2,7 +2,7 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
@@ -99,6 +99,28 @@ tap: Continue | Back
 expect: We'll send you a reminder before your trial ends | No payment due now
 then-open: /dev
 then-expect: Journey onboarding | Protected route mounts | None
+```
+
+```proof
+name: unpaid-home-ota-envelope-blocked
+scenario: returning-unpaid-ota-home
+relaunch: true
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall | OTA resume envelope | Denied /home | Protected route mounts | None
+```
+
+```proof
+name: unpaid-unlock-ota-envelope-blocked
+scenario: returning-unpaid-ota-unlock
+relaunch: true
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protected route mounts | None
 ```
 
 ```proof

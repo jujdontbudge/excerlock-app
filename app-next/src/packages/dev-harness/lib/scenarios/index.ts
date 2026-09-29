@@ -3,6 +3,7 @@ import { conditionDemoScenarios } from './condition-demo-gate';
 import { unlockScenarios } from './unlock';
 import { identityLabScenarios } from './identity-lab';
 import { scenario1 } from './onboarding-walking-resume';
+import { returningUnpaidOtaHome, returningUnpaidOtaUnlock } from './returning-unpaid-ota';
 import { scenario2 } from './home-locked-walking';
 import { scenario3 } from './home-unlocked-met';
 import { scenario4 } from './home-walking-session';
@@ -54,6 +55,8 @@ export const scenarios = [
   scenario18,
   returningSignedIn,
   returningUnpaid,
+  returningUnpaidOtaHome,
+  returningUnpaidOtaUnlock,
   subscriptionProofMatching,
   subscriptionProofWrongAccount,
   subscriptionProofWrongEnvironment,

@@ -45,6 +45,7 @@ export interface OtaStorage {
   clearGuard(): Promise<void>;
   loadEnvelope(): Promise<OtaResumeEnvelope | null>;
   saveEnvelope(envelope: OtaResumeEnvelope): Promise<void>;
+  clearEnvelope(): Promise<void>;
   loadLastCheckAtMs(): Promise<number | null>;
   saveLastCheckAtMs(ms: number): Promise<void>;
 }
@@ -188,6 +189,9 @@ export function createMemoryOtaStorage(initial?: {
     async saveEnvelope(next) {
       envelope = { ...next, draftIds: [...next.draftIds] };
     },
+    async clearEnvelope() {
+      envelope = null;
+    },
     async loadLastCheckAtMs() {
       return lastCheckAtMs;
     },
@@ -257,6 +261,9 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
     },
     async saveEnvelope(envelope) {
       await AsyncStorage.setItem(OTA_ENVELOPE_KEY, JSON.stringify(envelope));
+    },
+    async clearEnvelope() {
+      await AsyncStorage.removeItem(OTA_ENVELOPE_KEY);
     },
     async loadLastCheckAtMs() {
       try {

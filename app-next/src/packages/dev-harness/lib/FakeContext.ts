@@ -27,6 +27,7 @@ export class FakeContext {
       motion: scenario.motion ?? 'still',
       protectedRouteMounts: [],
       notificationResponses: { delivered: [], handled: 0 },
+      otaResume: null,
     };
   }
   snapshot = () => this.view;

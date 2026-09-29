@@ -72,6 +72,11 @@ export function DevMenu() {
           Delivered {view.notificationResponses.delivered.length ? view.notificationResponses.delivered.join(' · ') : 'None'} · Handled {view.notificationResponses.handled}
         </Label>
       </SettingsGroup>
+      <SettingsGroup title="OTA resume envelope">
+        <Label>
+          {view.otaResume ? `${view.otaResume.outcome === 'denied' ? 'Denied' : 'Restored'} ${view.otaResume.route}` : 'None'}
+        </Label>
+      </SettingsGroup>
       <SettingsGroup title={c.record}>
         <Label>{c.recordCommand}</Label>
       </SettingsGroup>

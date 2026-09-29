@@ -182,6 +182,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
           promptMode: scenario.fakeSystemPrompts, history: scenario.history, events: [], accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still', protectedRouteMounts: [],
+          otaResume: null,
         });
         walking.resume();
       },
@@ -318,6 +319,9 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);
+      },
+      recordOtaResume: (route, outcome) => {
+        ctx.update({ otaResume: { route, outcome } });
       },
       recordProtectedRouteMount: (route) => {
         const current = ctx.snapshot().protectedRouteMounts;
