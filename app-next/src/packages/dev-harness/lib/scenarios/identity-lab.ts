@@ -50,6 +50,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'pending' },
   }),
+  base('identity-lab-purchase-success-without-access', 'Identity lab · purchase succeeds without premium access', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', purchase: 'successWithoutAccess' },
+  }),
   base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },

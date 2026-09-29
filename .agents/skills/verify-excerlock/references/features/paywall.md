@@ -208,6 +208,17 @@ expect: Your purchase is still being confirmed. You will not be charged again. |
 ```
 
 ```proof
+name: identity-purchase-success-without-access
+scenario: identity-lab-purchase-success-without-access
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+then-open: /dev
+then-expect: Journey accountRecovery · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | lab_purchase {"result":"successWithoutAccess","owner":"lab-checkout-1"} | lab_purchase_profile {"owner":"lab-checkout-1","access":"none","grants":0} | Protected route mounts | None
+```
+
+```proof
 name: identity-interrupted-purchase-recovery
 scenario: identity-lab-purchase-interrupted
 relaunch: true

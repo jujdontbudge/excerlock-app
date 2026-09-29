@@ -471,6 +471,12 @@ export async function createIdentityLab(
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       if (!owner) throw new Error('Purchase owner unavailable');
+      if (result === 'successWithoutAccess') {
+        const purchased = profile(owner);
+        ctx.log('lab_purchase_profile', { owner, access: 'none', grants: grants.size });
+        updateSubscriptionLab();
+        return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
+      }
       grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'trial' });
       const purchased = profile(owner);
       if (script.delayedCallbacks) {

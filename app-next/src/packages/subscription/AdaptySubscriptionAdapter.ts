@@ -210,8 +210,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           return { type: result.type };
         }
         const entitlement = this.publishProfile(result.profile, 'purchase');
-        if (entitlement.status === 'active' || entitlement.status === 'trial')
-          await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now());
+        await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now());
         return { type: 'success', entitlement };
       });
     } catch (error) {
