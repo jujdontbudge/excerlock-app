@@ -22,6 +22,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     active: 'A' | 'B' | 'Checkout' | 'None';
     legacyQuarantined: boolean;
     checkpoints?: string;
+    switchOrdering?: string;
   };
 };
 export interface RuntimeControls extends RuntimeStatusPort {
@@ -44,6 +45,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   useLabAccount(account: 'A' | 'B'): Promise<void>;
   seedLabAccount(account: 'A' | 'B'): Promise<void>;
   runLabAccountIsolation(): Promise<void>;
+  runLabAccountSwitchOrdering(): Promise<void>;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

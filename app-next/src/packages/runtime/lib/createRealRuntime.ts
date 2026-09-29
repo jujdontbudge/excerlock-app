@@ -52,6 +52,8 @@ import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
 import { enforcementTransitionEvents, type AppliedPolicy } from '../../enforcement/enforcementAnalytics';
 import type { EnforcementAppState } from '@excerlock/analytics-events';
 import { markStartupStage } from '../../../../modules/excerlock-startup';
+import { createAccountDataCoordinator } from '../AccountDataCoordinator';
+import { isAccountDataReady } from '../../model/accountDataReady';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
@@ -66,6 +68,8 @@ export type RealRuntime = Runtime & {
 
 export async function createRealRuntime(options: { reportError(error: unknown): void }): Promise<RealRuntime> {
   await hydrateProductionStores();
+  const accountData = createAccountDataCoordinator(AsyncStorage);
+  await accountData.prepare();
   markStartupStage('HydrationDone');
   const native = getExcerlockEnforcementModule();
   const gait = nativeGait();
@@ -155,6 +159,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       version: Constants.expoConfig?.version ?? '1.0.0',
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',
       reportError: options.reportError,
+      beforeAccountSwitch: () => accountData.deactivate(),
+      prepareAccount: (identity) => {
+        if (!identity.userId) throw new Error('Canonical account is missing its user ID');
+        return accountData.activate(identity.userId);
+      },
       beforeDelete: async () => {
         deletionSuspended = true;
         await queue;
@@ -189,6 +198,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         committedWalking = walking.snapshot();
         committedGymPresence = null;
         status = { ...status, history: [] };
+        await accountData.eraseActive();
         listeners.forEach((listener) => listener());
       },
     });
@@ -220,6 +230,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         entitlement: client.subscription.entitlement(),
         deleting: deletionSuspended || client.auth.identity().kind === 'deleting',
         accountGeneration: client.auth.identity().generation,
+        accountReady: isAccountDataReady(client.auth.identity(), accountData.snapshot().activeUserId),
         screenTimeAuthorized: rawScreenTime.authorizationStatus() === 'granted',
         selection: rulesStore.getState().data.lockedApps,
         selectionVersion,
@@ -531,6 +542,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           await queue;
         } catch (error) {
           operationError = error;
+        }
+        try {
+          await accountData.save();
+        } catch (error) {
+          cleanupFailures.push(error);
+          options.reportError(error);
         }
         try {
           await cleanupResources();

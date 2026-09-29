@@ -17,6 +17,7 @@ import { createNativeJsonExport } from './NativeJsonExport';
 import { createAccountBoundExport } from './AccountBoundExport';
 import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
+import type { AuthIdentity } from '../ports/AuthPort';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -25,12 +26,16 @@ export async function createClientServices(options: {
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
   reportError(error: unknown): void;
+  beforeAccountSwitch?(): Promise<void>;
+  prepareAccount?(identity: AuthIdentity): Promise<void>;
 }) {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
   const identity = await createIdentityServices({
     config: config.auth, adaptyPublicKey: config.adaptyPublicKey, reportError: options.reportError, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
+    beforeAccountSwitch: options.beforeAccountSwitch,
+    prepareAccount: options.prepareAccount,
     analyticsFactory: (getIdentity) => {
       telemetry = createPostHogRuntime(config.posthog, {
         getIdentity,

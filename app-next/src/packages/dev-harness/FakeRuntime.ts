@@ -28,6 +28,8 @@ import { historyStore } from '../progress/historyStore';
 import { profileStore } from '../preferences/profileStore';
 import { makeRule } from './lib/scenarios/base';
 import { rulesStore } from '../conditions/rulesStore';
+import { settingsStore } from '../preferences/settingsStore';
+import { isAccountDataReady } from '../model/accountDataReady';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -39,6 +41,7 @@ export type FakeRuntimeOptions = {
 };
 export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let accountData = options.createAccountData();
+  let accountTransitions: string[] = [];
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
     gait = GaitFake(),
@@ -53,6 +56,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         active: accountLabel(snapshot.activeUserId),
         legacyQuarantined: snapshot.legacyQuarantined,
         checkpoints: ctx.snapshot().accountData?.checkpoints,
+        switchOrdering: ctx.snapshot().accountData?.switchOrdering,
       } });
     },
     identityLab = identityLabHost(ctx, () => ready, {
@@ -62,11 +66,13 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       beforeAccountSwitch: async () => {
         await accountData.deactivate();
+        accountTransitions.push('Preserved while unready');
         updateAccountDataView();
       },
       prepareAccount: async (identity) => {
         if (!identity.userId) throw new Error('Account identity is missing');
         await accountData.activate(identity.userId);
+        accountTransitions.push(`${accountLabel(identity.userId)} loaded before ready`);
         updateAccountDataView();
       },
     }),
@@ -111,10 +117,24 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       }],
     });
     profileStore.getState().patch({ name: `Account ${account}` });
+    settingsStore.getState().patch({
+      gymPlaces: [{
+        id: `gym-${account.toLowerCase()}`,
+        name: `Gym ${account}`,
+        address: `${account} private gym`,
+        latitude: 0,
+        longitude: 0,
+        radiusMeters: 100,
+      }],
+      units: account === 'A' ? 'mi' : 'km',
+      stopGrace: account === 'A' ? 30 : 60,
+      gymAutoDetect: account === 'B',
+    });
     await Promise.all([
       rulesStore.persistBarrier(),
       historyStore.persistBarrier(),
       profileStore.persistBarrier(),
+      settingsStore.persistBarrier(),
     ]);
     updateAccountDataView();
   };
@@ -169,16 +189,50 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       runLabAccountIsolation: async () => {
         await accountData.activate('lab-user-a');
         await seedAccount('A');
-        const a = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        const a = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
         await accountData.activate('lab-user-b');
         await seedAccount('B');
-        const b = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        const b = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
         await accountData.activate('lab-user-a');
         updateAccountDataView();
-        const restored = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}`;
+        const restored = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
         ctx.update({ accountData: {
           ...ctx.snapshot().accountData!,
           checkpoints: `A ${a} · B ${b} · A ${restored}`,
+        } });
+      },
+      runLabAccountSwitchOrdering: async () => {
+        const waitForReady = async () => {
+          const current = auth.identity();
+          if (isAccountDataReady(current, accountData.snapshot().activeUserId)) return current;
+          return new Promise<ReturnType<typeof auth.identity>>((resolve, reject) => {
+            const timer = setTimeout(() => {
+              stop();
+              reject(new Error('Account switch did not become ready'));
+            }, 15_000);
+            const stop = auth.subscribeIdentity((identity) => {
+              if (!isAccountDataReady(identity, accountData.snapshot().activeUserId)) return;
+              clearTimeout(timer);
+              stop();
+              resolve(identity);
+            });
+          });
+        };
+        await auth.recoverWithApple();
+        await waitForReady();
+        await seedAccount('A');
+        accountTransitions = [];
+        await auth.recoverWithGoogle();
+        const b = await waitForReady();
+        accountTransitions.push(`${accountLabel(b.userId)} ready`);
+        await seedAccount('B');
+        await auth.recoverWithApple();
+        const a = await waitForReady();
+        accountTransitions.push(`${accountLabel(a.userId)} ready`);
+        updateAccountDataView();
+        ctx.update({ accountData: {
+          ...ctx.snapshot().accountData!,
+          switchOrdering: accountTransitions.join(' · '),
         } });
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,

@@ -10,6 +10,7 @@ export type RuntimeEnforcementInput = {
   now: string; timezone: string; rules: Rule[]; ruleDays: RuleDay[];
   walking: WalkingStatus; gymPresence: GymPresence | null;
   entitlement: Entitlement; deleting: boolean; accountGeneration: number;
+  accountReady: boolean;
   screenTimeAuthorized: boolean; selection: LockedApps; selectionVersion: string;
 };
 
@@ -39,6 +40,7 @@ export class RuntimeEnforcementSource {
       screenTimeAuthorized: input.screenTimeAuthorized, selectionEmpty: input.selection.isEmpty || input.selection.handle === null,
       activeUntil, windows: plan.ok ? plan.windows : [],
     });
+    if (!input.accountReady && !input.deleting) projected = { ...projected, state: 'unknown', openReason: undefined };
     if (!plan.ok) {
       const clearing = ['deleting', 'disabled', 'lapsed'].includes(projected.openReason ?? '');
       if (!clearing) projected = { ...projected, state: 'unknown',

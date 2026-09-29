@@ -13,6 +13,7 @@ import { Permissions } from '../../model/types';
 import { onboardingStore } from '../../onboarding/onboardingStore';
 import { historyStore } from '../../progress/historyStore';
 import { profileStore } from '../../preferences/profileStore';
+import { settingsStore } from '../../preferences/settingsStore';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -36,12 +37,15 @@ export function DevControls() {
     <>
       <SettingsGroup title="Account data">
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
+        <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
         <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
         <SettingsRow title={`Legacy data ${view.accountData?.legacyQuarantined ? 'Quarantined' : 'None'}`} />
         <SettingsRow title={`Condition owner ${rulesStore.getState().data.rules[0]?.id === 'account-a' ? 'Account A' : rulesStore.getState().data.rules[0]?.id === 'account-b' ? 'Account B' : 'None'}`} />
         <SettingsRow title={`History Days ${String(historyStore.getState().data.days.length)}`} />
         <SettingsRow title={`Profile ${profileStore.getState().data.name || 'None'}`} />
+        <SettingsRow title={`Saved Gym ${settingsStore.getState().data.gymPlaces[0]?.name ?? 'None'}`} />
         <SettingsRow title={`Checkpoints ${view.accountData?.checkpoints ?? 'None'}`} />
+        <SettingsRow title={`Switch ordering ${view.accountData?.switchOrdering ?? 'None'}`} />
         <SettingsRow title="Use account A" onPress={() => void runAccountAction(() => dev.useLabAccount('A'))} />
         <SettingsRow title="Seed account A" onPress={() => void runAccountAction(() => dev.seedLabAccount('A'))} />
         <SettingsRow title="Use account B" onPress={() => void runAccountAction(() => dev.useLabAccount('B'))} />

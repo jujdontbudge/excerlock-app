@@ -28,7 +28,16 @@ name: account-data-a-b-a-isolation
 scenario: identity-lab-account-isolation
 open: /dev
 tap: Run A B A isolation
-expect: Account data | Active account A | Legacy data Quarantined | Condition owner Account A | History Days 1 | Profile Account A | Checkpoints A account-a/1/Account A · B account-b/1/Account B · A account-a/1/Account A
+expect: Account data | Active account A | Legacy data Quarantined | Condition owner Account A | History Days 1 | Profile Account A | Saved Gym Gym A | Checkpoints A account-a/1/Account A/Gym A · B account-b/1/Account B/Gym B · A account-a/1/Account A/Gym A
+```
+
+```proof
+name: account-switch-preserves-enforcement-until-ready
+scenario: identity-lab-account-isolation
+open: /dev
+tap: Run account switch ordering
+wait: 30
+expect: Account data | Active account A | Condition owner Account A | Saved Gym Gym A | Switch ordering Preserved while unready · B loaded before ready · B ready · Preserved while unready · A loaded before ready · A ready
 ```
 
 ## Gotchas
