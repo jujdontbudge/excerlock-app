@@ -87,6 +87,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         await accountData.eraseActive();
         updateAccountDataView();
       },
+      seedAccount: (account) => seedAccount(account),
+      accountCheckpoint,
     }),
     ready = persistence.ready.then(async () => {
       await Promise.all(
@@ -114,7 +116,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   const auth = identityLab.route(AuthFake(ctx), (lab) => lab.auth);
   const subscription = identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription);
   const subscriptionAdmission = SubscriptionAdmissionFake(ctx, auth, subscription);
-  const seedAccount = async (account: 'A' | 'B') => {
+  async function seedAccount(account: 'A' | 'B') {
     const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
     if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
     const day = account === 'A' ? '2026-09-01' : '2026-09-02';
@@ -152,7 +154,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       settingsStore.persistBarrier(),
     ]);
     updateAccountDataView();
-  };
+  }
   const dev: FakeRuntimeInstance['dev'] = {
       ready: () => ready,
       flush: persistence.flush,
@@ -308,6 +310,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           callbackIsolation: current?.callbackIsolation,
           deletionIsolation: current?.deletionIsolation,
           transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers} data A ${result.sourceData} data B ${result.targetData}`,
+          providerConflict: current?.providerConflict,
         } });
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,

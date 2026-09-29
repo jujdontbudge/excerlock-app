@@ -13,7 +13,7 @@ const LAB_URL = 'https://identity-lab.invalid';
 const ANONYMOUS_DISTINCT_ID = 'lab-anonymous-distinct-id';
 
 type LabUser = { id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
-type LabSession = { access_token: string; user: LabUser };
+type LabSession = { access_token: string; refresh_token: string; user: LabUser };
 type LabSupabase = NonNullable<AuthServiceConfig['supabase']>;
 type LabAppleDeps = NonNullable<AuthServiceConfig['appleDeps']>;
 type LabGoogleDeps = NonNullable<AuthServiceConfig['googleDeps']>;
@@ -62,6 +62,8 @@ export type IdentityLabAccountHooks = {
   beforeAccountSwitch(): Promise<void>;
   prepareAccount(identity: AuthIdentity): Promise<void>;
   afterDelete(): Promise<void>;
+  seedAccount?(account: 'A' | 'B'): Promise<void>;
+  accountCheckpoint?(): string;
 };
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -86,7 +88,7 @@ export async function createIdentityLab(
   script: IdentityLabScript,
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
-  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0 };
+  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0, link: 0, sessionRestore: 0 };
   const ownership = new Map<string, 'trial' | 'active'>();
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
@@ -100,6 +102,7 @@ export async function createIdentityLab(
   let profileListener: ((profile: AdaptyProfile) => void) | null = null;
   let services: AuthServices | undefined;
   const providerUsers = new Map<string, LabUser>();
+  const usersById = new Map<string, LabUser>();
 
   const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
   const newUser = (provider?: string): LabUser => {
@@ -113,10 +116,11 @@ export async function createIdentityLab(
       app_metadata: provider ? { provider } : {} as Record<string, string>,
     };
     if (provider) providerUsers.set(provider, user);
+    usersById.set(user.id, user);
     return user;
   };
   const signedIn = (user: LabUser) => {
-    stored = { access_token: `lab-token-${user.id}`, user };
+    stored = { access_token: `lab-token-${user.id}`, refresh_token: `lab-refresh-${user.id}`, user };
     return { data: { user, session: stored }, error: null };
   };
   const unscripted = async () => ({ data: { user: null, session: null }, error: networkError('Not scripted in the identity lab') });
@@ -135,7 +139,18 @@ export async function createIdentityLab(
         stored = null;
         return { error: null };
       },
+      setSession: async ({ access_token }: { access_token: string }) => {
+        const userId = access_token.replace(/^lab-token-/, '');
+        const user = usersById.get(userId);
+        if (!user) return { data: { user: null, session: null }, error: networkError('Saved session unavailable') };
+        attempts.sessionRestore += 1;
+        const result = signedIn(user);
+        ctx.log('lab_session_restored', { user: user.id });
+        updateSubscriptionLab();
+        return result;
+      },
       linkIdentity: async ({ provider }: { provider: string }) => {
+        attempts.link += 1;
         const result = script.appleLink ?? 'ok';
         ctx.log('lab_link_identity', { provider, result });
         if (result === 'conflict' || !stored)
@@ -201,6 +216,9 @@ export async function createIdentityLab(
       callbackIsolation: ctx.snapshot().subscriptionLab?.callbackIsolation,
       deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
       transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
+      providerConflict: script.establishedProviderConflict
+        ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
+        : ctx.snapshot().subscriptionLab?.providerConflict,
     },
   });
   const profile = (owner = customerUserId): AdaptyProfile => {
@@ -364,10 +382,20 @@ export async function createIdentityLab(
     manageSubscription: () => adapter.manageSubscription(),
     subscribe: (callback) => adapter.subscribe(callback),
   };
+  const booted = auth.boot().then(async () => {
+    if (!script.establishedProviderConflict) return;
+    await auth.recoverWithApple();
+    await services?.waitForIdentityReady();
+    await accountHooks?.seedAccount?.('A');
+    await auth.recoverWithGoogle();
+    await services?.waitForIdentityReady();
+    await accountHooks?.seedAccount?.('B');
+    updateSubscriptionLab();
+  });
   return {
     auth,
     subscription,
-    booted: auth.boot().then(
+    booted: booted.then(
       () => undefined,
       () => undefined,
     ),

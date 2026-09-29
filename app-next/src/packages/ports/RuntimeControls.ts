@@ -33,6 +33,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     callbackIsolation?: string;
     deletionIsolation?: string;
     transferIsolation?: string;
+    providerConflict?: string;
   };
 };
 export interface RuntimeControls extends RuntimeStatusPort {

@@ -62,5 +62,6 @@ export type IdentityLabScript = {
   restore?: 'restored' | 'notFound';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
+  establishedProviderConflict?: boolean;
 };
 export type Unsubscribe = () => void;

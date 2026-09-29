@@ -63,6 +63,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedTransfer: true },
   }),
+  base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', establishedProviderConflict: true },
+  }),
   base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
     ...atOnboardingPaywall,
     identityLab: { appleLink: 'conflict' },
