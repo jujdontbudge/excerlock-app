@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle]
 depends: [launch]
 ---
 ## Sub-features
@@ -94,6 +94,15 @@ wait: 30
 expect: Get started | Sign in
 then-open: /dev
 then-expect: Active account Checkout | Condition owner None | History Days 0 | Profile None | Saved Gym None | Local sign-out before app/admitted failed reset Could not sign out. Please try again. journey verifying/revoked data account-a/1/Account A/Gym A after welcome/revoked local scopes local local data undefined/0//undefined peer eligible fresh proofs 1
+```
+
+```proof
+name: stale-product-handle-rejected-after-account-switch
+scenario: identity-lab-stale-product-handle
+open: /dev
+tap: Run stale product handle
+wait: 30
+expect: Active account B | Condition owner Account B | Profile Account B | Saved Gym Gym B | Purchase operations 0 | Stale product handle source lab-user-a generation 1 target lab-user-b generation 2 stale Plan expired. Reload plans. SDK purchases 0 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B A restored account-a/1/Account A/Gym A | Protected route mounts | None
 ```
 
 ## Gotchas

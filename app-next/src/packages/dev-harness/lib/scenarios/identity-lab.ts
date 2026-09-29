@@ -62,6 +62,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'alreadyOwned', restore: 'restored' },
   }),
+  base('identity-lab-stale-product-handle', 'Identity lab · stale product handle after account switch', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', staleProductHandle: true },
+  }),
   base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },

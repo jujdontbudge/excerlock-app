@@ -39,6 +39,7 @@ export function DevControls() {
     <>
       <SettingsGroup title="Account data">
         <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
+        <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
         <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
         <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
@@ -83,6 +84,7 @@ export function DevControls() {
         <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Purchase serialization ${view.subscriptionLab?.purchaseSerialization ?? 'Not run'}`} />
         <SettingsRow title={`Existing subscription ${view.subscriptionLab?.existingSubscription ?? 'Not run'}`} />
+        <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />

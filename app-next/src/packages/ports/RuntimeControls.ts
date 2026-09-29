@@ -41,6 +41,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     localSignOutIsolation?: string;
     purchaseSerialization?: string;
     existingSubscription?: string;
+    staleProductHandle?: string;
   };
   protectedRouteMounts: string[];
   notificationResponses: { delivered: ('home' | 'unlock')[]; handled: number };
@@ -74,6 +75,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabConcurrentRestore(): Promise<void>;
   runLabProviderLinking(): Promise<void>;
   runLabLocalSignOut(): Promise<void>;
+  runLabStaleProductHandle(): Promise<void>;
   deliverNotification(destination: 'home' | 'unlock'): void;
   recordOtaResume(route: string, outcome: 'denied' | 'restored'): void;
   recordProtectedRouteMount(route: string): void;

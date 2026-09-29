@@ -419,6 +419,17 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           localSignOutIsolation: `before ${result.before} failed reset ${result.failedReset} after ${result.after} local scopes ${result.localScopes} local data ${result.localData} peer ${result.peer} fresh proofs ${result.peerProofs}`,
         } });
       },
+      runLabStaleProductHandle: async () => {
+        const result = await identityLab.runStaleProductHandle(seedAccount, accountCheckpoint);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? result.purchaseCalls,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          staleProductHandle: `source ${result.source} generation ${result.sourceGeneration} target ${result.target} generation ${result.targetGeneration} stale ${result.staleError} SDK purchases ${result.purchaseCalls} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
+        } });
+      },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);
       },

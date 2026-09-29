@@ -136,6 +136,14 @@ export function identityLabHost(
     if (!lab) throw new Error('Identity lab is unavailable');
     return lab.runLocalSignOut(seedAccount, accountCheckpoint, journeyCheckpoint);
   };
+  const runStaleProductHandle = async (
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+  ) => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runStaleProductHandle(seedAccount, accountCheckpoint);
+  };
   return {
     start,
     stop,
@@ -147,5 +155,6 @@ export function identityLabHost(
     runConcurrentRestore,
     runProviderLinking,
     runLocalSignOut,
+    runStaleProductHandle,
   };
 }

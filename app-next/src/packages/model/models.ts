@@ -70,5 +70,6 @@ export type IdentityLabScript = {
   localSignOut?: boolean;
   providerAttempts?: boolean;
   emailChallenges?: boolean;
+  staleProductHandle?: boolean;
 };
 export type Unsubscribe = () => void;

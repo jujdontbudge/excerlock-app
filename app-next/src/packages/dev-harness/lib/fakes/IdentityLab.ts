@@ -109,6 +109,20 @@ export type IdentityLab = {
     localScopes: string;
     localData: string;
   }>;
+  runStaleProductHandle(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+  ): Promise<{
+    source: string;
+    target: string;
+    staleError: string;
+    purchaseCalls: number;
+    sourceGeneration: number;
+    targetGeneration: number;
+    sourceData: string;
+    targetData: string;
+    sourceRestored: string;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -398,6 +412,7 @@ export async function createIdentityLab(
       existingSubscription: script.purchase === 'alreadyOwned'
         ? `store ${STORE_SUBSCRIPTION_ID} owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} charge starts 0`
         : ctx.snapshot().subscriptionLab?.existingSubscription,
+      staleProductHandle: ctx.snapshot().subscriptionLab?.staleProductHandle,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -1007,6 +1022,48 @@ export async function createIdentityLab(
         peerProofs: attempts.peerProof,
         localScopes: signOutScopes.join(','),
         localData,
+      };
+    },
+    runStaleProductHandle: async (seedAccount, accountCheckpoint) => {
+      if (!script.staleProductHandle) throw new Error('Stale product handles are not scripted');
+      await auth.recoverWithApple();
+      const source = await services?.waitForIdentityReady();
+      if (!source?.userId) throw new Error('Source account did not become ready');
+      await seedAccount('A');
+      const sourceData = accountCheckpoint();
+      const sourcePaywall = await adapter.loadPaywall('onboarding');
+      const staleHandle = sourcePaywall.products[0]?.handle;
+      if (!staleHandle) throw new Error('Source plan did not load');
+
+      await auth.recoverWithGoogle();
+      const target = await services?.waitForIdentityReady();
+      if (!target?.userId) throw new Error('Target account did not become ready');
+      await seedAccount('B');
+      const targetData = accountCheckpoint();
+      let staleError = 'accepted';
+      try {
+        await adapter.purchase(staleHandle);
+      } catch (error) {
+        staleError = message(error);
+      }
+      const targetPaywall = await adapter.loadPaywall('onboarding');
+
+      await auth.recoverWithApple();
+      await services?.waitForIdentityReady();
+      const sourceRestored = accountCheckpoint();
+      await auth.recoverWithGoogle();
+      await services?.waitForIdentityReady();
+      updateSubscriptionLab();
+      return {
+        source: source.userId,
+        target: target.userId,
+        staleError,
+        purchaseCalls: attempts.purchase,
+        sourceGeneration: sourcePaywall.generation,
+        targetGeneration: targetPaywall.generation,
+        sourceData,
+        targetData,
+        sourceRestored,
       };
     },
     dispose: async () => {
