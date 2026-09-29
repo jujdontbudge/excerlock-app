@@ -54,7 +54,7 @@ const envSchema = z.object({
   ADAPTY_WEBHOOK_SECRET: optionalString,
   ADAPTY_API_URL: z.preprocess(blankToUndefined, z.string().url().default(DEFAULT_ADAPTY_API_URL)),
   ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: acceptedStoreEnvironments,
-  SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: z.literal("production").default("production"),
+  SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: z.enum(["production", "sandbox"]).default("production"),
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
   POSTHOG_PROJECT_ID: optionalString,
@@ -180,7 +180,7 @@ export interface Environment {
   adaptyWebhookAuth: string | undefined;
   adaptyApiUrl: string;
   adaptyWebhookAcceptedStoreEnvironments: readonly ("production" | "sandbox")[];
-  subscriptionAuthorizationStoreEnvironment: "production";
+  subscriptionAuthorizationStoreEnvironment: "production" | "sandbox";
   posthogApiKey: string | undefined;
   posthogHost: string;
   posthogPersonalApiKey: string | undefined;

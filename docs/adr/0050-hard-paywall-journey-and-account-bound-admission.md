@@ -11,11 +11,15 @@ Every new Journey starts at the first Onboarding page. A user chooses the entire
 
 A purchase before authentication must be recoverable and connected to the selected canonical account. Existing accounts can be selected; a same-device different UID is not inherently an error. Moving a subscription between two established accounts does not merge their personal data. Automatic sharing of one subscription across arbitrarily many accounts is not the proposed policy.
 
+Fresh admission uses authenticated `POST /v1/subscription/resync`. The verified Supabase token is the only account input. The server reaches Adapty, then reads only the environment-stamped webhook mirror partition selected by server configuration and returns the canonical account, selected environment, source observation time and server verification time. The client cannot submit an account, environment or access claim. Production authorization reads Production; TestFlight verification requires a separately configured Sandbox deployment. Missing, unknown, ambiguous or wrong-environment evidence denies admission. The Adapty profile aggregate remains read-only because its documented shape does not bind premium access to one store environment.
+
+The response is an online account-bound mirror proof, not proof that the profile call itself supplied fresh StoreKit ownership. App admission may hold it only as a process-local lease capped by the subscription/grace boundary and five minutes from server verification; a failed refresh never creates or extends a lease. Webhook delivery, real restore/transfer behavior, and the isolated TestFlight backend remain acceptance and deployment gates.
+
 ## Context
 
 TestFlight build 14 implemented ADR 0049's explicit sign-in on launch but opened sign-in immediately for a returning install, then entered Home after authentication without an account-bound subscription check. ADR 0024 deliberately allowed post-Setup Home after lapse. Both conflict with the owner's explicit hard Paywall request. ADR 0043's payment-then-sign-in order remains the default full-Onboarding path; a Welcome sign-in is the shortcut for existing subscribers.
 
-The ownership transfer policy, Adapty production/sandbox sharing settings, authoritative fresh subscription proof, same-device private-data isolation, and whether ordinary cold reopens return to Welcome versus resume remain open implementation/release gates. Code and simulator fixture success cannot resolve them.
+The ownership transfer policy, Adapty production/sandbox sharing settings, webhook delivery behavior, same-device private-data isolation, and whether ordinary cold reopens return to Welcome versus resume remain open implementation/release gates. Code and simulator fixture success cannot resolve them.
 
 ## Consequences
 

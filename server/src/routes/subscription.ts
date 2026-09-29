@@ -14,7 +14,11 @@ export function createSubscriptionRoutes(dependencies: { resync?: SubscriptionRe
         return reply.code(400).send({ error: { code: "INVALID_RESYNC_REQUEST", message: "Subscription resync does not accept identity or environment input" } });
       }
       if (!config.adaptySecretKey && !dependencies.resync) return reply.code(503).send({ error: { code: "SUBSCRIPTION_RESYNC_UNAVAILABLE", message: "Subscription resync is temporarily unavailable" } });
-      const service = dependencies.resync ?? createSubscriptionResyncService({ repository: createDrizzleAdaptyWebhookRepository(), gateway: createAdaptyProfileGateway(config.adaptySecretKey as string, config.adaptyApiUrl, fetch, config.deletionGatewayTimeoutMs) });
+      const service = dependencies.resync ?? createSubscriptionResyncService({
+        repository: createDrizzleAdaptyWebhookRepository(),
+        gateway: createAdaptyProfileGateway(config.adaptySecretKey as string, config.adaptyApiUrl, fetch, config.deletionGatewayTimeoutMs),
+        authorizationEnvironment: config.subscriptionAuthorizationStoreEnvironment,
+      });
       let operation = inFlight.get(userId);
       if (!operation) { operation = service.resync(userId).finally(() => inFlight.delete(userId)); inFlight.set(userId, operation); }
       try { return await operation; } catch { return reply.code(503).send({ error: { code: "SUBSCRIPTION_RESYNC_FAILED", message: "Subscription status could not be refreshed" } }); }
