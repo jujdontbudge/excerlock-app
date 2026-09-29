@@ -48,6 +48,7 @@ export type Scenario = {
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
+  subscriptionProof?: 'matching' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   launchSignInRequired?: boolean;
 };
 export type IdentityLabScript = {

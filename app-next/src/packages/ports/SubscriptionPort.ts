@@ -24,6 +24,24 @@ export type SubscriptionPaywall = {
   generation: number;
 };
 export type PurchaseResult = { type: 'success'; entitlement: Entitlement } | { type: 'user_cancelled' | 'pending' };
+export type StoreEnvironment = 'production' | 'sandbox';
+export type SubscriptionAdmissionLease = {
+  userId: string;
+  generation: number;
+  environment: StoreEnvironment;
+  expiresAt: string;
+  observedAt: string;
+  verifiedAt: string;
+};
+export type SubscriptionAdmissionResult =
+  | { type: 'eligible'; lease: SubscriptionAdmissionLease }
+  | { type: 'ineligible' }
+  | { type: 'unavailable' };
+export interface SubscriptionAdmissionPort {
+  verify(identity: { userId: string; generation: number }): Promise<SubscriptionAdmissionResult>;
+  current(identity: { userId: string; generation: number }): SubscriptionAdmissionLease | null;
+  invalidate(): void;
+}
 export interface SubscriptionPort {
   entitlement(): SubscriptionEntitlement;
   presentPaywall(placement: string): Promise<Entitlement>;

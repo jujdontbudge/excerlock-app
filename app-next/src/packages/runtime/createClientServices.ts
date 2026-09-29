@@ -18,6 +18,7 @@ import { createAccountBoundExport } from './AccountBoundExport';
 import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
+import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -62,6 +63,12 @@ export async function createClientServices(options: {
     return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
+  const subscriptionAdmission = createServerSubscriptionAdmission({
+    apiBaseUrl: config.auth.apiBaseUrl,
+    environment: config.storeEnvironment,
+    getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
+    getIdentity: () => identity.auth.identity(),
+  });
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),
     {
@@ -74,7 +81,7 @@ export async function createClientServices(options: {
     () => disposed,
   );
   return {
-    auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics,
+    auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics,
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     onboardingFlow: createOnboardingFlowPort({
@@ -97,6 +104,7 @@ export async function createClientServices(options: {
     dispose() {
       if (disposal) return disposal;
       disposed = true;
+      subscriptionAdmission.invalidate();
       disposal = identity.dispose();
       return disposal;
     },

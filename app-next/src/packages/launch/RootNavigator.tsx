@@ -9,7 +9,7 @@ import { useScreenTracking } from '../telemetry/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
 import Constants from 'expo-constants';
 import { diagnosticsRoutesEnabled } from '../platform/diagnosticsRoutes';
-import { beginPaywall, useJourney } from '../journey/index';
+import { beginPaywall, useJourney, verifySelectedAccount } from '../journey/index';
 export function RootNavigator() {
   const motion = useMotion();
   const router = useRouter();
@@ -19,9 +19,18 @@ export function RootNavigator() {
   const status = useEntitlementStore((s) => s.data.entitlement.status);
   useEffect(() => {
     if (journey.phase !== 'app' || journey.canEnterApp) return;
+    const identity = runtime.auth.identity();
+    if (identity.kind === 'canonical' && !identity.isAnonymous && identity.userId) {
+      void verifySelectedAccount(runtime).then((result) => {
+        if (result === 'paid') router.replace('/setup/X1');
+        else if (result === 'unpaid') router.replace('/paywall');
+        else router.replace('/sign-in');
+      });
+      return;
+    }
     beginPaywall();
     router.replace('/paywall');
-  }, [journey.phase, journey.canEnterApp, router]);
+  }, [journey.phase, journey.canEnterApp, router, runtime]);
   return (
     <>
       <Stack

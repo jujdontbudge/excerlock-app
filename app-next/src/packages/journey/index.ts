@@ -3,7 +3,6 @@ import type { Runtime } from '../ports/Runtime';
 import type { AuthIdentity } from '../ports/AuthPort';
 import type { Entitlement } from '../model/types';
 import { useLaunchSignIn } from '../identity/launchSignInGate';
-import { entitlementStore as useEntitlementStore } from '../subscription/entitlementStore';
 
 type Phase = 'welcome' | 'onboarding' | 'paywall' | 'signIn' | 'verifying' | 'setup' | 'app';
 type Admission = { userId: string; generation: number };
@@ -77,13 +76,15 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
     if (identity.kind !== 'canonical' || identity.isAnonymous || !identity.userId)
       throw new Error('Sign-in is not ready.');
     await waitForReady(runtime);
-    const entitlement = await runtime.subscription.refresh();
     const selected = account(runtime.auth.identity());
     if (!selected || selected.userId !== identity.userId || selected.generation !== identity.generation)
       throw new Error('Account changed while checking your subscription.');
-    if (entitlement.status === 'unknown')
-      throw new Error('Your subscription could not be checked. Retry when connected.');
-    if (!eligible(entitlement, Date.parse(runtime.clock.now()))) {
+    const result = await runtime.subscriptionAdmission.verify(selected);
+    const live = account(runtime.auth.identity());
+    if (!live || live.userId !== selected.userId || live.generation !== selected.generation)
+      throw new Error('Account changed while checking your subscription.');
+    if (result.type === 'unavailable') throw new Error('Your subscription could not be checked. Retry when connected.');
+    if (result.type === 'ineligible') {
       beginPaywall();
       return 'unpaid';
     }
@@ -100,6 +101,47 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
   }
 }
 
+export async function refreshAdmission(runtime: Runtime): Promise<'paid' | 'unpaid' | 'unavailable'> {
+  const selected = account(runtime.auth.identity());
+  const admitted = state.admission;
+  if (
+    state.phase !== 'app' ||
+    !selected ||
+    !admitted ||
+    admitted.userId !== selected.userId ||
+    admitted.generation !== selected.generation
+  ) return 'unavailable';
+  const result = await runtime.subscriptionAdmission.verify(selected);
+  const live = account(runtime.auth.identity());
+  const currentAdmission = state.admission;
+  if (
+    !live ||
+    live.userId !== selected.userId ||
+    live.generation !== selected.generation ||
+    state.phase !== 'app' ||
+    !currentAdmission ||
+    currentAdmission.userId !== selected.userId ||
+    currentAdmission.generation !== selected.generation
+  ) return 'unavailable';
+  if (result.type === 'eligible') {
+    set({ phase: 'app', entryIntent: state.entryIntent, admission: selected, error: null });
+    return 'paid';
+  }
+  if (result.type === 'ineligible') {
+    beginPaywall();
+    return 'unpaid';
+  }
+  if (!runtime.subscriptionAdmission.current(selected)) {
+    set({
+      phase: 'verifying',
+      entryIntent: state.entryIntent,
+      admission: null,
+      error: 'Your subscription could not be checked. Retry when connected.',
+    });
+  }
+  return 'unavailable';
+}
+
 export function currentSetupAdmission(runtime: Runtime): Admission | null {
   const identity = account(runtime.auth.identity());
   const admission = state.admission;
@@ -109,7 +151,7 @@ export function currentSetupAdmission(runtime: Runtime): Admission | null {
     !admission ||
     identity.userId !== admission.userId ||
     identity.generation !== admission.generation ||
-    !eligible(runtime.subscription.entitlement(), Date.parse(runtime.clock.now()))
+    !runtime.subscriptionAdmission.current(identity)
   )
     return null;
   return admission;
@@ -125,7 +167,6 @@ export function finishSetup(runtime: Runtime): boolean {
 export function useJourney(runtime: Runtime) {
   const current = useSyncExternalStore(subscribe, snapshot, snapshot);
   const signedIn = useLaunchSignIn(runtime.auth);
-  const entitlement = useEntitlementStore((value) => value.data.entitlement);
   const identityKey = useSyncExternalStore(
     (listener) => runtime.auth.subscribeIdentity(listener),
     () => {
@@ -142,6 +183,7 @@ export function useJourney(runtime: Runtime) {
     admission && identityKey === `canonical:${admission.userId}:${admission.generation}:true:false`,
   );
   const now = useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
-  const paid = matched && signedIn && eligible(entitlement, Date.parse(now));
+  void now;
+  const paid = matched && signedIn && Boolean(admission && runtime.subscriptionAdmission.current(admission));
   return { ...current, paid, canEnterApp: current.phase === 'app' && paid };
 }

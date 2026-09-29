@@ -63,6 +63,38 @@ tap: Sign in | Continue with Apple
 expect: day streak | Apps blocked until
 ```
 
+```proof
+name: account-bound-proof-matches
+scenario: subscription-proof-matching
+open: /
+tap: Sign in | Continue with Apple
+expect: day streak | Apps blocked until
+```
+
+```proof
+name: wrong-account-proof-fails-closed
+scenario: subscription-proof-wrong-account
+open: /
+tap: Sign in | Continue with Apple
+expect: Checking your subscription | Retry | Back to start
+```
+
+```proof
+name: wrong-environment-proof-fails-closed
+scenario: subscription-proof-wrong-environment
+open: /
+tap: Sign in | Continue with Apple
+expect: Checking your subscription | Retry | Back to start
+```
+
+```proof
+name: unavailable-proof-fails-closed
+scenario: subscription-proof-unavailable
+open: /
+tap: Sign in | Continue with Apple
+expect: Checking your subscription | Retry | Back to start
+```
+
 ## Gotchas
 - A dev build boots the fake runtime, with scenarios and fake adapters. Preview and production builds boot the real runtime (`src/runtime/environment.ts`). An unknown release environment fails closed.
 - If the app shows real prices and ignores `excerlock://dev`, it is running a cached OTA update instead of Metro. `./excer sim start` detects this and reinstalls the app.

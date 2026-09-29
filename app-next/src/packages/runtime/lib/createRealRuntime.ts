@@ -670,6 +670,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       }),
       auth: client.auth,
       subscription: client.subscription,
+      subscriptionAdmission: client.subscriptionAdmission,
       analytics: client.analytics,
       reviewPreset: client.reviewPreset,
       experiments: client.experiments,

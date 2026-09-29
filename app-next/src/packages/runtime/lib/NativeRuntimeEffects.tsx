@@ -9,6 +9,7 @@ import { notificationLanding, trialReminderPlan } from '../../notifications/noti
 import { expoLocalNotifications } from '../../notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../../permissions/permissionsStore';
 import { reportRuntimeError } from '../../telemetry/reportRuntimeError';
+import { currentJourney, refreshAdmission } from '../../journey/index';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -71,6 +72,16 @@ export function NativeRuntimeEffects() {
       cancelAnimationFrame(frame);
     };
   }, [coordinator, runtime, status.hydrated, status.loading, navigation?.key, pathname]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (currentJourney().phase === 'app') void refreshAdmission(runtime).catch(reportRuntimeError);
+    };
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => foreground.remove();
+  }, [runtime]);
 
   useEffect(() => {
     let disposed = false;

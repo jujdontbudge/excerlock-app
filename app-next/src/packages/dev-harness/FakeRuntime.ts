@@ -30,6 +30,7 @@ import { makeRule } from './lib/scenarios/base';
 import { rulesStore } from '../conditions/rulesStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { isAccountDataReady } from '../model/accountDataReady';
+import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -104,6 +105,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     });
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
   const auth = identityLab.route(AuthFake(ctx), (lab) => lab.auth);
+  const subscription = identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription);
+  const subscriptionAdmission = SubscriptionAdmissionFake(ctx, auth, subscription);
   const seedAccount = async (account: 'A' | 'B') => {
     const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
     if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
@@ -255,7 +258,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     gait,
     gym,
     auth,
-    subscription: identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription),
+    subscription,
+    subscriptionAdmission,
     analytics: AnalyticsFake(ctx),
     reviewPreset: { isEnabled: async () => false, expose: () => undefined },
     experiments: { getPaywallVariant: async () => 'control', trackPaywallVariantExposure: () => undefined },

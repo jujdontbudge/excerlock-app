@@ -1,5 +1,6 @@
 export type ClientConfiguration = {
   environment: 'dev' | 'preview' | 'prod';
+  storeEnvironment: 'production' | 'sandbox';
   auth: { supabaseUrl: string; supabaseAnonKey: string; apiBaseUrl: string; googleIosClientId: string; googleRedirectUri: string };
   adaptyPublicKey: string;
   posthog: { apiKey: string; host: string };
@@ -17,6 +18,7 @@ export function readClientConfiguration(extra: unknown): ClientConfiguration {
   if (!['dev', 'preview', 'prod'].includes(String(root.environment))) throw new Error('Invalid client environment');
   const config: ClientConfiguration = {
     environment: root.environment as ClientConfiguration['environment'],
+    storeEnvironment: root.environment === 'prod' ? 'production' : 'sandbox',
     auth: {
       supabaseUrl: text('clientAuth', 'supabaseUrl'), supabaseAnonKey: text('clientAuth', 'supabaseAnonKey'),
       apiBaseUrl: text('clientApi', 'url'), googleIosClientId: text('clientAuth', 'googleIosClientId'),

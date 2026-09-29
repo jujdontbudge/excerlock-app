@@ -6,7 +6,7 @@ import { StepsPort } from './StepsPort';
 import { WalkingPort } from './WalkingPort';
 import { GymPort } from './GymPort';
 import { AuthPort } from './AuthPort';
-import { SubscriptionPort } from './SubscriptionPort';
+import { SubscriptionAdmissionPort, SubscriptionPort } from './SubscriptionPort';
 import { AnalyticsPort } from './AnalyticsPort';
 import { NotificationsPort } from './NotificationsPort';
 import { SyncPort } from './SyncPort';
@@ -30,6 +30,7 @@ export type Runtime = {
   gym: GymPort;
   auth: AuthPort;
   subscription: SubscriptionPort;
+  subscriptionAdmission: SubscriptionAdmissionPort;
   analytics: AnalyticsPort;
   notifications: NotificationsPort;
   sync: SyncPort;
