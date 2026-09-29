@@ -68,6 +68,30 @@ then-expect: Protected route mounts | None
 ```
 
 ```proof
+name: unpaid-home-notification-blocked
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+notifications: home
+notification-expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered home · Handled 1
+```
+
+```proof
+name: unpaid-unlock-notification-blocked
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+notifications: unlock
+notification-expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered unlock · Handled 1
+```
+
+```proof
 name: forged-onboarding-return-and-paywall-back-blocked
 scenario: returning-unpaid
 open: /onboarding/S3d?returnTo=%2Fhome

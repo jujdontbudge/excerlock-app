@@ -21,6 +21,7 @@ import type { StrideGatePort } from './lib/StrideGatePort';
 import type { SensorStreamModuleClient } from './SensorStreamPort';
 import type { OnboardingFlowPort } from './OnboardingFlowPort';
 import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
+import type { NotificationResponsesPort } from './NotificationResponsesPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -33,6 +34,7 @@ export type Runtime = {
   subscriptionAdmission: SubscriptionAdmissionPort;
   analytics: AnalyticsPort;
   notifications: NotificationsPort;
+  notificationResponses: NotificationResponsesPort;
   sync: SyncPort;
   support: SupportPort;
   incidentReports: IncidentReportPort;

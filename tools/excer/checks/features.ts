@@ -29,6 +29,7 @@ export function featureProblems(): string[] {
       if (!proof.scenario && !proof.open) problems.push(`${where}: proof ${proof.name} needs a scenario or open`);
       if (proof.expect.length === 0) problems.push(`${where}: proof ${proof.name} expects nothing`);
       if (proof.denyRoutes && !proof.denyExpect?.length) problems.push(`${where}: proof ${proof.name} deny-routes needs deny-expect`);
+      if (proof.notifications?.length && !proof.notificationExpect?.length) problems.push(`${where}: proof ${proof.name} notifications needs notification-expect`);
     }
   }
   for (const route of appRoutes()) if (!claimed.has(route)) problems.push(`route ${route} belongs to no feature`);

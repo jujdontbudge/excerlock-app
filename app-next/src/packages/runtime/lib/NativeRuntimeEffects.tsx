@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import { usePathname, useRootNavigationState, useRouter } from 'expo-router';
+import { usePathname, useRootNavigationState } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useRuntime } from '../../ports/useRuntime';
 import { useRuntimeStatus } from '../../lock/selectors';
 import { getOtaObservabilityContext, useOtaCoordinator } from '../../updates/updates';
-import { notificationLanding, trialReminderPlan } from '../../notifications/notificationPlan';
+import { trialReminderPlan } from '../../notifications/notificationPlan';
 import { expoLocalNotifications } from '../../notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../../permissions/permissionsStore';
 import { reportRuntimeError } from '../../telemetry/reportRuntimeError';
@@ -25,7 +25,6 @@ export function NativeRuntimeEffects() {
   const status = useRuntimeStatus();
   const pathname = usePathname();
   const navigation = useRootNavigationState();
-  const router = useRouter();
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
@@ -143,26 +142,5 @@ export function NativeRuntimeEffects() {
     return () => foreground.remove();
   }, [runtime]);
 
-  useEffect(() => {
-    if (!navigation?.key) return;
-    let mounted = true;
-    const handled = new Set<string>();
-    const receive = (response: Notifications.NotificationResponse | null) => {
-      if (!mounted || !response) return;
-      const target = notificationLanding(response.notification.request.content.data?.url);
-      if (!target) return;
-      const key = `${response.notification.request.identifier}:${response.notification.date}:${response.actionIdentifier}`;
-      if (handled.has(key)) return;
-      handled.add(key);
-      router.push(target);
-      void Notifications.clearLastNotificationResponseAsync().catch(reportRuntimeError);
-    };
-    const listener = Notifications.addNotificationResponseReceivedListener(receive);
-    void Notifications.getLastNotificationResponseAsync().then(receive).catch(reportRuntimeError);
-    return () => {
-      mounted = false;
-      listener.remove();
-    };
-  }, [navigation?.key, router]);
   return null;
 }

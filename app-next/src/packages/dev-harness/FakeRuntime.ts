@@ -31,6 +31,7 @@ import { rulesStore } from '../conditions/rulesStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { isAccountDataReady } from '../model/accountDataReady';
 import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake';
+import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -47,6 +48,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let accountData = options.createAccountData();
   let accountTransitions: string[] = [];
   const ctx = new FakeContext(scenarios[0]),
+    notificationResponses = NotificationResponsesFake((snapshot) => ctx.update({ notificationResponses: snapshot })),
     walking = WalkingFake(ctx),
     gait = GaitFake(),
     persistence = contextPersistence(ctx),
@@ -169,6 +171,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         ctx.resolve(false);
         await identityLab.stop();
         await loadScenario(scenario, keepEdits);
+        notificationResponses.reset();
         if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
         identityLab.start();
@@ -313,6 +316,9 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           providerConflict: current?.providerConflict,
         } });
       },
+      deliverNotification: (destination) => {
+        notificationResponses.deliver(destination);
+      },
       recordProtectedRouteMount: (route) => {
         const current = ctx.snapshot().protectedRouteMounts;
         if (!current.includes(route)) ctx.update({ protectedRouteMounts: [...current, route] });
@@ -336,6 +342,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     signInRequired: { isRequired: async () => false },
     onboardingFlow: { order: () => null, load: async () => null, subscribe: () => () => undefined },
     notifications: NotificationsFake(ctx),
+    notificationResponses,
     sync: SyncFake(),
     support: SupportFake(ctx),
     review: ReviewFake(ctx),

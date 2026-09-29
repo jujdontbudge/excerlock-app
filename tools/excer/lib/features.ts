@@ -5,7 +5,7 @@ import { read, walk } from './files.ts';
 
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
-export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[] };
+export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[] };
 
 export type Feature = {
   id: string;
@@ -65,6 +65,8 @@ function parseProofs(body: string): Proof[] {
     if (fields['then-expect']) proof.thenExpect = fields['then-expect'].split('|').map((item) => item.trim()).filter(Boolean);
     if (fields['deny-routes'] === 'protected') proof.denyRoutes = 'protected';
     if (fields['deny-expect']) proof.denyExpect = fields['deny-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.notifications) proof.notifications = fields.notifications.split('|').map((item) => item.trim()).filter((item): item is 'home' | 'unlock' => item === 'home' || item === 'unlock');
+    if (fields['notification-expect']) proof.notificationExpect = fields['notification-expect'].split('|').map((item) => item.trim()).filter(Boolean);
     if (fields.tap) proof.tap = fields.tap.split('|').map((item) => item.trim()).filter(Boolean);
     return proof;
   });

@@ -55,6 +55,7 @@ import { markStartupStage } from '../../../../modules/excerlock-startup';
 import { createAccountDataCoordinator } from '../AccountDataCoordinator';
 import { isAccountDataReady } from '../../model/accountDataReady';
 import { createActivityAccountData } from '../../activity/ActivityAccountData';
+import { expoNotificationResponses } from '../../notifications/ExpoNotificationResponses';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
@@ -679,6 +680,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       shieldCopy,
       strideGate,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
+      notificationResponses: expoNotificationResponses,
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       sync: {
         pushRules: async () => {

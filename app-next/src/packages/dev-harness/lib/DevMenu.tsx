@@ -67,6 +67,11 @@ export function DevMenu() {
       <SettingsGroup title="Protected route mounts">
         <Label>{view.protectedRouteMounts.length ? view.protectedRouteMounts.join(' · ') : 'None'}</Label>
       </SettingsGroup>
+      <SettingsGroup title="Notification responses">
+        <Label>
+          Delivered {view.notificationResponses.delivered.length ? view.notificationResponses.delivered.join(' · ') : 'None'} · Handled {view.notificationResponses.handled}
+        </Label>
+      </SettingsGroup>
       <SettingsGroup title={c.record}>
         <Label>{c.recordCommand}</Label>
       </SettingsGroup>

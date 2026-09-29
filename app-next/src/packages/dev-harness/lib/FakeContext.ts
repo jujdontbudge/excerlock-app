@@ -26,6 +26,7 @@ export class FakeContext {
       presence: scenario.gym?.presence ?? 'outside',
       motion: scenario.motion ?? 'still',
       protectedRouteMounts: [],
+      notificationResponses: { delivered: [], handled: 0 },
     };
   }
   snapshot = () => this.view;
