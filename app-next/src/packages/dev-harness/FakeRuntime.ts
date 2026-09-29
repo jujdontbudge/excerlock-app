@@ -34,6 +34,7 @@ import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
+import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -563,6 +564,10 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           delivered: current?.delivered ?? 0,
           lifecycleRevocation: `before ${result.before} after ${result.after} Entitlement ${result.entitlement} data ${result.data}`,
         } });
+      },
+      runOnboardingPathDiagnostics: () => {
+        const path = pathFor({ activity: 'walking', walkingMode: 'steps', bodyGoal: 'maintain' });
+        ctx.update({ onboardingPath: path.join(' ') });
       },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);

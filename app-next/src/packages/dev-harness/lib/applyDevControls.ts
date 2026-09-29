@@ -19,4 +19,5 @@ export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
   if (p.prompt === 'grant' || p.prompt === 'deny' || p.prompt === 'ask') dev.setPromptMode(p.prompt);
   if (p.notification === 'home' || p.notification === 'unlock') dev.deliverNotification(p.notification);
   if (p.lab === 'lifecycle-revocation') await dev.runLabLifecycleRevocation();
+  if (p.lab === 'onboarding-path') dev.runOnboardingPathDiagnostics();
 }

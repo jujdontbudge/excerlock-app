@@ -41,21 +41,53 @@ async function listen(server: Server): Promise<number> {
   return (server.address() as AddressInfo).port;
 }
 
-function startVendorStub(calls: StubCall[]): Server {
+type AdaptyStubMode = 'ok' | 'rateLimited' | 'failed' | 'malformed' | 'timeout';
+
+function startVendorStub(calls: StubCall[], adaptyModes: Map<string, AdaptyStubMode>): Server {
   return createServer((request, response) => {
     calls.push({ method: request.method ?? '', path: request.url ?? '' });
     request.resume();
     request.on('end', () => {
       response.setHeader('content-type', 'application/json');
+      const adaptyUserId = request.headers['adapty-customer-user-id'];
+      const mode = typeof adaptyUserId === 'string' ? adaptyModes.get(adaptyUserId) : undefined;
+      if (mode === 'timeout') return;
+      if (mode === 'rateLimited') {
+        response.statusCode = 429;
+        response.end('{"error":"limited"}');
+        return;
+      }
+      if (mode === 'failed') {
+        response.statusCode = 500;
+        response.end('{"error":"failed"}');
+        return;
+      }
+      if (mode === 'malformed') {
+        response.end('{');
+        return;
+      }
       response.end(request.url?.includes('/persons/bulk_delete/') ? '{"deletion_errors":[]}' : '{}');
     });
   });
 }
 
-function mintToken(secret: string, issuer: string, userId: string): string {
+function mintToken(
+  secret: string,
+  issuer: string,
+  userId: string,
+  overrides: { expiresInSeconds?: number; isAnonymous?: boolean; audience?: string } = {},
+): string {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
-  const body = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: userId, aud: 'authenticated', iss: issuer, role: 'authenticated', iat: now, exp: now + 600 })}`;
+  const body = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({
+    sub: userId,
+    aud: overrides.audience ?? 'authenticated',
+    iss: issuer,
+    role: 'authenticated',
+    is_anonymous: overrides.isAnonymous ?? false,
+    iat: now,
+    exp: now + (overrides.expiresInSeconds ?? 600),
+  })}`;
   return `${body}.${createHmac('sha256', secret).update(body).digest('base64url')}`;
 }
 
@@ -95,7 +127,8 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
   const keep = args.includes('--keep');
   const root = resolve(option(args, 'root') ?? serverRoot);
   const calls: StubCall[] = [];
-  const stub = startVendorStub(calls);
+  const adaptyModes = new Map<string, AdaptyStubMode>();
+  const stub = startVendorStub(calls, adaptyModes);
   let server: ChildProcess | undefined;
   let failures = 0;
   const expect = (ok: boolean, line: string, detail?: string) => {
@@ -127,6 +160,7 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       POSTHOG_PROJECT_ID: '1',
       POSTHOG_API_HOST: stubUrl,
       DELETION_WORKER_ENABLED: 'false',
+      DELETION_GATEWAY_TIMEOUT_MS: '1000',
       RESEND_API_KEY: '',
       POSTHOG_API_KEY: '',
       SENTRY_DSN: '',
@@ -173,6 +207,21 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
     expect(anonymous.status === 401, `PUT /v1/user without a token → ${anonymous.status}`, anonymous.text);
     const forged = await call('PUT', '/v1/user', mintToken('wrong-secret', `${stubUrl}/auth/v1`, userId));
     expect(forged.status === 401, `PUT /v1/user with a forged token → ${forged.status}`, forged.text);
+    const expired = await call('PUT', '/v1/user', mintToken(secret, `${stubUrl}/auth/v1`, userId, { expiresInSeconds: -60 }));
+    expect(expired.status === 401, `PUT /v1/user with an expired token → ${expired.status}`, expired.text);
+    const wrongIssuer = await call('PUT', '/v1/user', mintToken(secret, `${stubUrl}/wrong`, userId));
+    expect(wrongIssuer.status === 401, `PUT /v1/user with the wrong issuer → ${wrongIssuer.status}`, wrongIssuer.text);
+    const wrongAudience = await call('PUT', '/v1/user', mintToken(secret, `${stubUrl}/auth/v1`, userId, { audience: 'other' }));
+    expect(wrongAudience.status === 401, `PUT /v1/user with the wrong audience → ${wrongAudience.status}`, wrongAudience.text);
+
+    const anonymousUserId = randomUUID();
+    const anonymousToken = mintToken(secret, `${stubUrl}/auth/v1`, anonymousUserId, { isAnonymous: true });
+    const anonymousProvision = await call('PUT', '/v1/user', anonymousToken);
+    expect(
+      anonymousProvision.status === 204 && Number(sql(`select count(*) from users where id = '${anonymousUserId}'`)) === 1,
+      `a verified anonymous identity provisions only its token subject → ${anonymousProvision.status}`,
+      anonymousProvision.text,
+    );
 
     const provision = await call('PUT', '/v1/user', token);
     expect(provision.status === 204, `PUT /v1/user → ${provision.status}`, provision.text);
@@ -192,8 +241,20 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       `missing subscription state fails closed → ${unknownProof.status}`,
       unknownProof.text,
     );
-    const clientSelectedEnvironment = await call('POST', '/v1/subscription/resync', token, { environment: 'sandbox' });
-    expect(clientSelectedEnvironment.status === 400, `subscription verification rejects client environment input → ${clientSelectedEnvironment.status}`, clientSelectedEnvironment.text);
+    const rejectedClaims = {
+      environment: 'sandbox',
+      accountId: randomUUID(),
+      userId: randomUUID(),
+      active: true,
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      owner: userId,
+    };
+    const rejectedAuthority = await call('POST', '/v1/subscription/resync', token, rejectedClaims);
+    expect(
+      rejectedAuthority.status === 400,
+      `subscription verification rejects client authority input (${Object.keys(rejectedClaims).join(',')}) → ${rejectedAuthority.status}`,
+      rejectedAuthority.text,
+    );
 
     const support = await call('POST', '/v1/support', token, { category: 'feature', title: 'Smoke widget', message: 'Smoke feature request.' });
     expect(support.status === 201, `POST /v1/support → ${support.status}`, support.text);
@@ -281,7 +342,34 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       `Sandbox deployment verifies only its token-bound Sandbox state → ${sandboxProof.status}`,
       sandboxProof.text,
     );
+    const failureBodies: string[] = [];
+    for (const mode of ['rateLimited', 'failed', 'malformed', 'timeout'] as const) {
+      const failureUserId = randomUUID();
+      const failureToken = mintToken(secret, `${stubUrl}/auth/v1`, failureUserId);
+      adaptyModes.set(failureUserId, mode);
+      await call('PUT', '/v1/user', failureToken);
+      const failedResync = await call('POST', '/v1/subscription/resync', failureToken);
+      failureBodies.push(failedResync.text);
+      expect(
+        failedResync.status === 503 && failedResync.text.includes('SUBSCRIPTION_RESYNC_FAILED'),
+        `Adapty ${mode} response fails closed without account detail → ${failedResync.status}`,
+        failedResync.text,
+      );
+      expect(
+        Number(sql(`select count(*) from adapty_subscription_states where user_id = '${failureUserId}'`)) === 0,
+        `Adapty ${mode} response creates no subscription grant`,
+      );
+    }
+    expect(new Set(failureBodies).size === 1, 'vendor failures share one non-enumerating response');
+    const rateLimited = await call('POST', '/v1/subscription/resync', token);
+    expect(rateLimited.status === 429 && rateLimited.text.includes('RATE_LIMITED'), `subscription resync rate limit fails closed → ${rateLimited.status}`, rateLimited.text);
     expect(owned('incident_reports') === 1 && owned('support_requests') === 1, 'the account owns 1 incident report and 1 support request');
+    const minimalSubscriptionColumns = Number(sql("select count(*) from information_schema.columns where table_name = 'adapty_subscription_states' and column_name ~ '(receipt|credential|access_token|refresh_token)'"));
+    expect(minimalSubscriptionColumns === 0, `subscription mirror stores no receipt or credential columns (${minimalSubscriptionColumns})`);
+    const rawWebhookColumns = Number(sql("select count(*) from information_schema.columns where table_name = 'adapty_webhook_events' and column_name ~ '(payload|body|receipt|credential|access_token|refresh_token)'"));
+    expect(rawWebhookColumns === 0, `webhook ledger stores no raw payload, receipt or credential columns (${rawWebhookColumns})`);
+    const retainedIdentityFields = sql(`select coalesce(email, '<null>') from users where id = '${userId}'`);
+    expect(retainedIdentityFields === '<null>', `identity spine stores no copied email (${retainedIdentityFields})`);
 
     const deletion = await call('DELETE', '/v1/user', token);
     expect(deletion.status === 204, `DELETE /v1/user → ${deletion.status}`, deletion.text);

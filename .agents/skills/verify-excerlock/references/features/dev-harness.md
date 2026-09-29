@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry, identity-lab-lifecycle-revocation]
+scenarios: [dynamic-type-xl, reduce-motion, returning-signed-in, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry, identity-lab-lifecycle-revocation]
 depends: [launch]
 ---
 ## Sub-features
@@ -139,6 +139,15 @@ wait: 30
 expect: Start for free | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Lifecycle revocation before app/admitted after paywall/revoked Entitlement none data account-a/1/Account A/Gym A | Protected route mounts | None
+```
+
+```proof
+name: cached-entitlement-retains-full-onboarding-path
+scenario: returning-signed-in
+open: dev?lab=onboarding-path
+expect: Block apps. Move more. | Get started | Sign in
+then-open: /dev
+then-expect: active | Onboarding path O01 O02 O03 O07 O04 O05 O06 O08 O22 O10 O11 O12 O13 O14 O15 O16 O17 O18 O20 W0 W1 W2 W3 S1 S2 S3 S3b S3c S3d P | Protected route mounts | None
 ```
 
 ## Gotchas

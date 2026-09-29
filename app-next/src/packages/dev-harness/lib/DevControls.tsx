@@ -71,6 +71,7 @@ export function DevControls() {
         {error ? <Label>{error}</Label> : null}
       </SettingsGroup>
       <SettingsGroup title="Journey data">
+        <SettingsRow title="Run full Onboarding path diagnostic" onPress={() => dev.runOnboardingPathDiagnostics()} />
         <SettingsRow title="Conditions" value={String(conditionCount)} />
         <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
         <SettingsRow title={`Purchase recovery ${runtime.subscription.recovery().type}`} />
@@ -93,6 +94,7 @@ export function DevControls() {
         <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
         <SettingsRow title={`Lease diagnostics ${view.subscriptionLab?.leaseDiagnostics ?? 'Not run'}`} />
         <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
+        <SettingsRow title={`Onboarding path ${view.onboardingPath ?? 'Not run'}`} />
         {view.remoteFlags ? <SettingsRow title={`Remote flags ${view.remoteFlags}`} /> : null}
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
