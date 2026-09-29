@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription]
 depends: [launch]
 ---
 ## Sub-features
@@ -65,6 +65,15 @@ open: /dev
 tap: Run established restore transfer
 wait: 30
 expect: Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Restore operations 3 | Transfer isolation lab-user-a source profile ineligible retry ineligible transfer eligible repeat eligible source after ineligible target return eligible transfers 1 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B
+```
+
+```proof
+name: transfer-preserves-independent-subscription
+scenario: identity-lab-transfer-second-subscription
+open: /dev
+tap: Run established restore transfer
+wait: 30
+expect: Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Restore operations 3 | Transfer isolation lab-user-a source profile ineligible retry ineligible transfer eligible repeat eligible source after eligible target return eligible transfers 1 grants transferred lab.store.annual to lab-user-b independent lab.account.monthly stays lab-user-a target only lab.store.annual source only lab.account.monthly data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B
 ```
 
 ## Gotchas

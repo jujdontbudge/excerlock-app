@@ -336,7 +336,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           delivered: current?.delivered ?? 0,
           callbackIsolation: current?.callbackIsolation,
           deletionIsolation: current?.deletionIsolation,
-          transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers} data A ${result.sourceData} data B ${result.targetData}`,
+          transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers}${result.grantLedger ? ` grants ${result.grantLedger}` : ''} data A ${result.sourceData} data B ${result.targetData}`,
           providerConflict: current?.providerConflict,
         } });
       },

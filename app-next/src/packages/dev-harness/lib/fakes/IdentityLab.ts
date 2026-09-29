@@ -11,6 +11,8 @@ import { PurchaseRecoveryJournal } from '../../../subscription/PurchaseRecoveryJ
 const SLOW_USER_SYNC_MS = 8000;
 const LAB_URL = 'https://identity-lab.invalid';
 const ANONYMOUS_DISTINCT_ID = 'lab-anonymous-distinct-id';
+const STORE_SUBSCRIPTION_ID = 'lab.store.annual';
+const INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.monthly';
 
 type LabUser = { id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
 type LabSession = { access_token: string; refresh_token: string; user: LabUser };
@@ -59,6 +61,7 @@ export type IdentityLab = {
     targetData: string;
     restores: number;
     transfers: number;
+    grantLedger: string | null;
   }>;
   dispose(): Promise<void>;
 };
@@ -94,10 +97,9 @@ export async function createIdentityLab(
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
   const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0, link: 0, sessionRestore: 0 };
-  const ownership = new Map<string, 'trial' | 'active'>();
+  const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
-  let storeOwner: string | null = null;
   let transfers = 0;
   let deliveredProfiles = 0;
   let users = 0;
@@ -227,7 +229,10 @@ export async function createIdentityLab(
     },
   });
   const profile = (owner = customerUserId): AdaptyProfile => {
-    const status = owner ? ownership.get(owner) : undefined;
+    const statuses = owner
+      ? [...grants.values()].filter((grant) => grant.owner === owner).map((grant) => grant.status)
+      : [];
+    const status = statuses.includes('active') ? 'active' : statuses.includes('trial') ? 'trial' : undefined;
     const days = status === 'trial' ? 7 : 30;
     return {
       customerUserId: owner,
@@ -278,8 +283,7 @@ export async function createIdentityLab(
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       if (!owner) throw new Error('Purchase owner unavailable');
-      ownership.set(owner, 'trial');
-      storeOwner = owner;
+      grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'trial' });
       const purchased = profile(owner);
       if (script.delayedCallbacks) {
         queuedProfiles.push({ operation: 'purchase', owner, profile: purchased });
@@ -296,12 +300,11 @@ export async function createIdentityLab(
       ctx.log('lab_restore', { result, owner });
       if (script.establishedTransfer && attempts.restore === 1) throw networkError('Restore reconciliation unavailable');
       if (result === 'restored' && owner) {
-        if (script.establishedTransfer && storeOwner && storeOwner !== owner) {
-          ownership.delete(storeOwner);
+        const storeGrant = grants.get(STORE_SUBSCRIPTION_ID);
+        if (script.establishedTransfer && storeGrant && storeGrant.owner !== owner) {
           transfers += 1;
         }
-        ownership.set(owner, 'active');
-        storeOwner = owner;
+        grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'active' });
       }
       const restored = profile(owner);
       if (script.delayedCallbacks && owner) queuedProfiles.push({ operation: 'restore', owner, profile: restored });
@@ -509,8 +512,9 @@ export async function createIdentityLab(
       const source = await services?.waitForIdentityReady();
       if (!source?.userId) throw new Error('Source account did not become ready');
       await seedAccount('A');
-      ownership.set(source.userId, 'active');
-      storeOwner = source.userId;
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
+      if (script.secondSubscription)
+        grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
       const sourceProfile = profile(source.userId);
       profileListener?.(sourceProfile);
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -546,6 +550,14 @@ export async function createIdentityLab(
       await adapter.refresh();
       const targetAfterReturn = await verifyCurrent();
       const targetData = accountCheckpoint();
+      const ownedBy = (userId: string) => [...grants.entries()]
+        .filter(([, grant]) => grant.owner === userId)
+        .map(([subscriptionId]) => subscriptionId)
+        .sort()
+        .join(',');
+      const grantLedger = script.secondSubscription
+        ? `transferred ${STORE_SUBSCRIPTION_ID} to ${target.userId} independent ${INDEPENDENT_SUBSCRIPTION_ID} stays ${source.userId} target only ${ownedBy(target.userId)} source only ${ownedBy(source.userId)}`
+        : null;
       updateSubscriptionLab();
       return {
         source: source.userId,
@@ -559,6 +571,7 @@ export async function createIdentityLab(
         targetData,
         restores: attempts.restore,
         transfers,
+        grantLedger,
       };
     },
     dispose: async () => {
