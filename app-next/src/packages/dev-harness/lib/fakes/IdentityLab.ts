@@ -171,6 +171,10 @@ export async function createIdentityLab(
   }[] = [];
   let rejectNextAccountReset = false;
   let rejectNextProviderLink = false;
+  let enterPurchaseBarrier: (() => void) | undefined;
+  let releasePurchaseBarrier: (() => void) | undefined;
+  const purchaseBarrierEntered = new Promise<void>((resolve) => { enterPurchaseBarrier = resolve; });
+  const purchaseBarrierReleased = new Promise<void>((resolve) => { releasePurchaseBarrier = resolve; });
   const activeSessionTokens = new Set<string>();
   const signOutScopes: string[] = [];
   let services: AuthServices | undefined;
@@ -381,6 +385,7 @@ export async function createIdentityLab(
         ? `${emailChallengeOutcomes.join(' · ')} · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
         : ctx.snapshot().subscriptionLab?.emailChallenges,
       localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
+      purchaseSerialization: ctx.snapshot().subscriptionLab?.purchaseSerialization,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -464,9 +469,19 @@ export async function createIdentityLab(
     makePurchase: async () => {
       attempts.purchase += 1;
       const configured = script.purchase ?? ctx.snapshot().outcome;
-      const result = configured === 'errorFirst' && attempts.purchase > 1 ? 'success' : configured === 'errorFirst' ? 'error' : configured;
+      const result = configured === 'errorFirst' && attempts.purchase > 1
+        ? 'success'
+        : configured === 'errorFirst'
+          ? 'error'
+          : configured === 'busyBarrier'
+            ? 'success'
+            : configured;
       const owner = customerUserId;
-      ctx.log('lab_purchase', { result, owner });
+      ctx.log('lab_purchase', { result: configured === 'busyBarrier' ? 'success' : result, owner });
+      if (configured === 'busyBarrier') {
+        enterPurchaseBarrier?.();
+        await purchaseBarrierReleased;
+      }
       if (result === 'error') throw networkError('Purchase failed');
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
@@ -581,6 +596,38 @@ export async function createIdentityLab(
     },
     logPaywallShown: (generation) => adapter.logPaywallShown(generation),
     purchase: async (handle) => {
+      if (script.purchase === 'busyBarrier') {
+        const first = adapter.purchase(handle);
+        await purchaseBarrierEntered;
+        const before = adapter.recovery();
+        const duplicate = adapter.purchase(handle).then(
+          () => 'accepted',
+          (error) => message(error),
+        );
+        const restore = adapter.restore().then(
+          () => 'accepted',
+          (error) => message(error),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const during = adapter.recovery();
+        releasePurchaseBarrier?.();
+        try {
+          const [result, duplicateResult, restoreResult] = await Promise.all([first, duplicate, restore]);
+          const after = adapter.recovery();
+          const stableOwner = before.type === 'pending' && during.type === 'pending' && after.type === 'accountConnection'
+            && before.checkoutUserId === during.checkoutUserId && during.checkoutUserId === after.checkoutUserId;
+          const stableOperation = before.type === 'pending' && during.type === 'pending' && after.type === 'accountConnection'
+            && before.operationId === during.operationId && during.operationId === after.operationId;
+          ctx.update({ subscriptionLab: {
+            ...ctx.snapshot().subscriptionLab!,
+            purchaseSerialization: `duplicate ${duplicateResult} restore ${restoreResult} owner ${stableOwner ? 'stable' : 'changed'} operation ${stableOperation ? 'stable' : 'changed'}`,
+          } });
+          return result;
+        } catch (error) {
+          releasePurchaseBarrier?.();
+          throw error;
+        }
+      }
       try {
         const result = await adapter.purchase(handle);
         ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });

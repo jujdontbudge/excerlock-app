@@ -81,6 +81,7 @@ export function DevControls() {
         <SettingsRow title={`Email challenges ${view.subscriptionLab?.emailChallenges ?? 'Not run'}`} />
         <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
         <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Purchase serialization ${view.subscriptionLab?.purchaseSerialization ?? 'Not run'}`} />
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />
