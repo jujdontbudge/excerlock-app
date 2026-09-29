@@ -51,7 +51,9 @@ export function RootNavigator() {
           <Stack.Protected guard={journey.phase === 'welcome' || journey.phase === 'onboarding'}>
             <Stack.Screen name="onboarding/[step]" />
           </Stack.Protected>
-          <Stack.Protected guard={journey.phase === 'paywall'}>
+          <Stack.Protected guard={
+            journey.phase === 'paywall' || journey.phase === 'pendingPurchase' || journey.phase === 'accountRecovery'
+          }>
             <Stack.Screen name="paywall" options={{ presentation: 'card', gestureEnabled: false }} />
           </Stack.Protected>
           <Stack.Protected guard={journey.phase === 'setup' && journey.paid}>

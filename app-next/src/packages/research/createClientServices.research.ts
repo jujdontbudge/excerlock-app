@@ -66,6 +66,7 @@ function subscribe<T>(subscribers: Set<(value: T) => void>, callback: (value: T)
 
 function createLabSubscription(): SubscriptionPort {
   const publish = () => entitlementStore.getState().patch({ entitlement: LAB_ENTITLEMENT });
+  const noRecovery = { type: 'none' as const };
   publish();
   const subscribers = new Set<(entitlement: SubscriptionEntitlement) => void>();
   return {
@@ -83,6 +84,10 @@ function createLabSubscription(): SubscriptionPort {
     purchase: async () => { throw new LabIdentityUnavailableError(); },
     manageSubscription: async () => { throw new LabIdentityUnavailableError(); },
     operation: () => ({ busy: false, pending: false, error: null }),
+    recovery: () => noRecovery,
+    recoveryReady: async () => undefined,
+    clearRecovery: async () => undefined,
+    subscribeRecovery: () => () => undefined,
     subscribe: (callback) => subscribe(subscribers, callback),
   };
 }

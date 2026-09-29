@@ -48,6 +48,7 @@ export type Scenario = {
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
+  purchaseRecovery?: 'pending' | 'accountConnection';
   subscriptionProof?: 'matching' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   launchSignInRequired?: boolean;
 };
@@ -57,7 +58,7 @@ export type IdentityLabScript = {
   plans?: 'ok' | 'failFirst' | 'empty';
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
-  purchase?: 'success' | 'cancel' | 'error';
+  purchase?: 'success' | 'cancel' | 'error' | 'pending';
   restore?: 'restored' | 'notFound';
 };
 export type Unsubscribe = () => void;

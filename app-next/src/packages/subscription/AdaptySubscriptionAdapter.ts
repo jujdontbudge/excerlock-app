@@ -17,6 +17,7 @@ import { ADAPTY_FALLBACK_FILE_NAME } from './lib/fallbackPaywall';
 import { deviceLocale, pickRemoteConfig } from './lib/remoteConfig';
 import { monthlyPrice } from './lib/monthlyPrice';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
+import { PurchaseRecoveryJournal } from './PurchaseRecoveryJournal';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
 type Loaded = {
@@ -45,6 +46,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       getPosthogDistinctId(): string | null;
       reportError(error: unknown): void;
       openSubscriptionManagement(): Promise<void>;
+      recoveryJournal: PurchaseRecoveryJournal;
+      now(): string;
     },
   ) {}
 
@@ -78,7 +81,19 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     };
   }
   operation(): SubscriptionOperation {
-    return this.op;
+    return { ...this.op, pending: this.deps.recoveryJournal.snapshot().type === 'pending' };
+  }
+  recovery() {
+    return this.deps.recoveryJournal.snapshot();
+  }
+  recoveryReady(): Promise<void> {
+    return this.deps.recoveryJournal.ready();
+  }
+  clearRecovery(): Promise<void> {
+    return this.deps.recoveryJournal.clear();
+  }
+  subscribeRecovery(callback: Parameters<PurchaseRecoveryJournal['subscribe']>[0]) {
+    return this.deps.recoveryJournal.subscribe(callback);
   }
   subscribe(callback: (entitlement: Entitlement) => void): Unsubscribe {
     return entitlementStore.subscribe((state) => callback(state.data.entitlement));
@@ -123,6 +138,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     });
   }
   async loadPaywall(placement: SubscriptionPaywall['placement']): Promise<SubscriptionPaywall> {
+    await this.deps.recoveryJournal.ready();
     await this.deps.waitForIdentityReady();
     const identity = this.requireExpected();
     await this.ensureActivated();
@@ -171,14 +187,23 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         const product = loaded?.sdkProducts.get(handle);
         if (!loaded || !product || loaded.identityGeneration !== ready.generation)
           throw new Error('Plan expired. Reload plans.');
+        await this.deps.recoveryJournal.ready();
+        if (this.deps.recoveryJournal.snapshot().type !== 'none')
+          throw new Error('Finish connecting the existing purchase before starting another.');
+        const recovery = await this.deps.recoveryJournal.begin('purchase', ready.userId!, this.deps.now());
+        if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
+          throw new Error('Finish connecting the existing purchase before starting another.');
         await this.attachIntegration(ready);
         const result = await this.deps.sdk.makePurchase(product);
         this.assertIdentity(ready);
         if (result.type !== 'success') {
           if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };
+          else await this.deps.recoveryJournal.clear();
           return { type: result.type };
         }
         const entitlement = this.publishProfile(result.profile, 'purchase');
+        if (entitlement.status === 'active' || entitlement.status === 'trial')
+          await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now());
         return { type: 'success', entitlement };
       });
     } catch (error) {
@@ -195,10 +220,15 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
+        await this.deps.recoveryJournal.begin('restore', ready.userId!, this.deps.now());
         await this.attachIntegration(ready);
         const profile = await this.deps.sdk.restorePurchases();
         this.assertIdentity(ready);
-        return this.publishProfile(profile, 'restore-return');
+        const entitlement = this.publishProfile(profile, 'restore-return');
+        if (entitlement.status === 'active' || entitlement.status === 'trial')
+          await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now());
+        else await this.deps.recoveryJournal.clear();
+        return entitlement;
       });
     } catch (error) {
       this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Restore failed' };
@@ -256,6 +286,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const next = reduceEntitlement(current, mapEntitlement(profile), source);
     entitlementStore.getState().patch({ entitlement: next });
     noteObservedEntitlement(next.status);
+    if (next.status === 'active' || next.status === 'trial')
+      void this.deps.recoveryJournal.confirm(expected.userId, this.deps.now()).catch(this.deps.reportError);
     return next;
   }
   private mapProduct(

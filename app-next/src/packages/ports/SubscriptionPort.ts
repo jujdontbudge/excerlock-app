@@ -3,6 +3,23 @@ import { Unsubscribe } from '../model/models';
 export type TrialOffer = { trialDays: number; reminderDaysBefore: number; label: string };
 export type SubscriptionEntitlement = Entitlement & { offer: TrialOffer };
 export type SubscriptionOperation = { busy: boolean; pending: boolean; error: string | null };
+export type PurchaseRecovery =
+  | { type: 'none' }
+  | {
+      type: 'pending';
+      operation: 'purchase' | 'restore';
+      operationId: string;
+      checkoutUserId: string;
+      startedAt: string;
+    }
+  | {
+      type: 'accountConnection';
+      operation: 'purchase' | 'restore';
+      operationId: string;
+      checkoutUserId: string;
+      startedAt: string;
+      confirmedAt: string;
+    };
 export type PaywallProduct = {
   handle: string;
   vendorProductId: string;
@@ -53,6 +70,10 @@ export interface SubscriptionPort {
   logPaywallShown(generation: number): Promise<void>;
   purchase(handle: string): Promise<PurchaseResult>;
   operation(): SubscriptionOperation;
+  recovery(): PurchaseRecovery;
+  recoveryReady(): Promise<void>;
+  clearRecovery(): Promise<void>;
+  subscribeRecovery(callback: (recovery: PurchaseRecovery) => void): Unsubscribe;
   manageSubscription(): Promise<void>;
   subscribe(callback: (entitlement: Entitlement) => void): Unsubscribe;
 }

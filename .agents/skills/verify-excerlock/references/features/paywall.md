@@ -185,6 +185,24 @@ expect: Choose a plan to continue.
 ```
 
 ```proof
+name: identity-purchase-pending
+scenario: identity-lab-purchase-pending
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Your purchase is still being confirmed. You will not be charged again. | Check purchase status
+```
+
+```proof
+name: identity-interrupted-purchase-recovery
+scenario: identity-lab-purchase-interrupted
+relaunch: true
+open: dev?journey=paywall
+wait: 25
+expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+```
+
+```proof
 name: identity-restore-not-found
 scenario: identity-lab-user-sync-failed
 open: /paywall

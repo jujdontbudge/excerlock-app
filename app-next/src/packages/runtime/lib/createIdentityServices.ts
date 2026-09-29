@@ -5,6 +5,8 @@ import { AdaptySubscriptionAdapter } from '../../subscription/AdaptySubscription
 import { nativeAdaptySdk } from '../../subscription/nativeAdaptySdk';
 import type { AdaptySdkPort } from '../../subscription/adaptySdk';
 import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PurchaseRecoveryJournal } from '../../subscription/PurchaseRecoveryJournal';
 
 type AnalyticsIdentityHooks = {
   identify(id: string): Promise<void>;
@@ -30,6 +32,7 @@ export async function createIdentityServices(options: {
   };
   const analytics = options.analyticsFactory(getIdentity);
   const sdk = options.sdk ?? nativeAdaptySdk;
+  const recoveryJournal = new PurchaseRecoveryJournal(AsyncStorage);
   const subscription = new AdaptySubscriptionAdapter({
     sdk, publicSdkKey: options.adaptyPublicKey, getIdentity,
     waitForIdentityReady: () => {
@@ -43,6 +46,8 @@ export async function createIdentityServices(options: {
     getPosthogDistinctId: () => analytics.getDistinctId(),
     reportError: options.reportError,
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
+    recoveryJournal,
+    now: () => new Date().toISOString(),
   });
   try {
     authServices = await createAuthServices({

@@ -36,6 +36,15 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'cancel' },
   }),
+  base('identity-lab-purchase-pending', 'Identity lab · purchase pending', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', purchase: 'pending' },
+  }),
+  base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', plans: 'empty' },
+    purchaseRecovery: 'accountConnection',
+  }),
   base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
     ...atOnboardingPaywall,
     identityLab: { appleLink: 'conflict' },

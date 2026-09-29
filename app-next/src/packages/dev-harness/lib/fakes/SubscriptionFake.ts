@@ -5,6 +5,7 @@ import { entitlementStore } from '../../../subscription/entitlementStore';
 import { FakeContext } from '../FakeContext';
 export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
   const entitlement = () => ({ ...entitlementStore.getState().data.entitlement, offer: fakeOffer });
+  const noRecovery = { type: 'none' as const };
   let operation = { busy: false, pending: false, error: null as string | null };
   return {
     entitlement,
@@ -87,6 +88,10 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       }
     },
     operation: () => operation,
+    recovery: () => noRecovery,
+    recoveryReady: async () => undefined,
+    clearRecovery: async () => undefined,
+    subscribeRecovery: () => () => undefined,
     manageSubscription: async () => undefined,
     subscribe: (callback) => entitlementStore.subscribe((s) => callback(s.data.entitlement)),
   };

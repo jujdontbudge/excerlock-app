@@ -5,6 +5,8 @@ import type { AuthIdentity, AuthPort } from '../../../ports/AuthPort';
 import type { SubscriptionPort } from '../../../ports/SubscriptionPort';
 import type { IdentityLabScript } from '../../../model/models';
 import { FakeContext } from '../FakeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PurchaseRecoveryJournal } from '../../../subscription/PurchaseRecoveryJournal';
 
 const SLOW_USER_SYNC_MS = 8000;
 const LAB_URL = 'https://identity-lab.invalid';
@@ -190,6 +192,7 @@ export async function createIdentityLab(
       ctx.log('lab_purchase', { result });
       if (result === 'error') throw networkError('Purchase failed');
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
+      if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       storeAccess = 'trial';
       return { type: 'success', profile: profile() } as unknown as AdaptyPurchaseResult;
     },
@@ -218,6 +221,8 @@ export async function createIdentityLab(
     getPosthogDistinctId: () => distinctId,
     reportError: (error) => ctx.log('lab_adapter_error', { message: message(error) }),
     openSubscriptionManagement: async () => undefined,
+    recoveryJournal: new PurchaseRecoveryJournal(AsyncStorage),
+    now: () => ctx.clock.now(),
   });
   services = await createAuthServices({
     supabaseUrl: LAB_URL,
@@ -263,8 +268,16 @@ export async function createIdentityLab(
       }
     },
     logPaywallShown: (generation) => adapter.logPaywallShown(generation),
-    purchase: (handle) => adapter.purchase(handle),
+    purchase: async (handle) => {
+      const result = await adapter.purchase(handle);
+      ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });
+      return result;
+    },
     operation: () => adapter.operation(),
+    recovery: () => adapter.recovery(),
+    recoveryReady: () => adapter.recoveryReady(),
+    clearRecovery: () => adapter.clearRecovery(),
+    subscribeRecovery: (callback) => adapter.subscribeRecovery(callback),
     manageSubscription: () => adapter.manageSubscription(),
     subscribe: (callback) => adapter.subscribe(callback),
   };

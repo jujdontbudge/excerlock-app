@@ -10,11 +10,25 @@ import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/launchSignInGate';
 import { beginWelcome } from '../../journey/index';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
   beginWelcome();
   authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
+  if (scenario.purchaseRecovery) {
+    const startedAt = scenario.clock.now;
+    await AsyncStorage.setItem(PURCHASE_RECOVERY_KEY, JSON.stringify({
+      version: 1,
+      type: scenario.purchaseRecovery,
+      operation: 'purchase',
+      operationId: `purchase:lab-checkout-1:${startedAt}`,
+      checkoutUserId: 'lab-checkout-1',
+      startedAt,
+      ...(scenario.purchaseRecovery === 'accountConnection' ? { confirmedAt: startedAt } : {}),
+    }));
+  } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
   resetStores();
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [] });
   profileStore.getState().patch(scenario.profile ?? {});

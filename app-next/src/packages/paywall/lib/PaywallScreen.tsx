@@ -7,7 +7,7 @@ import { useMotion } from '../../ui/useMotion';
 import { tokens as t } from '../../ui/tokens';
 import { Icon } from '../../ui/Icon';
 import { Reveal } from '../../ui/Reveal';
-import type { PaywallProduct, SubscriptionPaywall } from '../../ports/SubscriptionPort';
+import type { PaywallProduct, PurchaseRecovery, SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { Entitlement } from '../../model/types';
 import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
@@ -30,6 +30,7 @@ export function PaywallScreen({
   onLoaded,
   onAccess,
   onRecovery,
+  recovery,
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
@@ -39,6 +40,7 @@ export function PaywallScreen({
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
   onRecovery?: () => void;
+  recovery: PurchaseRecovery;
 }) {
   const runtime = useRuntime(),
     status = useEntitlementStore((state) => state.data.entitlement.status),
@@ -88,7 +90,7 @@ export function PaywallScreen({
     void runtime.subscription.logPaywallShown(paywall.generation);
   }, [paywall, runtime]);
   const purchase = async () => {
-    if (!selected || busy) return;
+    if (!selected || busy || recovery.type !== 'none') return;
     if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     setMessage('');
@@ -123,6 +125,10 @@ export function PaywallScreen({
     } finally {
       setBusy(null);
     }
+  };
+  const continueRecovery = () => {
+    if (recovery.type === 'accountConnection') onAccess?.(runtime.subscription.entitlement());
+    else void restore();
   };
   const product = paywall?.products.find((item) => item.handle === selected);
   const choose = (handle: string) => {
@@ -195,10 +201,18 @@ export function PaywallScreen({
             </View>
           ) : null}
           <PrimaryButton
-            label={product?.offerLabel ? subscriptionCopy.start : 'Continue'}
+            label={
+              recovery.type === 'accountConnection'
+                ? 'Continue to sign in'
+                : recovery.type === 'pending'
+                  ? 'Check purchase status'
+                  : product?.offerLabel
+                    ? subscriptionCopy.start
+                    : 'Continue'
+            }
             loading={busy === 'purchase'}
-            disabled={!product || busy === 'restore' || busy === 'load'}
-            onPress={() => void purchase()}
+            disabled={(recovery.type === 'none' && !product) || busy === 'restore' || busy === 'load'}
+            onPress={() => recovery.type === 'none' ? void purchase() : continueRecovery()}
           />
           {onRecovery ? <PressableScale label="Account and help" onPress={onRecovery}><Label variant="support" tone="secondary">Account and help</Label></PressableScale> : null}
         </>
@@ -227,9 +241,13 @@ export function PaywallScreen({
           </Reveal>
         ))}
       </View>
-      {message || status === 'expired' || status === 'billingIssue' ? (
+      {message || recovery.type !== 'none' || status === 'expired' || status === 'billingIssue' ? (
         <Label accessibilityRole="alert" style={{ color: t.state.error, textAlign: 'center' }}>
-          {message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
+          {recovery.type !== 'none' ? (
+            recovery.type === 'accountConnection'
+              ? 'Payment received. Sign in to connect your subscription.'
+              : 'Your purchase is still being confirmed. You will not be charged again.'
+          ) : message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
         </Label>
       ) : null}
       {busy ? (

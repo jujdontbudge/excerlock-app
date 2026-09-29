@@ -2,9 +2,19 @@ import { useSyncExternalStore } from 'react';
 import type { Runtime } from '../ports/Runtime';
 import type { AuthIdentity } from '../ports/AuthPort';
 import type { Entitlement } from '../model/types';
+import type { PurchaseRecovery } from '../ports/SubscriptionPort';
 import { useLaunchSignIn } from '../identity/launchSignInGate';
 
-type Phase = 'welcome' | 'onboarding' | 'paywall' | 'signIn' | 'verifying' | 'setup' | 'app';
+type Phase =
+  | 'welcome'
+  | 'onboarding'
+  | 'paywall'
+  | 'pendingPurchase'
+  | 'accountRecovery'
+  | 'signIn'
+  | 'verifying'
+  | 'setup'
+  | 'app';
 type Admission = { userId: string; generation: number };
 type EntryIntent = 'onboarding' | null;
 export type JourneyState = {
@@ -33,6 +43,11 @@ export const beginPaywall = () => enter('paywall');
 export const beginSignIn = () => enter('signIn');
 export const beginWelcome = () => set({ phase: 'welcome', entryIntent: null, admission: null, error: null });
 export const currentJourney = snapshot;
+export const notePurchaseRecovery = (recovery: PurchaseRecovery) => {
+  if (recovery.type === 'pending') enter('pendingPurchase');
+  else if (recovery.type === 'accountConnection') enter('accountRecovery');
+  else if (state.phase === 'pendingPurchase' || state.phase === 'accountRecovery') enter('paywall');
+};
 
 const account = (identity: AuthIdentity): Admission | null =>
   identity.kind === 'canonical' && !identity.isAnonymous && identity.ready && identity.userId
