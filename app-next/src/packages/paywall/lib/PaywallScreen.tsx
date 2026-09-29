@@ -8,6 +8,8 @@ import { tokens as t } from '../../ui/tokens';
 import { Icon } from '../../ui/Icon';
 import { Reveal } from '../../ui/Reveal';
 import type { PaywallProduct, SubscriptionPaywall } from '../../ports/SubscriptionPort';
+import type { Entitlement } from '../../model/types';
+import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
@@ -26,6 +28,8 @@ export function PaywallScreen({
   onClose,
   onBack,
   onLoaded,
+  onAccess,
+  onRecovery,
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
@@ -33,6 +37,8 @@ export function PaywallScreen({
   onClose?: () => void;
   onBack?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
+  onAccess?: (entitlement: Entitlement) => void;
+  onRecovery?: () => void;
 }) {
   const runtime = useRuntime(),
     status = useEntitlementStore((state) => state.data.entitlement.status),
@@ -88,7 +94,10 @@ export function PaywallScreen({
     setMessage('');
     try {
       const result = await runtime.subscription.purchase(selected);
-      if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
+      if (result.type === 'success') {
+        if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) onAccess?.(result.entitlement);
+        else setMessage('Your payment is being confirmed. Please retry or restore purchases.');
+      } else if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
       else if (result.type === 'user_cancelled') {
         runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
         setMessage('Choose a plan to continue.');
@@ -107,6 +116,7 @@ export function PaywallScreen({
     setMessage('');
     try {
       if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') setMessage('No active purchase was found.');
+      else onAccess?.(runtime.subscription.entitlement());
     } catch (error) {
       reportError(error, 'restore');
       setMessage('Restore could not finish. Please retry.');
@@ -190,6 +200,7 @@ export function PaywallScreen({
             disabled={!product || busy === 'restore' || busy === 'load'}
             onPress={() => void purchase()}
           />
+          {onRecovery ? <PressableScale label="Account and help" onPress={onRecovery}><Label variant="support" tone="secondary">Account and help</Label></PressableScale> : null}
         </>
       }>
       {rule ? <PaywallHero rule={rule} /> : <View style={{ flex: 1 }} />}

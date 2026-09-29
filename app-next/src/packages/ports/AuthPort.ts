@@ -71,6 +71,7 @@ export interface AuthPort {
   recoverWithGoogle(): Promise<Session>;
   sendEmailCode(email: string): Promise<void>;
   verifyEmailCode(code: string): Promise<Session>;
+  recoverWithEmailCode(code: string): Promise<Session>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
   boot(): Promise<AuthIdentity>;

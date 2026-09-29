@@ -47,6 +47,7 @@ function createLabAuth(): AuthPort {
     recoverWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
     sendEmailCode: async () => { throw new LabIdentityUnavailableError(); },
     verifyEmailCode: async () => { throw new LabIdentityUnavailableError(); },
+    recoverWithEmailCode: async () => { throw new LabIdentityUnavailableError(); },
     deleteAccount: async () => { throw new LabIdentityUnavailableError(); },
     signOut: async () => { throw new LabIdentityUnavailableError(); },
     subscribe: (callback) => subscribe(sessionSubscribers, callback),

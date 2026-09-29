@@ -7,11 +7,13 @@ import { ScreenShell, Heading, SettingsGroup, SettingsRow, SecondaryButton, Labe
 import { DevControls } from './DevControls';
 import { devCopy as c } from './devCopy';
 import { LivingIcon } from '../../ui/LivingIcon';
+import { useJourney } from '../../journey/index';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
     router = useRouter(),
     view = useDevSnapshot(),
+    journey = useJourney(runtime),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
@@ -26,6 +28,7 @@ export function DevMenu() {
       <LivingIcon name="gear" />
       <Heading title={c.title} support={c.support} />
       <Label>{view.scenarioId}</Label>
+      <Label>Journey {journey.phase} · paid {journey.paid ? 'yes' : 'no'} · admitted {journey.canEnterApp ? 'yes' : 'no'}</Label>
       <DevControls />
       <SettingsGroup>
         {dev.scenarios.map((s) => (

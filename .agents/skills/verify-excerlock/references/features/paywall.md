@@ -160,8 +160,17 @@ expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for f
 ```proof
 name: identity-purchase-to-setup
 scenario: identity-lab-user-sync-failed
-open: /paywall
+open: dev?journey=paywall
 tap: Start for free | Continue with Apple
+wait: 25
+expect: Choose apps
+```
+
+```proof
+name: identity-restore-to-required-signin
+scenario: identity-lab-user-sync-failed
+open: dev?journey=paywall&restore=restored
+tap: Restore purchases | Continue with Apple
 wait: 25
 expect: Choose apps
 ```

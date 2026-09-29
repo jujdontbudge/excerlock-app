@@ -44,6 +44,10 @@ export function AuthFake(ctx: FakeContext): AuthPort {
       if (code !== '123456') throw new Error('Invalid code');
       return signIn('email');
     },
+    recoverWithEmailCode: async (code) => {
+      if (code !== '123456') throw new Error('Invalid code');
+      return signIn('email');
+    },
     signOut: async () => {
       ctx.result();
       generation += 1;

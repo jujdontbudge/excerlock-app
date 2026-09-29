@@ -1,8 +1,8 @@
 ---
 id: account
 title: Identity and account deletion
-routes: [settings/account, sign-in]
-scenarios: [signed-in-apple, trial-active]
+routes: [settings/account, sign-in, recovery]
+scenarios: [signed-in-apple, trial-active, returning-unpaid]
 server: [PUT /v1/user, DELETE /v1/user]
 depends: [setup]
 ---
@@ -37,6 +37,14 @@ scenario: trial-active
 open: /sign-in
 tap: Continue with email
 expect: Sign in with email | Email address | Send code
+```
+
+```proof
+name: unpaid-account-recovery
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple | Account and help
+expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
 ```
 
 ## Gotchas

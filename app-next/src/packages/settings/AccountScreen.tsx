@@ -5,6 +5,7 @@ import { settingsCopy as c } from './lib/settingsCopy';
 import { sessionStore as useSessionStore } from '../identity/sessionStore';
 import { useRuntime } from '../ports/useRuntime';
 import { LivingIcon } from '../ui/LivingIcon';
+import { beginWelcome } from '../journey/index';
 import { Reveal } from '../ui/Reveal';
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
   const session = useSessionStore((s) => s.data.session),
@@ -20,6 +21,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         await runtime.auth.deleteAccount();
         setNote(c.deleted);
       } else await runtime.auth.signOut();
+      beginWelcome();
       setConfirm(false);
     } catch {
       setNote(c.error);

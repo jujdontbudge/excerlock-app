@@ -10,6 +10,7 @@ import { profileStore } from '../../preferences/profileStore';
 import { useRuntime } from '../../ports/useRuntime';
 import { Answers } from '../../model/answers';
 import { applyReviewPreset, isReviewPresetName } from './reviewPreset';
+import { beginPaywall } from '../../journey/index';
 export function useOnboarding() {
   const params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
     router = useRouter(),
@@ -57,7 +58,7 @@ export function useOnboarding() {
     Keyboard.dismiss();
     setDirection(back ? 'back' : 'forward');
     useOnboardingStore.getState().patch({ step: next });
-    if (next === 'P') router.replace('/paywall');
+    if (next === 'P') { beginPaywall(); router.replace('/paywall'); }
     else router.setParams({ step: next });
   };
   return {

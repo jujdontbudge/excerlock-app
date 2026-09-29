@@ -9,8 +9,10 @@ import { sessionStore } from '../../identity/sessionStore';
 import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/launchSignInGate';
+import { beginWelcome } from '../../journey/index';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
+  beginWelcome();
   authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
   resetStores();

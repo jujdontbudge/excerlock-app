@@ -658,6 +658,13 @@ export class SupabaseAuthAdapter implements AuthPort {
     });
   }
 
+  async recoverWithEmailCode(code: string): Promise<Session> {
+    const normalizedCode = validateOtpCode(code);
+    if (!this.pendingEmail || this.pendingFlow !== 'recovery')
+      throw new AuthError('Please request a code first.', { code: 'OTP_NO_PENDING' });
+    return this.verifyRecoveryEmail(normalizeEmail(this.pendingEmail), normalizedCode);
+  }
+
   private async verifyRecoveryEmail(email: string, code: string): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
@@ -709,7 +716,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         }
         this.assertTransition(nextGeneration);
         this.expectedSignedOutGenerations.add(nextGeneration);
-        const { error } = await this.runSdk(() => this.supabase.auth.signOut());
+        const { error } = await this.runSdk(() => this.supabase.auth.signOut({ scope: 'local' }));
         if (this.generation !== nextGeneration || this.disposed) return;
         if (error) throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_FAILED' });
         this.currentSession = { kind: 'anonymous' };

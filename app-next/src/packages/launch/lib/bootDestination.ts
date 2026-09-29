@@ -1,16 +1,10 @@
-import { Entitlement } from '../../model/types';
-export function bootDestination(
-  complete: boolean,
-  step: string,
-  entitlement: Entitlement['status'],
-  setupComplete = true,
-  launchApproved = false,
-): string | null {
-  if (complete && setupComplete) return launchApproved ? '/(tabs)/home' : '/sign-in';
-  if (entitlement === 'unknown') return null;
-  if (entitlement === 'trial' || entitlement === 'active') return setupComplete
-    ? launchApproved ? '/(tabs)/home' : '/sign-in'
-    : '/setup/X1';
-  if (!complete) return step === 'P' ? '/paywall' : `/onboarding/${step}`;
-  return '/paywall';
+import type { JourneyState } from '../../journey/index';
+
+export function bootDestination(phase: JourneyState['phase'], step: string, canEnterApp: boolean): string {
+  if (phase === 'welcome') return '/onboarding/O01';
+  if (phase === 'onboarding') return `/onboarding/${step === 'P' ? 'O01' : step}`;
+  if (phase === 'paywall') return '/paywall';
+  if (phase === 'signIn' || phase === 'verifying') return '/sign-in';
+  if (phase === 'setup') return '/setup/X1';
+  return canEnterApp ? '/(tabs)/home' : '/paywall';
 }

@@ -2,16 +2,16 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, trial-active, trial-expired]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
-- `BootGate` restores the persisted stores, then sends the user to the one screen their Journey allows: onboarding, the paywall, setup, or Home.
-- Entitlement guards: without an Entitlement, setup and the tabs redirect to the paywall. An install that is already expired at a cold start gets the win-back placement once per session.
+- `BootGate` restores the persisted stores but starts each new entry at Welcome. A saved session, Setup or Entitlement cannot pick Home.
+- The Journey owns entry choice, account verification and paid admission; main routes require matching explicit authentication and valid Entitlement.
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
 ## How to get to it (user POV)
-Open the app. A first install lands on the welcome screen. A subscriber lands on Home. A lapsed subscriber lands on the paywall.
+Open the app. A first install, returning subscriber, or lapsed subscriber lands on Welcome. Choose the full Onboarding or Sign in; valid subscription and account verification are required before Home.
 
 ## Driving it with excer
 `./excer sim start` launches the app on the real boot path. Then `./excer demo <scenario> --open /` shows where each Journey lands.
@@ -24,9 +24,42 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
-name: subscriber-lands-home
-scenario: trial-active
+name: subscriber-starts-welcome
+scenario: returning-signed-in
 open: /
+expect: Block apps. Move more. | Get started | Sign in
+```
+
+```proof
+name: unpaid-starts-welcome
+scenario: returning-unpaid
+open: /
+expect: Block apps. Move more. | Get started | Sign in
+```
+
+```proof
+name: returning-unpaid-to-paywall
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+```
+
+```proof
+name: unpaid-home-deep-link-blocked
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+then-open: /home
+then-expect: Start for free | Restore purchases
+```
+
+```proof
+name: returning-paid-after-signin
+scenario: returning-signed-in
+open: /
+tap: Sign in | Continue with Apple
 expect: day streak | Apps blocked until
 ```
 
