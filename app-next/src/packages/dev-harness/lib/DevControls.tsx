@@ -39,6 +39,7 @@ export function DevControls() {
     <>
       <SettingsGroup title="Account data">
         <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
+        <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
         <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
@@ -75,6 +76,7 @@ export function DevControls() {
         <SettingsRow title={`Deletion isolation ${view.subscriptionLab?.deletionIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Transfer isolation ${view.subscriptionLab?.transferIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Concurrent restore ${view.subscriptionLab?.concurrentRestoreIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Linked providers ${view.subscriptionLab?.providerLinking ?? 'Not run'}`} />
         <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
         <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
       </SettingsGroup>

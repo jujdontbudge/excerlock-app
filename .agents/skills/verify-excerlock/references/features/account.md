@@ -2,12 +2,13 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-established-provider-conflict]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-established-provider-conflict]
 server: [PUT /v1/user, DELETE /v1/user]
 depends: [setup]
 ---
 ## Sub-features
 - Identity is anonymous, or signed in with Apple, Google or an email code, through Supabase. The server keeps a canonical user (ADR 0011).
+- A verified additional Apple or Google login can link to one established canonical account; a provider already owned by another account requires explicit recovery and never merges account data.
 - Account screen: sign in, sign out and delete account. Signing out revokes main-app access until a new explicit sign-in.
 - Account deletion erases server data and returns the app to an anonymous session behind the sign-in gate.
 - An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
@@ -17,6 +18,15 @@ Settings → the profile row → Account. From the hard Paywall, open Account an
 
 ## Driving it with excer
 Run `./excer demo signed-in-apple --open /settings/account`. To assert what the server did, run it locally and check the database. `./excer server ready` must pass first.
+
+```proof
+name: linked-providers-one-account
+scenario: identity-lab-linked-providers
+open: /dev
+tap: Run linked provider isolation
+wait: 30
+expect: Active account A | Condition owner Account A | History Days 1 | Profile Account A | Saved Gym Gym A | Linked providers canonical lab-user-a Apple lab-user-a Google lab-user-a accounts 1 grants 1 conflict recovery required data A account-a/1/Account A/Gym A data Apple account-a/1/Account A/Gym A data Google account-a/1/Account A/Gym A data conflict account-a/1/Account A/Gym A | lab_link_identity {"provider":"google","result":"ok"} | lab_link_identity {"provider":"apple","result":"conflict"} | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_recovered_account {"provider":"google","user":"lab-user-a"}
+```
 
 ```proof
 name: established-provider-conflict-stays-separated

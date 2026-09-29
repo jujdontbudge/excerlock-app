@@ -67,6 +67,8 @@ export interface AuthPort {
   identity(): AuthIdentity;
   signInWithApple(): Promise<Session>;
   signInWithGoogle(): Promise<Session>;
+  linkWithApple(): Promise<Session>;
+  linkWithGoogle(): Promise<Session>;
   recoverWithApple(): Promise<Session>;
   recoverWithGoogle(): Promise<Session>;
   sendEmailCode(email: string): Promise<void>;

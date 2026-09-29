@@ -76,6 +76,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { localSignOut: true },
   }),
+  base('identity-lab-linked-providers', 'Identity lab · linked providers on one account', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', linkedProviders: true },
+  }),
   base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedProviderConflict: true },

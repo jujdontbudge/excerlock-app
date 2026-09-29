@@ -32,6 +32,8 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     identity,
     signInWithApple: () => signIn('apple'),
     signInWithGoogle: () => signIn('google'),
+    linkWithApple: () => signIn('apple'),
+    linkWithGoogle: () => signIn('google'),
     recoverWithApple: () => signIn('apple'),
     recoverWithGoogle: () => signIn('google'),
     sendEmailCode: async (value) => {

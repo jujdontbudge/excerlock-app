@@ -365,6 +365,23 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           providerConflict: current?.providerConflict,
         } });
       },
+      runLabProviderLinking: async () => {
+        const result = await identityLab.runProviderLinking(seedAccount, accountCheckpoint);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: current?.callbackIsolation,
+          deletionIsolation: current?.deletionIsolation,
+          transferIsolation: current?.transferIsolation,
+          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
+          providerLinking: `canonical ${result.canonical} Apple ${result.apple} Google ${result.google} accounts ${result.accounts} grants ${result.grants} conflict ${result.conflict} data A ${result.initialData} data Apple ${result.appleData} data Google ${result.googleData} data conflict ${result.conflictData}`,
+          providerConflict: current?.providerConflict,
+          localSignOutIsolation: current?.localSignOutIsolation,
+        } });
+      },
       runLabLocalSignOut: async () => {
         const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
         const journeyCheckpoint = async (action?: 'admit' | 'reset') => {

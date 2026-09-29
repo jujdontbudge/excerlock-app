@@ -65,6 +65,7 @@ export type IdentityLabScript = {
   establishedTransfer?: boolean;
   secondSubscription?: boolean;
   concurrentRestore?: boolean;
+  linkedProviders?: boolean;
   establishedProviderConflict?: boolean;
   localSignOut?: boolean;
 };

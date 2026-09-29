@@ -81,6 +81,21 @@ export type IdentityLab = {
     transfers: number;
     grantLedger: string;
   }>;
+  runProviderLinking(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+  ): Promise<{
+    canonical: string;
+    apple: string;
+    google: string;
+    accounts: number;
+    grants: number;
+    conflict: string;
+    initialData: string;
+    appleData: string;
+    googleData: string;
+    conflictData: string;
+  }>;
   runLocalSignOut(
     seedAccount: (account: 'A' | 'B') => Promise<void>,
     accountCheckpoint: () => string,
@@ -143,6 +158,7 @@ export async function createIdentityLab(
     resolve(profile: AdaptyProfile): void;
   }[] = [];
   let rejectNextAccountReset = false;
+  let rejectNextProviderLink = false;
   const activeSessionTokens = new Set<string>();
   const signOutScopes: string[] = [];
   let services: AuthServices | undefined;
@@ -207,11 +223,20 @@ export async function createIdentityLab(
       },
       linkIdentity: async ({ provider }: { provider: string }) => {
         attempts.link += 1;
-        const result = script.appleLink ?? 'ok';
+        const result = rejectNextProviderLink ? 'conflict' : script.appleLink ?? 'ok';
+        rejectNextProviderLink = false;
         ctx.log('lab_link_identity', { provider, result });
         if (result === 'conflict' || !stored)
           return { data: { user: null, session: null }, error: Object.assign(new Error('Identity is already linked to another user'), { status: 422 }) };
-        return signedIn({ ...stored.user, is_anonymous: false, identities: [{ provider }], app_metadata: { provider } });
+        const linked: LabUser = {
+          ...stored.user,
+          is_anonymous: false,
+          identities: [...stored.user.identities.filter((identity) => identity.provider !== provider), { provider }],
+          app_metadata: { provider },
+        };
+        providerUsers.set(provider, linked);
+        usersById.set(linked.id, linked);
+        return signedIn(linked);
       },
       signInWithIdToken: async ({ provider }: { provider: string }) => {
         const result = signedIn(newUser(provider));
@@ -273,6 +298,7 @@ export async function createIdentityLab(
       deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
       transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
       concurrentRestoreIsolation: ctx.snapshot().subscriptionLab?.concurrentRestoreIsolation,
+      providerLinking: ctx.snapshot().subscriptionLab?.providerLinking,
       localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
@@ -719,6 +745,55 @@ export async function createIdentityLab(
         restores: attempts.restore,
         transfers,
         grantLedger,
+      };
+    },
+    runProviderLinking: async (seedAccount, accountCheckpoint) => {
+      if (!script.linkedProviders) throw new Error('Linked providers are not scripted');
+      await auth.recoverWithApple();
+      const canonical = await services?.waitForIdentityReady();
+      if (!canonical?.userId) throw new Error('Canonical account did not become ready');
+      await seedAccount('A');
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: canonical.userId, status: 'active' });
+      profileListener?.(profile(canonical.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const initialData = accountCheckpoint();
+
+      await auth.linkWithGoogle();
+      await services?.waitForIdentityReady();
+
+      await auth.recoverWithApple();
+      const apple = await services?.waitForIdentityReady();
+      if (!apple?.userId) throw new Error('Apple account did not become ready');
+      const appleData = accountCheckpoint();
+
+      await auth.recoverWithGoogle();
+      const google = await services?.waitForIdentityReady();
+      if (!google?.userId) throw new Error('Google account did not become ready');
+      const googleData = accountCheckpoint();
+
+      rejectNextProviderLink = true;
+      let conflict = 'missing';
+      try {
+        await auth.linkWithApple();
+      } catch (error) {
+        if ((error as { code?: unknown })?.code !== 'AUTH_RECOVERY_REQUIRED') throw error;
+        conflict = 'recovery required';
+      }
+      const afterConflict = auth.identity();
+      if (afterConflict.userId !== canonical.userId) throw new Error('Provider conflict changed the canonical account');
+      const conflictData = accountCheckpoint();
+      updateSubscriptionLab();
+      return {
+        canonical: canonical.userId,
+        apple: apple.userId,
+        google: google.userId,
+        accounts: new Set([...providerUsers.values()].map((user) => user.id)).size,
+        grants: grants.size,
+        conflict,
+        initialData,
+        appleData,
+        googleData,
+        conflictData,
       };
     },
     runLocalSignOut: async (seedAccount, accountCheckpoint, journeyCheckpoint) => {

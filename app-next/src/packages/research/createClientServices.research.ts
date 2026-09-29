@@ -43,6 +43,8 @@ function createLabAuth(): AuthPort {
     waitForCanonicalIdentity: async () => LAB_IDENTITY,
     signInWithApple: async () => { throw new LabIdentityUnavailableError(); },
     signInWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
+    linkWithApple: async () => { throw new LabIdentityUnavailableError(); },
+    linkWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
     recoverWithApple: async () => { throw new LabIdentityUnavailableError(); },
     recoverWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
     sendEmailCode: async () => { throw new LabIdentityUnavailableError(); },
