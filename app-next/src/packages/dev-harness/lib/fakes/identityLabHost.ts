@@ -161,6 +161,15 @@ export function identityLabHost(
     if (!lab) throw new Error('Identity lab is unavailable');
     return lab.runPassiveEntry(seedAccount, accountCheckpoint);
   };
+  const runLifecycleRevocation = async (
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    journeyCheckpoint: Parameters<IdentityLab['runLifecycleRevocation']>[2],
+  ) => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runLifecycleRevocation(seedAccount, accountCheckpoint, journeyCheckpoint);
+  };
   return {
     start,
     stop,
@@ -175,5 +184,6 @@ export function identityLabHost(
     runStaleProductHandle,
     runIndependentRestore,
     runPassiveEntry,
+    runLifecycleRevocation,
   };
 }

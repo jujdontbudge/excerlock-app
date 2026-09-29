@@ -2,7 +2,7 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, reinstall-keychain, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
@@ -38,11 +38,50 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
+name: reinstall-keychain-stays-welcome
+scenario: reinstall-keychain
+open: /
+expect: Block apps. Move more. | Get started | Sign in
+```
+
+```proof
+name: cached-entitlement-does-not-skip-onboarding
+scenario: returning-signed-in
+open: /
+tap: Get started | Get started | Get started
+expect: What is your gender? | Continue
+then-open: /paywall
+then-expect: What is your gender? | Continue
+```
+
+```proof
 name: returning-unpaid-to-paywall
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
 expect: Start for free | Restore purchases
+```
+
+```proof
+name: returning-expired-to-paywall
+scenario: returning-expired
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases | Close
+then-open: /dev
+then-expect: Journey paywall | Protected route mounts | None
+```
+
+```proof
+name: remote-flags-not-authority
+scenario: returning-unpaid-remote-bypass-attempt
+open: /
+tap: Sign in | Continue with Apple
+expect: Start for free | Restore purchases
+deny-routes: protected
+deny-expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in optional review preset enabled paywall variant error | Protected route mounts | None
 ```
 
 ```proof

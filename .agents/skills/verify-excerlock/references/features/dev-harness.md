@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry, identity-lab-lifecycle-revocation]
 depends: [launch]
 ---
 ## Sub-features
@@ -121,6 +121,24 @@ open: /dev
 tap: Run passive entry
 wait: 30
 expect: Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Restore operations 0 | Passive entry store owner lab-user-a passive target lab-user-b target Entitlement none source Entitlement active transfers 0 restores 0 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B A restored account-a/1/Account A/Gym A | Protected route mounts | None
+```
+
+```proof
+name: subscription-lease-boundaries-fail-closed
+scenario: fresh-install
+open: /dev
+tap: Run subscription lease diagnostics
+expect: Lease diagnostics offline first unavailable eligible eligible offline mid-lease unavailable/retained rollback retained five-minute cap expired short eligible before boundary active at boundary expired missing expiry unavailable denial ineligible/cleared | Protected route mounts | None
+```
+
+```proof
+name: admitted-account-revocation-replaces-app
+scenario: identity-lab-lifecycle-revocation
+open: dev?lab=lifecycle-revocation
+wait: 30
+expect: Start for free | Restore purchases
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Lifecycle revocation before app/admitted after paywall/revoked Entitlement none data account-a/1/Account A/Gym A | Protected route mounts | None
 ```
 
 ## Gotchas

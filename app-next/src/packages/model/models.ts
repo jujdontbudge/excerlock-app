@@ -52,6 +52,11 @@ export type Scenario = {
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;
+  remoteFlags?: {
+    signInRequired?: boolean;
+    reviewPreset?: boolean;
+    paywallVariant?: 'control' | 'variant_b' | 'error';
+  };
 };
 export type IdentityLabScript = {
   anonymousSignIn?: 'ok' | 'failFirst';
@@ -74,5 +79,6 @@ export type IdentityLabScript = {
   wrongStoreAccount?: boolean;
   independentRestore?: boolean;
   passiveEntry?: boolean;
+  lifecycleRevocation?: boolean;
 };
 export type Unsubscribe = () => void;

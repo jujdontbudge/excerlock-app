@@ -42,6 +42,8 @@ export function DevControls() {
         <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
         <SettingsRow title="Run independent restore" onPress={() => void runAccountAction(() => dev.runLabIndependentRestore())} />
         <SettingsRow title="Run passive entry" onPress={() => void runAccountAction(() => dev.runLabPassiveEntry())} />
+        <SettingsRow title="Run subscription lease diagnostics" onPress={() => void runAccountAction(() => dev.runSubscriptionLeaseDiagnostics())} />
+        <SettingsRow title="Run lifecycle revocation" onPress={() => void runAccountAction(() => dev.runLabLifecycleRevocation())} />
         <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
         <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
@@ -89,6 +91,9 @@ export function DevControls() {
         <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
         <SettingsRow title={`Restore isolation ${view.subscriptionLab?.restoreIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
+        <SettingsRow title={`Lease diagnostics ${view.subscriptionLab?.leaseDiagnostics ?? 'Not run'}`} />
+        <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
+        {view.remoteFlags ? <SettingsRow title={`Remote flags ${view.remoteFlags}`} /> : null}
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />

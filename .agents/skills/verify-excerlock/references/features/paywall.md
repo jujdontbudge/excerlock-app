@@ -169,6 +169,17 @@ then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"res
 ```
 
 ```proof
+name: signin-first-purchase-needs-no-second-signin
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple | Start for free
+wait: 25
+expect: Home | Locked
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | signed_in {"provider":"apple"} | purchase_started {"placement":"winback","plan_id":"fake.annual"} | Protected route mounts | None
+```
+
+```proof
 name: identity-restore-to-required-signin
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall&restore=restored

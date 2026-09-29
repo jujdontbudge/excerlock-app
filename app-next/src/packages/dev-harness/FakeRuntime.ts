@@ -31,8 +31,9 @@ import { rulesStore } from '../conditions/rulesStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { isAccountDataReady } from '../model/accountDataReady';
 import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake';
+import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
-import { beginWelcome, currentJourney, finishSetup, verifySelectedAccount } from '../journey/index';
+import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -183,6 +184,9 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
           promptMode: scenario.fakeSystemPrompts, history: scenario.history, events: [], accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still', protectedRouteMounts: [],
+          remoteFlags: scenario.remoteFlags
+            ? `sign-in ${scenario.remoteFlags.signInRequired === true ? 'required' : 'optional'} review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
+            : undefined,
           otaResume: null,
         });
         walking.resume();
@@ -458,6 +462,108 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           passiveEntry: `store owner ${result.owner} passive target ${result.passiveTarget} target Entitlement ${result.targetEntitlement} source Entitlement ${result.sourceEntitlement} transfers ${result.transfers} restores ${result.restores} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
         } });
       },
+      runSubscriptionLeaseDiagnostics: async () => {
+        const identity = { userId: 'lease-user', generation: 7 };
+        let monotonic = 1000;
+        let response: 'eligible' | 'offline' | 'short' | 'missing' | 'denied' = 'offline';
+        const verifiedAt = '2026-09-29T17:00:00.000Z';
+        const fetchImpl = (async () => {
+          if (response === 'offline') throw new TypeError('Network unavailable');
+          const expiresAt = response === 'short'
+            ? '2026-09-29T17:00:01.000Z'
+            : response === 'missing'
+              ? null
+              : '2026-09-29T17:10:00.000Z';
+          const denied = response === 'denied';
+          return {
+            ok: true,
+            json: async () => ({
+              accountId: identity.userId,
+              verifiedAt,
+              authorization: {
+                environment: 'sandbox',
+                status: denied ? 'expired' : 'active',
+                hasAccess: !denied,
+                expiresAt,
+                observedAt: verifiedAt,
+                source: 'webhook',
+              },
+            }),
+          } as Response;
+        }) as typeof fetch;
+        const admission = createServerSubscriptionAdmission({
+          apiBaseUrl: 'https://lease.invalid',
+          environment: 'sandbox',
+          getAuthContext: async () => ({ accessToken: 'redacted', ...identity }),
+          getIdentity: () => identity,
+          fetchImpl,
+          monotonicNow: () => monotonic,
+        });
+        const offlineFirst = await admission.verify(identity);
+        response = 'eligible';
+        const eligible = await admission.verify(identity);
+        monotonic += 4 * 60_000;
+        response = 'offline';
+        const offlineMidLease = await admission.verify(identity);
+        const retainedOffline = Boolean(admission.current(identity));
+        const retainedRollback = Boolean(admission.current(identity));
+        monotonic += 61_000;
+        const expiredAtCap = admission.current(identity) === null;
+
+        monotonic = 0;
+        response = 'short';
+        const short = await admission.verify(identity);
+        monotonic = 999;
+        const beforeBoundary = Boolean(admission.current(identity));
+        monotonic = 1000;
+        const atBoundary = admission.current(identity) === null;
+
+        response = 'missing';
+        const missing = await admission.verify(identity);
+        response = 'eligible';
+        await admission.verify(identity);
+        response = 'denied';
+        const denied = await admission.verify(identity);
+        const clearedOnDenial = admission.current(identity) === null;
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          leaseDiagnostics: `offline first ${offlineFirst.type} eligible ${eligible.type} offline mid-lease ${offlineMidLease.type}/${retainedOffline ? 'retained' : 'lost'} rollback ${retainedRollback ? 'retained' : 'lost'} five-minute cap ${expiredAtCap ? 'expired' : 'active'} short ${short.type} before boundary ${beforeBoundary ? 'active' : 'expired'} at boundary ${atBoundary ? 'expired' : 'active'} missing expiry ${missing.type} denial ${denied.type}/${clearedOnDenial ? 'cleared' : 'retained'}`,
+        } });
+      },
+      runLabLifecycleRevocation: async () => {
+        const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
+        const journeyCheckpoint = async (action: 'admit' | 'refresh') => {
+          if (action === 'admit') {
+            const verified = await verifySelectedAccount(journeyRuntime);
+            if (verified !== 'paid' || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
+          } else await refreshAdmission(journeyRuntime);
+          const journey = currentJourney();
+          const identity = auth.identity();
+          const admission = journey.admission;
+          const admitted = Boolean(
+            admission &&
+            identity.kind === 'canonical' &&
+            identity.ready &&
+            identity.userId === admission.userId &&
+            identity.generation === admission.generation &&
+            subscriptionAdmission.current(admission),
+          );
+          return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
+        };
+        const result = await identityLab.runLifecycleRevocation(seedAccount, accountCheckpoint, journeyCheckpoint);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          lifecycleRevocation: `before ${result.before} after ${result.after} Entitlement ${result.entitlement} data ${result.data}`,
+        } });
+      },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);
       },
@@ -482,9 +588,19 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     subscription,
     subscriptionAdmission,
     analytics: AnalyticsFake(ctx),
-    reviewPreset: { isEnabled: async () => false, expose: () => undefined },
-    experiments: { getPaywallVariant: async () => 'control', trackPaywallVariantExposure: () => undefined },
-    signInRequired: { isRequired: async () => false },
+    reviewPreset: {
+      isEnabled: async () => ctx.scenario.remoteFlags?.reviewPreset ?? false,
+      expose: () => undefined,
+    },
+    experiments: {
+      getPaywallVariant: async () => {
+        const variant = ctx.scenario.remoteFlags?.paywallVariant ?? 'control';
+        if (variant === 'error') throw new Error('Simulated paywall variant failure');
+        return variant;
+      },
+      trackPaywallVariantExposure: () => undefined,
+    },
+    signInRequired: { isRequired: async () => ctx.scenario.remoteFlags?.signInRequired ?? false },
     onboardingFlow: { order: () => null, load: async () => null, subscribe: () => () => undefined },
     notifications: NotificationsFake(ctx),
     notificationResponses,

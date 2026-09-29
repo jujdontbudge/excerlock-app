@@ -83,6 +83,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', passiveEntry: true },
   }),
+  base('identity-lab-lifecycle-revocation', 'Identity lab · Entitlement revocation while admitted', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', lifecycleRevocation: true },
+  }),
   base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },

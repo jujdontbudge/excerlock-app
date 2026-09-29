@@ -148,6 +148,16 @@ export type IdentityLab = {
     targetData: string;
     sourceRestored: string;
   }>;
+  runLifecycleRevocation(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    journeyCheckpoint: (action: 'admit' | 'refresh') => Promise<string>,
+  ): Promise<{
+    before: string;
+    after: string;
+    entitlement: string;
+    data: string;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -443,6 +453,7 @@ export async function createIdentityLab(
         ? `wrong Store owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} transfers ${transfers}`
         : ctx.snapshot().subscriptionLab?.restoreIsolation,
       passiveEntry: ctx.snapshot().subscriptionLab?.passiveEntry,
+      lifecycleRevocation: ctx.snapshot().subscriptionLab?.lifecycleRevocation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -1159,6 +1170,28 @@ export async function createIdentityLab(
         sourceData,
         targetData,
         sourceRestored,
+      };
+    },
+    runLifecycleRevocation: async (seedAccount, accountCheckpoint, journeyCheckpoint) => {
+      if (!script.lifecycleRevocation) throw new Error('Lifecycle revocation is not scripted');
+      await auth.recoverWithApple();
+      const selected = await services?.waitForIdentityReady();
+      if (!selected?.userId) throw new Error('Revocation account did not become ready');
+      await seedAccount('A');
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
+      profileListener?.(profile(selected.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const before = await journeyCheckpoint('admit');
+      grants.delete(STORE_SUBSCRIPTION_ID);
+      profileListener?.(profile(selected.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const after = await journeyCheckpoint('refresh');
+      updateSubscriptionLab();
+      return {
+        before,
+        after,
+        entitlement: adapter.entitlement().status,
+        data: accountCheckpoint(),
       };
     },
     dispose: async () => {
