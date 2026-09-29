@@ -57,6 +57,7 @@ export const subscriptionCopy = {
   notFound: 'No active purchase was found.',
   restored: 'Your purchase has been restored.',
   cancelled: 'Choose a plan to continue.',
+  loadingPlans: 'Loading plans…',
   purchasing: 'Starting your plan…',
   restoring: 'Restoring purchases…',
   devNote: 'Paywall stand-in. Prices and the 7-day trial are placeholders. No purchase occurs.',

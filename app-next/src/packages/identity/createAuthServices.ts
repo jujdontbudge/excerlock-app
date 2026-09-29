@@ -184,6 +184,17 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
 
   coordinator.start();
 
+  const recoverIdentity = async (): Promise<void> => {
+    if (auth.identity().kind === 'provisional') await auth.retryBoot();
+    for (let attempt = 0; attempt < 2 && auth.identity().kind === 'canonical' && !coordinator!.isReady(); attempt += 1)
+      await coordinator!.retry();
+  };
+  const waitForIdentityReady: AuthServices['waitForIdentityReady'] = (options) => {
+    const ready = coordinator!.waitForIdentityReady(options);
+    void recoverIdentity().catch(() => undefined);
+    return ready;
+  };
+
   let disposal: Promise<void> | null = null;
   const dispose = (): Promise<void> => {
     if (disposal) return disposal;
@@ -204,7 +215,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   return {
     auth,
     coordinator: coordinator!,
-    waitForIdentityReady: (options) => coordinator!.waitForIdentityReady(options),
+    waitForIdentityReady,
     runIdentityOperation,
     dispose,
   };

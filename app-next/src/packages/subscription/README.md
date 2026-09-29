@@ -4,7 +4,7 @@
 
 Identity setup is `activate` once, one `onLatestProfileLoad` listener, then awaited `identify(uid)` from the auth spine. Identify deliberately does not await the ready gate, which would deadlock the spine. Purchase and restore set busy before awaiting the ready gate, enter the global identity serializer afterward, then await `setIntegrationIdentifier('posthog_distinct_user_id', distinctId)` immediately before the native SDK call.
 
-`loadPaywall` awaits the same identity-ready gate as purchase and restore before it reads the expected identity, so a paywall opened while the identity spine is still identifying waits (up to the gate's 15s) instead of failing with "Canonical subscription identity unavailable" (App Review 2.1(b), Sep 28 2026; Sentry EXCERLOCK-MOBILE-X).
+`loadPaywall` awaits the same identity-ready gate as purchase and restore before it reads the expected identity, so a paywall opened while the identity spine is still identifying waits (up to the gate's 15s, showing "Loading plans…") instead of failing with "Canonical subscription identity unavailable" (App Review 2.1(b), Sep 28 2026; Sentry EXCERLOCK-MOBILE-X). Waiting on the gate also retries a spine that failed earlier in the session (see the identity README); the wait alone only covers a spine that is still running.
 
 SDK 4 custom paywalls use `getFlow(placement, { fetchPolicy, loadTimeoutMs })`, `getPaywallProducts(flow)`, and `logShowFlow(flow)`. Returned product order and exact opaque SDK objects are retained behind generation/variation-bound public handles; stale handles fail. No static prices or product fallback are used. UI renders localized price, localized period, eligible returned offer, renewal disclosure, Terms, and Privacy.
 
