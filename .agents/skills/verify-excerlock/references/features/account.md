@@ -10,9 +10,10 @@ depends: [setup]
 - Identity is anonymous, or signed in with Apple, Google or an email code, through Supabase. The server keeps a canonical user (ADR 0011).
 - Account screen: sign in, sign out and delete account. Signing out revokes main-app access until a new explicit sign-in.
 - Account deletion erases server data and returns the app to an anonymous session behind the sign-in gate.
+- An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
 
 ## How to get to it (user POV)
-Settings → the profile row → Account.
+Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface.
 
 ## Driving it with excer
 Run `./excer demo signed-in-apple --open /settings/account`. To assert what the server did, run it locally and check the database. `./excer server ready` must pass first.
@@ -56,6 +57,16 @@ scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple | Account and help
 expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
+```
+
+```proof
+name: recovery-without-subscription
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple | Account and help | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
+expect: Account | Signed in with Apple | Delete account
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | subscription_management_opened {} | export_requested {"rules":1,"days":1,"earnedUnlocks":0,"visits":0} | restore {} | Protected route mounts | None
 ```
 
 ## Gotchas

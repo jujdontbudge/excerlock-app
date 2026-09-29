@@ -92,7 +92,9 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
     recoveryReady: async () => undefined,
     clearRecovery: async () => undefined,
     subscribeRecovery: () => () => undefined,
-    manageSubscription: async () => undefined,
+    manageSubscription: async () => {
+      ctx.log('subscription_management_opened');
+    },
     subscribe: (callback) => entitlementStore.subscribe((s) => callback(s.data.entitlement)),
   };
 }
