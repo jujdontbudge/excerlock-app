@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-09-29
 ---
 
@@ -7,7 +7,7 @@ date: 2026-09-29
 
 ## Decision
 
-Every new Journey starts at the first Onboarding page. A user chooses the entire Onboarding → Paywall → purchase/restore → authentication → needed Setup path, or explicitly signs in from Welcome. A signed-in account with verified eligible subscription may enter the app; an unpaid account reaches a hard Paywall. Saved Setup, local session labels, a cached Entitlement, and a paid receipt on the same phone are not admission by themselves. Account deletion, purchase restoration, support and legal access remain outside the paid routes.
+Every cold app launch starts a new Journey at the first Onboarding page, including an admitted subscriber reopening after force quit. A user chooses the entire Onboarding → Paywall → purchase/restore → authentication → needed Setup path, or explicitly signs in from Welcome. An existing subscriber may use Sign in from Welcome; only that explicit authentication plus verified eligible account-bound subscription may enter the app. Saved Setup, local session labels, a cached Entitlement, and a paid receipt on the same phone are not admission by themselves. Cold-launch reset clears only process-local Journey admission and does not erase accounts, Conditions, History, profile, saved permissions, native schedules, or unfinished transaction recovery. Account deletion, purchase restoration, support and legal access remain outside the paid routes.
 
 A purchase before authentication must be recoverable and connected to the selected canonical account. Existing accounts can be selected; a same-device different UID is not inherently an error. Moving a subscription between two established accounts does not merge their personal data. Automatic sharing of one subscription across arbitrarily many accounts is not the proposed policy.
 
@@ -23,13 +23,13 @@ An OTA resume envelope is navigation continuity only. It is consumed once and cl
 
 TestFlight build 14 implemented ADR 0049's explicit sign-in on launch but opened sign-in immediately for a returning install, then entered Home after authentication without an account-bound subscription check. ADR 0024 deliberately allowed post-Setup Home after lapse. Both conflict with the owner's explicit hard Paywall request. ADR 0043's payment-then-sign-in order remains the default full-Onboarding path; a Welcome sign-in is the shortcut for existing subscribers.
 
-The ownership transfer policy, Adapty production/sandbox sharing settings, webhook delivery behavior, same-device private-data isolation, and whether ordinary cold reopens return to Welcome versus resume remain open implementation/release gates. Code and simulator fixture success cannot resolve them.
+The ownership transfer policy, Adapty production/sandbox sharing settings, webhook delivery behavior, and same-device private-data isolation remain open implementation/release gates. The owner has explicitly settled ordinary cold reopens as Welcome-first on every cold launch; a cached admitted state must never resume Home.
 
 ## Consequences
 
 A Journey package owns admission and the launch package consumes it. Identity and Subscription remain separate lower-layer concepts. An unknown verification state shows retry and cannot enter Home; lapsed premium routes are removed while privacy/account recovery stays available. Simulator proofs need negative route-history assertions and real receipt/account ownership fixtures. Signed real-device/provider/StoreKit, server-environment, and native Enforcement proofs are mandatory before describing a build as fixed.
 
-No production settings, transfers, data, pricing or releases change by accepting this proposed ADR. If ordinary cold-reopen semantics differ, decide them explicitly before release.
+No production settings, transfers, data, pricing or releases change by accepting this ADR. Foreground return in the same process remains operation continuity; it must not be confused with a cold process launch.
 
 ## References
 

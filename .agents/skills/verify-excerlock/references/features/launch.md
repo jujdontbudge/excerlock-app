@@ -31,6 +31,18 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
+name: admitted-cold-relaunch-starts-welcome
+scenario: returning-signed-in
+open: /
+tap: Sign in | Continue with Apple
+expect: day streak | Apps blocked until
+relaunch-after-expect: true
+after-relaunch-expect: Block apps. Move more. | Get started | Sign in
+then-open: /dev
+then-expect: Journey welcome · paid no · admitted no | Conditions | 1 | Profile Alex | active | Protected route mounts | None
+```
+
+```proof
 name: unpaid-starts-welcome
 scenario: returning-unpaid
 open: /

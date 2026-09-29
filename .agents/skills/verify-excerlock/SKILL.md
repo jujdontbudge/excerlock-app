@@ -51,6 +51,7 @@ Proof fields:
 - `open`: a route or URL.
 - `prompt`: `grant` (the default), `deny` or `ask`.
 - `relaunch: true`: cold-launch again after the load, for behavior that happens only at startup.
+- `relaunch-after-expect: true` and `after-relaunch-expect`: after the initial actions and `expect` pass, save a before-relaunch screenshot, cold-relaunch, and require the second label set. Use this to prove a transition from a genuinely established runtime state across process death.
 - `tap`: labels to tap in order after `open`, separated by `|`. Use it to change state without a deep link, because opening a URL rebuilds navigation and remounts screens.
 - `actions`: ordered `tap <label>` and `type <text>` actions separated by `|`. Use it for a user path that interleaves form entry and buttons. Typed values are redacted to their character counts in `result.json`.
 - `gesture: back`: performs and records one iOS edge-swipe after the taps and before checking `expect`.

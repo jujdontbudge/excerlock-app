@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { findFeature, protectedAppRoutes, type Proof } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, screenshot, swipeBack, tap, typeText, waitForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, relaunch, screenshot, swipeBack, tap, typeText, waitForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
 
@@ -19,7 +19,8 @@ type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[
 type NotificationAttempt = { destination: 'home' | 'unlock'; ok: boolean; missing: string[] };
 type GestureAttempt = { gesture: 'back'; result: string };
 type ActionAttempt = { action: 'tap' | 'type'; value: string; result: string };
-type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[] };
+type RelaunchAttempt = { before: string[]; after: string[]; ok: boolean };
+type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[]; relaunchAttempt?: RelaunchAttempt };
 
 async function runProof(feature: string, proof: Proof, dir: string): Promise<Outcome> {
   let udid: string;
@@ -57,6 +58,16 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   }
   const result = await waitForLabels(udid, proof.expect, failedTaps.length > 0 ? 1 : proof.wait);
   result.missing = [...failedTaps, ...result.missing];
+  let relaunchAttempt: RelaunchAttempt | undefined;
+  if (proof.relaunchAfterExpect && result.missing.length === 0) {
+    screenshot(udid, join(dir, `${proof.name}.before-relaunch.png`));
+    await relaunch(udid);
+    const expected = proof.afterRelaunchExpect ?? [];
+    const after = await waitForLabels(udid, expected, proof.wait);
+    relaunchAttempt = { before: proof.expect, after: expected, ok: after.missing.length === 0 };
+    result.missing = after.missing;
+    result.nodes = after.nodes;
+  }
   const routeAttempts: RouteAttempt[] = [];
   const notificationAttempts: NotificationAttempt[] = [];
   if (proof.denyRoutes === 'protected' && result.missing.length === 0) {
@@ -103,7 +114,7 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));
   const treePath = join(dir, `${proof.name}.labels.txt`);
   writeFileSync(treePath, labels(result.nodes).join('\n'));
-  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(actionAttempts.length ? { actionAttempts } : {}), ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}) };
+  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(actionAttempts.length ? { actionAttempts } : {}), ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}), ...(relaunchAttempt ? { relaunchAttempt } : {}) };
 }
 
 export async function proveCommand(args: string[]): Promise<number> {

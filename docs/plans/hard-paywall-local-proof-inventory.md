@@ -17,7 +17,7 @@ Status vocabulary:
 | J02 | PASS_LOCAL | `launch/subscriber-starts-welcome`: `.excer/proof/launch/2026-09-29_17-18-11/` |
 | J03 | PASS_LOCAL | `launch/unpaid-starts-welcome`: `.excer/proof/launch/2026-09-29_17-18-27/` |
 | J04 | PASS_LOCAL_DEVICE_GAP | Reinstall/keychain fixture: `.excer/proof/launch/2026-09-29_18-14-17/`; physical uninstall/reinstall remains required. |
-| J05 | BLOCKED_DECISION | ADR 0050 deliberately leaves ordinary admitted cold-reopen policy unresolved. Choosing Welcome versus renewed admission is an owner product decision. |
+| J05 | PASS_LOCAL_DEVICE_GAP | Owner decision is Welcome-first on every cold launch. The focused proof first admits the subscriber to Home, cold-relaunches, then requires Welcome, preserved Condition/profile data, and zero post-relaunch protected mounts. Evidence pending the focused run in this change. Physical force-quit remains device acceptance. |
 | J06 | BLOCKED_EXTERNAL | Foreground continuity during real Apple/Google/email and StoreKit sheets requires provider/device automation. Local operation journals are covered by P05/P08, but no simulator fixture is represented as a real sheet-resume pass. |
 | J07 | PASS_LOCAL_DEVICE_GAP | Cached active Entitlement cannot skip entry: `.excer/proof/launch/2026-09-29_18-18-29/`; full shipped path diagnostic: `.excer/proof/dev-harness/2026-09-29_18-30-08/`; individual Onboarding screen proofs remain in the feature manifest. Physical traversal remains required. |
 | J08 | PASS_LOCAL | Staging before admission: `.excer/proof/onboarding/2026-09-29_06-00-45/`; one admitted commit through checkout: `.excer/proof/paywall/2026-09-29_16-07-06/`. |
@@ -70,7 +70,7 @@ Status vocabulary:
 | G03 | PASS_LOCAL | Restricted recovery works without mounting paid Settings: `.excer/proof/account/2026-09-29_12-54-18/`. |
 | G04 | PASS_LOCAL | Deletion plus late callbacks cannot resurrect identity/access: `.excer/proof/account/2026-09-29_13-18-48/` and `.excer/proof/dev-harness/2026-09-29_13-20-03/`. |
 
-Local app result: 54 cases have local passing evidence. J05 is blocked on an explicit lifecycle-policy decision. J06 is blocked on real provider/StoreKit foreground-resume evidence. Every `PASS_LOCAL_DEVICE_GAP` still needs the corresponding case in the 18-case physical-device manifest; simulator fixtures do not close it.
+Local app result: 55 cases have local passing evidence after the J05 focused run. J06 is blocked on real provider/StoreKit foreground-resume evidence. Every `PASS_LOCAL_DEVICE_GAP` still needs the corresponding case in the 18-case physical-device manifest; simulator fixtures do not close it.
 
 ## Server cases (12)
 

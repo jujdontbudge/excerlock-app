@@ -11,9 +11,9 @@ Two intentional entry paths:
 1. **Get started → complete the existing Onboarding → Paywall → successful purchase or Restore purchases → explicit sign-in/create account → verify subscription ownership for that account → needed Setup → app.** Existing subscribers can take this entire path. Cached entitlement must not skip its questions or Paywall. After an explicit restore/confirmation of an existing subscription, do not charge them again.
 2. **Welcome → Sign in → verify the selected account's Entitlement → app if entitled, otherwise a hard Paywall.** On a new device, ask only for missing local Setup; an existing subscriber need not repeat all Onboarding. An authenticated account without access can subscribe or restore from this Paywall without re-entering its credentials afterward. An unrecognized/no-purchase account does not get Home.
 
-**Lifecycle boundary requiring explicit confirmation:** installation, reinstallation, and sign-out start at Welcome. The previous implementation assumed every genuine cold process launch also requires restarting entry. Do not carry that assumption into this implementation without confirmation: ask whether an already admitted subscriber who force-quits/reopens should see Welcome again or resume the app after subscription validation. The matrix includes the Welcome-on-cold-launch variant, conditional on that answer. Returning from Apple's payment sheet, OAuth, email, iOS Settings, or a brief app switch in the same process resumes the current step. OTA reload behavior must also be explicit and must never preserve payment authority merely from a navigation resume envelope.
+**Settled lifecycle boundary:** installation, reinstallation, sign-out, and every genuine cold process launch start at Welcome, including an admitted subscriber reopening after force quit. Existing subscribers explicitly use Sign in from Welcome; no cached Setup, session, receipt, Entitlement, admission, or navigation envelope may silently resume Home. Returning from Apple's payment sheet, OAuth, email, iOS Settings, or a brief app switch in the same process resumes the current step. OTA reload behavior must never preserve payment authority merely from a navigation resume envelope.
 
-When the approved lifecycle rule starts a new entry, reset the entry decision, **not** purchases, accounts, Conditions, History, saved permissions, or unfinished transaction recovery. Old data is not evidence of new entry authorization. If ordinary cold launches resume an admitted account, that is a separate explicit policy with account-bound admission and renewed subscription validation—not resurrection from `setupComplete`.
+On every cold launch, reset the entry decision, **not** purchases, accounts, Conditions, History, saved permissions, native schedules, or unfinished transaction recovery. Old data is not evidence of new entry authorization.
 
 ### What “paid” means
 
@@ -203,7 +203,7 @@ All screens reuse `ui` components, tokens, ScreenShell, and motion hooks. This i
 
 ### Phase 0 — settle the contract and prove vendor feasibility
 
-1. Confirm the unresolved ordinary-cold-launch boundary stated above, transfer-not-share policy, valid trial/grace treatment, strict online-entry policy, and account-data isolation.
+1. Preserve the settled Welcome-first cold-launch boundary while confirming transfer-not-share policy, valid trial/grace treatment, strict online-entry policy, and account-data isolation.
 2. Record production/sandbox Adapty sharing policy, receipt sync timing, subscription groups, products/grants, and Supabase provider/manual-link configuration **read-only**. Request separate authorization for necessary changes.
 3. Spike actual SDK multi-account behavior and reliable subscription-proof provenance/environment. Prove same UID on two phones; anonymous checkout CUID → existing UID; fresh activation with old Apple receipt; no accidental transfer from passive Welcome.
 4. Choose and document proof transport and ownership mechanism. Resolve the server ambiguity described above. Failed spike = blocked, not a weakened gate.
