@@ -8,8 +8,8 @@ depends: [setup]
 ---
 ## Sub-features
 - Identity is anonymous, or signed in with Apple, Google or an email code, through Supabase. The server keeps a canonical user (ADR 0011).
-- Account screen: sign in, sign out and delete account.
-- Account deletion erases server data and returns the app to an anonymous session.
+- Account screen: sign in, sign out and delete account. Signing out revokes main-app access until a new explicit sign-in.
+- Account deletion erases server data and returns the app to an anonymous session behind the sign-in gate.
 
 ## How to get to it (user POV)
 Settings → the profile row → Account.
@@ -40,5 +40,6 @@ expect: Sign in with email | Email address | Send code
 ```
 
 ## Gotchas
+- A restored signed-in session is not launch approval. `/settings/account` deep links redirect to sign-in until Apple, Google or an email code is completed in this process (ADR 0049; setup/returning-settings-blocked).
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
 - The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.

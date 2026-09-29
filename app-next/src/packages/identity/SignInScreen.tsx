@@ -11,15 +11,18 @@ import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
+import { approveLaunchSignIn } from './launchSignInGate';
 
 export function SignInScreen({
   onContinue,
   signInRequired,
   onExit,
+  requireFreshSignIn = false,
 }: {
   onContinue: () => void;
   signInRequired?: SignInRequiredSource;
   onExit?: () => void;
+  requireFreshSignIn?: boolean;
 }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
@@ -55,6 +58,9 @@ export function SignInScreen({
     };
   }, [flagAttempt, signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const returning = requireFreshSignIn && session.kind === 'signedIn';
+  const title = returning ? c.returningTitle : c.X4;
+  const support = returning ? c.returningBody : c.authBody;
   const signIn = async (provider: 'apple' | 'google' | 'email') => {
     if (busy) return;
     setBusy(true);
@@ -67,7 +73,7 @@ export function SignInScreen({
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
-      if (result.kind === 'signedIn') onContinue();
+      if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
       else setError(c.cancelled);
     } catch (caught) {
       if (isAuthCancelled(caught)) {
@@ -107,10 +113,10 @@ export function SignInScreen({
       setBusy(false);
     }
   };
-  if (session.kind === 'signedIn')
+  if (session.kind === 'signedIn' && !requireFreshSignIn)
     return (
       <>
-        <Heading title={c.X4} support={c.authBody} />
+        <Heading title={title} support={support} />
         <LivingIcon name="check" />
         <Label>{session.email}</Label>
         <PrimaryButton label={c.continue} onPress={onContinue} />
@@ -155,16 +161,16 @@ export function SignInScreen({
                   style={{ width: t.control.row, height: t.control.row }}
                 />
               </Reveal>
-              <Heading title={c.X4} centered />
+              <Heading title={title} centered />
               <Label tone="secondary" style={{ textAlign: 'center' }}>
-                {c.authBody}
+                {support}
               </Label>
             </View>
           ) : (
             <>
               <Heading title={c.emailTitle} centered />
               <Label tone="secondary" style={{ textAlign: 'center' }}>
-                {c.authBody}
+                {support}
               </Label>
             </>
           )}
@@ -240,7 +246,7 @@ export function SignInScreen({
                   recoveryProvider === 'apple' ? runtime.auth.recoverWithApple() : runtime.auth.recoverWithGoogle();
                 void recovery
                   .then((result) => {
-                    if (result.kind === 'signedIn') onContinue();
+                    if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
                     else setError(c.authError);
                   })
                   .catch((caught) => setError(isAuthCancelled(caught) ? c.cancelled : c.authError))

@@ -10,11 +10,10 @@ import { LivingIcon } from '../ui/LivingIcon';
 import { useRuntime } from '../ports/useRuntime';
 import { ScreenTimeAuthorizationError } from '../app-selection/ScreenTimeAuthorizationError';
 import { permissionsStore } from '../permissions/permissionsStore';
-import { sessionStore as useSessionStore } from '../identity/sessionStore';
+import { useLaunchSignIn } from '../identity/launchSignInGate';
 import { PermissionGuide } from './lib/PermissionGuide';
 import { systemAlert } from '../permissions/systemAlerts';
 import { SignInScreen } from '../identity/SignInScreen';
-import { useSignInRequiredSource } from '../identity/useSignInRequiredSource';
 import { needCopyKey, useSetupNeeds } from '../permissions/useSetupNeeds';
 
 export type SetupStep = 'account' | SetupNeed;
@@ -33,14 +32,13 @@ export function SetupFlow({
 }) {
   const runtime = useRuntime(),
     router = useRouter(),
-    signInRequired = useSignInRequiredSource(),
-    signedIn = useSessionStore((s) => s.data.session.kind === 'signedIn'),
+    launchApproved = useLaunchSignIn(runtime.auth),
     { needs, location, permissions } = useSetupNeeds(),
     [passed, setPassed] = useState<Step[]>([]),
     [upgradeRefused, setUpgradeRefused] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
-  const steps: Step[] = [...(account && !signedIn ? (['account'] as const) : []), ...needs],
+  const steps: Step[] = [...(account && !launchApproved ? (['account'] as const) : []), ...needs],
     current = steps.find((step) => !passed.includes(step));
   const finished = useRef(false);
   useEffect(() => {
@@ -61,7 +59,7 @@ export function SetupFlow({
     return (
       <ScreenShell header={<Header onClose={onClose} />}>
         <SetupPresentation>
-          <SignInScreen onContinue={() => pass('account')} signInRequired={signInRequired} />
+          <SignInScreen onContinue={() => pass('account')} signInRequired={true} requireFreshSignIn />
         </SetupPresentation>
       </ScreenShell>
     );

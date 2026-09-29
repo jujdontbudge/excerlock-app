@@ -4,10 +4,13 @@ export function bootDestination(
   step: string,
   entitlement: Entitlement['status'],
   setupComplete = true,
+  launchApproved = false,
 ): string | null {
-  if (complete && setupComplete) return '/(tabs)/home';
+  if (complete && setupComplete) return launchApproved ? '/(tabs)/home' : '/sign-in';
   if (entitlement === 'unknown') return null;
-  if (entitlement === 'trial' || entitlement === 'active') return setupComplete ? '/(tabs)/home' : '/setup/X1';
+  if (entitlement === 'trial' || entitlement === 'active') return setupComplete
+    ? launchApproved ? '/(tabs)/home' : '/sign-in'
+    : '/setup/X1';
   if (!complete) return step === 'P' ? '/paywall' : `/onboarding/${step}`;
   return '/paywall';
 }

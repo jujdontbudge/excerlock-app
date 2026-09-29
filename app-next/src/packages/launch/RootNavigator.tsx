@@ -12,11 +12,13 @@ import { useScreenTracking } from '../telemetry/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
 import Constants from 'expo-constants';
 import { diagnosticsRoutesEnabled } from '../platform/diagnosticsRoutes';
+import { useLaunchSignIn } from '../identity/launchSignInGate';
 export function RootNavigator() {
   const motion = useMotion();
   const pathname = usePathname();
   const router = useRouter();
   const runtime = useRuntime();
+  const launchApproved = useLaunchSignIn(runtime.auth);
   useScreenTracking();
   const loading = useRuntimeStatus().loading;
   const status = useEntitlementStore((s) => s.data.entitlement.status),
@@ -25,10 +27,10 @@ export function RootNavigator() {
   const handledLapses = useRef(sessionLapseCount());
   useEffect(() => {
     const lapses = sessionLapseCount();
-    if (lapses === handledLapses.current || !onboarding.setupComplete) return;
+    if (lapses === handledLapses.current || !onboarding.setupComplete || !launchApproved) return;
     handledLapses.current = lapses;
     if (pathname !== '/paywall') router.push('/paywall');
-  }, [onboarding.setupComplete, pathname, router, status]);
+  }, [launchApproved, onboarding.setupComplete, pathname, router, status]);
   return (
     <>
       <Stack
@@ -43,11 +45,13 @@ export function RootNavigator() {
           <Stack.Screen name="linked-trace" />
         </Stack.Protected>
         <Stack.Protected guard={!__LINKED_RECORDER_TRACE__}>
-          <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Protected guard={launchApproved}>
+            <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
+          </Stack.Protected>
           <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
             <Stack.Screen name="onboarding/[step]" />
           </Stack.Protected>
-          <Stack.Protected guard={loading || !entitled || onboarding.setupComplete}>
+          <Stack.Protected guard={loading || (!entitled && !onboarding.setupComplete) || (onboarding.setupComplete && launchApproved)}>
             <Stack.Screen
               name="paywall"
               options={{
@@ -60,19 +64,21 @@ export function RootNavigator() {
             <Stack.Screen name="setup/[step]" />
           </Stack.Protected>
           <Stack.Protected guard={loading || onboarding.setupComplete}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="settings" />
             <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
-          <Stack.Protected guard={loading || onboarding.setupComplete}>
+          <Stack.Protected guard={onboarding.setupComplete && launchApproved}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="settings" />
+          </Stack.Protected>
+          <Stack.Protected guard={onboarding.setupComplete && launchApproved}>
             <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="permissions/[step]" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
-          <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+          <Stack.Protected guard={entitled && onboarding.setupComplete && launchApproved}>
             <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
-          <Stack.Protected guard={diagnosticsRoutesEnabled(Constants.expoConfig?.extra?.environment, __DEV__)}>
+          <Stack.Protected guard={launchApproved && diagnosticsRoutesEnabled(Constants.expoConfig?.extra?.environment, __DEV__)}>
             <Stack.Screen name="diagnostics/sensors" />
           </Stack.Protected>
         </Stack.Protected>

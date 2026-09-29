@@ -1,4 +1,4 @@
-import { AuthIdentity, AuthPort } from '../../../ports/AuthPort';
+import { AuthCancelledError, AuthIdentity, AuthPort } from '../../../ports/AuthPort';
 import { Session } from '../../../model/types';
 import { sessionStore } from '../../../identity/sessionStore';
 import { FakeContext } from '../FakeContext';
@@ -20,7 +20,7 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     listeners.forEach((callback) => callback(snapshot));
   };
   const signIn = async (provider: 'apple' | 'google' | 'email'): Promise<Session> => {
-    if (ctx.result() === 'cancel') return session();
+    if (ctx.result() === 'cancel') throw new AuthCancelledError();
     const next: Session = { kind: 'signedIn', provider, email };
     sessionStore.getState().patch({ session: next });
     emitIdentity();

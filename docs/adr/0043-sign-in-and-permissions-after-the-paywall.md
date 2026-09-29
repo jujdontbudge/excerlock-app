@@ -33,7 +33,7 @@ The product owner asked for this on September 23, 2026. Once someone buys, they 
 
 Commit 3056cab3 had dropped the Screen Time, choose-apps and motion setup screens. The later "paywall goes straight to Home" change left new users with Screen Time and the app list never requested at all, so nothing could be locked. ADR 0040 rejected a setup step for background walking because it would ask gym users for Always location. `setupNeeds` avoids that by asking each condition only for what it uses.
 
-Sign-in keeps its existing `signInRequired` flag. With the flag off, which is the default, it stays skippable.
+At the time of this decision, sign-in kept its existing `signInRequired` flag and was skippable by default. ADR 0049 overrides that part: entering the main app now requires explicit sign-in on every cold launch, regardless of a restored session or the flag.
 
 ## Consequences
 
@@ -45,6 +45,7 @@ Sign-in keeps its existing `signInRequired` flag. With the flag off, which is th
 ## References
 
 - [ADR 0040](0040-background-walking-grants-at-point-of-need.md): accepted. Its Home walking-card button is replaced here; everything else stands.
+- [ADR 0049](0049-explicit-sign-in-on-every-cold-launch.md): accepted. Overrides only the optional sign-in part of this decision.
 - Tests:
   - `app-next/src/domain/__tests__/setupNeeds.test.ts`
   - `app-next/src/features/setup/__tests__/setup-flow.test.tsx`

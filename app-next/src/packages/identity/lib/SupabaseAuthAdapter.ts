@@ -416,7 +416,9 @@ export class SupabaseAuthAdapter implements AuthPort {
     const expected = this.captureCanonicalIdentity();
     const credential = await requestAppleCredential(this.appleDeps);
     this.assertCanonicalIdentity(expected);
-    return this.runIdentityOperation(() => this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected));
+    return this.runIdentityOperation(() => this.currentSession.kind === 'signedIn'
+      ? this.reauthenticateWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected)
+      : this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected));
   }
 
   async recoverWithApple(): Promise<Session> {
@@ -437,7 +439,9 @@ export class SupabaseAuthAdapter implements AuthPort {
     const expected = this.captureCanonicalIdentity();
     const credential = await requestGoogleCredential(this.googleDeps);
     this.assertCanonicalIdentity(expected);
-    return this.runIdentityOperation(() => this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected));
+    return this.runIdentityOperation(() => this.currentSession.kind === 'signedIn'
+      ? this.reauthenticateWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected)
+      : this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected));
   }
 
   async recoverWithGoogle(): Promise<Session> {
@@ -452,6 +456,46 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.restoreFailedTransition(previous);
       throw error;
     }
+  }
+
+  private async restorePreviousSession(previous: SupabaseSession, expected: { userId: string; generation: number }): Promise<void> {
+    try {
+      const { error } = await this.runSdk(() => this.supabase.auth.setSession({
+        access_token: previous.access_token,
+        refresh_token: previous.refresh_token,
+      }));
+      if (error) throw error;
+      this.assertCanonicalIdentity(expected);
+    } catch {
+      this.setProvisional(expected.generation);
+      throw new AuthError('Could not restore your saved sign-in. Please try again.', { code: 'REAUTH_RESTORE_FAILED' });
+    }
+  }
+
+  private async reauthenticateWithIdToken(
+    provider: 'apple' | 'google',
+    token: string,
+    nonce: string | undefined,
+    accessToken: string | undefined,
+    expected: { userId: string; generation: number },
+  ): Promise<Session> {
+    this.assertCanonicalIdentity(expected);
+    const { data: prior, error: priorError } = await this.runSdk(() => this.supabase.auth.getSession());
+    this.assertCanonicalIdentity(expected);
+    if (priorError || !prior.session || prior.session.user.id !== expected.userId)
+      throw new AuthError('Saved sign-in is unavailable. Please try again.', { code: 'REAUTH_NO_SESSION' });
+    const { data, error } = await this.runSdk(() => this.supabase.auth.signInWithIdToken({
+      provider, token, nonce, access_token: accessToken,
+    }));
+    this.assertCanonicalIdentity(expected);
+    if (error || !data.session?.user)
+      throw new AuthError('Could not verify your sign-in. Please try again.', { code: 'REAUTH_FAILED' });
+    if (data.session.user.id !== expected.userId) {
+      await this.restorePreviousSession(prior.session, expected);
+      throw new AuthError('Sign in with the account already on this device.', { code: 'REAUTH_DIFFERENT_ACCOUNT' });
+    }
+    this.applySupabaseSession(data.session, { preserveGeneration: true });
+    return this.currentSession;
   }
 
   private async linkWithIdToken(
@@ -571,7 +615,10 @@ export class SupabaseAuthAdapter implements AuthPort {
       throw new AuthError('Please request a code first.', { code: 'OTP_NO_PENDING' });
     }
     const email = normalizeEmail(pendingEmail);
-    if (pendingFlow === 'recovery') return this.verifyRecoveryEmail(email, normalizedCode);
+    if (pendingFlow === 'recovery') {
+      if (this.currentSession.kind === 'signedIn') return this.verifySameAccountEmail(email, normalizedCode);
+      return this.verifyRecoveryEmail(email, normalizedCode);
+    }
     const type = 'email_change';
     const expected = this.captureCanonicalIdentity();
     return this.runIdentityOperation(async () => {
@@ -580,6 +627,29 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.assertCanonicalIdentity(expected);
       if (error || !data.session?.user) {
         throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
+      }
+      this.pendingEmail = null;
+      this.pendingFlow = null;
+      this.applySupabaseSession(data.session, { preserveGeneration: true });
+      return this.currentSession;
+    });
+  }
+
+  private async verifySameAccountEmail(email: string, code: string): Promise<Session> {
+    const expected = this.captureCanonicalIdentity();
+    return this.runIdentityOperation(async () => {
+      this.assertCanonicalIdentity(expected);
+      const { data: prior, error: priorError } = await this.runSdk(() => this.supabase.auth.getSession());
+      this.assertCanonicalIdentity(expected);
+      if (priorError || !prior.session || prior.session.user.id !== expected.userId)
+        throw new AuthError('Saved sign-in is unavailable. Please try again.', { code: 'REAUTH_NO_SESSION' });
+      const { data, error } = await this.runSdk(() => this.supabase.auth.verifyOtp({ email, token: code, type: 'email' }));
+      this.assertCanonicalIdentity(expected);
+      if (error || !data.session?.user)
+        throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
+      if (data.session.user.id !== expected.userId) {
+        await this.restorePreviousSession(prior.session, expected);
+        throw new AuthError('Sign in with the account already on this device.', { code: 'REAUTH_DIFFERENT_ACCOUNT' });
       }
       this.pendingEmail = null;
       this.pendingFlow = null;

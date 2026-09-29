@@ -48,6 +48,7 @@ export type Scenario = {
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
+  launchSignInRequired?: boolean;
 };
 export type IdentityLabScript = {
   anonymousSignIn?: 'ok' | 'failFirst';

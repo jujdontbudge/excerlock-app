@@ -8,8 +8,10 @@ import { permissionsStore } from '../../permissions/permissionsStore';
 import { sessionStore } from '../../identity/sessionStore';
 import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
+import { authorizeDemoScenario } from '../../identity/launchSignInGate';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
+  authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
   resetStores();
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [] });
