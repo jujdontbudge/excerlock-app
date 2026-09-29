@@ -463,7 +463,8 @@ export async function createIdentityLab(
     logShowFlow: async () => undefined,
     makePurchase: async () => {
       attempts.purchase += 1;
-      const result = script.purchase ?? ctx.snapshot().outcome;
+      const configured = script.purchase ?? ctx.snapshot().outcome;
+      const result = configured === 'errorFirst' && attempts.purchase > 1 ? 'success' : configured === 'errorFirst' ? 'error' : configured;
       const owner = customerUserId;
       ctx.log('lab_purchase', { result, owner });
       if (result === 'error') throw networkError('Purchase failed');
@@ -574,9 +575,20 @@ export async function createIdentityLab(
     },
     logPaywallShown: (generation) => adapter.logPaywallShown(generation),
     purchase: async (handle) => {
-      const result = await adapter.purchase(handle);
-      ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });
-      return result;
+      try {
+        const result = await adapter.purchase(handle);
+        ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });
+        return result;
+      } catch (error) {
+        ctx.log('lab_purchase_failure', {
+          attempt: attempts.purchase,
+          owner: customerUserId ?? 'none',
+          grants: grants.size,
+          recovery: adapter.recovery().type,
+        });
+        updateSubscriptionLab();
+        throw error;
+      }
     },
     operation: () => adapter.operation(),
     recovery: () => adapter.recovery(),

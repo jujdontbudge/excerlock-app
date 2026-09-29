@@ -193,8 +193,16 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         const recovery = await this.deps.recoveryJournal.begin('purchase', ready.userId!, this.deps.now());
         if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
           throw new Error('Finish connecting the existing purchase before starting another.');
-        await this.attachIntegration(ready);
-        const result = await this.deps.sdk.makePurchase(product);
+        let result;
+        try {
+          await this.attachIntegration(ready);
+          result = await this.deps.sdk.makePurchase(product);
+        } catch (error) {
+          const current = this.deps.recoveryJournal.snapshot();
+          if (current.type === 'pending' && current.operationId === recovery.operationId)
+            await this.deps.recoveryJournal.clear();
+          throw error;
+        }
         this.assertIdentity(ready);
         if (result.type !== 'success') {
           if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };

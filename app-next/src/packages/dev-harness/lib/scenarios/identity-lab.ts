@@ -42,6 +42,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'cancel' },
   }),
+  base('identity-lab-purchase-error-retry', 'Identity lab · purchase error then retry', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', purchase: 'errorFirst' },
+  }),
   base('identity-lab-purchase-pending', 'Identity lab · purchase pending', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'pending' },

@@ -59,7 +59,7 @@ export type IdentityLabScript = {
   plans?: 'ok' | 'failFirst' | 'empty';
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
-  purchase?: 'success' | 'cancel' | 'error' | 'pending';
+  purchase?: 'success' | 'cancel' | 'error' | 'errorFirst' | 'pending';
   restore?: 'restored' | 'notFound';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
