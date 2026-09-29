@@ -61,5 +61,6 @@ export type IdentityLabScript = {
   purchase?: 'success' | 'cancel' | 'error' | 'pending';
   restore?: 'restored' | 'notFound';
   delayedCallbacks?: boolean;
+  establishedTransfer?: boolean;
 };
 export type Unsubscribe = () => void;

@@ -32,6 +32,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     delivered: number;
     callbackIsolation?: string;
     deletionIsolation?: string;
+    transferIsolation?: string;
   };
 };
 export interface RuntimeControls extends RuntimeStatusPort {
@@ -57,6 +58,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabAccountSwitchOrdering(): Promise<void>;
   runLabDelayedCallbackIsolation(): Promise<void>;
   runLabDeletionCallbackIsolation(): Promise<void>;
+  runLabEstablishedTransfer(): Promise<void>;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

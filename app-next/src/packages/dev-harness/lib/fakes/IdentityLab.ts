@@ -38,6 +38,23 @@ export type IdentityLab = {
     delivered: number;
     tombstonePreserved: boolean;
   }>;
+  runEstablishedTransfer(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    verifyCurrent: () => Promise<string>,
+  ): Promise<{
+    source: string;
+    beforeTransfer: string;
+    afterFailure: string;
+    afterTransfer: string;
+    afterRepeat: string;
+    sourceAfterTransfer: string;
+    targetAfterReturn: string;
+    sourceData: string;
+    targetData: string;
+    restores: number;
+    transfers: number;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -73,6 +90,8 @@ export async function createIdentityLab(
   const ownership = new Map<string, 'trial' | 'active'>();
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
+  let storeOwner: string | null = null;
+  let transfers = 0;
   let deliveredProfiles = 0;
   let users = 0;
   let stored: LabSession | null = null;
@@ -181,6 +200,7 @@ export async function createIdentityLab(
       delivered: deliveredProfiles,
       callbackIsolation: ctx.snapshot().subscriptionLab?.callbackIsolation,
       deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
+      transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
     },
   });
   const profile = (owner = customerUserId): AdaptyProfile => {
@@ -236,6 +256,7 @@ export async function createIdentityLab(
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       if (!owner) throw new Error('Purchase owner unavailable');
       ownership.set(owner, 'trial');
+      storeOwner = owner;
       const purchased = profile(owner);
       if (script.delayedCallbacks) {
         queuedProfiles.push({ operation: 'purchase', owner, profile: purchased });
@@ -250,7 +271,15 @@ export async function createIdentityLab(
       const result = script.restore ?? ctx.snapshot().restoreOutcome;
       const owner = customerUserId;
       ctx.log('lab_restore', { result, owner });
-      if (result === 'restored' && owner) ownership.set(owner, 'active');
+      if (script.establishedTransfer && attempts.restore === 1) throw networkError('Restore reconciliation unavailable');
+      if (result === 'restored' && owner) {
+        if (script.establishedTransfer && storeOwner && storeOwner !== owner) {
+          ownership.delete(storeOwner);
+          transfers += 1;
+        }
+        ownership.set(owner, 'active');
+        storeOwner = owner;
+      }
       const restored = profile(owner);
       if (script.delayedCallbacks && owner) queuedProfiles.push({ operation: 'restore', owner, profile: restored });
       updateSubscriptionLab();
@@ -413,6 +442,63 @@ export async function createIdentityLab(
         queued: callbacks.length,
         delivered: deliveredProfiles,
         tombstonePreserved: tombstones.has(deleted.userId),
+      };
+    },
+    runEstablishedTransfer: async (seedAccount, accountCheckpoint, verifyCurrent) => {
+      await auth.recoverWithApple();
+      const source = await services?.waitForIdentityReady();
+      if (!source?.userId) throw new Error('Source account did not become ready');
+      await seedAccount('A');
+      ownership.set(source.userId, 'active');
+      storeOwner = source.userId;
+      const sourceProfile = profile(source.userId);
+      profileListener?.(sourceProfile);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      await auth.recoverWithGoogle();
+      const target = await services?.waitForIdentityReady();
+      if (!target?.userId) throw new Error('Target account did not become ready');
+      await seedAccount('B');
+      profileListener?.(sourceProfile);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const beforeTransfer = await verifyCurrent();
+
+      ctx.update({ restoreOutcome: 'restored' });
+      try {
+        await adapter.restore();
+      } catch (error) {
+        ctx.log('lab_transfer_retry', { message: message(error), owner: target.userId });
+      }
+      const afterFailure = await verifyCurrent();
+      await adapter.restore();
+      const afterTransfer = await verifyCurrent();
+      await adapter.restore();
+      const afterRepeat = await verifyCurrent();
+
+      await auth.recoverWithApple();
+      await services?.waitForIdentityReady();
+      await adapter.refresh();
+      const sourceAfterTransfer = await verifyCurrent();
+      const sourceData = accountCheckpoint();
+
+      await auth.recoverWithGoogle();
+      await services?.waitForIdentityReady();
+      await adapter.refresh();
+      const targetAfterReturn = await verifyCurrent();
+      const targetData = accountCheckpoint();
+      updateSubscriptionLab();
+      return {
+        source: source.userId,
+        beforeTransfer,
+        afterFailure,
+        afterTransfer,
+        afterRepeat,
+        sourceAfterTransfer,
+        targetAfterReturn,
+        sourceData,
+        targetData,
+        restores: attempts.restore,
+        transfers,
       };
     },
     dispose: async () => {

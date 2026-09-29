@@ -64,6 +64,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         activityCheckpoints: ctx.snapshot().accountData?.activityCheckpoints,
       } });
     },
+    accountCheckpoint = () =>
+      `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`,
     identityLab = identityLabHost(ctx, () => ready, {
       prepare: async () => {
         await accountData.prepare();
@@ -286,6 +288,26 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           delivered: current?.delivered ?? 0,
           callbackIsolation: current?.callbackIsolation,
           deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+          transferIsolation: current?.transferIsolation,
+        } });
+      },
+      runLabEstablishedTransfer: async () => {
+        const verifyCurrent = async () => {
+          const selected = auth.identity();
+          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
+          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
+          return proof.type;
+        };
+        const result = await identityLab.runEstablishedTransfer(seedAccount, accountCheckpoint, verifyCurrent);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? result.restores,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: current?.callbackIsolation,
+          deletionIsolation: current?.deletionIsolation,
+          transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers} data A ${result.sourceData} data B ${result.targetData}`,
         } });
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,

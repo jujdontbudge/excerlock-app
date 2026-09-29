@@ -93,5 +93,14 @@ export function identityLabHost(
     if (!lab) throw new Error('Identity lab is unavailable');
     return lab.runDeletionCallbackIsolation(seedDeletedAccount);
   };
-  return { start, stop, route, runDelayedCallbackIsolation, runDeletionCallbackIsolation };
+  const runEstablishedTransfer = async (
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    verifyCurrent: () => Promise<string>,
+  ) => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runEstablishedTransfer(seedAccount, accountCheckpoint, verifyCurrent);
+  };
+  return { start, stop, route, runDelayedCallbackIsolation, runDeletionCallbackIsolation, runEstablishedTransfer };
 }

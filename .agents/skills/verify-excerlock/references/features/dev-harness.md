@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer]
 depends: [launch]
 ---
 ## Sub-features
@@ -56,6 +56,15 @@ open: /dev
 tap: Run deletion callback isolation
 wait: 30
 expect: Active account Checkout | Condition owner None | History Days 0 | Profile None | Saved Gym None | Purchase operations 1 | Restore operations 1 | Delayed callbacks 0/2 | Deletion isolation lab-user-a deleted tombstone preserved fresh lab-checkout- | Entitlement none admission ineligible data erased recovery pending callbacks 2/2
+```
+
+```proof
+name: established-restore-transfer-is-account-bound
+scenario: identity-lab-established-transfer
+open: /dev
+tap: Run established restore transfer
+wait: 30
+expect: Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Restore operations 3 | Transfer isolation lab-user-a source profile ineligible retry ineligible transfer eligible repeat eligible source after ineligible target return eligible transfers 1 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B
 ```
 
 ## Gotchas
