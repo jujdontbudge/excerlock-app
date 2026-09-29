@@ -42,7 +42,7 @@ function labProduct(vendorProductId: string, title: string, amount: number, unit
 
 export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScript): Promise<IdentityLab> {
   const attempts = { anonymous: 0, userSync: 0, flow: 0 };
-  const access = new Map<string, 'trial' | 'active'>();
+  let storeAccess: 'trial' | 'active' | null = null;
   let users = 0;
   let stored: LabSession | null = null;
   let distinctId = ANONYMOUS_DISTINCT_ID;
@@ -124,7 +124,7 @@ export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScr
   };
 
   const profile = (): AdaptyProfile => {
-    const status = customerUserId ? access.get(customerUserId) : undefined;
+    const status = customerUserId ? storeAccess : null;
     const days = status === 'trial' ? 7 : 30;
     return {
       customerUserId,
@@ -171,13 +171,13 @@ export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScr
       ctx.log('lab_purchase', { result });
       if (result === 'error') throw networkError('Purchase failed');
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
-      if (customerUserId) access.set(customerUserId, 'trial');
+      storeAccess = 'trial';
       return { type: 'success', profile: profile() } as unknown as AdaptyPurchaseResult;
     },
     restorePurchases: async () => {
       const result = script.restore ?? ctx.snapshot().restoreOutcome;
       ctx.log('lab_restore', { result });
-      if (result === 'restored' && customerUserId) access.set(customerUserId, 'active');
+      if (result === 'restored') storeAccess = 'active';
       return profile();
     },
     setIntegrationIdentifier: async () => undefined,
