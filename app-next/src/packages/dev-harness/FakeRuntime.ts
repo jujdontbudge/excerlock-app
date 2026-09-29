@@ -36,6 +36,7 @@ export type FakeRuntimeOptions = {
   createAccountData(): {
     prepare(): Promise<void>;
     deactivate(): Promise<void>;
+    eraseActive(): Promise<void>;
     activate(userId: string): Promise<{ changedAccount: boolean }>;
     snapshot(): { activeUserId: string | null; legacyQuarantined: boolean };
     seedActivity?(account: 'A' | 'B'): void;
@@ -78,6 +79,10 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         const transition = await accountData.activate(identity.userId);
         accountTransitions.push(`${accountLabel(identity.userId)} loaded before ready`);
         if (transition.changedAccount) accountTransitions.push('Screen Time rotated after target loaded');
+        updateAccountDataView();
+      },
+      afterDelete: async () => {
+        await accountData.eraseActive();
         updateAccountDataView();
       },
     }),
@@ -260,6 +265,27 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           queued: current?.queued ?? 0,
           delivered: current?.delivered ?? 0,
           callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+        } });
+      },
+      runLabDeletionCallbackIsolation: async () => {
+        const result = await identityLab.runDeletionCallbackIsolation(() => seedAccount('A'));
+        const selected = auth.identity();
+        const admission = selected.kind === 'canonical' && selected.userId
+          ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
+          : { type: 'unavailable' as const };
+        const accountDataErased =
+          rulesStore.getState().data.rules.length === 0 &&
+          historyStore.getState().data.days.length === 0 &&
+          profileStore.getState().data.name.length === 0 &&
+          settingsStore.getState().data.gymPlaces.length === 0;
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: current?.callbackIsolation,
+          deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
         } });
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,

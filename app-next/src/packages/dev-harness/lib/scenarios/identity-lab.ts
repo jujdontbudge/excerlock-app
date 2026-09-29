@@ -55,6 +55,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', delayedCallbacks: true },
   }),
+  base('identity-lab-deletion-callbacks', 'Identity lab · deletion and delayed callbacks', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', delayedCallbacks: true },
+  }),
   base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
     ...atOnboardingPaywall,
     identityLab: { appleLink: 'conflict' },

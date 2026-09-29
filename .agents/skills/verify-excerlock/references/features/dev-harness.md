@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks]
 depends: [launch]
 ---
 ## Sub-features
@@ -47,6 +47,15 @@ open: /dev
 tap: Run delayed callback isolation
 wait: 30
 expect: Purchase operations 1 | Restore operations 1 | Delayed callbacks 0/2 | Callback isolation lab-user-b Entitlement none admission ineligible recovery pending callbacks 2/2
+```
+
+```proof
+name: deletion-and-late-callbacks-fail-closed
+scenario: identity-lab-deletion-callbacks
+open: /dev
+tap: Run deletion callback isolation
+wait: 30
+expect: Active account Checkout | Condition owner None | History Days 0 | Profile None | Saved Gym None | Purchase operations 1 | Restore operations 1 | Delayed callbacks 0/2 | Deletion isolation lab-user-a deleted tombstone preserved fresh lab-checkout- | Entitlement none admission ineligible data erased recovery pending callbacks 2/2
 ```
 
 ## Gotchas
