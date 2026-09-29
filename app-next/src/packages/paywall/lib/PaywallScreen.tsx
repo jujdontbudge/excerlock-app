@@ -221,9 +221,9 @@ export function PaywallScreen({
           {message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
         </Label>
       ) : null}
-      {busy === 'purchase' || busy === 'restore' ? (
+      {busy ? (
         <Label accessibilityRole="alert" tone="secondary" style={{ textAlign: 'center' }}>
-          {busy === 'purchase' ? subscriptionCopy.purchasing : subscriptionCopy.restoring}
+          {busy === 'purchase' ? subscriptionCopy.purchasing : busy === 'restore' ? subscriptionCopy.restoring : subscriptionCopy.loadingPlans}
         </Label>
       ) : null}
       {!paywall && busy !== 'load' ? <PrimaryButton label="Retry loading plans" onPress={() => void load()} /> : null}

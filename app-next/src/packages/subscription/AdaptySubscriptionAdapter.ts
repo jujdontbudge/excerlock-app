@@ -123,6 +123,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     });
   }
   async loadPaywall(placement: SubscriptionPaywall['placement']): Promise<SubscriptionPaywall> {
+    await this.deps.waitForIdentityReady();
     const identity = this.requireExpected();
     await this.ensureActivated();
     const flow = await this.deps.sdk.getFlow(placement, {

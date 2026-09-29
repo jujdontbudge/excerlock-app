@@ -1,0 +1,262 @@
+import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../../identity/createAuthServices';
+import { AdaptySubscriptionAdapter } from '../../../subscription/AdaptySubscriptionAdapter';
+import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptySdkPort } from '../../../subscription/adaptySdk';
+import type { AuthIdentity, AuthPort } from '../../../ports/AuthPort';
+import type { SubscriptionPort } from '../../../ports/SubscriptionPort';
+import type { IdentityLabScript } from '../../../model/models';
+import { FakeContext } from '../FakeContext';
+
+const SLOW_USER_SYNC_MS = 8000;
+const LAB_URL = 'https://identity-lab.invalid';
+const ANONYMOUS_DISTINCT_ID = 'lab-anonymous-distinct-id';
+
+type LabUser = { id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
+type LabSession = { access_token: string; user: LabUser };
+type LabSupabase = NonNullable<AuthServiceConfig['supabase']>;
+type LabAppleDeps = NonNullable<AuthServiceConfig['appleDeps']>;
+type LabGoogleDeps = NonNullable<AuthServiceConfig['googleDeps']>;
+
+export type IdentityLab = {
+  auth: AuthPort;
+  subscription: SubscriptionPort;
+  booted: Promise<void>;
+  dispose(): Promise<void>;
+};
+
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+function labProduct(vendorProductId: string, title: string, amount: number, unit: 'year' | 'month'): AdaptyPaywallProduct {
+  return {
+    variationId: 'identity-lab',
+    vendorProductId,
+    localizedTitle: title,
+    localizedDescription: '',
+    price: { amount, currencyCode: 'USD', localizedString: `$${amount.toFixed(2)}` },
+    subscription: {
+      subscriptionPeriod: { unit, numberOfUnits: 1 },
+      localizedSubscriptionPeriod: unit,
+      offer: { phases: [{ paymentMode: 'free_trial', numberOfPeriods: 1, subscriptionPeriod: { unit: 'week', numberOfUnits: 1 } }] },
+    },
+  } as unknown as AdaptyPaywallProduct;
+}
+
+export async function createIdentityLab(ctx: FakeContext, script: IdentityLabScript): Promise<IdentityLab> {
+  const attempts = { anonymous: 0, userSync: 0, flow: 0 };
+  let storeAccess: 'trial' | 'active' | null = null;
+  let users = 0;
+  let stored: LabSession | null = null;
+  let distinctId = ANONYMOUS_DISTINCT_ID;
+  let customerUserId: string | undefined;
+  let profileListener: ((profile: AdaptyProfile) => void) | null = null;
+  let services: AuthServices | undefined;
+
+  const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
+  const newUser = (provider?: string): LabUser => {
+    users += 1;
+    return {
+      id: `lab-user-${users}`,
+      is_anonymous: !provider,
+      identities: provider ? [{ provider }] : [],
+      app_metadata: provider ? { provider } : {},
+    };
+  };
+  const signedIn = (user: LabUser) => {
+    stored = { access_token: `lab-token-${user.id}`, user };
+    return { data: { user, session: stored }, error: null };
+  };
+  const unscripted = async () => ({ data: { user: null, session: null }, error: networkError('Not scripted in the identity lab') });
+
+  const supabase = {
+    auth: {
+      getSession: async () => ({ data: { session: stored }, error: null }),
+      signInAnonymously: async () => {
+        attempts.anonymous += 1;
+        const ok = !(script.anonymousSignIn === 'failFirst' && attempts.anonymous === 1);
+        ctx.log('lab_anonymous_sign_in', { attempt: attempts.anonymous, ok });
+        return ok ? signedIn(newUser()) : { data: { user: null, session: null }, error: networkError('Network request failed') };
+      },
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
+      signOut: async () => {
+        stored = null;
+        return { error: null };
+      },
+      linkIdentity: async ({ provider }: { provider: string }) => {
+        const result = script.appleLink ?? 'ok';
+        ctx.log('lab_link_identity', { provider, result });
+        if (result === 'conflict' || !stored)
+          return { data: { user: null, session: null }, error: Object.assign(new Error('Identity is already linked to another user'), { status: 422 }) };
+        return signedIn({ ...stored.user, is_anonymous: false, identities: [{ provider }], app_metadata: { provider } });
+      },
+      signInWithIdToken: async ({ provider }: { provider: string }) => {
+        const result = signedIn(newUser(provider));
+        ctx.log('lab_recovered_account', { provider, user: result.data.user.id });
+        return result;
+      },
+      signInWithOtp: unscripted,
+      verifyOtp: unscripted,
+      updateUser: unscripted,
+    },
+  } as unknown as LabSupabase;
+
+  const fetchImpl = (async (_input: unknown, init?: { method?: string }) => {
+    if (init?.method !== 'PUT') return { status: 204 };
+    attempts.userSync += 1;
+    const attempt = attempts.userSync;
+    if (script.userSync === 'failFirst' && attempt === 1) {
+      ctx.log('lab_user_sync', { attempt, result: 'network_error' });
+      throw new TypeError('Network request failed');
+    }
+    if (script.userSync === 'slow') await new Promise((resolve) => setTimeout(resolve, SLOW_USER_SYNC_MS));
+    ctx.log('lab_user_sync', { attempt, result: 204 });
+    return { status: 204 };
+  }) as unknown as typeof fetch;
+
+  const appleDeps: LabAppleDeps = {
+    signInAsync: async () => ({ identityToken: 'lab-apple-identity-token', authorizationCode: null, user: 'lab-apple-user' }),
+    digestSHA256Hex: async (value) => `lab-sha256-${value.length}`,
+    randomNonce: () => 'lab-nonce',
+  };
+  const googleDeps: LabGoogleDeps = {
+    clientId: 'identity-lab',
+    redirectUri: 'identity-lab:/oauth',
+    buildRequest: () => ({ promptAsync: async () => ({ type: 'cancel' }) }),
+    exchangeCode: async () => ({}),
+  };
+
+  const profile = (): AdaptyProfile => {
+    const status = customerUserId ? storeAccess : null;
+    const days = status === 'trial' ? 7 : 30;
+    return {
+      customerUserId,
+      accessLevels: status
+        ? {
+            premium: {
+              isActive: true,
+              activeIntroductoryOfferType: status === 'trial' ? 'free_trial' : undefined,
+              expiresAt: new Date(Date.parse(ctx.clock.now()) + days * 86_400_000),
+              willRenew: true,
+            },
+          }
+        : {},
+    } as unknown as AdaptyProfile;
+  };
+  const sdk: AdaptySdkPort = {
+    activate: async () => undefined,
+    setFallback: async () => undefined,
+    addEventListener: (_event, callback) => {
+      profileListener = callback;
+      return { remove: () => { profileListener = null; } };
+    },
+    getProfile: async () => profile(),
+    identify: async (userId) => {
+      customerUserId = userId;
+      ctx.log('lab_adapty_identify', { user: userId });
+      setTimeout(() => profileListener?.(profile()), 0);
+    },
+    logout: async () => {
+      customerUserId = undefined;
+    },
+    getFlow: async (placement) => {
+      attempts.flow += 1;
+      const ok = !(script.plans === 'failFirst' && attempts.flow === 1);
+      ctx.log('lab_flow', { placement, attempt: attempts.flow, ok });
+      if (!ok) throw networkError('Flow request failed');
+      return { placementId: placement, variationId: `identity-lab-${placement}`, remoteConfigs: [] } as unknown as AdaptyFlow;
+    },
+    getPaywallProducts: async () =>
+      script.plans === 'empty' ? [] : [labProduct('lab.annual', 'Lab annual', 49.99, 'year'), labProduct('lab.monthly', 'Lab monthly', 9.99, 'month')],
+    logShowFlow: async () => undefined,
+    makePurchase: async () => {
+      const result = script.purchase ?? ctx.snapshot().outcome;
+      ctx.log('lab_purchase', { result });
+      if (result === 'error') throw networkError('Purchase failed');
+      if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
+      storeAccess = 'trial';
+      return { type: 'success', profile: profile() } as unknown as AdaptyPurchaseResult;
+    },
+    restorePurchases: async () => {
+      const result = script.restore ?? ctx.snapshot().restoreOutcome;
+      ctx.log('lab_restore', { result });
+      if (result === 'restored') storeAccess = 'active';
+      return profile();
+    },
+    setIntegrationIdentifier: async () => undefined,
+  };
+
+  const provisional: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
+  const adapter = new AdaptySubscriptionAdapter({
+    sdk,
+    publicSdkKey: 'identity-lab',
+    getIdentity: () => services?.auth.identity() ?? provisional,
+    waitForIdentityReady: () => {
+      if (!services) throw new Error('Identity lab not started');
+      return services.waitForIdentityReady();
+    },
+    runIdentityOperation: (operation) => {
+      if (!services) throw new Error('Identity lab not started');
+      return services.runIdentityOperation(operation);
+    },
+    getPosthogDistinctId: () => distinctId,
+    reportError: (error) => ctx.log('lab_adapter_error', { message: message(error) }),
+    openSubscriptionManagement: async () => undefined,
+  });
+  services = await createAuthServices({
+    supabaseUrl: LAB_URL,
+    supabaseAnonKey: 'identity-lab',
+    apiBaseUrl: LAB_URL,
+    googleIosClientId: 'identity-lab',
+    googleRedirectUri: 'identity-lab:/oauth',
+    supabase,
+    fetchImpl,
+    appleDeps,
+    googleDeps,
+    analyticsIdentify: async (id) => {
+      distinctId = id;
+    },
+    analyticsReset: async () => {
+      distinctId = ANONYMOUS_DISTINCT_ID;
+    },
+    subscriptionIdentify: (id) => adapter.identify(id),
+    subscriptionReset: () => adapter.reset(),
+    getPosthogDistinctId: () => distinctId,
+    setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
+    onBeforeDelete: async () => undefined,
+    onAfterDelete: async () => undefined,
+  });
+  const auth = services.auth;
+  const subscription: SubscriptionPort = {
+    entitlement: () => adapter.entitlement(),
+    presentPaywall: () => adapter.presentPaywall(),
+    restore: () => adapter.restore(),
+    identify: (id) => adapter.identify(id),
+    reset: () => adapter.reset(),
+    refresh: () => adapter.refresh(),
+    loadPaywall: async (placement) => {
+      try {
+        const paywall = await adapter.loadPaywall(placement);
+        ctx.log('lab_plans_loaded', { placement, plans: paywall.products.length });
+        return paywall;
+      } catch (error) {
+        ctx.log('lab_plans_failed', { placement, message: message(error) });
+        throw error;
+      }
+    },
+    logPaywallShown: (generation) => adapter.logPaywallShown(generation),
+    purchase: (handle) => adapter.purchase(handle),
+    operation: () => adapter.operation(),
+    manageSubscription: () => adapter.manageSubscription(),
+    subscribe: (callback) => adapter.subscribe(callback),
+  };
+  return {
+    auth,
+    subscription,
+    booted: auth.boot().then(
+      () => undefined,
+      () => undefined,
+    ),
+    dispose: async () => {
+      adapter.dispose();
+      await services?.dispose();
+    },
+  };
+}
