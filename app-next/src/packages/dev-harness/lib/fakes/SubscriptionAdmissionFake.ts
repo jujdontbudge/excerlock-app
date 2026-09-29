@@ -30,6 +30,8 @@ export function SubscriptionAdmissionFake(
       }
       if (proof === 'ineligible') {
         lease = null;
+        if (ctx.scenario.identityLab?.providerAttempts)
+          ctx.log('subscription_proof_checked', { account: identity.userId, result: 'ineligible' });
         return { type: 'ineligible' };
       }
       const entitlement = subscription.entitlement();

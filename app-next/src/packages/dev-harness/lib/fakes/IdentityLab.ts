@@ -142,7 +142,18 @@ export async function createIdentityLab(
   script: IdentityLabScript,
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
-  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0, link: 0, sessionRestore: 0, peerProof: 0 };
+  const attempts = {
+    anonymous: 0,
+    userSync: 0,
+    flow: 0,
+    purchase: 0,
+    restore: 0,
+    link: 0,
+    sessionRestore: 0,
+    peerProof: 0,
+    appleCredential: 0,
+    googleCredential: 0,
+  };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
@@ -272,7 +283,19 @@ export async function createIdentityLab(
   }) as unknown as typeof fetch;
 
   const appleDeps: LabAppleDeps = {
-    signInAsync: async () => ({ identityToken: 'lab-apple-identity-token', authorizationCode: null, user: 'lab-apple-user' }),
+    signInAsync: async () => {
+      attempts.appleCredential += 1;
+      const cancelled = Boolean(script.providerAttempts && attempts.appleCredential === 1);
+      ctx.log('lab_provider_attempt', {
+        provider: 'apple',
+        attempt: attempts.appleCredential,
+        result: cancelled ? 'cancelled' : 'success',
+        account: stored?.user.id ?? 'none',
+        grants: grants.size,
+      });
+      if (cancelled) throw Object.assign(new Error('Provider sheet canceled'), { code: 'ERR_REQUEST_CANCELED' });
+      return { identityToken: 'lab-apple-identity-token', authorizationCode: null, user: 'lab-apple-user' };
+    },
     digestSHA256Hex: async (value) => `lab-sha256-${value.length}`,
     randomNonce: () => 'lab-nonce',
   };
@@ -280,9 +303,23 @@ export async function createIdentityLab(
     clientId: 'identity-lab',
     redirectUri: 'identity-lab:/oauth',
     buildRequest: () => ({
-      promptAsync: async () => script.googleSignIn === 'success'
-        ? { type: 'success', params: { code: 'lab-google-code' } }
-        : { type: 'cancel' },
+      promptAsync: async () => {
+        attempts.googleCredential += 1;
+        const failed = Boolean(script.providerAttempts && attempts.googleCredential === 1);
+        const result = failed ? 'failed' : script.googleSignIn === 'success' ? 'success' : 'cancelled';
+        ctx.log('lab_provider_attempt', {
+          provider: 'google',
+          attempt: attempts.googleCredential,
+          result,
+          account: stored?.user.id ?? 'none',
+          grants: grants.size,
+        });
+        if (script.providerAttempts && attempts.googleCredential >= 2) updateSubscriptionLab();
+        if (failed) throw networkError('Provider temporarily unavailable');
+        return script.googleSignIn === 'success'
+          ? { type: 'success', params: { code: 'lab-google-code' } }
+          : { type: 'cancel' };
+      },
       codeVerifier: 'lab-google-verifier',
     }),
     exchangeCode: async () => ({ idToken: 'lab-google-id-token', accessToken: 'lab-google-access-token' }),
@@ -299,6 +336,9 @@ export async function createIdentityLab(
       transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
       concurrentRestoreIsolation: ctx.snapshot().subscriptionLab?.concurrentRestoreIsolation,
       providerLinking: ctx.snapshot().subscriptionLab?.providerLinking,
+      providerAttempts: script.providerAttempts && attempts.googleCredential >= 2
+        ? `Apple canceled · Google failed · Google success · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
+        : ctx.snapshot().subscriptionLab?.providerAttempts,
       localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`

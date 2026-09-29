@@ -77,6 +77,7 @@ export function DevControls() {
         <SettingsRow title={`Transfer isolation ${view.subscriptionLab?.transferIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Concurrent restore ${view.subscriptionLab?.concurrentRestoreIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Linked providers ${view.subscriptionLab?.providerLinking ?? 'Not run'}`} />
+        <SettingsRow title={`Provider attempts ${view.subscriptionLab?.providerAttempts ?? 'Not run'}`} />
         <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
         <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
       </SettingsGroup>

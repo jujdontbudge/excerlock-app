@@ -68,5 +68,6 @@ export type IdentityLabScript = {
   linkedProviders?: boolean;
   establishedProviderConflict?: boolean;
   localSignOut?: boolean;
+  providerAttempts?: boolean;
 };
 export type Unsubscribe = () => void;

@@ -2,7 +2,7 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-established-provider-conflict]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-established-provider-conflict]
 server: [PUT /v1/user, DELETE /v1/user]
 depends: [setup]
 ---
@@ -18,6 +18,17 @@ Settings → the profile row → Account. From the hard Paywall, open Account an
 
 ## Driving it with excer
 Run `./excer demo signed-in-apple --open /settings/account`. To assert what the server did, run it locally and check the database. `./excer server ready` must pass first.
+
+```proof
+name: provider-attempts-fail-closed-until-success
+scenario: identity-lab-provider-attempts
+open: dev?journey=signIn
+tap: Continue with Apple | Continue with Google | Continue with Google
+wait: 30
+expect: Become ADDICTED to exercise
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Provider attempts Apple canceled · Google failed · Google success · account lab-checkout-1 · grants 0 | lab_provider_attempt {"provider":"apple","attempt":1,"result":"cancelled","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":1,"result":"failed","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":2,"result":"success","account":"lab-checkout-1","grants":0} | lab_link_identity {"provider":"google","result":"ok"} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
+```
 
 ```proof
 name: linked-providers-one-account
