@@ -47,5 +47,14 @@ export type Scenario = {
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
+  identityLab?: IdentityLabScript;
+};
+export type IdentityLabScript = {
+  anonymousSignIn?: 'ok' | 'failFirst';
+  userSync?: 'ok' | 'failFirst' | 'slow';
+  plans?: 'ok' | 'failFirst' | 'empty';
+  appleLink?: 'ok' | 'conflict';
+  purchase?: 'success' | 'cancel' | 'error';
+  restore?: 'restored' | 'notFound';
 };
 export type Unsubscribe = () => void;

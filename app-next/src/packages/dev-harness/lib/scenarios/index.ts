@@ -1,6 +1,7 @@
 import { scenario0 } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
 import { unlockScenarios } from './unlock';
+import { identityLabScenarios } from './identity-lab';
 import { scenario1 } from './onboarding-walking-resume';
 import { scenario2 } from './home-locked-walking';
 import { scenario3 } from './home-unlocked-met';
@@ -53,4 +54,5 @@ export const scenarios = [
   scenario26,
   ...unlockScenarios,
   ...conditionDemoScenarios,
+  ...identityLabScenarios,
 ];

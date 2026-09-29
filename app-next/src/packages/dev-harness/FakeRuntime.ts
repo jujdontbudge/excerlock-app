@@ -23,6 +23,7 @@ import { SubscriptionFake } from './lib/fakes/SubscriptionFake';
 import { AnalyticsFake } from './lib/fakes/AnalyticsFake';
 import { NotificationsFake } from './lib/fakes/NotificationsFake';
 import { SyncFake } from './lib/fakes/SyncFake';
+import { identityLabHost } from './lib/fakes/identityLabHost';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export function FakeRuntime(): FakeRuntimeInstance {
   const ctx = new FakeContext(scenarios[0]),
@@ -31,6 +32,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
+    identityLab = identityLabHost(ctx, () => ready),
     ready = persistence.ready.then(async () => {
       await Promise.all(
         stores
@@ -48,6 +50,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
       walking.resume();
       gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
+      identityLab.start();
       launchEntitlements = (ctx.scenario.entitlementTimeline ?? []).map(({ status, afterMs }) =>
         setTimeout(() => dev.setEntitlement(status), afterMs),
       );
@@ -65,8 +68,10 @@ export function FakeRuntime(): FakeRuntimeInstance {
         ctx.update({ loading: true });
         walking.stop();
         ctx.resolve(false);
+        await identityLab.stop();
         await loadScenario(scenario, keepEdits);
         ctx.scenario = scenario;
+        identityLab.start();
         gait.set(scenario.gait ?? 'none');
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
         ctx.update({
@@ -103,8 +108,8 @@ export function FakeRuntime(): FakeRuntimeInstance {
     walking,
     gait,
     gym,
-    auth: AuthFake(ctx),
-    subscription: SubscriptionFake(ctx),
+    auth: identityLab.route(AuthFake(ctx), (lab) => lab.auth),
+    subscription: identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription),
     analytics: AnalyticsFake(ctx),
     reviewPreset: { isEnabled: async () => false, expose: () => undefined },
     experiments: { getPaywallVariant: async () => 'control', trackPaywallVariantExposure: () => undefined },
@@ -129,6 +134,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
     status: { ready: () => ready, flush: persistence.flush, snapshot: ctx.snapshot, subscribe: ctx.subscribe },
     dev,
     dispose: () => {
+      void identityLab.stop();
       activity.dispose();
       persistence.dispose();
       walking.disconnect();

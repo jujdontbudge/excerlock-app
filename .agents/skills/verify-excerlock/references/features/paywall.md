@@ -2,7 +2,7 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-apple-linked]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
@@ -115,6 +115,83 @@ expect: Your trial has ended | Start for free
 wait: 45
 then-open: dev
 then-expect: "placement":"in_app"
+```
+
+```proof
+name: identity-sync-retry
+scenario: identity-lab-user-sync-failed
+open: /paywall
+wait: 25
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+```
+
+```proof
+name: identity-slow-cold-start-loading
+scenario: identity-lab-slow-cold-start
+relaunch: true
+wait: 8
+expect: Loading plans…
+```
+
+```proof
+name: identity-slow-cold-start
+scenario: identity-lab-slow-cold-start
+relaunch: true
+wait: 25
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+```
+
+```proof
+name: identity-anonymous-retry
+scenario: identity-lab-anonymous-failed
+open: /paywall
+wait: 25
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+```
+
+```proof
+name: identity-plans-retry
+scenario: identity-lab-plans-failed
+open: /paywall
+tap: Retry loading plans
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+```
+
+```proof
+name: identity-purchase-to-setup
+scenario: identity-lab-user-sync-failed
+open: /paywall
+tap: Start for free | Skip for now
+wait: 25
+expect: Choose apps
+```
+
+```proof
+name: identity-purchase-cancelled
+scenario: identity-lab-purchase-cancelled
+open: /paywall
+tap: Start for free
+wait: 25
+expect: Choose a plan to continue.
+```
+
+```proof
+name: identity-restore-not-found
+scenario: identity-lab-user-sync-failed
+open: /paywall
+tap: Restore purchases
+wait: 25
+expect: No active purchase was found.
+```
+
+```proof
+name: identity-account-switch
+scenario: identity-lab-apple-linked
+open: /sign-in
+tap: Continue with Apple | Recover with Apple
+expect: ExcerLock
+then-open: /paywall
+then-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
 ```
 
 ## Gotchas
