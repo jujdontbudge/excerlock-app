@@ -55,6 +55,14 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
     const prunedThrough = await readPrunedThrough();
     return readRetainedStored(prunedThrough);
   }
+  replace(records: readonly GymTransitionRecord[]): Promise<void> {
+    const safe = records.map((record) => coordinateFree(record));
+    if (safe.some((record) => !isRecord(record))) return Promise.reject(new Error('Invalid gym transition log'));
+    return serialize(async () => {
+      await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify(safe));
+      await AsyncStorage.multiRemove([LEGACY_GYM_VISIT_LOG_STORAGE_KEY, GYM_VISIT_LOG_PRUNED_THROUGH_KEY]);
+    });
+  }
   reset(): Promise<void> {
     return serialize(() =>
       AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY, GYM_VISIT_LOG_PRUNED_THROUGH_KEY]));

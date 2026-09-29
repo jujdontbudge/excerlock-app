@@ -22,6 +22,7 @@ import {
   resetSettingsAccountData,
   type SettingsAccountData,
 } from '../preferences/SettingsAccountData';
+import type { ActivityAccountData } from '../activity/ActivityAccountData';
 
 const STORAGE_KEY = 'excerlock-next.account-data.v1';
 
@@ -30,11 +31,13 @@ type AccountDataSnapshot = {
   history: HistoryArchive;
   profile: Profile;
   settings?: SettingsAccountData;
+  activity?: ActivityAccountData;
 };
 
 type AccountDataEnvelope = {
   version: 1;
   activeUserId: string | null;
+  lastUserId?: string | null;
   accounts: Record<string, AccountDataSnapshot>;
   legacy: AccountDataSnapshot | null;
 };
@@ -44,14 +47,28 @@ export type AccountDataStorage = {
   setItem(key: string, value: string): Promise<void>;
 };
 
-const emptyEnvelope = (): AccountDataEnvelope => ({ version: 1, activeUserId: null, accounts: {}, legacy: null });
-const capture = (): AccountDataSnapshot => ({
+export type AccountActivityData = {
+  capture(): Promise<ActivityAccountData>;
+  restore(snapshot: ActivityAccountData | undefined): Promise<void>;
+  reset(): Promise<void>;
+  hasData(snapshot: ActivityAccountData): boolean;
+};
+
+const emptyEnvelope = (): AccountDataEnvelope => ({
+  version: 1,
+  activeUserId: null,
+  lastUserId: null,
+  accounts: {},
+  legacy: null,
+});
+const capture = async (activity?: AccountActivityData): Promise<AccountDataSnapshot> => ({
   conditions: exportConditionsAccountData(),
   history: exportHistoryAccountData(),
   profile: exportProfileAccountData(),
   settings: exportSettingsAccountData(),
+  activity: await activity?.capture(),
 });
-const hasLegacyData = (snapshot: AccountDataSnapshot): boolean =>
+const hasLegacyData = (snapshot: AccountDataSnapshot, activity?: AccountActivityData): boolean =>
   snapshot.conditions.rules.length > 0 ||
   !snapshot.conditions.lockedApps.isEmpty ||
   snapshot.conditions.days.length > 0 ||
@@ -64,7 +81,8 @@ const hasLegacyData = (snapshot: AccountDataSnapshot): boolean =>
   snapshot.profile.referralSource.length > 0 ||
   snapshot.profile.ageBand.length > 0 ||
   snapshot.profile.occupation.length > 0 ||
-  snapshot.profile.mainReason.length > 0;
+  snapshot.profile.mainReason.length > 0 ||
+  Boolean(snapshot.activity && activity?.hasData(snapshot.activity));
 const parseEnvelope = (raw: string | null): AccountDataEnvelope | null => {
   if (!raw) return null;
   const value = JSON.parse(raw) as Partial<AccountDataEnvelope>;
@@ -74,17 +92,19 @@ const parseEnvelope = (raw: string | null): AccountDataEnvelope | null => {
   return {
     version: 1,
     activeUserId: typeof value.activeUserId === 'string' ? value.activeUserId : null,
+    lastUserId: typeof value.lastUserId === 'string' ? value.lastUserId : null,
     accounts: value.accounts as Record<string, AccountDataSnapshot>,
     legacy: value.legacy ?? null,
   };
 };
 
-export function createAccountDataCoordinator(storage: AccountDataStorage) {
+export function createAccountDataCoordinator(storage: AccountDataStorage, activity?: AccountActivityData) {
   let envelope: AccountDataEnvelope | null = null;
+  let lastUserId: string | null = null;
   let queue: Promise<void> = Promise.resolve();
-  const run = (operation: () => Promise<void>) => {
+  const run = <T>(operation: () => Promise<T>) => {
     const result = queue.then(operation);
-    queue = result.catch(() => undefined);
+    queue = result.then(() => undefined, () => undefined);
     return result;
   };
   const persist = async () => {
@@ -96,6 +116,7 @@ export function createAccountDataCoordinator(storage: AccountDataStorage) {
     resetHistoryAccountData(),
     resetProfileAccountData(),
     resetSettingsAccountData(),
+    activity?.reset(),
   ]).then(() => undefined);
   const restore = (snapshot: AccountDataSnapshot | undefined) => snapshot
     ? Promise.all([
@@ -103,23 +124,30 @@ export function createAccountDataCoordinator(storage: AccountDataStorage) {
         importHistoryAccountData(snapshot.history),
         importProfileAccountData(snapshot.profile),
         snapshot.settings ? importSettingsAccountData(snapshot.settings) : resetSettingsAccountData(),
+        activity?.restore(snapshot.activity),
       ]).then(() => undefined)
     : resetActive();
   return {
     prepare: () => run(async () => {
       if (envelope) return;
       const stored = parseEnvelope(await storage.getItem(STORAGE_KEY));
-      const active = capture();
+      const active = await capture(activity);
       envelope = stored ?? emptyEnvelope();
       if (stored?.activeUserId) envelope.accounts[stored.activeUserId] = active;
-      else if (!stored && hasLegacyData(active)) envelope.legacy = active;
+      else if (!stored && hasLegacyData(active, activity)) envelope.legacy = active;
+      lastUserId = stored?.activeUserId ?? stored?.lastUserId ?? null;
+      envelope.lastUserId = lastUserId;
       envelope.activeUserId = null;
       await persist();
       await resetActive();
     }),
     deactivate: () => run(async () => {
       if (!envelope) throw new Error('Account data coordinator is not prepared');
-      if (envelope.activeUserId) envelope.accounts[envelope.activeUserId] = capture();
+      if (envelope.activeUserId) {
+        lastUserId = envelope.activeUserId;
+        envelope.lastUserId = lastUserId;
+        envelope.accounts[envelope.activeUserId] = await capture(activity);
+      }
       envelope.activeUserId = null;
       await persist();
       await resetActive();
@@ -127,17 +155,27 @@ export function createAccountDataCoordinator(storage: AccountDataStorage) {
     eraseActive: () => run(async () => {
       if (!envelope) throw new Error('Account data coordinator is not prepared');
       if (envelope.activeUserId) delete envelope.accounts[envelope.activeUserId];
+      lastUserId = null;
+      envelope.lastUserId = null;
       envelope.activeUserId = null;
       await persist();
       await resetActive();
     }),
     activate: (userId: string) => run(async () => {
       if (!envelope) throw new Error('Account data coordinator is not prepared');
-      if (envelope.activeUserId === userId) return;
-      if (envelope.activeUserId) envelope.accounts[envelope.activeUserId] = capture();
+      if (envelope.activeUserId === userId) return { changedAccount: false };
+      if (envelope.activeUserId) {
+        lastUserId = envelope.activeUserId;
+        envelope.lastUserId = lastUserId;
+        envelope.accounts[envelope.activeUserId] = await capture(activity);
+      }
+      const changedAccount = lastUserId !== userId && (lastUserId !== null || envelope.legacy !== null);
       await restore(envelope.accounts[userId]);
       envelope.activeUserId = userId;
+      lastUserId = userId;
+      envelope.lastUserId = userId;
       await persist();
+      return { changedAccount };
     }),
     snapshot: () => ({
       activeUserId: envelope?.activeUserId ?? null,
@@ -145,7 +183,7 @@ export function createAccountDataCoordinator(storage: AccountDataStorage) {
     }),
     save: () => run(async () => {
       if (!envelope) throw new Error('Account data coordinator is not prepared');
-      if (envelope.activeUserId) envelope.accounts[envelope.activeUserId] = capture();
+      if (envelope.activeUserId) envelope.accounts[envelope.activeUserId] = await capture(activity);
       await persist();
     }),
     flush: () => queue,

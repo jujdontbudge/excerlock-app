@@ -13,6 +13,12 @@ export class HistoryCreditLedger {
   private queue: Promise<unknown> = Promise.resolve();
   constructor(private storage: HistoryLedgerStorage) {}
   read(): Promise<HistoryLedger> { return this.serialize(() => this.load()); }
+  replace(state: HistoryLedger): Promise<void> {
+    return this.serialize(async () => {
+      validateState(state);
+      await this.save(state);
+    });
+  }
   apply(credit: HistoryCredit, timezone: string): Promise<HistoryLedger> {
     return this.serialize(async () => {
       if (!credit.idempotencyKey || !Number.isFinite(credit.from) || !Number.isFinite(credit.to) || credit.to <= credit.from ||
@@ -74,16 +80,9 @@ export class HistoryCreditLedger {
     const raw = await this.storage.getItem(KEY);
     if (raw === null) return empty();
     const value: unknown = JSON.parse(raw);
-    if (!value || typeof value !== 'object') throw new Error('Invalid history ledger');
+    validateState(value);
     const record = value as HistoryLedger;
-    if (record.version !== 1 || (record.through !== null && !Number.isFinite(record.through)) || !record.stepsByDay ||
-      typeof record.stepsByDay !== 'object' || Array.isArray(record.stepsByDay) ||
-      Object.entries(record.stepsByDay).some(([day, steps]) => !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isSafeInteger(steps) || steps < 0)) throw new Error('Invalid history ledger');
     const measurements = (record as HistoryLedger & { instanceMeasurements?: unknown }).instanceMeasurements;
-    if (measurements !== undefined && (!measurements || typeof measurements !== 'object' || Array.isArray(measurements) ||
-      Object.entries(measurements).some(([key, sample]) => {
-        try { validateKey(key); validateMeasurement(sample); return false; } catch { return true; }
-      }))) throw new Error('Invalid history ledger');
     return { ...record, instanceMeasurements: (measurements ?? {}) as Record<string, InstanceStepMeasurement> };
   }
   private save(state: HistoryLedger): Promise<void> { return this.storage.setItem(KEY, JSON.stringify(state)); }
@@ -94,6 +93,19 @@ export class HistoryCreditLedger {
   }
 }
 const empty = (): HistoryLedger => ({ version: 1, through: null, stepsByDay: {}, instanceMeasurements: {} });
+function validateState(value: unknown): asserts value is HistoryLedger {
+  if (!value || typeof value !== 'object') throw new Error('Invalid history ledger');
+  const record = value as HistoryLedger;
+  if (record.version !== 1 || (record.through !== null && !Number.isFinite(record.through)) || !record.stepsByDay ||
+    typeof record.stepsByDay !== 'object' || Array.isArray(record.stepsByDay) ||
+    Object.entries(record.stepsByDay).some(([day, steps]) => !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isSafeInteger(steps) || steps < 0))
+    throw new Error('Invalid history ledger');
+  const measurements = (record as HistoryLedger & { instanceMeasurements?: unknown }).instanceMeasurements;
+  if (measurements !== undefined && (!measurements || typeof measurements !== 'object' || Array.isArray(measurements) ||
+    Object.entries(measurements).some(([key, sample]) => {
+      try { validateKey(key); validateMeasurement(sample); return false; } catch { return true; }
+    }))) throw new Error('Invalid history ledger');
+}
 function validateKey(key: string): void {
   if (!key) throw new Error('Invalid instance measurement key');
 }

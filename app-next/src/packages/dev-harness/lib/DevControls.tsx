@@ -46,6 +46,7 @@ export function DevControls() {
         <SettingsRow title={`Saved Gym ${settingsStore.getState().data.gymPlaces[0]?.name ?? 'None'}`} />
         <SettingsRow title={`Checkpoints ${view.accountData?.checkpoints ?? 'None'}`} />
         <SettingsRow title={`Switch ordering ${view.accountData?.switchOrdering ?? 'None'}`} />
+        <SettingsRow title={`Activity checkpoints ${view.accountData?.activityCheckpoints ?? 'None'}`} />
         <SettingsRow title="Use account A" onPress={() => void runAccountAction(() => dev.useLabAccount('A'))} />
         <SettingsRow title="Seed account A" onPress={() => void runAccountAction(() => dev.seedLabAccount('A'))} />
         <SettingsRow title="Use account B" onPress={() => void runAccountAction(() => dev.useLabAccount('B'))} />

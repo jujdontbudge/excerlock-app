@@ -35,8 +35,10 @@ export type FakeRuntimeOptions = {
   createAccountData(): {
     prepare(): Promise<void>;
     deactivate(): Promise<void>;
-    activate(userId: string): Promise<void>;
+    activate(userId: string): Promise<{ changedAccount: boolean }>;
     snapshot(): { activeUserId: string | null; legacyQuarantined: boolean };
+    seedActivity?(account: 'A' | 'B'): void;
+    activityCheckpoint?(): string;
   };
 };
 export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
@@ -57,6 +59,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         legacyQuarantined: snapshot.legacyQuarantined,
         checkpoints: ctx.snapshot().accountData?.checkpoints,
         switchOrdering: ctx.snapshot().accountData?.switchOrdering,
+        activityCheckpoints: ctx.snapshot().accountData?.activityCheckpoints,
       } });
     },
     identityLab = identityLabHost(ctx, () => ready, {
@@ -71,8 +74,9 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       prepareAccount: async (identity) => {
         if (!identity.userId) throw new Error('Account identity is missing');
-        await accountData.activate(identity.userId);
+        const transition = await accountData.activate(identity.userId);
         accountTransitions.push(`${accountLabel(identity.userId)} loaded before ready`);
+        if (transition.changedAccount) accountTransitions.push('Screen Time rotated after target loaded');
         updateAccountDataView();
       },
     }),
@@ -130,6 +134,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       stopGrace: account === 'A' ? 30 : 60,
       gymAutoDetect: account === 'B',
     });
+    accountData.seedActivity?.(account);
     await Promise.all([
       rulesStore.persistBarrier(),
       historyStore.persistBarrier(),
@@ -190,15 +195,19 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         await accountData.activate('lab-user-a');
         await seedAccount('A');
         const a = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
+        const activityA = accountData.activityCheckpoint?.() ?? 'unavailable';
         await accountData.activate('lab-user-b');
         await seedAccount('B');
         const b = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
+        const activityB = accountData.activityCheckpoint?.() ?? 'unavailable';
         await accountData.activate('lab-user-a');
         updateAccountDataView();
         const restored = `${rulesStore.getState().data.rules[0]?.id}/${historyStore.getState().data.days.length}/${profileStore.getState().data.name}/${settingsStore.getState().data.gymPlaces[0]?.name}`;
+        const activityRestored = accountData.activityCheckpoint?.() ?? 'unavailable';
         ctx.update({ accountData: {
           ...ctx.snapshot().accountData!,
           checkpoints: `A ${a} · B ${b} · A ${restored}`,
+          activityCheckpoints: `A ${activityA} · B ${activityB} · A ${activityRestored}`,
         } });
       },
       runLabAccountSwitchOrdering: async () => {

@@ -28,7 +28,7 @@ name: account-data-a-b-a-isolation
 scenario: identity-lab-account-isolation
 open: /dev
 tap: Run A B A isolation
-expect: Account data | Active account A | Legacy data Quarantined | Condition owner Account A | History Days 1 | Profile Account A | Saved Gym Gym A | Checkpoints A account-a/1/Account A/Gym A · B account-b/1/Account B/Gym B · A account-a/1/Account A/Gym A
+expect: Account data | Active account A | Legacy data Quarantined | Condition owner Account A | History Days 1 | Profile Account A | Saved Gym Gym A | Checkpoints A account-a/1/Account A/Gym A · B account-b/1/Account B/Gym B · A account-a/1/Account A/Gym A | Activity checkpoints A activity-a/11/110/1 · B activity-b/22/220/2 · A activity-a/11/110/1
 ```
 
 ```proof
@@ -37,7 +37,7 @@ scenario: identity-lab-account-isolation
 open: /dev
 tap: Run account switch ordering
 wait: 30
-expect: Account data | Active account A | Condition owner Account A | Saved Gym Gym A | Switch ordering Preserved while unready · B loaded before ready · B ready · Preserved while unready · A loaded before ready · A ready
+expect: Account data | Active account A | Condition owner Account A | Saved Gym Gym A | Switch ordering Preserved while unready · B loaded before ready · Screen Time rotated after target loaded · B ready · Preserved while unready · A loaded before ready · Screen Time rotated after target loaded · A ready
 ```
 
 ## Gotchas

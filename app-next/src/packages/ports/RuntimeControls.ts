@@ -23,6 +23,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     legacyQuarantined: boolean;
     checkpoints?: string;
     switchOrdering?: string;
+    activityCheckpoints?: string;
   };
 };
 export interface RuntimeControls extends RuntimeStatusPort {
