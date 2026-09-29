@@ -27,6 +27,9 @@ type Loaded = {
   sdkProducts: Map<string, AdaptyPaywallProduct>;
 };
 
+const isAlreadyOwned = (error: unknown) =>
+  typeof error === 'object' && error !== null && 'adaptyCode' in error && error.adaptyCode === 107;
+
 export class AdaptySubscriptionAdapter implements SubscriptionPort {
   private activation: Promise<void> | null = null;
   private listener: { remove(): void } | null = null;
@@ -201,6 +204,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           const current = this.deps.recoveryJournal.snapshot();
           if (current.type === 'pending' && current.operationId === recovery.operationId)
             await this.deps.recoveryJournal.clear();
+          if (isAlreadyOwned(error)) {
+            this.assertIdentity(ready);
+            return { type: 'already_subscribed' };
+          }
           throw error;
         }
         this.assertIdentity(ready);

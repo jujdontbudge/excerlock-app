@@ -40,6 +40,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     providerConflict?: string;
     localSignOutIsolation?: string;
     purchaseSerialization?: string;
+    existingSubscription?: string;
   };
   protectedRouteMounts: string[];
   notificationResponses: { delivered: ('home' | 'unlock')[]; handled: number };

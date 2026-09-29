@@ -58,6 +58,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'busyBarrier' },
   }),
+  base('identity-lab-existing-subscription', 'Identity lab · existing store subscription checkout', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', purchase: 'alreadyOwned', restore: 'restored' },
+  }),
   base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },

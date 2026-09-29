@@ -50,6 +50,7 @@ export function PaywallScreen({
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
     [message, setMessage] = useState(''),
+    [existingSubscription, setExistingSubscription] = useState(false),
     chosen = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null);
@@ -100,6 +101,10 @@ export function PaywallScreen({
         if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) onAccess?.(result.entitlement);
         else setMessage('Your payment is being confirmed. Please retry or restore purchases.');
       } else if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
+      else if (result.type === 'already_subscribed') {
+        setExistingSubscription(true);
+        setMessage('This App Store account already has a subscription. Restore it to connect it to your ExcerLock account.');
+      }
       else if (result.type === 'user_cancelled') {
         runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
         setMessage('Choose a plan to continue.');
@@ -185,7 +190,7 @@ export function PaywallScreen({
       }
       footer={
         <>
-          {product?.offerLabel ? (
+          {product?.offerLabel && !existingSubscription ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
               <Icon name="check" size={t.icon.md} variant="utility" />
               <Label variant="label">{subscriptionCopy.noPayment}</Label>
@@ -195,7 +200,12 @@ export function PaywallScreen({
             <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md }}>
               {paywall.products.map((item, index) => (
                 <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
-                  <PlanCard product={item} selected={selected === item.handle} onPress={() => choose(item.handle)} />
+                  <PlanCard
+                    product={item}
+                    selected={selected === item.handle}
+                    showOffer={!existingSubscription}
+                    onPress={() => choose(item.handle)}
+                  />
                 </Reveal>
               ))}
             </View>
@@ -206,13 +216,15 @@ export function PaywallScreen({
                 ? 'Continue to sign in'
                 : recovery.type === 'pending'
                   ? 'Check purchase status'
+                  : existingSubscription
+                    ? 'Use existing subscription'
                   : product?.offerLabel
                     ? subscriptionCopy.start
                     : 'Continue'
             }
             loading={busy === 'purchase'}
             disabled={(recovery.type === 'none' && !product) || busy === 'restore' || busy === 'load'}
-            onPress={() => recovery.type === 'none' ? void purchase() : continueRecovery()}
+            onPress={() => existingSubscription ? void restore() : recovery.type === 'none' ? void purchase() : continueRecovery()}
           />
           {onRecovery ? <PressableScale label="Account and help" onPress={onRecovery}><Label variant="support" tone="secondary">Account and help</Label></PressableScale> : null}
         </>
@@ -260,7 +272,17 @@ export function PaywallScreen({
   );
 }
 
-function PlanCard({ product, selected, onPress }: { product: PaywallProduct; selected: boolean; onPress: () => void }) {
+function PlanCard({
+  product,
+  selected,
+  showOffer,
+  onPress,
+}: {
+  product: PaywallProduct;
+  selected: boolean;
+  showOffer: boolean;
+  onPress: () => void;
+}) {
   const m = useMotion(),
     ink = selected ? t.text.onAccent : t.text.primary,
     price = product.localizedMonthlyPrice
@@ -290,7 +312,7 @@ function PlanCard({ product, selected, onPress }: { product: PaywallProduct; sel
           {price}
         </Label>
       </Animated.View>
-      {product.offerLabel ? (
+      {product.offerLabel && showOffer ? (
         <View style={{ position: 'absolute', top: -t.space.md, left: 0, right: 0, alignItems: 'center' }}>
           <View
             style={{

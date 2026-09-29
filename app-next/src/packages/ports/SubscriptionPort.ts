@@ -40,7 +40,9 @@ export type SubscriptionPaywall = {
   products: readonly PaywallProduct[];
   generation: number;
 };
-export type PurchaseResult = { type: 'success'; entitlement: Entitlement } | { type: 'user_cancelled' | 'pending' };
+export type PurchaseResult =
+  | { type: 'success'; entitlement: Entitlement }
+  | { type: 'user_cancelled' | 'pending' | 'already_subscribed' };
 export type StoreEnvironment = 'production' | 'sandbox';
 export type SubscriptionAdmissionLease = {
   userId: string;

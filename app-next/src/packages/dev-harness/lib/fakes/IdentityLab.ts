@@ -122,7 +122,13 @@ export type IdentityLabAccountHooks = {
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-function labProduct(vendorProductId: string, title: string, amount: number, unit: 'year' | 'month'): AdaptyPaywallProduct {
+function labProduct(
+  vendorProductId: string,
+  title: string,
+  amount: number,
+  unit: 'year' | 'month',
+  trial: boolean,
+): AdaptyPaywallProduct {
   return {
     variationId: 'identity-lab',
     vendorProductId,
@@ -132,7 +138,9 @@ function labProduct(vendorProductId: string, title: string, amount: number, unit
     subscription: {
       subscriptionPeriod: { unit, numberOfUnits: 1 },
       localizedSubscriptionPeriod: unit,
-      offer: { phases: [{ paymentMode: 'free_trial', numberOfPeriods: 1, subscriptionPeriod: { unit: 'week', numberOfUnits: 1 } }] },
+      offer: trial
+        ? { phases: [{ paymentMode: 'free_trial', numberOfPeriods: 1, subscriptionPeriod: { unit: 'week', numberOfUnits: 1 } }] }
+        : undefined,
     },
   } as unknown as AdaptyPaywallProduct;
 }
@@ -156,6 +164,7 @@ export async function createIdentityLab(
     emailSend: 0,
   };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
+  if (script.purchase === 'alreadyOwned') grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
   let transfers = 0;
@@ -386,6 +395,9 @@ export async function createIdentityLab(
         : ctx.snapshot().subscriptionLab?.emailChallenges,
       localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       purchaseSerialization: ctx.snapshot().subscriptionLab?.purchaseSerialization,
+      existingSubscription: script.purchase === 'alreadyOwned'
+        ? `store ${STORE_SUBSCRIPTION_ID} owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} charge starts 0`
+        : ctx.snapshot().subscriptionLab?.existingSubscription,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -464,7 +476,12 @@ export async function createIdentityLab(
       return { placementId: placement, variationId: `identity-lab-${placement}`, remoteConfigs: [] } as unknown as AdaptyFlow;
     },
     getPaywallProducts: async () =>
-      script.plans === 'empty' ? [] : [labProduct('lab.annual', 'Lab annual', 49.99, 'year'), labProduct('lab.monthly', 'Lab monthly', 9.99, 'month')],
+      script.plans === 'empty'
+        ? []
+        : [
+            labProduct('lab.annual', 'Lab annual', 49.99, 'year', script.purchase !== 'alreadyOwned'),
+            labProduct('lab.monthly', 'Lab monthly', 9.99, 'month', script.purchase !== 'alreadyOwned'),
+          ],
     logShowFlow: async () => undefined,
     makePurchase: async () => {
       attempts.purchase += 1;
@@ -483,6 +500,10 @@ export async function createIdentityLab(
         await purchaseBarrierReleased;
       }
       if (result === 'error') throw networkError('Purchase failed');
+      if (result === 'alreadyOwned') {
+        updateSubscriptionLab();
+        throw Object.assign(new Error('This subscription is already owned'), { adaptyCode: 107 });
+      }
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       if (!owner) throw new Error('Purchase owner unavailable');
