@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout]
 depends: [launch]
 ---
 ## Sub-features
@@ -83,6 +83,17 @@ open: /dev
 tap: Run concurrent restore race
 wait: 30
 expect: Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Restore operations 3 | Concurrent restore race A+B winner lab-user-b after race eligible stale loser eligible/active repeat eligible source eligible target eligible transfers 1 grants store lab.store.annual=lab-user-b independent A lab.account.monthly=lab-user-a independent B lab.account.b.monthly=lab-user-b unique 3/3 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B
+```
+
+```proof
+name: local-signout-keeps-peer-session
+scenario: identity-lab-local-signout
+open: /dev
+tap: Run local sign-out isolation
+wait: 30
+expect: Get started | Sign in
+then-open: /dev
+then-expect: Active account Checkout | Condition owner None | History Days 0 | Profile None | Saved Gym None | Local sign-out before app/admitted failed reset Could not sign out. Please try again. journey verifying/revoked data account-a/1/Account A/Gym A after welcome/revoked local scopes local local data undefined/0//undefined peer eligible fresh proofs 1
 ```
 
 ## Gotchas

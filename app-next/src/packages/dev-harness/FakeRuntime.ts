@@ -32,6 +32,7 @@ import { settingsStore } from '../preferences/settingsStore';
 import { isAccountDataReady } from '../model/accountDataReady';
 import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
+import { beginWelcome, currentJourney, finishSetup, verifySelectedAccount } from '../journey/index';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   createAccountData(): {
@@ -362,6 +363,43 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           transferIsolation: current?.transferIsolation,
           concurrentRestoreIsolation: `race A+B winner ${result.winner} after race ${result.afterRace} stale loser ${result.afterStaleLoser} repeat ${result.afterRepeat} source ${result.sourceAfterRace} target ${result.targetAfterReturn} transfers ${result.transfers} grants ${result.grantLedger} data A ${result.sourceData} data B ${result.targetData}`,
           providerConflict: current?.providerConflict,
+        } });
+      },
+      runLabLocalSignOut: async () => {
+        const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
+        const journeyCheckpoint = async (action?: 'admit' | 'reset') => {
+          if (action === 'reset') beginWelcome();
+          else if (action === 'admit') {
+            const verified = await verifySelectedAccount(journeyRuntime);
+            if (verified !== 'paid' || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
+          }
+          const journey = currentJourney();
+          const identity = auth.identity();
+          const admission = journey.admission;
+          const admitted = Boolean(
+            admission &&
+            identity.kind === 'canonical' &&
+            identity.ready &&
+            !identity.isAnonymous &&
+            identity.userId === admission.userId &&
+            identity.generation === admission.generation &&
+            subscriptionAdmission.current(admission),
+          );
+          return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
+        };
+        const result = await identityLab.runLocalSignOut(seedAccount, accountCheckpoint, journeyCheckpoint);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? 0,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: current?.callbackIsolation,
+          deletionIsolation: current?.deletionIsolation,
+          transferIsolation: current?.transferIsolation,
+          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
+          providerConflict: current?.providerConflict,
+          localSignOutIsolation: `before ${result.before} failed reset ${result.failedReset} after ${result.after} local scopes ${result.localScopes} local data ${result.localData} peer ${result.peer} fresh proofs ${result.peerProofs}`,
         } });
       },
       deliverNotification: (destination) => {

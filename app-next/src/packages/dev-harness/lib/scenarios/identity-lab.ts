@@ -72,6 +72,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', concurrentRestore: true },
   }),
+  base('identity-lab-local-signout', 'Identity lab · local sign-out with peer session', {
+    ...atOnboardingPaywall,
+    identityLab: { localSignOut: true },
+  }),
   base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedProviderConflict: true },

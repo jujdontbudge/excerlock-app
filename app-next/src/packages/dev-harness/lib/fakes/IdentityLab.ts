@@ -81,6 +81,19 @@ export type IdentityLab = {
     transfers: number;
     grantLedger: string;
   }>;
+  runLocalSignOut(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    journeyCheckpoint: (action?: 'admit' | 'reset') => Promise<string>,
+  ): Promise<{
+    before: string;
+    failedReset: string;
+    after: string;
+    peer: string;
+    peerProofs: number;
+    localScopes: string;
+    localData: string;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -114,7 +127,7 @@ export async function createIdentityLab(
   script: IdentityLabScript,
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
-  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0, link: 0, sessionRestore: 0 };
+  const attempts = { anonymous: 0, userSync: 0, flow: 0, purchase: 0, restore: 0, link: 0, sessionRestore: 0, peerProof: 0 };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
@@ -129,6 +142,9 @@ export async function createIdentityLab(
     owner: string;
     resolve(profile: AdaptyProfile): void;
   }[] = [];
+  let rejectNextAccountReset = false;
+  const activeSessionTokens = new Set<string>();
+  const signOutScopes: string[] = [];
   let services: AuthServices | undefined;
   const providerUsers = new Map<string, LabUser>();
   const usersById = new Map<string, LabUser>();
@@ -150,6 +166,7 @@ export async function createIdentityLab(
   };
   const signedIn = (user: LabUser) => {
     stored = { access_token: `lab-token-${user.id}`, refresh_token: `lab-refresh-${user.id}`, user };
+    activeSessionTokens.add(stored.access_token);
     return { data: { user, session: stored }, error: null };
   };
   const unscripted = async () => ({ data: { user: null, session: null }, error: networkError('Not scripted in the identity lab') });
@@ -164,7 +181,17 @@ export async function createIdentityLab(
         return ok ? signedIn(newUser()) : { data: { user: null, session: null }, error: networkError('Network request failed') };
       },
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
-      signOut: async () => {
+      signOut: async ({ scope }: { scope?: 'local' | 'global' | 'others' } = {}) => {
+        const resolvedScope = scope ?? 'global';
+        signOutScopes.push(resolvedScope);
+        if (resolvedScope === 'global') activeSessionTokens.clear();
+        else if (resolvedScope === 'local' && stored) activeSessionTokens.delete(stored.access_token);
+        else if (stored) {
+          for (const token of activeSessionTokens) {
+            if (token !== stored.access_token) activeSessionTokens.delete(token);
+          }
+        }
+        ctx.log('lab_sign_out', { scope: resolvedScope });
         stored = null;
         return { error: null };
       },
@@ -246,6 +273,7 @@ export async function createIdentityLab(
       deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
       transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
       concurrentRestoreIsolation: ctx.snapshot().subscriptionLab?.concurrentRestoreIsolation,
+      localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -409,7 +437,14 @@ export async function createIdentityLab(
     setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
     onBeforeDelete: async () => undefined,
     onAfterDelete: accountHooks?.afterDelete ?? (async () => undefined),
-    beforeAccountSwitch: accountHooks?.beforeAccountSwitch,
+    beforeAccountSwitch: async () => {
+      if (rejectNextAccountReset) {
+        rejectNextAccountReset = false;
+        ctx.log('lab_sign_out_reset', { result: 'failed' });
+        throw networkError('Account reset failed');
+      }
+      await accountHooks?.beforeAccountSwitch();
+    },
     prepareAccount: accountHooks?.prepareAccount,
   });
   const auth = services.auth;
@@ -684,6 +719,52 @@ export async function createIdentityLab(
         restores: attempts.restore,
         transfers,
         grantLedger,
+      };
+    },
+    runLocalSignOut: async (seedAccount, accountCheckpoint, journeyCheckpoint) => {
+      if (!script.localSignOut) throw new Error('Local sign-out is not scripted');
+      await auth.recoverWithApple();
+      const selected = await services?.waitForIdentityReady();
+      if (!selected?.userId) throw new Error('Local sign-out account did not become ready');
+      await seedAccount('A');
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
+      profileListener?.(profile(selected.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const peerToken = `lab-peer-token-${selected.userId}`;
+      activeSessionTokens.add(peerToken);
+      const verifyPeer = () => {
+        attempts.peerProof += 1;
+        const active = activeSessionTokens.has(peerToken);
+        const eligible = [...grants.values()].some((grant) => grant.owner === selected.userId && ['trial', 'active'].includes(grant.status));
+        const result = active && eligible ? 'eligible' : 'unavailable';
+        ctx.log('lab_peer_subscription_proof', { account: selected.userId, result });
+        return result;
+      };
+      const before = await journeyCheckpoint('admit');
+      rejectNextAccountReset = true;
+      let failedReset = 'missing';
+      try {
+        await auth.signOut();
+      } catch (error) {
+        failedReset = message(error);
+      }
+      await services?.waitForIdentityReady();
+      const failedJourney = await journeyCheckpoint();
+      const failedData = accountCheckpoint();
+      await auth.signOut();
+      await services?.waitForIdentityReady();
+      const after = await journeyCheckpoint('reset');
+      const localData = accountCheckpoint();
+      const peer = verifyPeer();
+      updateSubscriptionLab();
+      return {
+        before,
+        failedReset: `${failedReset} journey ${failedJourney} data ${failedData}`,
+        after,
+        peer,
+        peerProofs: attempts.peerProof,
+        localScopes: signOutScopes.join(','),
+        localData,
       };
     },
     dispose: async () => {
