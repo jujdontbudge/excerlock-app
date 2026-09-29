@@ -64,6 +64,7 @@ export type IdentityLabScript = {
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
   secondSubscription?: boolean;
+  concurrentRestore?: boolean;
   establishedProviderConflict?: boolean;
 };
 export type Unsubscribe = () => void;

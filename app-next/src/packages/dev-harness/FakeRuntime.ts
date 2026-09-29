@@ -295,6 +295,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
             callbackIsolation: current?.callbackIsolation,
             deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
             transferIsolation: current?.transferIsolation,
+            concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
           } });
         });
       },
@@ -318,6 +319,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           callbackIsolation: current?.callbackIsolation,
           deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
           transferIsolation: current?.transferIsolation,
+          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
         } });
       },
       runLabEstablishedTransfer: async () => {
@@ -337,6 +339,28 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           callbackIsolation: current?.callbackIsolation,
           deletionIsolation: current?.deletionIsolation,
           transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers}${result.grantLedger ? ` grants ${result.grantLedger}` : ''} data A ${result.sourceData} data B ${result.targetData}`,
+          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
+          providerConflict: current?.providerConflict,
+        } });
+      },
+      runLabConcurrentRestore: async () => {
+        const verifyCurrent = async () => {
+          const selected = auth.identity();
+          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
+          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
+          return proof.type;
+        };
+        const result = await identityLab.runConcurrentRestore(seedAccount, accountCheckpoint, verifyCurrent);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? result.restores,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          callbackIsolation: current?.callbackIsolation,
+          deletionIsolation: current?.deletionIsolation,
+          transferIsolation: current?.transferIsolation,
+          concurrentRestoreIsolation: `race A+B winner ${result.winner} after race ${result.afterRace} stale loser ${result.afterStaleLoser} repeat ${result.afterRepeat} source ${result.sourceAfterRace} target ${result.targetAfterReturn} transfers ${result.transfers} grants ${result.grantLedger} data A ${result.sourceData} data B ${result.targetData}`,
           providerConflict: current?.providerConflict,
         } });
       },

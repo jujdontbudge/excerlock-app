@@ -13,6 +13,7 @@ const LAB_URL = 'https://identity-lab.invalid';
 const ANONYMOUS_DISTINCT_ID = 'lab-anonymous-distinct-id';
 const STORE_SUBSCRIPTION_ID = 'lab.store.annual';
 const INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.monthly';
+const TARGET_INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.b.monthly';
 
 type LabUser = { id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
 type LabSession = { access_token: string; refresh_token: string; user: LabUser };
@@ -63,6 +64,23 @@ export type IdentityLab = {
     transfers: number;
     grantLedger: string | null;
   }>;
+  runConcurrentRestore(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    verifyCurrent: () => Promise<string>,
+  ): Promise<{
+    winner: string;
+    afterRace: string;
+    afterStaleLoser: string;
+    afterRepeat: string;
+    sourceAfterRace: string;
+    targetAfterReturn: string;
+    sourceData: string;
+    targetData: string;
+    restores: number;
+    transfers: number;
+    grantLedger: string;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -107,6 +125,10 @@ export async function createIdentityLab(
   let distinctId = ANONYMOUS_DISTINCT_ID;
   let customerUserId: string | undefined;
   let profileListener: ((profile: AdaptyProfile) => void) | null = null;
+  let concurrentRestoreClaims: {
+    owner: string;
+    resolve(profile: AdaptyProfile): void;
+  }[] = [];
   let services: AuthServices | undefined;
   const providerUsers = new Map<string, LabUser>();
   const usersById = new Map<string, LabUser>();
@@ -223,6 +245,7 @@ export async function createIdentityLab(
       callbackIsolation: ctx.snapshot().subscriptionLab?.callbackIsolation,
       deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
       transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
+      concurrentRestoreIsolation: ctx.snapshot().subscriptionLab?.concurrentRestoreIsolation,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -247,6 +270,35 @@ export async function createIdentityLab(
           }
         : {},
     } as unknown as AdaptyProfile;
+  };
+  const applyStoreRestore = (owner: string) => {
+    const storeGrant = grants.get(STORE_SUBSCRIPTION_ID);
+    if (storeGrant && storeGrant.owner !== owner) transfers += 1;
+    grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'active' });
+  };
+  const restoreForOwner = async (owner: string, source: 'adapter' | 'remote'): Promise<AdaptyProfile> => {
+    attempts.restore += 1;
+    ctx.log('lab_restore', { result: 'restored', owner, source });
+    if (!script.concurrentRestore || attempts.restore > 2) {
+      applyStoreRestore(owner);
+      updateSubscriptionLab();
+      return profile(owner);
+    }
+    return new Promise((resolve) => {
+      concurrentRestoreClaims.push({ owner, resolve });
+      ctx.log('lab_restore_barrier', { owner, waiting: concurrentRestoreClaims.length });
+      if (concurrentRestoreClaims.length !== 2) return;
+      const claims = concurrentRestoreClaims;
+      concurrentRestoreClaims = [];
+      const ordered = claims.sort((left, right) => left.owner.localeCompare(right.owner));
+      const resolved = ordered.map((claim) => {
+        applyStoreRestore(claim.owner);
+        return { claim, restored: profile(claim.owner) };
+      });
+      ctx.log('lab_restore_barrier_released', { order: ordered.map((claim) => claim.owner).join(',') });
+      updateSubscriptionLab();
+      resolved.forEach(({ claim, restored }) => claim.resolve(restored));
+    });
   };
   const sdk: AdaptySdkPort = {
     activate: async () => undefined,
@@ -294,19 +346,21 @@ export async function createIdentityLab(
       return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
     },
     restorePurchases: async () => {
-      attempts.restore += 1;
       const result = script.restore ?? ctx.snapshot().restoreOutcome;
       const owner = customerUserId;
-      ctx.log('lab_restore', { result, owner });
-      if (script.establishedTransfer && attempts.restore === 1) throw networkError('Restore reconciliation unavailable');
-      if (result === 'restored' && owner) {
-        const storeGrant = grants.get(STORE_SUBSCRIPTION_ID);
-        if (script.establishedTransfer && storeGrant && storeGrant.owner !== owner) {
-          transfers += 1;
-        }
-        grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'active' });
+      if (!owner) throw new Error('Restore owner unavailable');
+      if (script.establishedTransfer && attempts.restore === 0) {
+        attempts.restore += 1;
+        ctx.log('lab_restore', { result, owner, source: 'adapter' });
+        throw networkError('Restore reconciliation unavailable');
       }
-      const restored = profile(owner);
+      const restored = result === 'restored'
+        ? await restoreForOwner(owner, 'adapter')
+        : (() => {
+            attempts.restore += 1;
+            ctx.log('lab_restore', { result, owner, source: 'adapter' });
+            return profile(owner);
+          })();
       if (script.delayedCallbacks && owner) queuedProfiles.push({ operation: 'restore', owner, profile: restored });
       updateSubscriptionLab();
       return restored;
@@ -566,6 +620,64 @@ export async function createIdentityLab(
         afterTransfer,
         afterRepeat,
         sourceAfterTransfer,
+        targetAfterReturn,
+        sourceData,
+        targetData,
+        restores: attempts.restore,
+        transfers,
+        grantLedger,
+      };
+    },
+    runConcurrentRestore: async (seedAccount, accountCheckpoint, verifyCurrent) => {
+      await auth.recoverWithApple();
+      const source = await services?.waitForIdentityReady();
+      if (!source?.userId) throw new Error('Source account did not become ready');
+      await seedAccount('A');
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'trial' });
+      const staleSourceProfile = profile(source.userId);
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
+      grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
+
+      await auth.recoverWithGoogle();
+      const target = await services?.waitForIdentityReady();
+      if (!target?.userId) throw new Error('Target account did not become ready');
+      await seedAccount('B');
+      grants.set(TARGET_INDEPENDENT_SUBSCRIPTION_ID, { owner: target.userId, status: 'active' });
+      ctx.update({ restoreOutcome: 'restored' });
+
+      const targetRestore = adapter.restore();
+      const sourceRestore = restoreForOwner(source.userId, 'remote');
+      await Promise.all([sourceRestore, targetRestore]);
+      const raceWinner = grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none';
+      const afterRace = await verifyCurrent();
+
+      profileListener?.(staleSourceProfile);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const afterStaleLoser = `${await verifyCurrent()}/${adapter.entitlement().status}`;
+
+      await adapter.restore();
+      const afterRepeat = await verifyCurrent();
+
+      await auth.recoverWithApple();
+      await services?.waitForIdentityReady();
+      await adapter.refresh();
+      const sourceAfterRace = await verifyCurrent();
+      const sourceData = accountCheckpoint();
+
+      await auth.recoverWithGoogle();
+      await services?.waitForIdentityReady();
+      await adapter.refresh();
+      const targetAfterReturn = await verifyCurrent();
+      const targetData = accountCheckpoint();
+      const entries = [...grants.entries()].sort(([left], [right]) => left.localeCompare(right));
+      const grantLedger = `store ${STORE_SUBSCRIPTION_ID}=${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} independent A ${INDEPENDENT_SUBSCRIPTION_ID}=${grants.get(INDEPENDENT_SUBSCRIPTION_ID)?.owner ?? 'none'} independent B ${TARGET_INDEPENDENT_SUBSCRIPTION_ID}=${grants.get(TARGET_INDEPENDENT_SUBSCRIPTION_ID)?.owner ?? 'none'} unique ${new Set(entries.map(([subscriptionId]) => subscriptionId)).size}/${entries.length}`;
+      updateSubscriptionLab();
+      return {
+        winner: raceWinner,
+        afterRace,
+        afterStaleLoser,
+        afterRepeat,
+        sourceAfterRace,
         targetAfterReturn,
         sourceData,
         targetData,

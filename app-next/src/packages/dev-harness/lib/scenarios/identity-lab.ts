@@ -68,6 +68,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedTransfer: true, secondSubscription: true },
   }),
+  base('identity-lab-concurrent-restore', 'Identity lab · concurrent established account restores', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', concurrentRestore: true },
+  }),
   base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedProviderConflict: true },

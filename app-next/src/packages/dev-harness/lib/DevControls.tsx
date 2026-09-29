@@ -38,6 +38,7 @@ export function DevControls() {
   return (
     <>
       <SettingsGroup title="Account data">
+        <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
         <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
@@ -72,6 +73,7 @@ export function DevControls() {
         <SettingsRow title={`Callback isolation ${view.subscriptionLab?.callbackIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Deletion isolation ${view.subscriptionLab?.deletionIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Transfer isolation ${view.subscriptionLab?.transferIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Concurrent restore ${view.subscriptionLab?.concurrentRestoreIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
