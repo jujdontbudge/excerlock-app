@@ -249,6 +249,20 @@ export async function tap(udid: string, label: string): Promise<string> {
   return `tapped "${label}" at ${x},${y}`;
 }
 
+export function swipeBack(udid: string): string {
+  const nodes = tree(udid);
+  const screen = nodes
+    .map((node) => node.frame)
+    .filter((frame) => frame.x === 0 && frame.y === 0 && frame.width > 0 && frame.height > 0)
+    .sort((a, b) => b.width * b.height - a.width * a.height)[0];
+  if (!screen) throw new Error('Accessibility tree has no screen frame');
+  const xStart = Math.max(1, Math.round(screen.width * 0.01));
+  const xEnd = Math.round(screen.width * 0.85);
+  const y = Math.round(screen.height * 0.5);
+  must('idb', ['ui', 'swipe', '--udid', udid, String(xStart), String(y), String(xEnd), String(y), '--duration', '0.5']);
+  return `swiped back from ${xStart},${y} to ${xEnd},${y}`;
+}
+
 export async function metroClients(): Promise<number> {
   try {
     const response = await fetch(`http://127.0.0.1:${metroPort}/json/list`, { signal: AbortSignal.timeout(1500) });

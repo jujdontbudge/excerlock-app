@@ -52,6 +52,7 @@ Proof fields:
 - `prompt`: `grant` (the default), `deny` or `ask`.
 - `relaunch: true`: cold-launch again after the load, for behavior that happens only at startup.
 - `tap`: labels to tap in order after `open`, separated by `|`. Use it to change state without a deep link, because opening a URL rebuilds navigation and remounts screens.
+- `gesture: back`: performs and records one iOS edge-swipe after the taps and before checking `expect`.
 - `wait`: how many seconds to wait. The default is 15.
 - `then-open` and `then-expect`: after `expect` is met, open another route and expect more labels. Use it to read a side effect, such as the fake analytics events on `dev`. The first screen is saved as `<name>.before.png`.
 - `deny-routes: protected` and `deny-expect`: derive every paid route from the Expo route files, deep-link each one, and require the denial labels before continuing. Route attempts are recorded in `result.json`.

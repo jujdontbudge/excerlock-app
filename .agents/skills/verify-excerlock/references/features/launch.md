@@ -102,6 +102,27 @@ then-expect: Journey onboarding | Protected route mounts | None
 ```
 
 ```proof
+name: unpaid-paywall-back-gesture-blocked
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple
+gesture: back
+expect: Start for free | Restore purchases | Close
+then-open: /dev
+then-expect: Journey paywall | Protected route mounts | None
+```
+
+```proof
+name: unpaid-paywall-close-returns-welcome
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple | Close
+expect: Block apps. Move more. | Get started | Sign in
+then-open: /dev
+then-expect: Journey welcome | Protected route mounts | None
+```
+
+```proof
 name: unpaid-home-ota-envelope-blocked
 scenario: returning-unpaid-ota-home
 relaunch: true

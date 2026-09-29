@@ -80,7 +80,8 @@ export function PaywallSlot() {
       reportError={reportError}
       onAccess={() => void onAccess()}
       recovery={recovery}
-      onBack={back}
+      onClose={setupComplete && signedIn ? back : undefined}
+      onBack={setupComplete && signedIn ? undefined : back}
       onRecovery={() => router.push('/recovery' as Href)}
     />
   );
