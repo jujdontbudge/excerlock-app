@@ -12,7 +12,7 @@
    - *Cancel interception:* impossible. Apple can show a message or offer after the person taps Cancel Subscription; the app learns afterward.
    - *"N minutes after download":* not measurable; the earliest anchor is first launch.
    - *Win-back for never-paid users:* Apple win-back offers go only to lapsed paid subscribers.
-2. **Starting position [R].** Build 12 of 1.0 was rejected on 2026-09-26 (reason unread). The app has never been public, has only one-week free trials, and launches at $59.99 annual and $9.99 monthly. Every number below is arithmetic or a proxy, not a forecast.
+2. **Starting position [R].** Build 12 of 1.0, submitted 2026-09-26, is now rejected (reason unread). The app has never been public, has only one-week free trials, and launches at $59.99 annual and $9.99 monthly. Every number below is arithmetic or a proxy, not a forecast.
 3. **$24.99 is a real US annual price point** ($17.50 first-year proceeds) [R]. It needs 2.40x the conversion of $59.99 to break even in year 1. I assumed annual USD; $24.99 monthly would be 2.5x the $9.99 base, not a discount. The safest vehicle is an Apple promotional or win-back offer on the standard annual product, which returns to $59.99. A standing $24.99 SKU renews at $24.99 and shows to everyone in its group.
 4. **The nine-touch cadence is schedulable, and I recommend against it.** Consent today covers a trial reminder only. DPLA Attachment 1 §2.2, guideline 4.5.4 and the HIG require explicit opt-in and an in-app opt-out for promotional notifications. A purchase elsewhere cannot cancel touches already scheduled. The PRD says "no promotional pushes"; the review notes say "trial reminder only". No proxy tests a first-day burst [P]. Section 5 offers an opt-in, capped alternative.
 5. **Fix paywall disclosure before any discount [R].** The plan cards show a per-month figure as the visible price, with no renewal sentence and no Terms or Privacy links. Apple says the billed amount must be the most prominent price [V]. A discount widens that gap.
@@ -23,7 +23,7 @@
 
 | Area | State on 2026-09-28 |
 |---|---|
-| Release | 1.0 Build 12 REJECTED 2026-09-26; the rejection text is not in the API. |
+| Release | 1.0 Build 12 submitted 2026-09-26, now REJECTED; the rejection text is not in the API. |
 | Launch products | Annual $59.99 (proceeds $42.00 in year 1, $50.99 after) and monthly $9.99 ($7.00, $8.49), each with a one-week free trial. READY_TO_SUBMIT at the last read, not approved. |
 | Offers configured | 0 promotional, 0 win-back, 0 offer codes. |
 | "Win-back" today | Standalone SKUs `a.winback.annual` $29.99 and `b.winback.annual` $39.99, both MISSING_METADATA (not sellable): ordinary products, not Apple win-back offers. The app opens the Adapty `winback` placement once per session when status is `expired`. |
@@ -339,7 +339,7 @@ Commands were list or view calls only (`asc status`, `asc subscriptions groups l
 
 | Item | Observation | Note |
 |---|---|---|
-| App version and build | App `6787265352`, version 1.0, build 12 (`VALID`). Version state `REJECTED`. Review submission `0370ab0e-9af6-4866-ac52-edb15c693f68` state `UNRESOLVED_ISSUES`, submitted 2026-09-26 03:51 UTC. `asc status` health "red" | The rejection reason is not readable through the calls I ran **[U]** |
+| App version and build | App `6787265352`, version 1.0, build 12 (`VALID`). Version state `REJECTED`. Review submission `0370ab0e-9af6-4866-ac52-edb15c693f68` state `UNRESOLVED_ISSUES`, submitted 2026-09-26 03:51 UTC. `asc status` health "red". Re-read 2026-09-28: `asc review history` outcome `rejected`, with 1 item rejected (the app version) and 3 `READY_FOR_REVIEW` (Annual, Monthly, the subscription group); the four earlier submissions read `COMPLETE` with items removed (the release record says the 2026-09-24 one was cancelled by the owner). `asc review items list` and `asc review doctor` return states only | The rejection reason is not readable through any call I ran **[U]**; `asc review doctor` says to resolve it in App Store Connect |
 | Subscription groups | Three: `ExcerLock Premium` (`22372981`, 45 grid SKUs), `ExcerLock Premium — Variant A` (`22279282`, launch products), `ExcerLock Premium — Variant B` (`22279120`) | `docs/subscriptions.md:3` says "All 45 products live in one subscription group", which is true of the grid only |
 | Launch products (Variant A) | `premium.a.annual` $59.99, proceeds $42.00 in year 1 and $50.99 after; `premium.a.monthly` $9.99, $7.00 and $8.49. Both `READY_TO_SUBMIT` at this read (an earlier read the same day reported `WAITING_FOR_REVIEW`); not approved. Each has a one-week free trial in 175 territories | Win-back offers need an App Review-approved subscription (A1.9) |
 | Standalone discount SKUs | `a.winback.annual` $29.99 ($21.00 / $25.49); `b.winback.annual` $39.99 ($28.00 / $33.99). Both `MISSING_METADATA` | Ordinary products in the same groups as their plans; not Apple win-back offers |
