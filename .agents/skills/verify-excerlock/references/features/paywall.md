@@ -2,7 +2,7 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-apple-linked]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
@@ -180,7 +180,7 @@ expect: Choose apps
 ```proof
 name: identity-purchase-cancelled
 scenario: identity-lab-purchase-cancelled
-open: /paywall
+open: dev?journey=paywall
 tap: Start for free
 wait: 25
 expect: Choose a plan to continue.
@@ -253,10 +253,33 @@ expect: Payment received. Sign in to connect your subscription. | Continue to si
 ```proof
 name: identity-restore-not-found
 scenario: identity-lab-user-sync-failed
-open: /paywall
+open: dev?journey=paywall
 tap: Restore purchases
 wait: 25
 expect: No active purchase was found.
+```
+
+```proof
+name: restore-wrong-store-account-stays-unpaid
+scenario: identity-lab-restore-wrong-store
+open: dev?journey=paywall
+tap: Restore purchases
+wait: 25
+expect: No active purchase was found. | Restore purchases
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Restore operations 1 | Restore isolation wrong Store owner lab-user-a selected lab-checkout-1 transfers 0 | lab_restore {"result":"notFound","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
+```
+
+```proof
+name: restore-failure-retries-original-account
+scenario: identity-lab-restore-error-retry
+open: dev?journey=paywall
+tap: Restore purchases
+wait: 25
+expect: Restore could not finish. Please retry. | Restore purchases
+then-tap: Restore purchases
+then-open: /dev
+then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Restore operations 2 | lab_restore {"result":"error","owner":"lab-checkout-1","source":"adapter"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
 ```
 
 ```proof

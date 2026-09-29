@@ -430,6 +430,34 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           staleProductHandle: `source ${result.source} generation ${result.sourceGeneration} target ${result.target} generation ${result.targetGeneration} stale ${result.staleError} SDK purchases ${result.purchaseCalls} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
         } });
       },
+      runLabIndependentRestore: async () => {
+        const verifyCurrent = async () => {
+          const selected = auth.identity();
+          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
+          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
+          return proof.type;
+        };
+        const result = await identityLab.runIndependentRestore(seedAccount, accountCheckpoint, verifyCurrent);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? result.restores,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          restoreIsolation: `independent before ${result.before} empty restore after ${result.after} Entitlement ${result.entitlement} restores ${result.restores} data ${result.data}`,
+        } });
+      },
+      runLabPassiveEntry: async () => {
+        const result = await identityLab.runPassiveEntry(seedAccount, accountCheckpoint);
+        const current = ctx.snapshot().subscriptionLab;
+        ctx.update({ subscriptionLab: {
+          purchases: current?.purchases ?? 0,
+          restores: current?.restores ?? result.restores,
+          queued: current?.queued ?? 0,
+          delivered: current?.delivered ?? 0,
+          passiveEntry: `store owner ${result.owner} passive target ${result.passiveTarget} target Entitlement ${result.targetEntitlement} source Entitlement ${result.sourceEntitlement} transfers ${result.transfers} restores ${result.restores} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
+        } });
+      },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);
       },

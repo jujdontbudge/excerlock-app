@@ -60,7 +60,7 @@ export type IdentityLabScript = {
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier';
-  restore?: 'restored' | 'notFound';
+  restore?: 'restored' | 'notFound' | 'errorFirst';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
   secondSubscription?: boolean;
@@ -71,5 +71,8 @@ export type IdentityLabScript = {
   providerAttempts?: boolean;
   emailChallenges?: boolean;
   staleProductHandle?: boolean;
+  wrongStoreAccount?: boolean;
+  independentRestore?: boolean;
+  passiveEntry?: boolean;
 };
 export type Unsubscribe = () => void;

@@ -144,6 +144,23 @@ export function identityLabHost(
     if (!lab) throw new Error('Identity lab is unavailable');
     return lab.runStaleProductHandle(seedAccount, accountCheckpoint);
   };
+  const runIndependentRestore = async (
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    verifyCurrent: () => Promise<string>,
+  ) => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runIndependentRestore(seedAccount, accountCheckpoint, verifyCurrent);
+  };
+  const runPassiveEntry = async (
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+  ) => {
+    const lab = await settledLab();
+    if (!lab) throw new Error('Identity lab is unavailable');
+    return lab.runPassiveEntry(seedAccount, accountCheckpoint);
+  };
   return {
     start,
     stop,
@@ -156,5 +173,7 @@ export function identityLabHost(
     runProviderLinking,
     runLocalSignOut,
     runStaleProductHandle,
+    runIndependentRestore,
+    runPassiveEntry,
   };
 }

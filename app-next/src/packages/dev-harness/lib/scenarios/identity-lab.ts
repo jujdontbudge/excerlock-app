@@ -66,6 +66,23 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', staleProductHandle: true },
   }),
+  base('identity-lab-restore-wrong-store', 'Identity lab · wrong Store account restore', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', restore: 'notFound', wrongStoreAccount: true },
+    subscriptionProof: 'ineligible',
+  }),
+  base('identity-lab-restore-error-retry', 'Identity lab · restore error then retry', {
+    ...atOnboardingPaywall,
+    identityLab: { userSync: 'failFirst', restore: 'errorFirst' },
+  }),
+  base('identity-lab-independent-restore', 'Identity lab · independent access survives empty restore', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', restore: 'notFound', independentRestore: true },
+  }),
+  base('identity-lab-passive-entry', 'Identity lab · passive entry does not transfer', {
+    ...atOnboardingPaywall,
+    identityLab: { googleSignIn: 'success', passiveEntry: true },
+  }),
   base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', plans: 'empty' },

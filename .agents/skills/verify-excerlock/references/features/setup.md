@@ -45,28 +45,28 @@ then-expect: Save your progress | Keep your plan connected to you. | Continue wi
 name: returning-session-blocked
 scenario: returning-signed-in
 open: /home
-expect: Continue with Apple | Continue with Google | Continue with email
+expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
 name: returning-settings-blocked
 scenario: returning-signed-in
 open: /settings/account
-expect: Continue with Apple | Continue with Google | Continue with email
+expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
 name: returning-paywall-blocked
 scenario: returning-signed-in
 open: /paywall
-expect: Continue with Apple | Continue with Google | Continue with email
+expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
 name: returning-session-signed-in
 scenario: returning-signed-in
 open: /home
-tap: Continue with Apple
+tap: Sign in | Continue with Apple
 expect: Locked | Home
 ```
 

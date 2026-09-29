@@ -40,6 +40,8 @@ export function DevControls() {
       <SettingsGroup title="Account data">
         <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
         <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
+        <SettingsRow title="Run independent restore" onPress={() => void runAccountAction(() => dev.runLabIndependentRestore())} />
+        <SettingsRow title="Run passive entry" onPress={() => void runAccountAction(() => dev.runLabPassiveEntry())} />
         <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
         <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
         <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
@@ -85,6 +87,8 @@ export function DevControls() {
         <SettingsRow title={`Purchase serialization ${view.subscriptionLab?.purchaseSerialization ?? 'Not run'}`} />
         <SettingsRow title={`Existing subscription ${view.subscriptionLab?.existingSubscription ?? 'Not run'}`} />
         <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
+        <SettingsRow title={`Restore isolation ${view.subscriptionLab?.restoreIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />

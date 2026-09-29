@@ -2,7 +2,7 @@
 id: dev-harness
 title: Developer harness and research screens
 routes: [dev, diagnostics/sensors, linked-trace]
-scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle]
+scenarios: [dynamic-type-xl, reduce-motion, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry]
 depends: [launch]
 ---
 ## Sub-features
@@ -103,6 +103,24 @@ open: /dev
 tap: Run stale product handle
 wait: 30
 expect: Active account B | Condition owner Account B | Profile Account B | Saved Gym Gym B | Purchase operations 0 | Stale product handle source lab-user-a generation 1 target lab-user-b generation 2 stale Plan expired. Reload plans. SDK purchases 0 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B A restored account-a/1/Account A/Gym A | Protected route mounts | None
+```
+
+```proof
+name: empty-restore-preserves-independent-account-access
+scenario: identity-lab-independent-restore
+open: /dev
+tap: Run independent restore
+wait: 30
+expect: Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Restore operations 1 | Restore isolation independent before eligible empty restore after eligible Entitlement active restores 1 data account-a/1/Account A/Gym A | lab_restore {"result":"notFound","owner":"lab-user-a","source":"adapter"} | Protected route mounts | None
+```
+
+```proof
+name: passive-entry-does-not-transfer-subscription
+scenario: identity-lab-passive-entry
+open: /dev
+tap: Run passive entry
+wait: 30
+expect: Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Restore operations 0 | Passive entry store owner lab-user-a passive target lab-user-b target Entitlement none source Entitlement active transfers 0 restores 0 data A account-a/1/Account A/Gym A data B account-b/1/Account B/Gym B A restored account-a/1/Account A/Gym A | Protected route mounts | None
 ```
 
 ## Gotchas

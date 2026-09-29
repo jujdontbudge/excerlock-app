@@ -123,6 +123,31 @@ export type IdentityLab = {
     targetData: string;
     sourceRestored: string;
   }>;
+  runIndependentRestore(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+    verifyCurrent: () => Promise<string>,
+  ): Promise<{
+    before: string;
+    after: string;
+    entitlement: string;
+    restores: number;
+    data: string;
+  }>;
+  runPassiveEntry(
+    seedAccount: (account: 'A' | 'B') => Promise<void>,
+    accountCheckpoint: () => string,
+  ): Promise<{
+    owner: string;
+    passiveTarget: string;
+    targetEntitlement: string;
+    sourceEntitlement: string;
+    transfers: number;
+    restores: number;
+    sourceData: string;
+    targetData: string;
+    sourceRestored: string;
+  }>;
   dispose(): Promise<void>;
 };
 
@@ -179,6 +204,7 @@ export async function createIdentityLab(
   };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   if (script.purchase === 'alreadyOwned') grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
+  if (script.wrongStoreAccount) grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
   let transfers = 0;
@@ -413,6 +439,10 @@ export async function createIdentityLab(
         ? `store ${STORE_SUBSCRIPTION_ID} owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} charge starts 0`
         : ctx.snapshot().subscriptionLab?.existingSubscription,
       staleProductHandle: ctx.snapshot().subscriptionLab?.staleProductHandle,
+      restoreIsolation: script.wrongStoreAccount
+        ? `wrong Store owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} transfers ${transfers}`
+        : ctx.snapshot().subscriptionLab?.restoreIsolation,
+      passiveEntry: ctx.snapshot().subscriptionLab?.passiveEntry,
       providerConflict: script.establishedProviderConflict
         ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
@@ -539,9 +569,16 @@ export async function createIdentityLab(
       return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
     },
     restorePurchases: async () => {
-      const result = script.restore ?? ctx.snapshot().restoreOutcome;
+      const configured = script.restore ?? ctx.snapshot().restoreOutcome;
+      const result = configured === 'errorFirst' && attempts.restore > 0 ? 'restored' : configured;
       const owner = customerUserId;
       if (!owner) throw new Error('Restore owner unavailable');
+      if (result === 'errorFirst') {
+        attempts.restore += 1;
+        ctx.log('lab_restore', { result: 'error', owner, source: 'adapter' });
+        updateSubscriptionLab();
+        throw networkError('Restore failed');
+      }
       if (script.establishedTransfer && attempts.restore === 0) {
         attempts.restore += 1;
         ctx.log('lab_restore', { result, owner, source: 'adapter' });
@@ -1061,6 +1098,64 @@ export async function createIdentityLab(
         purchaseCalls: attempts.purchase,
         sourceGeneration: sourcePaywall.generation,
         targetGeneration: targetPaywall.generation,
+        sourceData,
+        targetData,
+        sourceRestored,
+      };
+    },
+    runIndependentRestore: async (seedAccount, accountCheckpoint, verifyCurrent) => {
+      if (!script.independentRestore) throw new Error('Independent restore is not scripted');
+      await auth.recoverWithApple();
+      const selected = await services?.waitForIdentityReady();
+      if (!selected?.userId) throw new Error('Independent account did not become ready');
+      await seedAccount('A');
+      grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
+      profileListener?.(profile(selected.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const before = await verifyCurrent();
+      await adapter.restore();
+      const after = await verifyCurrent();
+      updateSubscriptionLab();
+      return {
+        before,
+        after,
+        entitlement: adapter.entitlement().status,
+        restores: attempts.restore,
+        data: accountCheckpoint(),
+      };
+    },
+    runPassiveEntry: async (seedAccount, accountCheckpoint) => {
+      if (!script.passiveEntry) throw new Error('Passive entry is not scripted');
+      await auth.recoverWithApple();
+      const source = await services?.waitForIdentityReady();
+      if (!source?.userId) throw new Error('Passive source account did not become ready');
+      await seedAccount('A');
+      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
+      profileListener?.(profile(source.userId));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const sourceData = accountCheckpoint();
+
+      await auth.recoverWithGoogle();
+      const target = await services?.waitForIdentityReady();
+      if (!target?.userId) throw new Error('Passive target account did not become ready');
+      await seedAccount('B');
+      await adapter.refresh();
+      const targetEntitlement = adapter.entitlement().status;
+      const targetData = accountCheckpoint();
+
+      await auth.recoverWithApple();
+      await services?.waitForIdentityReady();
+      await adapter.refresh();
+      const sourceEntitlement = adapter.entitlement().status;
+      const sourceRestored = accountCheckpoint();
+      updateSubscriptionLab();
+      return {
+        owner: grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none',
+        passiveTarget: target.userId,
+        targetEntitlement,
+        sourceEntitlement,
+        transfers,
+        restores: attempts.restore,
         sourceData,
         targetData,
         sourceRestored,

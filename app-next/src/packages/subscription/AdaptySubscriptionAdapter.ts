@@ -234,9 +234,19 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
-        await this.deps.recoveryJournal.begin('restore', ready.userId!, this.deps.now());
-        await this.attachIntegration(ready);
-        const profile = await this.deps.sdk.restorePurchases();
+        const recovery = await this.deps.recoveryJournal.begin('restore', ready.userId!, this.deps.now());
+        if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
+          throw new Error('Finish connecting the existing purchase before restoring again.');
+        let profile;
+        try {
+          await this.attachIntegration(ready);
+          profile = await this.deps.sdk.restorePurchases();
+        } catch (error) {
+          const current = this.deps.recoveryJournal.snapshot();
+          if (current.type === 'pending' && current.operationId === recovery.operationId)
+            await this.deps.recoveryJournal.clear();
+          throw error;
+        }
         this.assertIdentity(ready);
         const entitlement = this.publishProfile(profile, 'restore-return');
         if (entitlement.status === 'active' || entitlement.status === 'trial')
