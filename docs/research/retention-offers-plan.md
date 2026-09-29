@@ -12,7 +12,7 @@
    - *Cancel interception:* impossible. Apple can show a message or offer after the person taps Cancel Subscription; the app learns afterward.
    - *"N minutes after download":* not measurable; the earliest anchor is first launch.
    - *Win-back for never-paid users:* Apple win-back offers go only to lapsed paid subscribers.
-2. **Starting position [R].** Build 12 of 1.0, submitted 2026-09-26, is now rejected (reason unread). The app has never been public, has only one-week free trials, and launches at $59.99 annual and $9.99 monthly. Every number below is arithmetic or a proxy, not a forecast.
+2. **Starting position [R].** The app is not live and has never been public. It has only one-week free trials and launches at $59.99 annual and $9.99 monthly. Apple win-back offers need an App Review-approved subscription [V]. Every number below is arithmetic or a proxy, not a forecast.
 3. **$24.99 is a real US annual price point** ($17.50 first-year proceeds) [R]. It needs 2.40x the conversion of $59.99 to break even in year 1. I assumed annual USD; $24.99 monthly would be 2.5x the $9.99 base, not a discount. The safest vehicle is an Apple promotional or win-back offer on the standard annual product, which returns to $59.99. A standing $24.99 SKU renews at $24.99 and shows to everyone in its group.
 4. **The nine-touch cadence is schedulable, and I recommend against it.** Consent today covers a trial reminder only. DPLA Attachment 1 §2.2, guideline 4.5.4 and the HIG require explicit opt-in and an in-app opt-out for promotional notifications. A purchase elsewhere cannot cancel touches already scheduled. The PRD says "no promotional pushes"; the review notes say "trial reminder only". No proxy tests a first-day burst [P]. Section 5 offers an opt-in, capped alternative.
 5. **Fix paywall disclosure before any discount [R].** The plan cards show a per-month figure as the visible price, with no renewal sentence and no Terms or Privacy links. Apple says the billed amount must be the most prominent price [V]. A discount widens that gap.
@@ -23,7 +23,7 @@
 
 | Area | State on 2026-09-28 |
 |---|---|
-| Release | 1.0 Build 12 submitted 2026-09-26, now REJECTED; the rejection text is not in the API. |
+| Release | 1.0 is not live. The launch subscriptions are not yet App Review-approved. |
 | Launch products | Annual $59.99 (proceeds $42.00 in year 1, $50.99 after) and monthly $9.99 ($7.00, $8.49), each with a one-week free trial. READY_TO_SUBMIT at the last read, not approved. |
 | Offers configured | 0 promotional, 0 win-back, 0 offer codes. |
 | "Win-back" today | Standalone SKUs `a.winback.annual` $29.99 and `b.winback.annual` $39.99, both MISSING_METADATA (not sellable): ordinary products, not Apple win-back offers. The app opens the Adapty `winback` placement once per session when status is `expired`. |
@@ -42,8 +42,7 @@
 
 ## 4. Phased plan
 
-**Phase 0: make 1.0 approvable and measurable. No offers.**
-- The Account Holder reads the Build 12 rejection reason; if it cites 3.1.2 or 4.10, resolve that first.
+**Phase 0: get 1.0 live and measurable. No offers.**
 - Fix paywall disclosure: billed amount most prominent, renewal price after any trial, Terms and Privacy links in the flow.
 - Capture a baseline over a fixed window: paywall views, trial starts, trial-to-paid, in-trial auto-renew-off (`paywall_viewed`, `purchase_started`, Adapty-owned events, App Store Connect Analytics).
 - The Account Holder confirms Small Business Program status.
@@ -117,7 +116,7 @@ Localization: US-only, English; Retention Messaging needs a default per product 
 
 ## 9. Questions for the Account Holder
 
-1. What was the Build 12 rejection reason, and does it cite 4.10, 3.1.2 or 5.1.x?
+1. Does "$24.99" mean an annual price in USD? I assumed so (section 1, item 3).
 2. Is the account enrolled in the Small Business Program? Does it qualify?
 3. Is Retention Messaging in App Store Connect available to this account? Should the real-time interest form be filed (Account Holder only, per RevenueCat [P])?
 4. Will you ask Apple Developer Support or App Review (a) how 4.10 applies to a paywall on a Screen Time app, (b) whether any Apple surface exists at app deletion, (c) whether trial-ended users may receive promotional offers?
@@ -339,7 +338,7 @@ Commands were list or view calls only (`asc status`, `asc subscriptions groups l
 
 | Item | Observation | Note |
 |---|---|---|
-| App version and build | App `6787265352`, version 1.0, build 12 (`VALID`). Version state `REJECTED`. Review submission `0370ab0e-9af6-4866-ac52-edb15c693f68` state `UNRESOLVED_ISSUES`, submitted 2026-09-26 03:51 UTC. `asc status` health "red". Re-read 2026-09-28: `asc review history` outcome `rejected`, with 1 item rejected (the app version) and 3 `READY_FOR_REVIEW` (Annual, Monthly, the subscription group); the four earlier submissions read `COMPLETE` with items removed (the release record says the 2026-09-24 one was cancelled by the owner). `asc review items list` and `asc review doctor` return states only | The rejection reason is not readable through any call I ran **[U]**; `asc review doctor` says to resolve it in App Store Connect |
+| App version and build | App `6787265352`, version 1.0, build 12 (`VALID`); not live at this read | Context only. Win-back offers need an App Review-approved subscription (A1.9) |
 | Subscription groups | Three: `ExcerLock Premium` (`22372981`, 45 grid SKUs), `ExcerLock Premium — Variant A` (`22279282`, launch products), `ExcerLock Premium — Variant B` (`22279120`) | `docs/subscriptions.md:3` says "All 45 products live in one subscription group", which is true of the grid only |
 | Launch products (Variant A) | `premium.a.annual` $59.99, proceeds $42.00 in year 1 and $50.99 after; `premium.a.monthly` $9.99, $7.00 and $8.49. Both `READY_TO_SUBMIT` at this read (an earlier read the same day reported `WAITING_FOR_REVIEW`); not approved. Each has a one-week free trial in 175 territories | Win-back offers need an App Review-approved subscription (A1.9) |
 | Standalone discount SKUs | `a.winback.annual` $29.99 ($21.00 / $25.49); `b.winback.annual` $39.99 ($28.00 / $33.99). Both `MISSING_METADATA` | Ordinary products in the same groups as their plans; not Apple win-back offers |
@@ -359,7 +358,7 @@ Commands were list or view calls only (`asc status`, `asc subscriptions groups l
 | 2 | The visible plan price is per month (`localizedMonthlyPrice`), even for the annual plan; the billed amount appears only in the accessibility label `planRowTitle(product)` | `paywall/lib/PaywallScreen.tsx:222-224, 227, 245-247`; `subscription/lib/monthlyPrice.ts`; `subscription/subscriptionCopy.ts` | Apple: the billed amount "must be the most prominent pricing element" (A1.17) |
 | 3 | `subscriptionCopy.terms` ("Subscriptions renew automatically unless canceled. Manage or cancel your subscription in your App Store account.") exists and is not rendered by the paywall | `subscription/subscriptionCopy.ts:52-53` | A ready sentence to reuse |
 | 4 | Terms and Privacy links exist only under Settings > Legal. The onboarding welcome strings for them are defined and never rendered | `settings/LegalHubScreen.tsx:9-10`; `settings/lib/legalCopy.ts:2-3`; `onboarding/lib/welcomeCopy.ts:13-17` | Schedule 2 §3.8(b): links "must be accessible within Your Licensed Application" (A4.9) |
-| 5 | Commit `5ae8aa06` (2026-09-24) removed `priceFirstFooterLabel` and the paywall's Terms and Privacy links. A prior audit had added them because "sourced rejections cite promoting the free trial more conspicuously than the billed amount" | `git show 5ae8aa06`; `docs/asc/review-fixes-changelog.md:13-21` | If Build 12's rejection cites 3.1.2, this is a candidate cause. Unverified until the reason is read |
+| 5 | Commit `5ae8aa06` (2026-09-24) removed `priceFirstFooterLabel` and the paywall's Terms and Privacy links. A prior audit had added them because "sourced rejections cite promoting the free trial more conspicuously than the billed amount" | `git show 5ae8aa06`; `docs/asc/review-fixes-changelog.md:13-21` | Bears on guideline 3.1.2 disclosure (A4.8, A4.9); see plan section 1, item 5 |
 | 6 | The repo's own ship checklist says the paywall must show "price, renewal terms, tappable Terms of Use (EULA) and Privacy Policy" | `plans/ship/05-review-readiness.md:21`; `plans/ship/README.md:53` | Same |
 | 7 | `mapProduct` reads only a `free_trial` phase and never the offer type or paid phases; a paid intro, promotional or win-back offer gets no label and shows the base price with "Continue"; a free promotional or win-back period would be labelled "trial" | `subscription/AdaptySubscriptionAdapter.ts:260-281` (the `find` is at 268, `offerLabel` at 278) | Any paid offer needs offer-aware mapping before it ships (plan Phase 1) |
 | 8 | Status is `trial` only when `activeIntroductoryOfferType === 'free_trial'`; anything else active is `active`, so a promotional or win-back free period gets no trial reminder | `subscription/lib/entitlementMapping.ts:35-37`; `notifications/notificationPlan.ts:5-10` | Reminder logic and offer logic interact |
@@ -402,7 +401,7 @@ None of these changes a recommendation. Each is a reason to reconcile the docume
 
 ### C4. Not read or not verifiable from here
 
-- The Build 12 rejection text; the live Adapty offer attachments and In-App Purchase key; Apple's decision on the Retention Messaging API interest form; whether `expo-application` is linked into Build 12 (`expo-notifications` depends on it; nothing in `app-next/src` imports it); whether Build 12's entitlements carry the production `aps-environment` (repo documents only).
+- The live Adapty offer attachments and In-App Purchase key; Apple's decision on the Retention Messaging API interest form; whether `expo-application` is linked into Build 12 (`expo-notifications` depends on it; nothing in `app-next/src` imports it); whether Build 12's entitlements carry the production `aps-environment` (repo documents only).
 - Whether any rows in `docs/adr` beyond 0024, 0032 and 0043 bear on this plan. I did not read them all.
 
 ## Appendix D. Economics
@@ -896,7 +895,7 @@ Treat nothing on this list as established. "Settle by" names who or what can res
 
 | # | Item | Why it matters | Settle by |
 |---|---|---|---|
-| 17 | ● The Build 12 rejection reason (not in the API) | May decide everything in Phase 0 | Account Holder, in App Store Connect |
+| 17 | Whether App Review accepts the paywall's current disclosure: a per-month figure as the visible price, no renewal sentence, Terms and Privacy only under Settings (Appendix C2 rows 1-4) | Discount offers widen the gap, and win-back offers need approved subscriptions | App Review; Apple Developer Support |
 | 18 | ● Whether guideline 4.10 ("Screen Time APIs") reaches a paywall on this app: no precedent found, "monetize" is undefined, and the Family Controls entitlement conditions were not opened | Could block any paid step | App Review clarification |
 | 19 | How App Review applies DPLA Attachment 1 §2.2 to Local Notifications in practice; no numeric threshold for "excessive" | Sets the cadence ceiling | Apple Developer Support |
 | 20 | Whether new offers or notifications must be reported to App Review: no App Store Connect page I read requires it; the plan describes them in the review notes anyway (2.3.1(a)) | Review risk | Account Holder |
