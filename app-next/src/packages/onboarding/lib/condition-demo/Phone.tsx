@@ -67,19 +67,6 @@ export function Phone({
             : 0,
     };
   });
-  const spinner = useAnimatedStyle(() => {
-    const state = snapshot(clock.value, scenario);
-    return {
-      opacity:
-        state.phone === 'tiktok' &&
-        state.local < 1.9 &&
-        state.phase !== 'leave' &&
-        !(scenario.kind === 'gym-minutes' && state.phase === 'unlocked')
-          ? Math.min(1, (1.9 - state.local) / 0.2)
-          : 0,
-      transform: [{ rotate: `${clock.value.time * 400}deg` }],
-    };
-  });
   return (
     <View style={styles.phone}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: art.demo.video }]}>
@@ -130,7 +117,6 @@ export function Phone({
         <TikTokMark />
         <Text style={{ color: t.text.onAccent, ...art.miniature.wordmark }}>TikTok</Text>
       </Animated.View>
-      <Animated.View style={[styles.spinner, spinner]} />
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.surface.topTint }, shield]}>
         <View style={styles.shieldContent}>
           <ClayLock />
@@ -241,17 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  spinner: {
-    position: 'absolute',
-    top: 143,
-    left: 72,
-    width: 26,
-    height: 26,
-    borderRadius: t.radius.pill,
-    borderWidth: 3,
-    borderColor: t.surface.card,
-    borderTopColor: t.text.onAccent,
   },
   shieldContent: { marginTop: 78, paddingHorizontal: 14, alignItems: 'center', gap: 8 },
   shieldTitle: { color: t.text.primary, textAlign: 'center', ...art.miniature.shieldTitle },

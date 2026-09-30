@@ -40,6 +40,6 @@ expect: Search | Search for a gym or address | Use my current location | Gyms ne
 ```
 
 ## Gotchas
-- `unlock-gym-inside` says "Location not at gym" unless the simulator location is set inside the gym, because the iOS dev runtime swaps in real foreground location.
+- `unlock-gym-inside` says "Not at your gym yet" unless the simulator location is set inside the gym, because the iOS dev runtime swaps in real foreground location.
 - Presence confirmation is one app-fixed 30 s constant, `PRESENCE_CONFIRM_MS` in `activity/presence.ts` (PRD §3.7, decided 2026-07-28). Background geofence arrivals (`gymMachine`), the Home presence sync and the check-in ceremony all use it; do not add a second timing.
 - A stale binary reports search as unavailable. Native search changes need a new dev build.

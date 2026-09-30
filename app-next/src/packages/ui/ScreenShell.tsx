@@ -18,6 +18,7 @@ export function ScreenShell({
   scrollResetKey,
   scrollEnabled = true,
   fullBleed = false,
+  scrollsAsOne = false,
   contentStyle,
   onLayout,
 }: PropsWithChildren<{
@@ -34,11 +35,14 @@ export function ScreenShell({
   scrollResetKey?: string;
   scrollEnabled?: boolean;
   fullBleed?: boolean;
+  scrollsAsOne?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
   onLayout?: (event: LayoutChangeEvent) => void;
 }>) {
   const scroll = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
+  const pinnedHeader = scrollsAsOne ? undefined : header,
+    pinnedFooter = scrollsAsOne ? undefined : footer;
   const [footerHeight, setFooterHeight] = useState<number>(t.control.full + insets.bottom + t.space.xs + t.space.sm);
   useLayoutEffect(() => {
     if (scrollResetKey === undefined) return;
@@ -76,8 +80,8 @@ export function ScreenShell({
           ? (safeBottom && !footer ? ['bottom'] : [])
           : safeBottom && !footer ? ['top', 'bottom'] : ['top']}>
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
-          {header ? (
-            <View style={scrollUnderStatusBar ? { paddingTop: insets.top } : undefined}>{header}</View>
+          {pinnedHeader ? (
+            <View style={scrollUnderStatusBar ? { paddingTop: insets.top } : undefined}>{pinnedHeader}</View>
           ) : null}
           <ScrollView
             testID="screen-scroll"
@@ -88,12 +92,16 @@ export function ScreenShell({
             contentContainerStyle={[
               s.content,
               dock && { paddingBottom: t.layout.tabHeight + insets.bottom + t.space.xl },
-              !!footer && !fullBleed && { paddingBottom: footerHeight + t.space.xl },
+              !!pinnedFooter && !fullBleed && { paddingBottom: footerHeight + t.space.xl },
               scrollUnderStatusBar && !fullBleed && { paddingTop: (header ? 0 : insets.top) + t.space.xs },
+              scrollsAsOne && { paddingTop: 0, paddingBottom: 0 },
               fullBleed && { paddingTop: 0 },
               contentStyle,
             ]}
             showsVerticalScrollIndicator={false}>
+            {scrollsAsOne && header ? (
+              <View style={[s.bleed, scrollUnderStatusBar ? { paddingTop: insets.top } : undefined]}>{header}</View>
+            ) : null}
             <View
               onTouchStart={(event) => {
                 const focused = TextInput.State.currentlyFocusedInput();
@@ -103,13 +111,18 @@ export function ScreenShell({
                 });
               }}
               style={s.contentBody}>{children}</View>
+            {scrollsAsOne && footer ? (
+              <View testID="screen-footer" style={[s.bleed, s.inlineFooter, { paddingBottom: insets.bottom + t.space.xs }]}>
+                {footer}
+              </View>
+            ) : null}
           </ScrollView>
-          {footer ? (
+          {pinnedFooter ? (
             <View
               testID="screen-footer"
               onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
               style={[s.footer, { paddingBottom: insets.bottom + t.space.xs }]}>
-              {footer}
+              {pinnedFooter}
             </View>
           ) : null}
         </KeyboardAvoidingView>
@@ -137,6 +150,8 @@ const s = StyleSheet.create({
     alignSelf: 'center',
   },
   contentBody: { flexGrow: 1, gap: t.space.xl },
+  bleed: { marginHorizontal: -t.layout.page },
+  inlineFooter: { paddingHorizontal: t.layout.page, paddingTop: t.space.sm, gap: t.space.sm },
   footer: {
     position: 'absolute',
     left: 0,

@@ -1,8 +1,7 @@
 export const lockListCopy = {
   deniedTitle: 'Screen Time is off',
-  deniedBody: 'Turn on Screen Time access for ExcerLock in Settings to choose the apps to lock.',
-  failedTitle: 'Could not open the app picker',
+  deniedBody: 'Turn it on in Settings to choose apps to lock.',
+  retry: "That didn't open. Please try again.",
   openSettings: 'Open Settings',
   notNow: 'Not now',
-  ok: 'OK',
 } as const;

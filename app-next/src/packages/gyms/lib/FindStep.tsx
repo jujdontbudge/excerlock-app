@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Label, TextField, SecondaryButton } from '../../ui';
 import { Icon } from '../../ui/Icon';
 import { tokens as t } from '../../ui/tokens';
@@ -85,16 +85,7 @@ export function FindStep({ picker: p }: { picker: PickerState }) {
         <Row title={c.current} subtitle={c.currentSupport} showLocationIcon onPress={() => p.drop(p.location!)} />
       ) : null}
       {!p.location && !typing ? (
-        <SecondaryButton label={c.enableLocation} disabled={p.locating} onPress={() => void p.requestLocation()} />
-      ) : null}
-      {p.searching || p.busy ? <ActivityIndicator accessibilityLabel={c.loading} color={t.brand.primary} /> : null}
-      {p.error ? (
-        <View style={{ gap: t.space.md }}>
-          <Label accessibilityRole="alert" tone="secondary">
-            {p.error}
-          </Label>
-          <SecondaryButton label={c.retry} onPress={p.retry} />
-        </View>
+        <SecondaryButton label={c.enableLocation} loading={p.locating} onPress={() => void p.requestLocation()} />
       ) : null}
       {typing ? (
         <View>
@@ -112,7 +103,7 @@ export function FindStep({ picker: p }: { picker: PickerState }) {
               />
             </Reveal>
           ))}
-          {!p.searching && !p.suggestions.length && !p.error ? (
+          {!p.searching && !p.suggestions.length ? (
             <Label tone="secondary" style={{ paddingVertical: t.space.lg }}>
               {c.empty}
             </Label>

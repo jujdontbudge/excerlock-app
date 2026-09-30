@@ -1,4 +1,4 @@
-import { Heading, DayPicker, Label } from '../ui';
+import { Heading, DayPicker } from '../ui';
 import { ScheduleDial } from '../schedule/ScheduleDial';
 import { View } from 'react-native';
 import { RuleDraft } from './draft';
@@ -6,7 +6,7 @@ import { Reveal } from '../ui/Reveal';
 import { tokens as t } from '../ui/tokens';
 import { planCopy as c } from './planCopy';
 import { Weekday } from '../model/types';
-import { ScheduleDraft, ScheduleAction, scheduleIssues } from './scheduleDraft';
+import { ScheduleDraft, ScheduleAction } from './scheduleDraft';
 
 export function ScheduleScreen({ draft: d, onAction, onChoose }: {
   draft: ScheduleDraft;
@@ -14,14 +14,12 @@ export function ScheduleScreen({ draft: d, onAction, onChoose }: {
   onAction: (a: ScheduleAction) => void;
   onChoose: (which: 'start' | 'end') => void;
 }) {
-  const issues = scheduleIssues(d);
   return (
     <View style={{ gap: t.space.lg }}>
       <Heading title={c.S1} centered />
       <Reveal index={1}>
         <DayPicker days={d.days} onChange={(days) => onAction({ type: 'days', value: days as Weekday[] })} />
       </Reveal>
-      {issues.includes('days') ? <Label>{c.daysError}</Label> : null}
       <ScheduleDial
         startMinute={d.start}
         endMinute={d.end}
@@ -29,7 +27,6 @@ export function ScheduleScreen({ draft: d, onAction, onChoose }: {
         onChange={(which, minute) => onAction({ type: which, value: minute })}
         onChoose={onChoose}
       />
-      {issues.includes('window') ? <Label>{c.windowError}</Label> : null}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { pageIn, pageOut } from '../ui/presets';
 import { useState } from 'react';
 import Animated from 'react-native-reanimated';
-import { ScreenShell, PrimaryButton, OnboardingHeader, Label } from '../ui';
+import { ScreenShell, PrimaryButton, OnboardingHeader } from '../ui';
 import { tokens as t } from '../ui/tokens';
 import { useMotion } from '../ui/useMotion';
 import { conditionsCopy as c } from '../conditions/conditionsCopy';
@@ -38,7 +38,6 @@ export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClos
       }
       footer={
         <Animated.View style={{ gap: t.space.sm }}>
-          {f.scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
           <PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />
         </Animated.View>
       }

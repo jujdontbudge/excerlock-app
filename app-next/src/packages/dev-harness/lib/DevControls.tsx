@@ -141,7 +141,8 @@ export function DevControls() {
         <Label>{now}</Label>
         <SettingsRow title={c.hour} onPress={() => dev.advance(3600000)} />
         <SettingsRow title={c.day} onPress={() => dev.advance(86400000)} />
-        <TextField label={c.time} value={time} onChangeText={setTime} error={error} />
+        <TextField label={c.time} value={time} onChangeText={setTime} />
+        {error ? <Label>{error}</Label> : null}
         <PrimaryButton
           label={c.set}
           onPress={() => {

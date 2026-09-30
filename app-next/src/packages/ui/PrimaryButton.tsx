@@ -1,6 +1,5 @@
-import { fadeIn, fadeOut } from './presets';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
@@ -26,17 +25,18 @@ export function PrimaryButton({
 }: ButtonProps) {
   const [pressed, setPressed] = useState(false);
   const m = useMotion();
-  const unavailable = disabled || loading;
+  const unavailable = disabled;
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: unavailable, busy: loading }}
+      accessibilityState={{ disabled: unavailable || loading, busy: loading }}
       disabled={unavailable}
-      onPressIn={() => setPressed(true)}
+      onPressIn={() => setPressed(!loading)}
       onPressOut={() => setPressed(false)}
       onPress={() => {
+        if (loading) return;
         feedback('press');
         onPress();
       }}>
@@ -50,11 +50,6 @@ export function PrimaryButton({
             ...m.transition(['transform', 'backgroundColor'], 'standard'),
           },
         ]}>
-        {loading ? (
-          <Animated.View entering={fadeIn} exiting={fadeOut}>
-            <ActivityIndicator color={t.state.disabledText} />
-          </Animated.View>
-        ) : null}
         <Label
           variant="label"
           style={{

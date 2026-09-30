@@ -1,4 +1,5 @@
 import { useIsFocused } from 'expo-router';
+import { notify } from '../ui/Notice';
 import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
@@ -20,14 +21,12 @@ import { planCopy as c } from '../conditions/planCopy';
 import { useImpactPlayback } from './lib/impact/useImpactPlayback';
 import { useRuntime } from '../ports/useRuntime';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
-import { Label } from '../ui';
 import { tokens as t } from '../ui/tokens';
 export function OnboardingRoute() {
   const focused = useIsFocused();
   const runtime = useRuntime();
   const flow = useOnboarding(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
-    [scheduleError, setScheduleError] = useState(false),
     [celebrating, setCelebrating] = useState(false),
     [asking, setAsking] = useState(false),
     [demoReady, setDemoReady] = useState(false);
@@ -59,10 +58,9 @@ export function OnboardingRoute() {
           now: runtime.clock.now(),
           timezone: runtime.clock.timezone(),
         });
-        setScheduleError(false);
       } catch (error) {
         if (!(error instanceof SchedulePlanError)) throw error;
-        setScheduleError(true);
+        notify(c.scheduleLimit);
         return;
       }
     }
@@ -85,7 +83,6 @@ export function OnboardingRoute() {
     body = (
       <View style={{ gap: t.space.lg }}>
         <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers} />
-        {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;

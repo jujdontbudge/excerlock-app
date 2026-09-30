@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heading, Label, PrimaryButton } from '../ui';
+import { Heading, PrimaryButton } from '../ui';
 import { UnlockLockFrame } from './lib/UnlockLockFrame';
 import { useRuntime } from '../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
@@ -40,14 +40,24 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   }, [runtime, preview]);
   const noGym = !state.nearest && !preview;
   const outside = !state.denied && !noGym && !state.working && !state.inside;
-  const title = state.denied ? c.gym.denied : noGym ? c.gym.noGym : state.working ? c.gym.confirming : c.gym.inside;
+  const title = state.denied
+    ? c.gym.denied
+    : noGym
+      ? c.gym.noGym
+      : state.working
+        ? c.gym.confirming
+        : outside
+          ? c.gym.outside
+          : c.gym.inside;
   const body = state.denied
     ? c.gym.deniedBody
     : state.working
       ? c.gym.confirmingBody
-      : state.inside
-        ? c.gym.insideBody(state.nearest?.name ?? 'your gym')
-        : undefined;
+      : outside
+        ? c.gym.outsideBody
+        : state.inside
+          ? c.gym.insideBody(state.nearest?.name ?? 'your gym')
+          : undefined;
   return (
     <UnlockLayout
       close={close}
@@ -60,19 +70,11 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
         ) : noGym ? (
           <PrimaryButton label={c.gym.chooseGym} onPress={() => router.push('/settings/gyms')} />
         ) : (
-          <>
-            {outside ? (
-              <Label accessibilityRole="alert" variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-                {state.checking ? c.gym.checking : c.gym.outside}
-              </Label>
-            ) : null}
-            <PrimaryButton
-              label={c.gym.unlock}
-              loading={state.working || state.checking}
-              disabled={state.working || state.checking}
-              onPress={() => void state.unlock()}
-            />
-          </>
+          <PrimaryButton
+            label={c.gym.unlock}
+            loading={state.working || state.checking}
+            onPress={() => void state.unlock()}
+          />
         )
       }>
       <View
@@ -87,8 +89,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
           overlay={ceremony.showMessage ? <Detected title={c.gym.detected} body={subline} /> : undefined}
         />
       </View>
-      {!ceremony.showMessage && !outside ? <Heading title={title} support={body} /> : null}
-      {state.error ? <Label accessibilityRole="alert">{state.error}</Label> : null}
+      {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
     </UnlockLayout>
   );
 }

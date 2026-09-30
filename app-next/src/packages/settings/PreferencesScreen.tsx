@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Heading, SettingsGroup, SettingsRow, BottomSheet, ChoiceRow, Label } from '../ui';
+import { notify } from '../ui/Notice';
 import { settingsStore as useSettingsStore } from '../preferences/settingsStore';
 import { profileStore as useProfileStore } from '../preferences/profileStore';
 import { settingsCopy as c } from './lib/settingsCopy';
@@ -14,9 +15,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
     walkPlaces = useProfileStore((state) => state.data.walkPlaces),
     runtime = useRuntime(),
     { open: openLockList } = useLockListPicker(),
-    [grace, setGrace] = useState(false),
-    [autoDenied, setAutoDenied] = useState(false),
-    [analyticsError, setAnalyticsError] = useState(false);
+    [grace, setGrace] = useState(false);
   return (
     <SettingsPage
       onBack={onBack}
@@ -42,17 +41,9 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           toggle={s.analyticsEnabled}
           onToggle={async (enabled) => {
             useSettingsStore.getState().patch({ analyticsEnabled: enabled });
-            setAnalyticsError(false);
-            try {
-              await runtime.analytics.setEnabled?.(enabled);
-            } catch {
-              setAnalyticsError(true);
-            }
+            await runtime.analytics.setEnabled?.(enabled)?.catch(() => undefined);
           }}
         />
-        {analyticsError ? (
-          <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label>
-        ) : null}
       </SettingsGroup>
       <View style={{ gap: t.space.sm }}>
         <Label accessibilityRole="header" variant="section">
@@ -93,19 +84,13 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             if (!v) {
               runtime.gym.disableAutoDetect();
               useSettingsStore.getState().patch({ gymAutoDetect: false });
-              setAutoDenied(false);
               return;
             }
             const enabled = await runtime.gym.enableAutoDetect().catch(() => false);
             useSettingsStore.getState().patch({ gymAutoDetect: enabled });
-            setAutoDenied(!enabled);
+            if (!enabled) notify(c.autoDenied);
           }}
         />
-        {autoDenied ? (
-          <Label accessibilityRole="alert" tone="secondary">
-            {c.autoDenied}
-          </Label>
-        ) : null}
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow title={c.gyms} icon="gym" onPress={() => navigate('gyms')} />

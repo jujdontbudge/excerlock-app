@@ -130,6 +130,7 @@ export const tokens = {
       pop: { mass: 0.8, stiffness: 240, damping: 15 },
     },
     stagger: { list: 40, hero: 90, dot: 16 },
+    hold: { notice: 2400 },
     distance: { enter: 16, hero: 24, float: 4, dismiss: 120 },
     scale: { pressed: 0.97, pop: 0.9, selected: 1.02 },
     velocity: { dismiss: 800 },

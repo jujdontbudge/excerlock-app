@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Heading, Label, PrimaryButton, ScreenShell, SecondaryButton } from '../src/packages/ui';
+import { Heading, PrimaryButton, ScreenShell, SecondaryButton } from '../src/packages/ui';
 import { SignInScreen } from '../src/packages/identity/SignInScreen';
 import { useRuntime } from '../src/packages/ports/useRuntime';
 import { beginWelcome, useJourney, verifySelectedAccount } from '../src/packages/journey/index';
@@ -18,13 +18,14 @@ export default function SignInRoute() {
     <SafeAreaProvider>
       <ScreenShell>
         {journey.phase === 'verifying' ? (
-          <>
-            <Heading title="Checking your subscription" />
-            <Label>{journey.error ?? 'Connecting your subscription to your account…'}</Label>
-            {journey.error ? <PrimaryButton label="Retry" onPress={() => void complete()} /> : null}
-            {journey.error ? <SecondaryButton label="Account and help" onPress={() => router.push('/recovery')} /> : null}
-            <SecondaryButton label="Back to start" onPress={exit} />
-          </>
+          journey.error ? (
+            <>
+              <Heading title="Let's try that again" centered />
+              <PrimaryButton label="Try again" onPress={() => void complete()} />
+              <SecondaryButton label="Account and help" onPress={() => router.push('/recovery')} />
+              <SecondaryButton label="Back to start" onPress={exit} />
+            </>
+          ) : null
         ) : (
           <SignInScreen onContinue={() => void complete()} onExit={exit} signInRequired={true} requireFreshSignIn />
         )}

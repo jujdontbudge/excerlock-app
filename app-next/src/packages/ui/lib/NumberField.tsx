@@ -15,7 +15,6 @@ export function NumberField({
   unit,
   units,
   onUnitChange,
-  error,
   step = 1,
   min = 0,
   max,
@@ -30,7 +29,6 @@ export function NumberField({
   unit: string;
   units?: readonly string[];
   onUnitChange?: (unit: string) => void;
-  error?: string;
   step?: number;
   min?: number;
   max?: number;
@@ -82,7 +80,6 @@ export function NumberField({
             }}
             maxLength={maxLength}
             keyboardType={fractionalDigits ? 'decimal-pad' : 'number-pad'}
-            error={error}
             style={{ ...t.type.metricSmall, fontVariant: ['tabular-nums'] }}
           />
         </View>

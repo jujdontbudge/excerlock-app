@@ -56,7 +56,8 @@ scenario: identity-lab-established-provider-conflict
 open: dev?journey=signIn
 tap: Continue with Apple
 wait: 30
-expect: Sign in with the account already on this device. | Recover with Apple
+expect: Please use the account you signed up with. | Recover with Apple
+absent: already on this device
 then-open: /dev
 then-expect: Journey signIn · paid no · admitted no | Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Provider conflict B preserved Apple owner lab-user-a links 0 session restores 1 Entitlement none data account-b/1/Account B/Gym B | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_session_restored {"user":"lab-user-b"}
 ```

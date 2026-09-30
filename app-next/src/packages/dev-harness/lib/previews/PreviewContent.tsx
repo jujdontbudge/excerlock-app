@@ -77,7 +77,6 @@ export function PreviewContent({
           label={c.name}
           value={s.text}
           onChangeText={s.setText}
-          error={alternate ? c.nameError : undefined}
         />
       );
     case 'NumberField':

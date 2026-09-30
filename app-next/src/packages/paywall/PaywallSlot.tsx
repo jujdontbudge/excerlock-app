@@ -5,7 +5,7 @@ import { reportPaywallError, type PaywallErrorOperation } from './lib/paywallErr
 import type { PaywallVariant } from '../telemetry/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useLaunchSignIn } from '../identity/launchSignInGate';
 import { beginOnboarding, beginSignIn, beginWelcome, notePurchaseRecovery, verifySelectedAccount } from '../journey/index';
 export function PaywallSlot() {
@@ -82,7 +82,6 @@ export function PaywallSlot() {
       recovery={recovery}
       onClose={setupComplete && signedIn ? back : undefined}
       onBack={setupComplete && signedIn ? undefined : back}
-      onRecovery={() => router.push('/recovery' as Href)}
     />
   );
 }

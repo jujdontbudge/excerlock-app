@@ -6,6 +6,7 @@ import { signInCopy as c } from './lib/signInCopy';
 import { tokens as t } from '../ui/tokens';
 import { LivingIcon } from '../ui/LivingIcon';
 import { Reveal } from '../ui/Reveal';
+import { notify } from '../ui/Notice';
 import { useRuntime } from '../ports/useRuntime';
 import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
@@ -29,32 +30,28 @@ export function SignInScreen({
     [phase, setPhase] = useState<'options' | 'email' | 'code'>('options'),
     [email, setEmail] = useState(''),
     [code, setCode] = useState(''),
-    [error, setError] = useState(''),
-    [note, setNote] = useState(''),
     [busy, setBusy] = useState(false),
     [required, setRequired] = useState<boolean | null>(
       signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
     ),
-    [flagError, setFlagError] = useState(false),
     [flagAttempt, setFlagAttempt] = useState(0),
     [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | 'email' | null>(null);
   useEffect(() => {
-    let active = true;
+    let active = true,
+      retry: ReturnType<typeof setTimeout> | undefined;
     void Promise.resolve(resolveSignInRequired(signInRequired, false))
       .then((value) => {
-        if (active) {
-          setFlagError(false);
-          setRequired(value);
-        }
+        if (active) setRequired(value);
       })
       .catch(() => {
         if (active) {
           setRequired(null);
-          setFlagError(true);
+          retry = setTimeout(() => setFlagAttempt((value) => value + 1), t.motion.hold.notice);
         }
       });
     return () => {
       active = false;
+      if (retry) clearTimeout(retry);
     };
   }, [flagAttempt, signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -64,7 +61,6 @@ export function SignInScreen({
   const signIn = async (provider: 'apple' | 'google' | 'email') => {
     if (busy) return;
     setBusy(true);
-    setError('');
     setRecoveryProvider(null);
     try {
       const result =
@@ -74,24 +70,22 @@ export function SignInScreen({
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
       if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
-      else setError(c.cancelled);
     } catch (caught) {
-      if (isAuthCancelled(caught)) {
-        setError(c.cancelled);
-      } else if (isAuthRecoveryRequired(caught)) {
+      if (isAuthCancelled(caught)) return;
+      if (isAuthRecoveryRequired(caught)) {
         if (caught.provider === 'email') {
           setPhase('code');
-          setError(caught.message);
+          notify(c.codeSent);
         } else {
           setRecoveryProvider(caught.provider);
-          setError(caught.message);
+          notify(c.accountInUse);
         }
       } else if (caught instanceof AuthError && caught.code === 'REAUTH_DIFFERENT_ACCOUNT') {
         setRecoveryProvider(provider);
-        setError(caught.message);
+        notify(c.sameAccount);
       } else {
         if (provider === 'email') setCode('');
-        setError(provider === 'email' ? c.codeError : c.authError);
+        notify(provider === 'email' ? c.codeError : c.authError);
       }
     } finally {
       setBusy(false);
@@ -100,19 +94,18 @@ export function SignInScreen({
   const send = async () => {
     if (busy || !validEmail) return;
     setBusy(true);
-    setError('');
     setRecoveryProvider(null);
     try {
       await runtime.auth.sendEmailCode(email.trim());
       setCode('');
-      if (phase === 'code') setNote(c.resent);
+      if (phase === 'code') notify(c.resent);
       setPhase('code');
     } catch (caught) {
       if (isAuthRecoveryRequired(caught) && caught.provider === 'email') {
         setPhase('code');
-        setError(caught.message);
+        notify(c.codeSent);
       } else {
-        setError(c.authError);
+        notify(c.authError);
       }
     } finally {
       setBusy(false);
@@ -133,13 +126,10 @@ export function SignInScreen({
         <View style={{ marginLeft: -(t.control.inline - t.icon.md) / 2, marginBottom: -t.space.lg }}>
           <BackButton
             label={phase === 'options' ? undefined : c.backToOptions}
-            disabled={busy}
             onPress={() => {
+              if (busy) return;
               if (phase === 'options') onExit?.();
-              else {
-                setPhase('options');
-                setError('');
-              }
+              else setPhase('options');
             }}
           />
         </View>
@@ -151,8 +141,6 @@ export function SignInScreen({
           onVerify={() => signIn('email')}
           onResend={send}
           busy={busy}
-          error={error}
-          note={note}
         />
       ) : (
         <>
@@ -192,7 +180,6 @@ export function SignInScreen({
                 returnKeyType="send"
                 onSubmitEditing={() => void send()}
                 autoFocus
-                error={email && !validEmail ? c.emailError : undefined}
               />
               <PrimaryButton label={c.sendCode} disabled={!validEmail} loading={busy} onPress={send} />
             </>
@@ -200,13 +187,13 @@ export function SignInScreen({
             <View style={{ gap: t.space.md }}>
               <SecondaryButton
                 label={c.apple}
-                disabled={busy}
+                loading={busy}
                 leading={<SymbolView name="apple.logo" size={t.icon.md} tintColor={t.text.primary} />}
                 onPress={() => void signIn('apple')}
               />
               <SecondaryButton
                 label={c.google}
-                disabled={busy}
+                loading={busy}
                 leading={
                   <Image
                     source={require('../../../assets/google-g.png')}
@@ -223,30 +210,15 @@ export function SignInScreen({
                 </Label>
                 <View style={{ flex: 1, height: t.stroke.hairline, backgroundColor: t.border.divider }} />
               </View>
-              <PrimaryButton
-                label={c.email}
-                disabled={busy}
-                onPress={() => {
-                  setPhase('email');
-                  setError('');
-                }}
-              />
+              <PrimaryButton label={c.email} loading={busy} onPress={() => setPhase('email')} />
             </View>
           )}
-          {error ? (
-            <Reveal>
-              <Label accessibilityRole="alert" style={{ color: t.state.error }}>
-                {error}
-              </Label>
-            </Reveal>
-          ) : null}
           {recoveryProvider ? (
             <SecondaryButton
               label={recoveryProvider === 'email' ? 'Switch to this email account' : `Recover with ${recoveryProvider === 'apple' ? 'Apple' : 'Google'}`}
-              disabled={busy}
+              loading={busy}
               onPress={() => {
                 setBusy(true);
-                setError('');
                 const recovery = recoveryProvider === 'apple'
                   ? runtime.auth.recoverWithApple()
                   : recoveryProvider === 'google'
@@ -255,33 +227,20 @@ export function SignInScreen({
                 void recovery
                   .then((result) => {
                     if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
-                    else setError(c.authError);
+                    else notify(c.authError);
                   })
-                  .catch((caught) => setError(isAuthCancelled(caught) ? c.cancelled : c.authError))
+                  .catch((caught) => {
+                    if (!isAuthCancelled(caught)) notify(c.authError);
+                  })
                   .finally(() => setBusy(false));
               }}
             />
-          ) : null}
-          {flagError ? (
-            <>
-              <Label accessibilityRole="alert" style={{ color: t.state.error }}>
-                Sign-in requirements could not load. Please retry.
-              </Label>
-              <SecondaryButton
-                label="Retry sign-in requirements"
-                onPress={() => {
-                  setFlagError(false);
-                  setRequired(null);
-                  setFlagAttempt((value) => value + 1);
-                }}
-              />
-            </>
           ) : null}
         </>
       )}
       <View style={{ flexGrow: 1 }} />
       {required === false ? (
-        <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} />
+        <SecondaryButton label={c.skip} loading={busy} variant="tertiary" onPress={onContinue} />
       ) : null}
     </Reveal>
   );

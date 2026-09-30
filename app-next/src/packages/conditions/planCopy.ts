@@ -1,12 +1,9 @@
 export const planCopy = {
   S1: 'When should blocking be active?',
   scheduleBody: 'Choose the days and times you want a little help focusing.',
-  daysError: 'Choose at least one day.',
-  windowError: 'Choose a window of at least 15 minutes.',
   start: 'Blocking starts',
   end: 'Blocking ends',
   done: 'Done',
-  S2: 'Setting up your plan…',
   S3: 'Your plan is ready',
   summaryBody: 'A little movement. More room for your life.',
   projected: 'Projected results',
@@ -32,6 +29,5 @@ export const planCopy = {
     maintain: 'Stay fit and healthy',
     screen: '50% less screen time',
   },
-  scheduleLimit:
-    'This schedule cannot be saved exactly. Shorten its active times or pause another condition, then try again.',
+  scheduleLimit: 'Too many blocking times. Try a shorter schedule.',
 } as const;

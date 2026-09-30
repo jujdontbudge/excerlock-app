@@ -7,7 +7,6 @@ import { RuleDraft, DraftAction } from '../draft';
 import { profileStore as useProfileStore } from '../../preferences/profileStore';
 import { useOptionalRuntime } from '../../ports/useRuntime';
 import {
-  isValidStepGoal,
   MAX_STEP_GOAL,
   MIN_STANDARD_STEP_GOAL,
   REVIEW_STEP_GOAL,
@@ -28,9 +27,6 @@ export function WalkingScreen({
   const runtime = useOptionalRuntime();
   const minutes = d.walkingMode === 'minutes';
   const value = minutes ? d.walkMinutes : d.stepGoal;
-  const valid =
-    Number.isFinite(value) &&
-    (minutes ? Number.isInteger(value) && value >= 5 && value <= 180 : isValidStepGoal(value));
   const change = (next: number) => onAction({ type: minutes ? 'setWalkMinutes' : 'setStepGoal', value: next });
   return (
     <>
@@ -102,7 +98,6 @@ export function WalkingScreen({
                     return current + (direction === 'increment' ? STEP_GOAL_INCREMENT : -STEP_GOAL_INCREMENT);
                   }
             }
-            error={valid ? undefined : minutes ? c.minutesRange : c.range}
           />
         </Reveal>
       ) : null}

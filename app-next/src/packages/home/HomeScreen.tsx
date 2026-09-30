@@ -124,7 +124,7 @@ export function HomeScreen() {
       </View>
       <SetupReminder />
       {scheduleIssue ? (
-        <View accessibilityRole="alert" style={{ padding: t.space.md, gap: t.space.md,
+        <View style={{ padding: t.space.md, gap: t.space.md,
           backgroundColor: t.surface.card, borderRadius: t.radius.card,
           borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
           <Label variant="section">{c.scheduleRecoveryTitle}</Label>

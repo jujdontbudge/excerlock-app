@@ -1,1 +1,1 @@
-export { commitStagedPlan } from './lib/plan';
+export { commitStagedPlan, stagePlan } from './lib/plan';

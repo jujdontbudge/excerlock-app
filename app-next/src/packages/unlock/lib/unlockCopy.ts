@@ -1,6 +1,7 @@
 export const unlockCopy = {
   close: 'Close unlock screen',
   done: 'Done',
+  retry: "That didn't work. Please try again.",
   preview: 'Unlock preview',
   treadmill: {
     prop: 'Prop your phone and walk',
@@ -19,8 +20,8 @@ export const unlockCopy = {
   gym: {
     inside: 'Location detected at the gym',
     insideBody: (name: string) => `You're at ${name}.`,
-    outside: 'Location not at gym. Go to a selected gym to unlock.',
-    checking: 'Checking your location…',
+    outside: 'Not at your gym yet',
+    outsideBody: 'Go to your gym to unlock.',
     confirming: "Confirming you're here",
     confirmingBody: 'Stay put for a moment.',
     unlock: "I'm at the gym",

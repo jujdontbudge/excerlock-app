@@ -216,7 +216,8 @@ name: wrong-account-proof-fails-closed
 scenario: subscription-proof-wrong-account
 open: /
 tap: Sign in | Continue with Apple
-expect: Checking your subscription | Retry | Back to start
+expect: Let's try that again | Try again | Back to start
+absent: Checking your subscription | Connecting your subscription
 ```
 
 ```proof
@@ -224,7 +225,8 @@ name: wrong-environment-proof-fails-closed
 scenario: subscription-proof-wrong-environment
 open: /
 tap: Sign in | Continue with Apple
-expect: Checking your subscription | Retry | Back to start
+expect: Let's try that again | Try again | Back to start
+absent: Checking your subscription | Connecting your subscription
 ```
 
 ```proof
@@ -232,7 +234,8 @@ name: unavailable-proof-fails-closed
 scenario: subscription-proof-unavailable
 open: /
 tap: Sign in | Continue with Apple
-expect: Checking your subscription | Retry | Retry will not start another purchase | Account and help | Back to start
+expect: Let's try that again | Try again | Account and help | Back to start
+absent: Retry will not start another purchase | verification is unavailable
 then-open: /dev
 then-expect: Journey verifying · paid no · admitted no | Protected route mounts | None
 ```
@@ -242,12 +245,13 @@ name: unavailable-proof-recovery-access
 scenario: subscription-proof-unavailable
 open: /
 tap: Sign in | Continue with Apple
-expect: Checking your subscription | Retry will not start another purchase | Account and help
+expect: Let's try that again | Account and help
 then-tap: Account and help
 then-expect: Account and help | Restore purchases | Help and feedback
 ```
 
 ## Gotchas
+- The real runtime (Metro started with `EXCERLOCK_ENV=preview`) fails to start on the simulator after a demo or proof granted Motion, because the simulator has no motion hardware. Run `xcrun simctl privacy <udid> revoke motion com.johansardar.excerlock`, then reopen the dev client.
 - A dev build boots the fake runtime, with scenarios and fake adapters. Preview and production builds boot the real runtime (`src/runtime/environment.ts`). An unknown release environment fails closed.
 - If the app shows real prices and ignores `excerlock://dev`, it is running a cached OTA update instead of Metro. `./excer sim start` detects this and reinstalls the app.
 - `/` is a transient BootGate route. The OTA coordinator never counts it as a safe place to reload.

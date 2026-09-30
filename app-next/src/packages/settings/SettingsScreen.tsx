@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { ScreenShell, Label, PressableScale, SettingsGroup, SettingsRow } from '../ui';
+import { notify } from '../ui/Notice';
 import { profileStore as useProfileStore } from '../preferences/profileStore';
 import { entitlementStore as useEntitlementStore } from '../subscription/entitlementStore';
 import { settingsStore as useSettingsStore } from '../preferences/settingsStore';
@@ -18,8 +19,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     entitlement = useEntitlementStore((s) => s.data.entitlement),
     notificationsEnabled = useSettingsStore((s) => s.data.notificationsEnabled),
     notificationStatus = usePermissionsStore((s) => s.data.notifications),
-    taps = useRef(0),
-    [mailNote, setMailNote] = useState(false);
+    taps = useRef(0);
   const notificationsOn = notificationsEnabled && notificationStatus === 'granted';
   const toggleNotifications = async (on: boolean) => {
     useSettingsStore.getState().patch({ notificationsEnabled: on });
@@ -58,16 +58,11 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
           title={c.supportRow}
           icon="mail"
           onPress={() => {
-            void openSupportEmail().catch(() => setMailNote(true));
+            void openSupportEmail().catch(() => notify(s.emailUs));
           }}
         />
         <SettingsRow title={c.legal} icon="list" onPress={() => navigate('legal')} />
       </SettingsGroup>
-      {mailNote ? (
-        <Label accessibilityRole="alert" selectable>
-          {s.errorWithAddress}
-        </Label>
-      ) : null}
       <PressableScale
         label={version}
         onPress={() => {

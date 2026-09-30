@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heading, Label, PrimaryButton } from '../ui';
+import { Heading, PrimaryButton } from '../ui';
+import { notify } from '../ui/Notice';
+import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 import { UnlockLockFrame } from './lib/UnlockLockFrame';
 import { useRuntime } from '../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
@@ -18,7 +20,6 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const [snapshot, setSnapshot] = useState<TreadmillScanSnapshot>({ phase: 'idle', confidence: 0 });
   const verified = useRef(false),
     rule = useRulesStore((s) => s.data.rules.find((r) => r.id === ruleId));
-  const [error, setError] = useState('');
   const lifted = snapshot.phase === 'verified',
     denied = snapshot.phase === 'permissionDenied';
   const ceremony = useCeremony(snapshot.confidence, lifted, c.treadmill.detected);
@@ -65,7 +66,8 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           await controller.start();
         }
       } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : 'Could not start the scan.');
+        reportRuntimeError(e);
+        if (active) notify(c.retry);
       }
     };
     void startScan();
@@ -134,7 +136,6 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         />
       </View>
       {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
-      {error ? <Label accessibilityRole="alert">{error}</Label> : null}
     </UnlockLayout>
   );
 }

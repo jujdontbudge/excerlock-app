@@ -1,8 +1,9 @@
 import { restorePurchases } from '../../subscription/restorePurchases';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
+import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { tokens as t } from '../../ui/tokens';
 import { Icon } from '../../ui/Icon';
@@ -13,14 +14,19 @@ import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
-import { entitlementStore as useEntitlementStore } from '../../subscription/entitlementStore';
 import { subscriptionCopy, planRowTitle, planName, perMonth } from '../../subscription/subscriptionCopy';
 import { onboardingStore as useOnboardingStore } from '../../onboarding/onboardingStore';
 import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
+import { draftFromAnswers } from '../../conditions/answersDraft';
+import { toRule } from '../../conditions/draft';
+import { scheduleDraft, toSchedule } from '../../conditions/scheduleDraft';
 import { defaultPlanHandle } from './paywallVariant';
 import { paywallPromises } from './paywallPromises';
 import { PaywallHero } from './PaywallHero';
 import { paywallCopy as copy } from './paywallCopy';
+const paywallLoadRetries = 2,
+  planRowHeight =
+    t.space.md * 3 + t.type.body.lineHeight + t.type.label.lineHeight + t.stroke.selected * 2;
 export function PaywallScreen({
   placement,
   reportError,
@@ -29,7 +35,6 @@ export function PaywallScreen({
   onBack,
   onLoaded,
   onAccess,
-  onRecovery,
   recovery,
 }: {
   placement: SubscriptionPaywall['placement'];
@@ -39,27 +44,31 @@ export function PaywallScreen({
   onBack?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
-  onRecovery?: () => void;
   recovery: PurchaseRecovery;
 }) {
   const runtime = useRuntime(),
-    status = useEntitlementStore((state) => state.data.entitlement.status),
     answers = useOnboardingStore((state) => state.data.answers),
-    rule = useRulesStore((state) => state.data.rules[0]),
+    committedRule = useRulesStore((state) => state.data.rules[0]),
     [paywall, setPaywall] = useState<SubscriptionPaywall | null>(null),
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
-    [message, setMessage] = useState(''),
-    [existingSubscription, setExistingSubscription] = useState(false),
     chosen = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null);
+  const stagedRule = useMemo(() => {
+    if (committedRule || !answers.ruleId) return undefined;
+    try {
+      return toRule(draftFromAnswers(answers), toSchedule(scheduleDraft(answers)));
+    } catch {
+      return undefined;
+    }
+  }, [committedRule, answers]);
+  const rule = committedRule ?? stagedRule;
   useEffect(() => {
     latest.current = { variantKey, onLoaded };
   }, [variantKey, onLoaded]);
-  const load = useCallback(async () => {
+  const load = useCallback(async (attempt = 0): Promise<void> => {
     setBusy('load');
-    setMessage('');
     try {
       const next = await runtime.subscription.loadPaywall(placement);
       setPaywall(next);
@@ -72,10 +81,12 @@ export function PaywallScreen({
       });
     } catch (error) {
       reportError(error, 'load');
-      setMessage("Plans couldn't load. Please retry.");
-    } finally {
-      setBusy(null);
+      if (attempt < paywallLoadRetries) {
+        await new Promise((resolve) => setTimeout(resolve, t.motion.hold.notice));
+        return load(attempt + 1);
+      }
     }
+    setBusy(null);
   }, [placement, reportError, runtime]);
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -94,55 +105,56 @@ export function PaywallScreen({
     if (!selected || busy || recovery.type !== 'none') return;
     if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
-    setMessage('');
+    let restoreExisting = false;
     try {
       const result = await runtime.subscription.purchase(selected);
       if (result.type === 'success') {
         if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) onAccess?.(result.entitlement);
-        else setMessage('Your payment is being confirmed. Please retry or restore purchases.');
-      } else if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
-      else if (result.type === 'already_subscribed') {
-        setExistingSubscription(true);
-        setMessage('This App Store account already has a subscription. Restore it to connect it to your ExcerLock account.');
-      }
-      else if (result.type === 'user_cancelled') {
-        runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
-        setMessage('Choose a plan to continue.');
-      }
+        else restoreExisting = true;
+      } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
+      else if (result.type === 'already_subscribed') restoreExisting = true;
+      else if (result.type === 'user_cancelled') runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
     } catch (error) {
       runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
       reportError(error, 'purchase');
-      setMessage('Purchase could not finish. Please retry.');
+      notify(subscriptionCopy.error);
     } finally {
       setBusy(null);
     }
+    if (restoreExisting) await restore();
   };
-  const restore = async () => {
-    if (busy) return;
+  async function restore() {
     setBusy('restore');
-    setMessage('');
     try {
-      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') setMessage('No active purchase was found.');
+      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') notify(subscriptionCopy.notFound);
       else onAccess?.(runtime.subscription.entitlement());
     } catch (error) {
       reportError(error, 'restore');
-      setMessage('Restore could not finish. Please retry.');
+      notify(subscriptionCopy.error);
     } finally {
       setBusy(null);
     }
-  };
+  }
   const continueRecovery = () => {
     if (recovery.type === 'accountConnection') onAccess?.(runtime.subscription.entitlement());
-    else void restore();
+    else if (!busy) void restore();
   };
   const product = paywall?.products.find((item) => item.handle === selected);
-  const choose = (handle: string) => {
+  const press = () => {
     if (busy) return;
+    if (recovery.type !== 'none') continueRecovery();
+    else if (!paywall) void load();
+    else void purchase();
+  };
+  const choose = (handle: string) => {
+    if (busy === 'purchase' || busy === 'restore') return;
     chosen.current = true;
     setSelected(handle);
   };
   return (
     <ScreenShell
+      scrollsAsOne
+      scrollResetKey={paywall ? 'plans' : 'loading'}
       contentStyle={{ gap: t.space.md, paddingTop: 0 }}
       header={
         <View
@@ -190,43 +202,35 @@ export function PaywallScreen({
       }
       footer={
         <>
-          {product?.offerLabel && !existingSubscription ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
-              <Icon name="check" size={t.icon.md} variant="utility" />
-              <Label variant="label">{subscriptionCopy.noPayment}</Label>
-            </View>
-          ) : null}
-          {paywall ? (
-            <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md }}>
-              {paywall.products.map((item, index) => (
-                <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
-                  <PlanCard
-                    product={item}
-                    selected={selected === item.handle}
-                    showOffer={!existingSubscription}
-                    onPress={() => choose(item.handle)}
-                  />
-                </Reveal>
-              ))}
-            </View>
-          ) : null}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: t.space.sm,
+              opacity: !product || product.offerLabel ? 1 : 0,
+            }}>
+            <Icon name="check" size={t.icon.md} variant="utility" />
+            <Label variant="label">{subscriptionCopy.noPayment}</Label>
+          </View>
+          <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md, minHeight: planRowHeight }}>
+            {paywall?.products.map((item, index) => (
+              <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
+                <PlanCard product={item} selected={selected === item.handle} onPress={() => choose(item.handle)} />
+              </Reveal>
+            ))}
+          </View>
           <PrimaryButton
             label={
               recovery.type === 'accountConnection'
-                ? 'Continue to sign in'
-                : recovery.type === 'pending'
-                  ? 'Check purchase status'
-                  : existingSubscription
-                    ? 'Use existing subscription'
-                  : product?.offerLabel
-                    ? subscriptionCopy.start
-                    : 'Continue'
+                ? subscriptionCopy.signInToContinue
+                : recovery.type === 'pending' || (product && !product.offerLabel)
+                  ? subscriptionCopy.continue
+                  : subscriptionCopy.start
             }
-            loading={busy === 'purchase'}
-            disabled={(recovery.type === 'none' && !product) || busy === 'restore' || busy === 'load'}
-            onPress={() => existingSubscription ? void restore() : recovery.type === 'none' ? void purchase() : continueRecovery()}
+            loading={busy !== null}
+            onPress={press}
           />
-          {onRecovery ? <PressableScale label="Account and help" onPress={onRecovery}><Label variant="support" tone="secondary">Account and help</Label></PressableScale> : null}
         </>
       }>
       {rule ? <PaywallHero rule={rule} /> : <View style={{ flex: 1 }} />}
@@ -253,21 +257,6 @@ export function PaywallScreen({
           </Reveal>
         ))}
       </View>
-      {message || recovery.type !== 'none' || status === 'expired' || status === 'billingIssue' ? (
-        <Label accessibilityRole="alert" style={{ color: t.state.error, textAlign: 'center' }}>
-          {recovery.type !== 'none' ? (
-            recovery.type === 'accountConnection'
-              ? 'Payment received. Sign in to connect your subscription.'
-              : 'Your purchase is still being confirmed. You will not be charged again.'
-          ) : message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
-        </Label>
-      ) : null}
-      {busy ? (
-        <Label accessibilityRole="alert" tone="secondary" style={{ textAlign: 'center' }}>
-          {busy === 'purchase' ? subscriptionCopy.purchasing : busy === 'restore' ? subscriptionCopy.restoring : subscriptionCopy.loadingPlans}
-        </Label>
-      ) : null}
-      {!paywall && busy !== 'load' ? <PrimaryButton label="Retry loading plans" onPress={() => void load()} /> : null}
     </ScreenShell>
   );
 }
@@ -275,12 +264,10 @@ export function PaywallScreen({
 function PlanCard({
   product,
   selected,
-  showOffer,
   onPress,
 }: {
   product: PaywallProduct;
   selected: boolean;
-  showOffer: boolean;
   onPress: () => void;
 }) {
   const m = useMotion(),
@@ -312,7 +299,7 @@ function PlanCard({
           {price}
         </Label>
       </Animated.View>
-      {product.offerLabel && showOffer ? (
+      {product.offerLabel ? (
         <View style={{ position: 'absolute', top: -t.space.md, left: 0, right: 0, alignItems: 'center' }}>
           <View
             style={{

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CloseButton, Heading, Label, PressableScale, PrimaryButton, ScreenShell } from '../ui';
+import { notify } from '../ui/Notice';
 import { SetupPresentation } from '../ui/SetupPresentation';
 import { tokens as t } from '../ui/tokens';
 import { setupCopy as c } from './lib/setupCopy';
@@ -36,8 +37,7 @@ export function SetupFlow({
     { needs, location, permissions } = useSetupNeeds(),
     [passed, setPassed] = useState<Step[]>([]),
     [upgradeRefused, setUpgradeRefused] = useState(false),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [busy, setBusy] = useState(false);
   const steps: Step[] = [...(account && !launchApproved ? (['account'] as const) : []), ...needs],
     current = steps.find((step) => !passed.includes(step));
   const finished = useRef(false);
@@ -51,7 +51,6 @@ export function SetupFlow({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the step changes
   }, [current]);
   const pass = (step: Step) => {
-    setError('');
     setPassed((list) => [...list, step]);
   };
   if (!current) return <ScreenShell>{null}</ScreenShell>;
@@ -71,7 +70,6 @@ export function SetupFlow({
   const ask = async () => {
     if (need === 'gym') return router.push('/gym-picker');
     setBusy(true);
-    setError('');
     try {
       if (need === 'apps') {
         const apps = await runtime.screenTime.presentAppPicker();
@@ -95,7 +93,7 @@ export function SetupFlow({
       if (caught instanceof ScreenTimeAuthorizationError) {
         track('screen_time', false);
         pass('apps');
-      } else setError(caught instanceof Error ? caught.message : String(caught));
+      } else notify(c.retry);
     } finally {
       setBusy(false);
     }
@@ -107,7 +105,7 @@ export function SetupFlow({
   return (
     <ScreenShell
       scrollResetKey={need}
-      header={<Header onClose={onClose} skip={busy ? undefined : () => pass(need)} />}
+      header={<Header onClose={onClose} skip={() => { if (!busy) pass(need); }} />}
       overlay={alert ? <PermissionGuide key={alert.title + alert.message} alert={alert} /> : null}
       footer={
         <PrimaryButton
@@ -123,11 +121,6 @@ export function SetupFlow({
           centered
         />
         {alert ? null : <LivingIcon name={settings ? 'gear' : 'map-pin'} />}
-        {error ? (
-          <Label accessibilityRole="alert" style={{ color: t.state.error, textAlign: 'center' }}>
-            {error}
-          </Label>
-        ) : null}
       </View>
     </ScreenShell>
   );

@@ -12,6 +12,12 @@ module.exports = defineConfig([
     plugins: { excerlock: require('../packages/eslint-plugin-excerlock/index.cjs') },
     rules: { 'excerlock/no-comments': 'error' },
   },
+  {
+    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    ignores: ['src/packages/dev-harness/**', 'src/packages/research/**', 'src/packages/ui/Notice.tsx'],
+    plugins: { excerlock: require('../packages/eslint-plugin-excerlock/index.cjs') },
+    rules: { 'excerlock/no-status-text': 'error' },
+  },
   { ignores: ['ios/**', 'build/**', 'evidence/**', 'coverage/**', 'dist/**'] },
   {
     files: ['src/**/*.{ts,tsx}'],

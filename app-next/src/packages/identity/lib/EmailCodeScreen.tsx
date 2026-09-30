@@ -1,23 +1,17 @@
 import { Heading, TextField, PrimaryButton, SecondaryButton, Label } from '../../ui';
 import { signInCopy as c } from './signInCopy';
-import { tokens as t } from '../../ui/tokens';
-import { Reveal } from '../../ui/Reveal';
 export function EmailCodeScreen({
   code,
   onCode,
   onVerify,
   onResend,
   busy,
-  error,
-  note,
 }: {
   code: string;
   onCode: (value: string) => void;
   onVerify: () => void;
   onResend: () => void;
   busy: boolean;
-  error: string;
-  note: string;
 }) {
   return (
     <>
@@ -31,15 +25,9 @@ export function EmailCodeScreen({
         maxLength={6}
         textContentType="oneTimeCode"
         autoFocus
-        error={error || undefined}
       />
-      {note ? (
-        <Reveal>
-          <Label style={{ color: t.state.success }}>{note}</Label>
-        </Reveal>
-      ) : null}
       <PrimaryButton label={c.verify} disabled={code.length !== 6} loading={busy} onPress={onVerify} />
-      <SecondaryButton label={c.resend} disabled={busy} variant="tertiary" onPress={onResend} />
+      <SecondaryButton label={c.resend} loading={busy} variant="tertiary" onPress={onResend} />
     </>
   );
 }

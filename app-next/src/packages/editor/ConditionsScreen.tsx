@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { notify } from '../ui/Notice';
 import { View } from 'react-native';
 import { tokens as t } from '../ui/tokens';
 import {
@@ -36,8 +37,7 @@ export function ConditionsScreen({
     runtime = useRuntime(),
     { open: openLockList } = useLockListPicker(),
     { scheduleIssue } = useRuntimeStatus(),
-    [deleting, setDeleting] = useState<string | null>(null),
-    [scheduleError, setScheduleError] = useState(false);
+    [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <ScreenShell dock
@@ -84,18 +84,6 @@ export function ConditionsScreen({
           <Label style={{ color: t.text.secondary }}>{c.scheduleRecovery}</Label>
         </View>
       ) : null}
-      {scheduleError ? (
-        <View
-          style={{
-            padding: t.space.lg,
-            borderRadius: t.radius.card,
-            backgroundColor: t.surface.card,
-            borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-          }}>
-          <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label>
-        </View>
-      ) : null}
       {migrationNote ? (
         <View
           style={{
@@ -133,11 +121,10 @@ export function ConditionsScreen({
                       now: runtime.clock.now(),
                       timezone: runtime.clock.timezone(),
                     });
-                    setScheduleError(false);
                     if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
                   } catch (error) {
                     if (!(error instanceof SchedulePlanError)) throw error;
-                    setScheduleError(true);
+                    notify(c.scheduleLimit);
                   }
                 }}
                 onDelete={() => setDeleting(rule.id)}

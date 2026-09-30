@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppRuntimeProvider } from './lib/AppRuntimeProvider';
+import { NoticeHost } from '../ui/Notice';
 import { markStartupStage } from '../../../modules/excerlock-startup';
 import { useFonts } from 'expo-font';
 import {
@@ -30,6 +31,7 @@ export function AppRoot() {
           <StatusBar style="dark" />
           <RootNavigator />
         </AppRuntimeProvider>
+        <NoticeHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

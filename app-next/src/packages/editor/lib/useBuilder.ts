@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { notify } from '../../ui/Notice';
+import { conditionsCopy } from '../../conditions/conditionsCopy';
 import { useStore } from 'zustand';
 import { Keyboard } from 'react-native';
 import { Activity } from '../../model/types';
@@ -36,7 +38,6 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
     [step, setStep] = useState(initial.editing ? 'S3' : 'O20'),
     [chosen, setChosen] = useState(initial.editing),
     [confirm, setConfirm] = useState(false),
-    [scheduleError, setScheduleError] = useState(false),
     [backup, setBackup] = useState<{ draft: typeof draft; schedule: typeof schedule } | null>(null),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const dirty =
@@ -53,18 +54,15 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
     step,
     chosen,
     confirm,
-    scheduleError,
     direction,
     editing: initial.editing,
     dispatch,
     valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
     choose: (activity: Activity) => {
-      setScheduleError(false);
       store.getState().replace(createDraft(activity, runtime.clock.now()));
       setChosen(true);
     },
     onSchedule: (a: ScheduleAction) => {
-      setScheduleError(false);
       setSchedule((s) => reduceSchedule(s, a));
     },
     edit: (target: string) => {
@@ -91,12 +89,11 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
             timezone: runtime.clock.timezone(),
           });
           runtime.analytics.track(saved === 'created' ? 'condition_created' : 'condition_edited');
-          setScheduleError(false);
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();
         } catch (error) {
           if (!(error instanceof SchedulePlanError)) throw error;
-          setScheduleError(true);
+          notify(conditionsCopy.scheduleLimit);
         }
       } else if (backup) {
         setBackup(null);

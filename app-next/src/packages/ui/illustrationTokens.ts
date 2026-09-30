@@ -90,12 +90,14 @@ export const illustrationTokens = {
       stroke: 10,
       point: { x: 177, y: 106, size: 24, border: 5 },
       badge: {
-        top: 151,
+        top: 131,
         minHeight: 56,
         icon: 50,
         arrow: 28,
         padding: 14,
         shadow: '0px 12px 20px rgba(132,64,18,0.15)',
+        text: { fontSize: 27, lineHeight: 34, fontFamily: t.type.label.fontFamily },
+        nudge: 6,
       },
     },
     tile: {

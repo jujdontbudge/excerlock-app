@@ -1,11 +1,12 @@
 ---
 id: dev-harness
 title: Developer harness and research screens
-routes: [dev, diagnostics/sensors, linked-trace]
+routes: [dev, sample-paywall, diagnostics/sensors, linked-trace]
 scenarios: [dynamic-type-xl, reduce-motion, returning-signed-in, identity-lab-account-isolation, identity-lab-delayed-callbacks, identity-lab-deletion-callbacks, identity-lab-established-transfer, identity-lab-transfer-second-subscription, identity-lab-concurrent-restore, identity-lab-local-signout, identity-lab-stale-product-handle, identity-lab-independent-restore, identity-lab-passive-entry, identity-lab-lifecycle-revocation]
 depends: [launch]
 ---
 ## Sub-features
+- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall.
 - `/dev`: the dev menu, scenario loading (`dev?scenario=<id>`), outcome controls (`restore`, `outcome`, `prompt`, `setup=X1..X5`), the component preview gallery, and the shield preview.
 - `/diagnostics/sensors`: a sensor smoke screen, available only in dev builds.
 - `/linked-trace`: the Linked Recorder research screen. It is compiled in only for research builds and is disabled in the App Store bundle.

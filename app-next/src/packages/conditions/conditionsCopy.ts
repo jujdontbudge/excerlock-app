@@ -23,8 +23,6 @@ export const conditionsCopy = {
   delete: 'Delete condition',
   keepRule: 'Keep condition',
   dismissRetired: 'Dismiss',
-  scheduleLimit:
-    'This schedule cannot be saved exactly. Shorten its active times or pause another condition, then try again.',
-  scheduleRecovery:
-    'Your saved schedules cannot all run exactly right now. Edit, pause, or delete a condition to restore scheduling.',
+  scheduleLimit: 'Too many blocking times. Try a shorter schedule.',
+  scheduleRecovery: 'One of your schedules needs a fix. Edit or pause a condition.',
 };

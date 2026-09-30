@@ -5,6 +5,7 @@ import { SavedPlace } from '../model/models';
 import { clampRadius, distanceMetres, roundCoordinate } from './geometry';
 import { gymPickerCopy as c } from './lib/gymPickerCopy';
 import { tokens as t } from '../ui/tokens';
+import { notify } from '../ui/Notice';
 export const defaultCentre: Coordinates = { latitude: 41.884, longitude: -87.652 };
 export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPlace) {
   const [stage, setStage] = useState<'find' | 'place'>('place');
@@ -17,11 +18,9 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
   const [name, setName] = useState(existing?.name ?? c.newName),
     [address, setAddress] = useState(existing?.address ?? '');
   const [radius, setRadius] = useState(clampRadius(existing?.radiusMeters ?? 100));
-  const [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
+  const [busy, setBusy] = useState(false),
     [searching, setSearching] = useState(false);
-  const [retry, setRetry] = useState(0),
-    [locating, setLocating] = useState(true);
+  const [locating, setLocating] = useState(true);
   const generation = useRef(0),
     alive = useRef(true),
     cache = useRef(new Map<string, string | null>());
@@ -44,20 +43,17 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
             const rows = await port.nearbyGyms(coord);
             if (active) setNearby(rows);
           } catch {
-            if (active) setError(c.searchError);
+            return;
           }
         }
       })
       .catch(() => {
-        if (active) {
-          setLocating(false);
-          setError(c.searchError);
-        }
+        if (active) setLocating(false);
       });
     return () => {
       active = false;
     };
-  }, [port, retry]);
+  }, [port]);
   useEffect(() => {
     let active = true;
     if (!query.trim() || stage !== 'find') return;
@@ -71,17 +67,14 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
           }
         })
         .catch(() => {
-          if (active) {
-            setError(c.searchError);
-            setSearching(false);
-          }
+          if (active) setSearching(false);
         });
     }, t.motion.duration.standard);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [query, location, port, stage, retry]);
+  }, [query, location, port, stage]);
   useEffect(() => {
     if (stage !== 'place') return;
     let active = true;
@@ -113,17 +106,15 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     setName(place.name);
     setAddress(place.address);
     setStage('place');
-    setError('');
   };
   const pickSuggestion = async (suggestion: PlaceSuggestion) => {
     const request = ++generation.current;
     setBusy(true);
-    setError('');
     try {
       const place = await port.resolve(suggestion);
       if (alive.current && generation.current === request) choose(place);
     } catch {
-      if (alive.current && generation.current === request) setError(c.searchError);
+      if (alive.current && generation.current === request) notify(c.searchError);
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -135,13 +126,11 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     setName(c.newName);
     setAddress('');
     setStage('place');
-    setError('');
   };
   const limit =
     port.listPlaces().length >= 5 && !port.listPlaces().some((p) => p.id === (existing?.id ?? candidate?.id));
   const requestLocation = async () => {
     setLocating(true);
-    setError('');
     try {
       await port.requestLocation();
       const coordinate = await port.currentLocation();
@@ -150,17 +139,17 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       if (coordinate) {
         const rows = await port.nearbyGyms(coordinate);
         if (alive.current) setNearby(rows);
-      } else setError(c.locationUnavailable);
+      } else notify(c.locationUnavailable);
     } catch {
-      if (alive.current) setError(c.locationUnavailable);
+      if (alive.current) notify(c.locationUnavailable);
     } finally {
       if (alive.current) setLocating(false);
     }
   };
   const save = async () => {
-    if (busy || limit || !name.trim()) return;
+    if (busy || !name.trim()) return;
+    if (limit) return notify(c.limit);
     setBusy(true);
-    setError('');
     try {
       await port.savePlace({
         id: existing?.id ?? candidate?.id ?? `custom:${roundCoordinate(pin)}`,
@@ -171,7 +160,7 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       });
       if (alive.current) onSaved();
     } catch {
-      if (alive.current) setError(c.saveError);
+      if (alive.current) notify(c.saveError);
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -183,7 +172,6 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       setQuery(value);
       setSuggestions([]);
       setSearching(!!value.trim());
-      setError('');
     },
     suggestions,
     nearby,
@@ -200,7 +188,6 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     address,
     radius,
     setRadius: (n: number) => setRadius(clampRadius(n)),
-    error,
     busy,
     searching,
     choose,
@@ -211,20 +198,13 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     requestLocation,
     openSearch: () => {
       setStage('find');
-      setError('');
     },
     back: () => {
       generation.current++;
       setStage('place');
-      setError('');
       setQuery('');
       setSuggestions([]);
       setSearching(false);
-    },
-    retry: () => {
-      setError('');
-      setSearching(!!query.trim());
-      setRetry((n) => n + 1);
     },
     saved: port.listPlaces(),
   };

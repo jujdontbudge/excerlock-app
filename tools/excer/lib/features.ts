@@ -6,7 +6,7 @@ import { read, walk } from './files.ts';
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
 export type ProofAction = { kind: 'tap' | 'type'; value: string };
-export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; expect: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[] };
+export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; expect: string[]; absent?: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[] };
 
 export type Feature = {
   id: string;
@@ -58,6 +58,7 @@ function parseProofs(body: string): Proof[] {
       expect: (fields.expect ?? '').split('|').map((item) => item.trim()).filter(Boolean),
       wait: Number(fields.wait ?? 15),
     };
+    if (fields.absent) proof.absent = fields.absent.split('|').map((item) => item.trim()).filter(Boolean);
     if (fields.scenario) proof.scenario = fields.scenario;
     if (fields.open) proof.open = fields.open;
     if (fields.prompt) proof.prompt = fields.prompt;

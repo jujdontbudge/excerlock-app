@@ -1,6 +1,7 @@
 export const setupCopy = {
   settings: 'Open Settings',
   notNow: 'Not now',
+  retry: "That didn't work. Please try again.",
   flow: {
     apps: {
       title: 'Choose apps to lock',

@@ -5,7 +5,7 @@ import { Heading, Label, TextField, PrimaryButton } from '../ui';
 import { tokens as t } from '../ui/tokens';
 import { incidentCopy as i } from './incidentCopy';
 import { LivingIcon } from '../ui/LivingIcon';
-import { Reveal } from '../ui/Reveal';
+import { notify } from '../ui/Notice';
 import { useRuntime } from '../ports/useRuntime';
 import { useLockDecision } from '../lock/selectors';
 import { activityTruthStore as useActivityTruthStore } from '../activity/activityTruthStore';
@@ -16,8 +16,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
     held = useActivityTruthStore((s) => s.data?.activity ?? 'none'),
     [whatWentWrong, setWhatWentWrong] = useState(''),
     [shouldHaveHappened, setShouldHaveHappened] = useState(''),
-    [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle'),
-    [message, setMessage] = useState<{ text: string; reason?: string } | null>(null);
+    [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const missing = () => {
     const wrong = whatWentWrong.trim().length > 0,
       expected = shouldHaveHappened.trim().length > 0;
@@ -28,25 +27,21 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
     if (state === 'sending') return;
     const nag = missing();
     if (nag) {
-      setMessage({ text: nag });
+      notify(nag);
       return;
     }
     Keyboard.dismiss();
-    setMessage(null);
     setState('sending');
     try {
       await runtime.incidentReports.send({ whatWentWrong: whatWentWrong.trim(), shouldHaveHappened: shouldHaveHappened.trim() });
       runtime.analytics.track('incident_report_sent', { source: 'settings', activity: held, lock_state: lockState });
       setState('sent');
-    } catch (error) {
+    } catch {
       setState('idle');
-      setMessage({ text: i.error, reason: error instanceof Error ? error.message : String(error) });
+      notify(i.error);
     }
   };
-  const edit = (set: (value: string) => void) => (value: string) => {
-    set(value);
-    setMessage(null);
-  };
+  const edit = (set: (value: string) => void) => (value: string) => set(value);
   if (state === 'sent')
     return (
       <SettingsPage onBack={onBack} footer={<PrimaryButton label={i.done} onPress={onBack} />}>
@@ -60,7 +55,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
       onBack={onBack}
       footer={
         <PrimaryButton
-          label={state === 'sending' ? i.sending : i.send}
+          label={i.send}
           loading={state === 'sending'}
           onPress={() => void send()}
         />
@@ -98,16 +93,6 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
           {i.attachedBody}
         </Label>
       </View>
-      {message ? (
-        <Reveal key={message.text + (message.reason ?? '')}>
-          <Label accessibilityRole="alert">{message.text}</Label>
-          {message.reason ? (
-            <Label tone="secondary" variant="support">
-              {message.reason}
-            </Label>
-          ) : null}
-        </Reveal>
-      ) : null}
     </SettingsPage>
   );
 }

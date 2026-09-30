@@ -1,5 +1,4 @@
 import { PropsWithChildren, useState, useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
 import Constants from 'expo-constants';
 import { createRuntime, Runtime } from './createRuntime';
 import { runtimeMode } from '../../platform/environment';
@@ -28,7 +27,8 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       },
       (error) => {
         reportRuntimeError(error);
-        if (current) setFailed(error && typeof error === 'object' && error.retryUnsafe === true ? 'restart' : 'retry');
+        if (current && attempt === 0 && !(error && typeof error === 'object' && error.retryUnsafe === true)) setAttempt(1);
+        else if (current) setFailed(error && typeof error === 'object' && error.retryUnsafe === true ? 'restart' : 'retry');
       },
     );
     return () => {
@@ -43,15 +43,13 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
   );
   if (!runtime)
     return (
-      <ScreenShell contentStyle={{ flexGrow: 1, justifyContent: 'center', gap: 24 }}>
-        <Label style={{ textAlign: 'center' }}>
-          {failed === 'restart'
-            ? 'Close ExcerLock from the app switcher, then open it again to finish starting safely.'
-            : failed
-              ? 'ExcerLock could not finish starting. Your saved data has not been cleared.'
-              : 'Starting ExcerLock…'}
-        </Label>
-        {failed === 'restart' ? null : failed ? (
+      <ScreenShell contentStyle={{ flexGrow: 1, justifyContent: 'center', gap: tokens.space.xl }}>
+        {failed ? (
+          <Label variant="label" style={{ textAlign: 'center' }}>
+            {failed === 'restart' ? 'Please close ExcerLock and open it again.' : "Let's try that again."}
+          </Label>
+        ) : null}
+        {failed === 'retry' ? (
           <PrimaryButton
             label="Try again"
             onPress={() => {
@@ -59,9 +57,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
               setAttempt((value) => value + 1);
             }}
           />
-        ) : (
-          <ActivityIndicator accessibilityLabel="Starting ExcerLock" color={tokens.text.primary} />
-        )}
+        ) : null}
       </ScreenShell>
     );
   return (

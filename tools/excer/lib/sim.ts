@@ -235,6 +235,17 @@ export async function waitForLabels(udid: string, expected: string[], seconds: n
   return { found: expected.filter((want) => !missing.includes(want)), missing, nodes };
 }
 
+export async function watchForLabels(udid: string, unwanted: string[], seconds: number): Promise<string[]> {
+  const deadline = Date.now() + seconds * 1000;
+  const shown = new Set<string>();
+  while (Date.now() < deadline) {
+    const text = labels(tree(udid));
+    for (const label of unwanted) if (text.some((item) => item.includes(normalise(label)))) shown.add(label);
+    await sleep(500);
+  }
+  return [...shown];
+}
+
 export async function tap(udid: string, label: string): Promise<string> {
   const { missing, nodes } = await waitForLabels(udid, [label], 8);
   if (missing.length > 0) throw new Error(`No accessible element labelled "${label}"`);

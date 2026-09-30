@@ -1,24 +1,23 @@
 import { restorePurchases } from '../subscription/restorePurchases';
 import { useState } from 'react';
-import { Heading, Label, SettingsGroup, SettingsRow } from '../ui';
+import { Heading, SettingsGroup, SettingsRow } from '../ui';
+import { notify } from '../ui/Notice';
 import { settingsCopy as c } from './lib/settingsCopy';
 import { subscriptionCopy } from '../subscription/subscriptionCopy';
 import { entitlementStore as useEntitlementStore } from '../subscription/entitlementStore';
 import { useRuntime } from '../ports/useRuntime';
-import { Reveal } from '../ui/Reveal';
 import { SettingsPage } from '../ui/SettingsPage';
 export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
   const entitlement = useEntitlementStore((s) => s.data.entitlement),
     runtime = useRuntime(),
-    [busy, setBusy] = useState(false),
-    [note, setNote] = useState('');
+    [busy, setBusy] = useState(false);
   const restore = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      setNote((await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored' ? c.restored : c.noRestore);
+      notify((await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored' ? c.restored : c.noRestore);
     } catch {
-      setNote(c.error);
+      notify(c.error);
     } finally {
       setBusy(false);
     }
@@ -27,7 +26,7 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
     try {
       await runtime.subscription.manageSubscription();
     } catch {
-      setNote(subscriptionCopy.manageFallback);
+      notify(subscriptionCopy.manageFallback);
     }
   };
   return (
@@ -39,17 +38,8 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
           value={entitlement.renewsAt ? c.renewal(entitlement.renewsAt) : undefined}
         />
         <SettingsRow title={subscriptionCopy.manage} onPress={() => void manage()} />
-        <SettingsRow
-          title={c.restore}
-          value={busy ? subscriptionCopy.restoring : undefined}
-          onPress={() => void restore()}
-        />
+        <SettingsRow title={c.restore} onPress={() => void restore()} />
       </SettingsGroup>
-      {note ? (
-        <Reveal key={note}>
-          <Label accessibilityRole="alert">{note}</Label>
-        </Reveal>
-      ) : null}
     </SettingsPage>
   );
 }

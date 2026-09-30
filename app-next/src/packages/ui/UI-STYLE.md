@@ -26,5 +26,8 @@ One selected-state language per context, set by the `emphasis` prop. `outline` (
 ## Layout
 Section gap 16 · grid gap 12 · card padding 16 · numbers use `type.metric` / `metricSmall` · one hero number per screen, centred, then tiles, then chart, then lists. The back and close controls stay put while content scrolls.
 
+## Feedback
+Screens stay still and say nothing about their own work (ADR 0053). While something runs, the button keeps its label and colour and ignores taps (`loading`). A cancel says nothing. When the user must know something, call `notify()` from `Notice.tsx`: one short, plain sentence that floats over the screen and fades. Never show red text, spinners, "…ing…" copy or raw error messages; `excerlock/no-status-text` enforces this.
+
 ## Don'ts
 No small grey left-aligned captions floating above content: a caption that introduces something centred is itself centred, `text.primary`, `type.label` size · No dark screens · no grey card borders · no orange body text · no new colours · no emoji or coloured illustrations in UI chrome.

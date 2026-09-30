@@ -11,6 +11,7 @@ export function SecondaryButton({
   accessibilityLabel,
   onPress,
   disabled,
+  loading = false,
   variant = 'secondary',
   testID,
   leading,
@@ -22,11 +23,12 @@ export function SecondaryButton({
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled}
-      onPressIn={() => setPressed(true)}
+      onPressIn={() => setPressed(!loading)}
       onPressOut={() => setPressed(false)}
       onPress={() => {
+        if (loading) return;
         feedback();
         onPress();
       }}>

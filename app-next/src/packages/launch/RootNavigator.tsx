@@ -41,6 +41,7 @@ export function RootNavigator() {
         }}>
         <Stack.Screen name="index" />
         {__DEV__ ? <Stack.Screen name="dev" /> : null}
+        {__DEV__ ? <Stack.Screen name="sample-paywall" /> : null}
         <Stack.Protected guard={__LINKED_RECORDER_TRACE__ && linkedTrace.enabled}>
           <Stack.Screen name="linked-trace" />
         </Stack.Protected>

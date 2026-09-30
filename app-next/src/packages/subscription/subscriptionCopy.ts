@@ -51,21 +51,16 @@ export const subscriptionCopy = {
   restore: 'Restore purchases',
   terms:
     'Subscriptions renew automatically unless canceled. Manage or cancel your subscription in your App Store account.',
-  expired: 'Your trial has ended. Choose a plan to keep going.',
-  billingIssue: 'There is a billing issue with your subscription. Restore access or choose a plan.',
-  error: 'Something went wrong. Please try again.',
-  notFound: 'No active purchase was found.',
+  error: "That didn't go through. Please try again.",
+  notFound: 'No purchase found',
+  awaitingApproval: 'Waiting for approval',
+  signInToContinue: 'Sign in to continue',
   restored: 'Your purchase has been restored.',
-  cancelled: 'Choose a plan to continue.',
-  loadingPlans: 'Loading plans…',
-  purchasing: 'Starting your plan…',
-  restoring: 'Restoring purchases…',
   devNote: 'Paywall stand-in. Prices and the 7-day trial are placeholders. No purchase occurs.',
   restoreOutcome: 'Restore result',
   restoreOutcomes: ['restored', 'notFound'],
   manage: 'Manage in App Store',
-  manageFallback:
-    "Change or cancel in Settings → Apple Account → Subscriptions. TestFlight sandbox subscriptions aren't listed there and end on their own.",
+  manageFallback: 'Open Settings, tap your name, then Subscriptions.',
   billingSupport: 'Billing is handled by the App Store.',
 } as const;
 

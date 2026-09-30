@@ -1,6 +1,6 @@
 export const homeCopy = {
-  scheduleRecoveryTitle: 'Your schedule needs attention',
-  scheduleRecoveryBody: 'This schedule cannot be applied exactly. Previous app protection may still be active. Edit or pause conditions to repair it.',
+  scheduleRecoveryTitle: 'Your schedule needs a fix',
+  scheduleRecoveryBody: 'Tap below to adjust your conditions.',
   scheduleRecoveryAction: 'Review conditions',
   treadmillEntry: "I'm using a treadmill",
   gymEntry: "I'm at the gym",

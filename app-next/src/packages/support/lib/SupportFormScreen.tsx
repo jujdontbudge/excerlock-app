@@ -1,10 +1,10 @@
 import { Keyboard } from 'react-native';
 import { useState } from 'react';
 import { SettingsPage } from '../../ui/SettingsPage';
-import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../ui';
+import { Heading, TextField, PrimaryButton, SecondaryButton } from '../../ui';
+import { notify } from '../../ui/Notice';
 import { supportCopy as s } from '../supportCopy';
 import { LivingIcon } from '../../ui/LivingIcon';
-import { Reveal } from '../../ui/Reveal';
 import { useRuntime } from '../../ports/useRuntime';
 import { openSupportEmail } from '../SupportDelivery';
 import { SupportCategory } from '../../ports/SupportPort';
@@ -34,7 +34,7 @@ export function SupportFormScreen({
   const runtime = useRuntime(),
     [replyEmail, setReplyEmail] = useState(''),
     [message, setMessage] = useState(''),
-    [state, setState] = useState<'idle' | 'sending' | 'sent' | 'handedOff' | 'error'>('idle');
+    [state, setState] = useState<'idle' | 'sending' | 'sent' | 'handedOff'>('idle');
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyEmail.trim());
   const send = async () => {
     if (!message.trim() || !emailValid || state === 'sending') return;
@@ -44,14 +44,15 @@ export function SupportFormScreen({
       const { via } = await runtime.support.send(category, `Reply email: ${replyEmail.trim()}\n\n${message.trim()}`);
       setState(via === 'mail' ? 'handedOff' : 'sent');
     } catch {
-      setState('error');
+      setState('idle');
+      notify(s.emailUs);
     }
   };
   const emailInstead = async () => {
     try {
       await openSupportEmail();
     } catch {
-      setState('error');
+      notify(s.emailUs);
     }
   };
   if (state === 'sent' || state === 'handedOff')
@@ -73,12 +74,12 @@ export function SupportFormScreen({
       footer={
         <>
           <PrimaryButton
-            label={state === 'sending' ? s.sending : submit}
+            label={submit}
             loading={state === 'sending'}
             disabled={!message.trim() || !emailValid}
             onPress={() => void send()}
           />
-          <SecondaryButton label={s.emailInstead} disabled={state === 'sending'} onPress={() => void emailInstead()} />
+          <SecondaryButton label={s.emailInstead} loading={state === 'sending'} onPress={() => void emailInstead()} />
         </>
       }>
       <Heading title={title} support={support} />
@@ -92,7 +93,6 @@ export function SupportFormScreen({
         autoComplete="email"
         maxLength={254}
         autoCapitalize="none"
-        error={replyEmail.length > 0 && !emailValid ? s.replyEmailInvalid : undefined}
       />
       <TextField
         label={field}
@@ -102,13 +102,6 @@ export function SupportFormScreen({
         multiline
         maxLength={4000}
       />
-      {state === 'error' ? (
-        <Reveal>
-          <Label accessibilityRole="alert" selectable>
-            {s.errorWithAddress}
-          </Label>
-        </Reveal>
-      ) : null}
     </SettingsPage>
   );
 }

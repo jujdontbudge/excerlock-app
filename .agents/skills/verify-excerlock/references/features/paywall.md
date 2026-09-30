@@ -9,6 +9,7 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
+- The phone and locked-app artwork expand above the benefits and bottom-docked purchase controls. Start for free is the last control, with only safe-area spacing underneath; account recovery remains a separate route, not a paywall footer link.
 - Three promise rows reflect the selected fat/muscle targets, the goal chosen at O08, and the O10 screen-time estimate. When both body targets are selected, they take two rows and the time estimate takes the third; otherwise the goal choice fills the remaining row.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
@@ -24,10 +25,8 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /onboarding/S3
-tap: Import
-expect: Once you hit 10,000 steps, your apps will unlock. | Continue
-then-open: /paywall
-then-expect: Become ADDICTED to exercise | Feel stronger and healthier every week | Make time for what matters | Save 46 days a year | Start for free
+tap: Import | Continue | Try for $0.00 | Continue
+expect: Become ADDICTED to exercise | Your ExcerLock Home screen: Walk 10,000 steps | Feel stronger and healthier every week | Make time for what matters | Save 46 days a year | Start for free
 ```
 
 ```proof
@@ -129,8 +128,10 @@ expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for f
 name: identity-slow-cold-start-loading
 scenario: identity-lab-slow-cold-start
 relaunch: true
+open: dev?journey=paywall
 wait: 8
-expect: Loading plans…
+expect: Start for free | Restore purchases
+absent: Loading plans | Starting ExcerLock
 ```
 
 ```proof
@@ -152,9 +153,10 @@ expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for f
 ```proof
 name: identity-plans-retry
 scenario: identity-lab-plans-failed
-open: /paywall
-tap: Retry loading plans
+open: dev?journey=paywall
+wait: 25
 expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+absent: Retry loading plans | couldn't load
 ```
 
 ```proof
@@ -194,7 +196,8 @@ scenario: identity-lab-purchase-cancelled
 open: dev?journey=paywall
 tap: Start for free
 wait: 25
-expect: Choose a plan to continue.
+expect: Start for free | Lab annual · $49.99 / year
+absent: Choose a plan | Starting your plan | Please retry
 ```
 
 ```proof
@@ -203,7 +206,8 @@ scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
 tap: Start for free
 wait: 25
-expect: Purchase could not finish. Please retry. | Start for free
+expect: That didn't go through. Please try again. | Start for free
+absent: could not finish | Starting your plan
 then-tap: Start for free | Continue with Apple
 then-open: /dev
 then-expect: Journey setup · paid yes · admitted no | Active account Checkout | Purchase recovery none | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":0,"recovery":"none"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"} | Protected route mounts | None
@@ -215,7 +219,8 @@ scenario: identity-lab-purchase-pending
 open: dev?journey=paywall
 tap: Start for free
 wait: 25
-expect: Your purchase is still being confirmed. You will not be charged again. | Check purchase status
+expect: Continue | Lab annual · $49.99 / year
+absent: still being confirmed | Check purchase status | pending approval
 ```
 
 ```proof
@@ -224,7 +229,8 @@ scenario: identity-lab-purchase-success-without-access
 open: dev?journey=paywall
 tap: Start for free
 wait: 25
-expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+expect: Sign in to continue
+absent: Payment received | being confirmed
 then-open: /dev
 then-expect: Journey accountRecovery · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | lab_purchase {"result":"successWithoutAccess","owner":"lab-checkout-1"} | lab_purchase_profile {"owner":"lab-checkout-1","access":"none","grants":0} | Protected route mounts | None
 ```
@@ -246,8 +252,8 @@ scenario: identity-lab-existing-subscription
 open: dev?journey=paywall
 tap: Continue
 wait: 25
-expect: This App Store account already has a subscription. Restore it to connect it to your ExcerLock account. | Use existing subscription
-then-tap: Use existing subscription
+expect: Continue with Apple
+absent: already has a subscription | Use existing subscription
 then-open: /dev
 then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | Restore operations 1 | Existing subscription store lab.store.annual owner lab-checkout-1 selected lab-checkout-1 charge starts 0 | lab_purchase {"result":"alreadyOwned","owner":"lab-checkout-1"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
 ```
@@ -258,7 +264,8 @@ scenario: identity-lab-purchase-interrupted
 relaunch: true
 open: dev?journey=paywall
 wait: 25
-expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+expect: Sign in to continue
+absent: Payment received
 ```
 
 ```proof
@@ -267,7 +274,8 @@ scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
 tap: Restore purchases
 wait: 25
-expect: No active purchase was found.
+expect: No purchase found
+absent: Restoring purchases
 ```
 
 ```proof
@@ -276,7 +284,7 @@ scenario: identity-lab-restore-wrong-store
 open: dev?journey=paywall
 tap: Restore purchases
 wait: 25
-expect: No active purchase was found. | Restore purchases
+expect: No purchase found | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Restore operations 1 | Restore isolation wrong Store owner lab-user-a selected lab-checkout-1 transfers 0 | lab_restore {"result":"notFound","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
 ```
@@ -287,7 +295,7 @@ scenario: identity-lab-restore-error-retry
 open: dev?journey=paywall
 tap: Restore purchases
 wait: 25
-expect: Restore could not finish. Please retry. | Restore purchases
+expect: That didn't go through. Please try again. | Restore purchases
 then-tap: Restore purchases
 then-open: /dev
 then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Restore operations 2 | lab_restore {"result":"error","owner":"lab-checkout-1","source":"adapter"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
@@ -299,7 +307,7 @@ scenario: identity-lab-apple-linked
 open: dev?journey=paywall
 tap: Start for free | Continue with Apple | Recover with Apple
 wait: 25
-expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+expect: Sign in to continue
 then-open: dev
 then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"}
 ```

@@ -3,9 +3,11 @@ import { join } from 'node:path';
 import { findFeature, protectedAppRoutes, type Proof } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, relaunch, screenshot, swipeBack, tap, typeText, waitForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, relaunch, screenshot, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
+
+const absentWatchSeconds = 4;
 
 export const help = `excer prove <feature> [--proof <name>]
 
@@ -58,6 +60,10 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   }
   const result = await waitForLabels(udid, proof.expect, failedTaps.length > 0 ? 1 : proof.wait);
   result.missing = [...failedTaps, ...result.missing];
+  if (proof.absent?.length && result.missing.length === 0) {
+    const shown = await watchForLabels(udid, proof.absent, absentWatchSeconds);
+    result.missing.push(...shown.map((label) => `absent "${label}" was shown`));
+  }
   let relaunchAttempt: RelaunchAttempt | undefined;
   if (proof.relaunchAfterExpect && result.missing.length === 0) {
     screenshot(udid, join(dir, `${proof.name}.before-relaunch.png`));

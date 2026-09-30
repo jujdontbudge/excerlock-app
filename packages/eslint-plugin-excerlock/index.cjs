@@ -80,7 +80,66 @@ const noComments = {
   },
 };
 
+const ERROR_NAMES = new Set(['e', 'err', 'error', 'caught']);
+const STATUS_COPY = /^[A-Z][a-z]+ing\b[^…]*…$/;
+
+const noStatusText = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      alert: 'Screens never show inline alert text. Call notify() from ui/Notice for the one calm message.',
+      spinner: 'Screens never show a spinner. Keep the screen still and pass `loading` to the button.',
+      errorColor: 'Screens never show red error text. Use notify() from ui/Notice.',
+      rawError: 'Never show an error message to the user. Report it and call notify() with plain copy.',
+      statusCopy: 'Never show "…ing…" status copy. The work should just happen.',
+    },
+  },
+  create(context) {
+    const filename = context.filename.replace(/\\/g, '/');
+    const inUi = filename.includes('/src/packages/ui/');
+    return {
+      JSXAttribute(node) {
+        if (
+          node.name.name === 'accessibilityRole' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          node.value.value === 'alert'
+        )
+          context.report({ node, messageId: 'alert' });
+      },
+      JSXOpeningElement(node) {
+        if (node.name.type === 'JSXIdentifier' && node.name.name === 'ActivityIndicator')
+          context.report({ node, messageId: 'spinner' });
+      },
+      MemberExpression(node) {
+        if (
+          !inUi &&
+          node.property.type === 'Identifier' &&
+          node.property.name === 'error' &&
+          node.object.type === 'MemberExpression' &&
+          node.object.property.type === 'Identifier' &&
+          node.object.property.name === 'state'
+        )
+          context.report({ node, messageId: 'errorColor' });
+        if (
+          filename.endsWith('.tsx') &&
+          node.property.type === 'Identifier' &&
+          node.property.name === 'message' &&
+          node.object.type === 'Identifier' &&
+          ERROR_NAMES.has(node.object.name)
+        )
+          context.report({ node, messageId: 'rawError' });
+      },
+      Literal(node) {
+        if (typeof node.value === 'string' && STATUS_COPY.test(node.value))
+          context.report({ node, messageId: 'statusCopy' });
+      },
+    };
+  },
+};
+
 module.exports = {
   meta: { name: '@excerlock/eslint-plugin' },
-  rules: { 'no-comments': noComments },
+  rules: { 'no-comments': noComments, 'no-status-text': noStatusText },
 };

@@ -8,6 +8,8 @@ import { defaultCentre } from '../../gyms/usePicker';
 import { PRESENCE_CONFIRM_MS } from '../../activity/presence';
 import { ruleDaysStore as useRuleDaysStore } from '../../conditions/ruleDaysStore';
 import { useClock } from '../../lock/selectors';
+import { notify } from '../../ui/Notice';
+import { unlockCopy } from './unlockCopy';
 export { PRESENCE_CONFIRM_MS };
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(),
@@ -18,8 +20,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const [checking, setChecking] = useState(false),
     [working, setWorking] = useState(false),
     [lifted, setLifted] = useState(alreadyCredited),
-    [value, setValue] = useState(alreadyCredited ? 1 : 0),
-    [error, setError] = useState('');
+    [value, setValue] = useState(alreadyCredited ? 1 : 0);
   const session = useRuleDaysStore((s) => s.data.gymPresence),
     now = useClock();
   const generation = useRef(0);
@@ -111,7 +112,6 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     const token = ++generation.current;
     request.current?.abort();
     request.current = new AbortController();
-    setError('');
     setWorking(true);
     runtime.analytics.track('gym_unlock_tapped', { distance, preview });
     try {
@@ -128,7 +128,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       if (token === generation.current) {
         setWorking(false);
         setValue(0);
-        setError('Could not check in. Please try again.');
+        notify(unlockCopy.retry);
       }
     }
   };
@@ -146,5 +146,5 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
             ? Math.min(1, Math.max(0, (Date.parse(now) - Date.parse(session.startedAt)) / PRESENCE_CONFIRM_MS))
             : value,
   };
-  return { location, nearest, distance, inside, denied, error, unlock, checking, ...shown };
+  return { location, nearest, distance, inside, denied, unlock, checking, ...shown };
 }

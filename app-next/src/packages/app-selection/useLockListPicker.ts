@@ -3,6 +3,7 @@ import { Alert, Linking } from 'react-native';
 import { lockListCopy as c } from './lib/permissionsCopy';
 import { useRuntime } from '../ports/useRuntime';
 import { ScreenTimeAuthorizationError } from './ScreenTimeAuthorizationError';
+import { notify } from '../ui/Notice';
 
 export function useLockListPicker() {
   const runtime = useRuntime(),
@@ -18,7 +19,7 @@ export function useLockListPicker() {
           { text: c.notNow, style: 'cancel' },
           { text: c.openSettings, onPress: () => void Linking.openSettings() },
         ]);
-      else Alert.alert(c.failedTitle, error instanceof Error ? error.message : String(error), [{ text: c.ok }]);
+      else notify(c.retry);
     } finally {
       setBusy(false);
     }

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
 import { Label, PressableScale } from '../../ui';
 import { Reveal } from '../../ui/Reveal';
@@ -117,17 +117,14 @@ export function WorkoutGoalScreen({
   const value = d.gymMinutes,
     range = goalRange(d),
     change = (value: number) => onAction({ type: 'setGymMinutes', value }),
-    hint = c.range(...range, c.minutes),
     valid = validGoal(value, range);
   const minutes = Number.isFinite(value) ? Math.min(range[1], Math.max(range[0], Math.round(value / 5) * 5)) : range[0];
+  useEffect(() => {
+    if (!valid) onAction({ type: 'setGymMinutes', value: minutes });
+  }, [valid, minutes, onAction]);
   return (
     <Reveal index={1} style={{ gap: t.space.lg, paddingTop: t.space.md, alignItems: 'center' }}>
       <MinutesWheel value={minutes} min={range[0]} max={range[1]} onChange={change} />
-      {!valid ? (
-        <Label accessibilityRole="alert" variant="support" style={{ color: t.state.error, textAlign: 'center' }}>
-          {hint}
-        </Label>
-      ) : null}
     </Reveal>
   );
 }
