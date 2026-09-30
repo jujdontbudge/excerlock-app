@@ -10,6 +10,8 @@ import { createOnboardingFlowPort } from '../onboarding/flowOrder';
 import { initializeSentrySdk } from '@sentry-binding';
 import { getOtaObservabilityContext } from '../updates/updates';
 import { readClientConfiguration } from '../platform/clientConfiguration';
+import { verifiedStoreEnvironment } from '../platform/NativeStoreEnvironment';
+import { subscriptionBackend } from '../platform/subscriptionBackend';
 import { settingsStore } from '../preferences/settingsStore';
 import { profileStore } from '../preferences/profileStore';
 import { createNativeNotifications } from '../notifications/createNativeNotifications';
@@ -19,6 +21,7 @@ import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
+import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -63,12 +66,18 @@ export async function createClientServices(options: {
     return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
-  const subscriptionAdmission = createServerSubscriptionAdmission({
-    apiBaseUrl: config.auth.apiBaseUrl,
-    environment: config.storeEnvironment,
-    getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
-    getIdentity: () => identity.auth.identity(),
-  });
+  const backend = subscriptionBackend(
+    config,
+    config.environment === 'prod' ? await verifiedStoreEnvironment() : config.storeEnvironment,
+  );
+  const subscriptionAdmission = backend
+    ? createServerSubscriptionAdmission({
+        apiBaseUrl: backend.apiBaseUrl,
+        environment: backend.environment,
+        getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
+        getIdentity: () => identity.auth.identity(),
+      })
+    : unavailableSubscriptionAdmission();
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),
     {
