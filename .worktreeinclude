@@ -1,0 +1,2 @@
+# Untracked files bb copies into each new worker worktree.
+server/.env
