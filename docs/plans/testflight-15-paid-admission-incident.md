@@ -33,4 +33,10 @@ After an apparent successful TestFlight purchase and sign-in, the app remained a
 - Focused headless simulator proof `dev-harness/deployed-resync-contract-and-environment-rejected`: `.excer/proof/dev-harness/2026-09-30_04-34-00/` (the real client parser rejects a fixture shaped like the deployed server response and separately rejects a valid-shape wrong-environment response; neither creates a lease). These are local transport fixtures, not a physical StoreKit assertion.
 - `./excer server smoke` against throwaway PostgreSQL and stubbed vendors: **passed**, including verified-token-only subject, Production/Sandbox isolation, matching Sandbox grant in a Sandbox-configured server, mismatched Production denial, webhook ordering, Adapty failures and deletion/tombstone effects. This is local simulated-vendor evidence, not proof of a deployed Sandbox backend or this user's UID.
 
-**Current blocker:** no isolated Sandbox backend is deployed or integrated with the signed TestFlight artifact; the physical provider/StoreKit/account ownership paths remain unverified. Another upload against the Production endpoint would repeat the failure.
+**Build 15 blocker at incident capture:** no isolated Sandbox backend was deployed or integrated with its signed artifact. Another upload against the Production endpoint would have repeated the failure.
+
+## September 30 resolution update
+
+A separate Sandbox-authorizing API process is now deployed at `https://api.excerlock.com/testflight` while the original API continues to authorize Production. The signed internal TestFlight `1.0.0 (16)` embeds that Sandbox path, Preview environment/channel, and the compatible response contract; the deployment, signed binary and ASC processing/group readbacks passed. Release evidence: `docs/releases/2026-09-30-testflight-1.0.0-16.md` on `JohanSardar/hard-paywall-testflight-16` and `/tmp/excerlock-tf16-evidence/`.
+
+**Remaining acceptance blocker:** a real device must still establish that the Sandbox transaction transfers/connects to the selected signed-in canonical UID and then admits Setup/Home. Neither a green simulator fixture nor the aggregate Sandbox mirror row proves that user-specific ownership path. App Review's Sandbox testing with a production-channel binary also remains unresolved.
