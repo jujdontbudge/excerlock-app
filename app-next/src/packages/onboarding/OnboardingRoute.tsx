@@ -8,7 +8,7 @@ import { PreBranchScreen } from './lib/PreBranchScreen';
 import { ScheduleScreen } from '../conditions/ScheduleScreen';
 import { TimeSheet } from '../conditions/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../conditions/scheduleDraft';
-import { draftFromAnswers, commitPlan } from './lib/plan';
+import { draftFromAnswers, stagePlan } from './lib/plan';
 import { createDraft, toRule } from '../conditions/draft';
 import { PlanBuild } from './lib/PlanBuild';
 import { PlanCelebration } from './lib/PlanCelebration';
@@ -16,7 +16,6 @@ import { PlanSummary } from './PlanSummary';
 import { ConditionDemo } from './lib/condition-demo/ConditionDemo';
 import { PlanTrialPreview } from './PlanTrialPreview';
 import { TrialReminder } from './lib/TrialReminder';
-import { settingsStore as useSettingsStore } from '../preferences/settingsStore';
 import { planCopy as c } from '../conditions/planCopy';
 import { useImpactPlayback } from './lib/impact/useImpactPlayback';
 import { useRuntime } from '../ports/useRuntime';
@@ -27,7 +26,6 @@ export function OnboardingRoute() {
   const focused = useIsFocused();
   const runtime = useRuntime();
   const flow = useOnboarding(),
-    unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
     [scheduleError, setScheduleError] = useState(false),
     [celebrating, setCelebrating] = useState(false),
@@ -57,7 +55,7 @@ export function OnboardingRoute() {
     }
     if (flow.step === 'S3') {
       try {
-        commitPlan(flow.answers, unit, draft, {
+        stagePlan(flow.answers, draft, {
           now: runtime.clock.now(),
           timezone: runtime.clock.timezone(),
         });
@@ -121,4 +119,3 @@ export function OnboardingRoute() {
     </OnboardingShell>
   );
 }
-

@@ -52,6 +52,10 @@ import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
 import { enforcementTransitionEvents, type AppliedPolicy } from '../../enforcement/enforcementAnalytics';
 import type { EnforcementAppState } from '@excerlock/analytics-events';
 import { markStartupStage } from '../../../../modules/excerlock-startup';
+import { createAccountDataCoordinator } from '../AccountDataCoordinator';
+import { isAccountDataReady } from '../../model/accountDataReady';
+import { createActivityAccountData } from '../../activity/ActivityAccountData';
+import { expoNotificationResponses } from '../../notifications/ExpoNotificationResponses';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
@@ -66,7 +70,6 @@ export type RealRuntime = Runtime & {
 
 export async function createRealRuntime(options: { reportError(error: unknown): void }): Promise<RealRuntime> {
   await hydrateProductionStores();
-  markStartupStage('HydrationDone');
   const native = getExcerlockEnforcementModule();
   const gait = nativeGait();
   if (!gait) throw new Error('The production gait module is missing');
@@ -125,6 +128,15 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       onError: options.reportError,
       registerHeadless: false,
     });
+    const activityAccountData = createActivityAccountData({
+      historyLedger: detection.historyLedger,
+      walkingDurationLedger: detection.walkingDurationLedger,
+      gymLog: detection.gymLog,
+      now: () => Date.now(),
+    });
+    const accountData = createAccountDataCoordinator(AsyncStorage, activityAccountData);
+    await accountData.prepare();
+    markStartupStage('HydrationDone');
     cleanups.push(
       () => detection.stop(),
       async () => {
@@ -150,11 +162,45 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     let committedGymPresence = ruleDaysStore.getState().data.gymPresence;
     let deletionSuspended = false;
     let host!: EnforcementHost;
+    const rawScreenTime = createNativeScreenTimePort({
+      applyLock: async () => ({ applied: (await host.reconcile()) === 'applied' }),
+      registerWatchdog: async () => {
+        throw new Error('Watchdog registration is owned by the runtime policy host');
+      },
+      cancelWatchdog: async () => {
+        await host.reconcile(true);
+      },
+    });
     const client = await createClientServices({
       extra: Constants.expoConfig?.extra,
       version: Constants.expoConfig?.version ?? '1.0.0',
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',
       reportError: options.reportError,
+      beforeAccountSwitch: async () => {
+        await queue;
+        walking.stop();
+        await detection.service.stop();
+        await detection.service.flush();
+        await accountData.deactivate();
+      },
+      prepareAccount: async (identity) => {
+        if (!identity.userId) throw new Error('Canonical account is missing its user ID');
+        const transition = await accountData.activate(identity.userId);
+        if (transition.changedAccount) {
+          await rawScreenTime.eraseLockedSelection();
+          selectionVersion = `account:${identity.generation}:${Date.now()}`;
+          await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
+          rulesStore.getState().patch({ lockedApps: { handle: null, isEmpty: true } });
+          await rulesStore.persistBarrier();
+          await accountData.save();
+        }
+        stepsByDay = {};
+        instanceMeasurements = {};
+        lastPrunedDay = null;
+        regionsSignature = null;
+        committedWalking = walking.snapshot();
+        committedGymPresence = null;
+      },
       beforeDelete: async () => {
         deletionSuspended = true;
         await queue;
@@ -189,6 +235,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         committedWalking = walking.snapshot();
         committedGymPresence = null;
         status = { ...status, history: [] };
+        await accountData.eraseActive();
         listeners.forEach((listener) => listener());
       },
     });
@@ -199,15 +246,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       write: (json) => native.setShieldCopyOverrides(json),
       isForeground: () => AppState.currentState === 'active',
       reportError: options.reportError,
-    });
-    const rawScreenTime = createNativeScreenTimePort({
-      applyLock: async () => ({ applied: (await host.reconcile()) === 'applied' }),
-      registerWatchdog: async () => {
-        throw new Error('Watchdog registration is owned by the runtime policy host');
-      },
-      cancelWatchdog: async () => {
-        await host.reconcile(true);
-      },
     });
     const source = new RuntimeEnforcementSource(
       () => ({
@@ -220,6 +258,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         entitlement: client.subscription.entitlement(),
         deleting: deletionSuspended || client.auth.identity().kind === 'deleting',
         accountGeneration: client.auth.identity().generation,
+        accountReady: isAccountDataReady(client.auth.identity(), accountData.snapshot().activeUserId),
         screenTimeAuthorized: rawScreenTime.authorizationStatus() === 'granted',
         selection: rulesStore.getState().data.lockedApps,
         selectionVersion,
@@ -533,6 +572,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           operationError = error;
         }
         try {
+          await accountData.save();
+        } catch (error) {
+          cleanupFailures.push(error);
+          options.reportError(error);
+        }
+        try {
           await cleanupResources();
         } catch (error) {
           if (error instanceof RuntimeCleanupError) cleanupFailures.push(...error.failures);
@@ -626,6 +671,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       }),
       auth: client.auth,
       subscription: client.subscription,
+      subscriptionAdmission: client.subscriptionAdmission,
       analytics: client.analytics,
       reviewPreset: client.reviewPreset,
       experiments: client.experiments,
@@ -634,6 +680,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       shieldCopy,
       strideGate,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
+      notificationResponses: expoNotificationResponses,
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       sync: {
         pushRules: async () => {

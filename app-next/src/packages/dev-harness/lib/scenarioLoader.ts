@@ -9,10 +9,35 @@ import { sessionStore } from '../../identity/sessionStore';
 import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/launchSignInGate';
+import { beginWelcome } from '../../journey/index';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
+import { createAsyncStorageOtaStorage } from '../../updates/updates';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
+  beginWelcome();
   authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
+  const otaStorage = createAsyncStorageOtaStorage();
+  if (scenario.otaResumeRoute) {
+    await otaStorage.saveEnvelope({
+      route: scenario.otaResumeRoute,
+      draftIds: [],
+      savedAtMs: Date.parse(scenario.clock.now),
+    });
+  } else await otaStorage.clearEnvelope();
+  if (scenario.purchaseRecovery) {
+    const startedAt = scenario.clock.now;
+    await AsyncStorage.setItem(PURCHASE_RECOVERY_KEY, JSON.stringify({
+      version: 1,
+      type: scenario.purchaseRecovery,
+      operation: 'purchase',
+      operationId: `purchase:lab-checkout-1:${startedAt}`,
+      checkoutUserId: 'lab-checkout-1',
+      startedAt,
+      ...(scenario.purchaseRecovery === 'accountConnection' ? { confirmedAt: startedAt } : {}),
+    }));
+  } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
   resetStores();
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [] });
   profileStore.getState().patch(scenario.profile ?? {});

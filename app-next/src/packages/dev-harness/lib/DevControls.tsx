@@ -10,17 +10,93 @@ import { entitlementStore as useEntitlementStore } from '../../subscription/enti
 import { SettingsGroup, SettingsRow, TextField, Label, SegmentedControl, PrimaryButton } from '../../ui';
 import { devCopy as c } from './devCopy';
 import { Permissions } from '../../model/types';
+import { onboardingStore } from '../../onboarding/onboardingStore';
+import { historyStore } from '../../progress/historyStore';
+import { profileStore } from '../../preferences/profileStore';
+import { settingsStore } from '../../preferences/settingsStore';
+import { useRouter } from 'expo-router';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
+    router = useRouter(),
     now = useClock(),
     view = useDevSnapshot(),
     permissions = usePermissionsStore((s) => s.data),
     entitlement = useEntitlementStore((s) => s.data.entitlement),
+    conditionCount = rulesStore.getState().data.rules.length,
+    planStaged = onboardingStore.getState().data.answers.ruleCommitted === false,
     [time, setTime] = useState(now),
     [error, setError] = useState('');
+  const runAccountAction = async (action: () => Promise<void>) => {
+    try {
+      await action();
+      setError('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
   return (
     <>
+      <SettingsGroup title="Account data">
+        <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
+        <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
+        <SettingsRow title="Run independent restore" onPress={() => void runAccountAction(() => dev.runLabIndependentRestore())} />
+        <SettingsRow title="Run passive entry" onPress={() => void runAccountAction(() => dev.runLabPassiveEntry())} />
+        <SettingsRow title="Run subscription lease diagnostics" onPress={() => void runAccountAction(() => dev.runSubscriptionLeaseDiagnostics())} />
+        <SettingsRow title="Run lifecycle revocation" onPress={() => void runAccountAction(() => dev.runLabLifecycleRevocation())} />
+        <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
+        <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
+        <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
+        <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
+        <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
+        <SettingsRow title="Run delayed callback isolation" onPress={() => void runAccountAction(() => dev.runLabDelayedCallbackIsolation())} />
+        <SettingsRow title="Prepare deletion callback user path" onPress={() => void runAccountAction(async () => {
+          await dev.prepareLabDeletionCallbackIsolation();
+          router.replace('/recovery');
+        })} />
+        <SettingsRow title="Run deletion callback isolation" onPress={() => void runAccountAction(() => dev.runLabDeletionCallbackIsolation())} />
+        <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
+        <SettingsRow title={`Legacy data ${view.accountData?.legacyQuarantined ? 'Quarantined' : 'None'}`} />
+        <SettingsRow title={`Condition owner ${rulesStore.getState().data.rules[0]?.id === 'account-a' ? 'Account A' : rulesStore.getState().data.rules[0]?.id === 'account-b' ? 'Account B' : 'None'}`} />
+        <SettingsRow title={`History Days ${String(historyStore.getState().data.days.length)}`} />
+        <SettingsRow title={`Profile ${profileStore.getState().data.name || 'None'}`} />
+        <SettingsRow title={`Saved Gym ${settingsStore.getState().data.gymPlaces[0]?.name ?? 'None'}`} />
+        <SettingsRow title={`Checkpoints ${view.accountData?.checkpoints ?? 'None'}`} />
+        <SettingsRow title={`Switch ordering ${view.accountData?.switchOrdering ?? 'None'}`} />
+        <SettingsRow title={`Activity checkpoints ${view.accountData?.activityCheckpoints ?? 'None'}`} />
+        <SettingsRow title="Use account A" onPress={() => void runAccountAction(() => dev.useLabAccount('A'))} />
+        <SettingsRow title="Seed account A" onPress={() => void runAccountAction(() => dev.seedLabAccount('A'))} />
+        <SettingsRow title="Use account B" onPress={() => void runAccountAction(() => dev.useLabAccount('B'))} />
+        <SettingsRow title="Seed account B" onPress={() => void runAccountAction(() => dev.seedLabAccount('B'))} />
+        {error ? <Label>{error}</Label> : null}
+      </SettingsGroup>
+      <SettingsGroup title="Journey data">
+        <SettingsRow title="Run full Onboarding path diagnostic" onPress={() => dev.runOnboardingPathDiagnostics()} />
+        <SettingsRow title="Conditions" value={String(conditionCount)} />
+        <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
+        <SettingsRow title={`Purchase recovery ${runtime.subscription.recovery().type}`} />
+        <SettingsRow title={`Purchase operations ${String(view.subscriptionLab?.purchases ?? 0)}`} />
+        <SettingsRow title={`Restore operations ${String(view.subscriptionLab?.restores ?? 0)}`} />
+        <SettingsRow title={`Delayed callbacks ${String(view.subscriptionLab?.queued ?? 0)}/${String(view.subscriptionLab?.delivered ?? 0)}`} />
+        <SettingsRow title={`Callback isolation ${view.subscriptionLab?.callbackIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Deletion isolation ${view.subscriptionLab?.deletionIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Transfer isolation ${view.subscriptionLab?.transferIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Concurrent restore ${view.subscriptionLab?.concurrentRestoreIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Linked providers ${view.subscriptionLab?.providerLinking ?? 'Not run'}`} />
+        <SettingsRow title={`Provider attempts ${view.subscriptionLab?.providerAttempts ?? 'Not run'}`} />
+        <SettingsRow title={`Email challenges ${view.subscriptionLab?.emailChallenges ?? 'Not run'}`} />
+        <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
+        <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Purchase serialization ${view.subscriptionLab?.purchaseSerialization ?? 'Not run'}`} />
+        <SettingsRow title={`Existing subscription ${view.subscriptionLab?.existingSubscription ?? 'Not run'}`} />
+        <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
+        <SettingsRow title={`Restore isolation ${view.subscriptionLab?.restoreIsolation ?? 'Not run'}`} />
+        <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
+        <SettingsRow title={`Lease diagnostics ${view.subscriptionLab?.leaseDiagnostics ?? 'Not run'}`} />
+        <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
+        <SettingsRow title={`Onboarding path ${view.onboardingPath ?? 'Not run'}`} />
+        {view.remoteFlags ? <SettingsRow title={`Remote flags ${view.remoteFlags}`} /> : null}
+      </SettingsGroup>
       <SettingsGroup title="Treadmill gait">
         <SettingsRow title="Replay walking gait" onPress={() => dev.setGait('walking')} />
         <SettingsRow title="Still / needs framing" onPress={() => dev.setGait('still')} />

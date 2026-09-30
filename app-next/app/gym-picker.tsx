@@ -3,10 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { finishPickerSession } from '../src/packages/gyms/pickerSession';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useDevProtectedRouteMount } from '../src/packages/launch/DevProtectedRouteMount';
 const GymPickerScreen = lazy(() =>
   import('../src/packages/gyms/GymPickerScreen').then((module) => ({ default: module.GymPickerScreen })),
 );
 export default function GymPickerRoute() {
+  useDevProtectedRouteMount();
   const { session, placeId } = useLocalSearchParams<{ session?: string; placeId?: string }>();
   useEffect(() => () => finishPickerSession(session, false), [session]);
   const close = (saved: boolean) => {

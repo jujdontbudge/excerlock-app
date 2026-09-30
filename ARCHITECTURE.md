@@ -46,7 +46,7 @@ A package imports only packages from a lower layer, never from its own layer, so
 | 3 | `ports` (port interfaces, `Runtime`, `useRuntime`) |
 | 4 | `conditions` (condition model, stores and editing steps), `identity` (sign-in, session), `telemetry` (PostHog, Sentry) |
 | 5 | `app-selection` (Screen Time picker and selection), `permissions` (permission state, setup needs, system alerts), `subscription` (entitlement, Adapty) |
-| 6 | `gyms` (saved gyms, gym picker, place search), `notifications` |
+| 6 | `journey` (entry and paid account admission), `gyms` (saved gyms, gym picker, place search), `notifications` |
 | 7 | `activity` (walking and gym detection, sensors, location) |
 | 8 | `progress` (daily progress, history, streaks) |
 | 9 | `lock` (lock decision and the selectors screens read) |

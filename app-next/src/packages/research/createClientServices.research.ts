@@ -43,10 +43,13 @@ function createLabAuth(): AuthPort {
     waitForCanonicalIdentity: async () => LAB_IDENTITY,
     signInWithApple: async () => { throw new LabIdentityUnavailableError(); },
     signInWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
+    linkWithApple: async () => { throw new LabIdentityUnavailableError(); },
+    linkWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
     recoverWithApple: async () => { throw new LabIdentityUnavailableError(); },
     recoverWithGoogle: async () => { throw new LabIdentityUnavailableError(); },
     sendEmailCode: async () => { throw new LabIdentityUnavailableError(); },
     verifyEmailCode: async () => { throw new LabIdentityUnavailableError(); },
+    recoverWithEmailCode: async () => { throw new LabIdentityUnavailableError(); },
     deleteAccount: async () => { throw new LabIdentityUnavailableError(); },
     signOut: async () => { throw new LabIdentityUnavailableError(); },
     subscribe: (callback) => subscribe(sessionSubscribers, callback),
@@ -65,6 +68,7 @@ function subscribe<T>(subscribers: Set<(value: T) => void>, callback: (value: T)
 
 function createLabSubscription(): SubscriptionPort {
   const publish = () => entitlementStore.getState().patch({ entitlement: LAB_ENTITLEMENT });
+  const noRecovery = { type: 'none' as const };
   publish();
   const subscribers = new Set<(entitlement: SubscriptionEntitlement) => void>();
   return {
@@ -82,6 +86,10 @@ function createLabSubscription(): SubscriptionPort {
     purchase: async () => { throw new LabIdentityUnavailableError(); },
     manageSubscription: async () => { throw new LabIdentityUnavailableError(); },
     operation: () => ({ busy: false, pending: false, error: null }),
+    recovery: () => noRecovery,
+    recoveryReady: async () => undefined,
+    clearRecovery: async () => undefined,
+    subscribeRecovery: () => () => undefined,
     subscribe: (callback) => subscribe(subscribers, callback),
   };
 }

@@ -8,13 +8,33 @@ import { profileStore } from '../../preferences/profileStore';
 import { onboardingStore } from '../onboardingStore';
 import { assertScheduleRepresentable, type SchedulePlanContext } from '../../schedule/scheduleRepresentability';
 export { draftFromAnswers } from '../../conditions/answersDraft';
-export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft, context?: SchedulePlanContext) {
+const proposedPlan = (a: Answers, base?: RuleDraft) => {
   const draft = draftFromAnswers(a, base),
-    rule = toRule(draft, toSchedule(scheduleDraft(a)));
-  const existing = rulesStore.getState().data.rules;
-  const proposed = [...existing.filter((r) => r.id !== rule.id), rule];
-  assertScheduleRepresentable(proposed, context);
-  rulesStore.getState().patch({ rules: proposed });
+    rule = toRule(draft, toSchedule(scheduleDraft(a))),
+    existing = rulesStore.getState().data.rules;
+  return { rule, rules: [...existing.filter((candidate) => candidate.id !== rule.id), rule] };
+};
+export function stagePlan(a: Answers, base?: RuleDraft, context?: SchedulePlanContext) {
+  const { rule, rules } = proposedPlan(a, base);
+  assertScheduleRepresentable(rules, context);
+  onboardingStore.getState().patch({
+    answers: {
+      ...a,
+      ruleId: rule.id,
+      ruleCreatedAt: rule.createdAt,
+      ruleCommitted: false,
+      ruleCommittedFor: '',
+    },
+  });
+  return rule;
+}
+export function commitStagedPlan(userId: string, unit: 'km' | 'mi', context?: SchedulePlanContext) {
+  const a = onboardingStore.getState().data.answers;
+  if (!a.ruleId || a.ruleCommitted !== false) return null;
+  const { rule, rules } = proposedPlan(a);
+  if (a.ruleCommittedFor === userId) return rule;
+  assertScheduleRepresentable(rules, context);
+  rulesStore.getState().patch({ rules });
   const profile: Partial<Profile> = { units: unit };
   for (const key of [
     'name',
@@ -29,7 +49,9 @@ export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft, cont
   profileStore.getState().patch(profile);
   onboardingStore
     .getState()
-    .patch({ answers: { ...a, ruleId: rule.id, ruleCreatedAt: rule.createdAt, ruleCommitted: true } });
+    .patch({
+      answers: { ...a, ruleId: rule.id, ruleCreatedAt: rule.createdAt, ruleCommitted: true, ruleCommittedFor: userId },
+    });
   return rule;
 }
 export function goalStep(d: RuleDraft) {

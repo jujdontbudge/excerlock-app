@@ -7,9 +7,9 @@ export type {
   AdaptySubscriptionEvent,
   AdaptyWebhookRepository,
   EnvironmentObservation,
-  ProductionAuthorization,
+  SubscriptionAuthorization,
   SubscriptionStatus,
 } from "./lib/repository.js";
-export { authorizeProduction } from "./lib/repository.js";
+export { authorizeEnvironment, authorizeProduction } from "./lib/repository.js";
 export { createAdaptyProfileGateway, createSubscriptionResyncService } from "./lib/resync.js";
 export type { AdaptyProfileGateway, SubscriptionResyncResult } from "./lib/resync.js";

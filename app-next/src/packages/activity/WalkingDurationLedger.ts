@@ -46,6 +46,13 @@ export class WalkingDurationLedger {
 
   read(): Promise<WalkingDurationState> { return this.serialize(() => this.load()); }
 
+  replace(state: WalkingDurationState): Promise<void> {
+    return this.serialize(async () => {
+      if (!validState(state)) throw new Error('Invalid walking duration ledger');
+      await this.save(state);
+    });
+  }
+
   observe(input: WalkingDurationObservation): Promise<WalkingDurationState> {
     return this.serialize(async () => {
       validateObservation(input);

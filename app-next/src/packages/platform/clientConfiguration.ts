@@ -1,5 +1,6 @@
 export type ClientConfiguration = {
   environment: 'dev' | 'preview' | 'prod';
+  storeEnvironment: 'production' | 'sandbox';
   auth: { supabaseUrl: string; supabaseAnonKey: string; apiBaseUrl: string; googleIosClientId: string; googleRedirectUri: string };
   adaptyPublicKey: string;
   posthog: { apiKey: string; host: string };
@@ -17,6 +18,7 @@ export function readClientConfiguration(extra: unknown): ClientConfiguration {
   if (!['dev', 'preview', 'prod'].includes(String(root.environment))) throw new Error('Invalid client environment');
   const config: ClientConfiguration = {
     environment: root.environment as ClientConfiguration['environment'],
+    storeEnvironment: root.environment === 'prod' ? 'production' : 'sandbox',
     auth: {
       supabaseUrl: text('clientAuth', 'supabaseUrl'), supabaseAnonKey: text('clientAuth', 'supabaseAnonKey'),
       apiBaseUrl: text('clientApi', 'url'), googleIosClientId: text('clientAuth', 'googleIosClientId'),
@@ -29,6 +31,9 @@ export function readClientConfiguration(extra: unknown): ClientConfiguration {
   for (const value of [config.auth.supabaseUrl, config.auth.apiBaseUrl, config.posthog.host, config.sentryDsn]) {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.password) throw new Error('Invalid public client service URL');
+  }
+  if (config.environment === 'prod' && new URL(config.auth.apiBaseUrl).pathname !== '/') {
+    throw new Error('Production API must use the root path');
   }
   const reverse = config.auth.googleIosClientId.split('.').reverse().join('.');
   if (!config.auth.googleIosClientId.endsWith('.apps.googleusercontent.com') || config.auth.googleRedirectUri !== `${reverse}:/oauthredirect`) throw new Error('Google redirect does not match configured client');

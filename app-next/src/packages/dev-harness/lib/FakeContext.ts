@@ -25,6 +25,12 @@ export class FakeContext {
       restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
       presence: scenario.gym?.presence ?? 'outside',
       motion: scenario.motion ?? 'still',
+      protectedRouteMounts: [],
+      remoteFlags: scenario.remoteFlags
+        ? `sign-in ${scenario.remoteFlags.signInRequired === true ? 'required' : 'optional'} review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
+        : undefined,
+      notificationResponses: { delivered: [], handled: 0 },
+      otaResume: null,
     };
   }
   snapshot = () => this.view;

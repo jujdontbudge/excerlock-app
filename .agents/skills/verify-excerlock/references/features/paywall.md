@@ -2,7 +2,7 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-apple-linked]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
@@ -160,8 +160,30 @@ expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for f
 ```proof
 name: identity-purchase-to-setup
 scenario: identity-lab-user-sync-failed
-open: /paywall
+open: dev?journey=paywall
 tap: Start for free | Continue with Apple
+wait: 25
+expect: Choose apps
+then-open: dev
+then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"}
+```
+
+```proof
+name: signin-first-purchase-needs-no-second-signin
+scenario: returning-unpaid
+open: /
+tap: Sign in | Continue with Apple | Start for free
+wait: 25
+expect: Home | Locked
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | signed_in {"provider":"apple"} | purchase_started {"placement":"winback","plan_id":"fake.annual"} | Protected route mounts | None
+```
+
+```proof
+name: identity-restore-to-required-signin
+scenario: identity-lab-user-sync-failed
+open: dev?journey=paywall&restore=restored
+tap: Restore purchases | Continue with Apple
 wait: 25
 expect: Choose apps
 ```
@@ -169,30 +191,117 @@ expect: Choose apps
 ```proof
 name: identity-purchase-cancelled
 scenario: identity-lab-purchase-cancelled
-open: /paywall
+open: dev?journey=paywall
 tap: Start for free
 wait: 25
 expect: Choose a plan to continue.
 ```
 
 ```proof
+name: identity-purchase-error-retries-original-checkout
+scenario: identity-lab-purchase-error-retry
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Purchase could not finish. Please retry. | Start for free
+then-tap: Start for free | Continue with Apple
+then-open: /dev
+then-expect: Journey setup · paid yes · admitted no | Active account Checkout | Purchase recovery none | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":0,"recovery":"none"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"} | Protected route mounts | None
+```
+
+```proof
+name: identity-purchase-pending
+scenario: identity-lab-purchase-pending
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Your purchase is still being confirmed. You will not be charged again. | Check purchase status
+```
+
+```proof
+name: identity-purchase-success-without-access
+scenario: identity-lab-purchase-success-without-access
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+then-open: /dev
+then-expect: Journey accountRecovery · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | lab_purchase {"result":"successWithoutAccess","owner":"lab-checkout-1"} | lab_purchase_profile {"owner":"lab-checkout-1","access":"none","grants":0} | Protected route mounts | None
+```
+
+```proof
+name: identity-purchase-double-tap-is-serialized
+scenario: identity-lab-purchase-busy
+open: dev?journey=paywall
+tap: Start for free
+wait: 25
+expect: Continue with Apple
+then-open: /dev
+then-expect: Purchase recovery accountConnection | Purchase operations 1 | Restore operations 0 | Purchase serialization duplicate A subscription operation is already running restore A subscription operation is already running owner stable operation stable | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Protected route mounts | None
+```
+
+```proof
+name: identity-existing-subscription-checkout-reconciles
+scenario: identity-lab-existing-subscription
+open: dev?journey=paywall
+tap: Continue
+wait: 25
+expect: This App Store account already has a subscription. Restore it to connect it to your ExcerLock account. | Use existing subscription
+then-tap: Use existing subscription
+then-open: /dev
+then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | Restore operations 1 | Existing subscription store lab.store.annual owner lab-checkout-1 selected lab-checkout-1 charge starts 0 | lab_purchase {"result":"alreadyOwned","owner":"lab-checkout-1"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
+```
+
+```proof
+name: identity-interrupted-purchase-recovery
+scenario: identity-lab-purchase-interrupted
+relaunch: true
+open: dev?journey=paywall
+wait: 25
+expect: Payment received. Sign in to connect your subscription. | Continue to sign in
+```
+
+```proof
 name: identity-restore-not-found
 scenario: identity-lab-user-sync-failed
-open: /paywall
+open: dev?journey=paywall
 tap: Restore purchases
 wait: 25
 expect: No active purchase was found.
 ```
 
 ```proof
-name: identity-account-switch
+name: restore-wrong-store-account-stays-unpaid
+scenario: identity-lab-restore-wrong-store
+open: dev?journey=paywall
+tap: Restore purchases
+wait: 25
+expect: No active purchase was found. | Restore purchases
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Restore operations 1 | Restore isolation wrong Store owner lab-user-a selected lab-checkout-1 transfers 0 | lab_restore {"result":"notFound","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
+```
+
+```proof
+name: restore-failure-retries-original-account
+scenario: identity-lab-restore-error-retry
+open: dev?journey=paywall
+tap: Restore purchases
+wait: 25
+expect: Restore could not finish. Please retry. | Restore purchases
+then-tap: Restore purchases
+then-open: /dev
+then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Restore operations 2 | lab_restore {"result":"error","owner":"lab-checkout-1","source":"adapter"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
+```
+
+```proof
+name: identity-account-switch-does-not-reuse-checkout
 scenario: identity-lab-apple-linked
-open: /paywall
+open: dev?journey=paywall
 tap: Start for free | Continue with Apple | Recover with Apple
 wait: 25
-expect: Choose apps
+expect: Payment received. Sign in to connect your subscription. | Continue to sign in
 then-open: dev
-then-expect: lab_recovered_account | lab_adapty_identify {"user":"lab-user-2"}
+then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"}
 ```
 
 ## Gotchas
@@ -200,6 +309,5 @@ then-expect: lab_recovered_account | lab_adapty_identify {"user":"lab-user-2"}
 - In a dev build the paywall is a local stand-in with dash prices. Seeing real prices means the real runtime is running (see the launch Gotchas).
 - A new PostHog flag, or a new consumer of `paywall_variant`, is App Store submission material, never an OTA (`docs/ota.md`, `excer check` `flag-registry`).
 - The win-back paywall appears when the first live entitlement of a launch is `expired`, even though the persisted store still says `trial` from the last run (the real app hydrates `trial`, then Adapty's first profile says `expired`). `trial-lapsed-while-closed` reproduces it: Home mounts on the hydrated `trial`, and the fake publishes `expired` 20 s after launch (`entitlementTimeline`). `trial-lapses-in-session` publishes a live `trial` at 1 s and `expired` at 20 s, which must show the in-app placement instead. Both proofs read the placement from the fake `paywall_viewed` event on `dev`. A lapse observed live after a live `trial`/`active` in the same session (`subscription/winbackSession.ts`) does not trigger it. Do not deep-link after the relaunch: opening a URL rebuilds navigation and remounts Home.
-- Account access survives a subscription lapse (ADR 0024).
-- The `identity-lab-*` scenarios swap demo mode's `AuthFake` and `SubscriptionFake` for the real `createAuthServices` (SupabaseAuthAdapter + IdentityCoordinator) and `AdaptySubscriptionAdapter`, over a scripted Supabase client, a scripted `PUT /v1/user` and a scripted Adapty SDK (`dev-harness/lib/fakes/IdentityLab.ts`). The scenario's `identityLab` script makes one edge fail once or run slow (8 s). They reproduce App Review 2.1(b) on Build 12: a user-sync failure at launch left the identity spine unready for the whole session, and a cold start onto the paywall raced the spine. Plans are named "Lab annual" / "Lab monthly" so a lab screenshot is never mistaken for StoreKit data. A lab purchase or restore grants access to whichever user is identified on the device, like a StoreKit receipt shared through Adapty; the lab does not model Adapty's access-sharing setting. They prove identity gating and UI states only, not StoreKit, Adapty or the sandbox account.
+- The `identity-lab-*` scenarios swap demo mode's `AuthFake` and `SubscriptionFake` for the real `createAuthServices` (SupabaseAuthAdapter + IdentityCoordinator) and `AdaptySubscriptionAdapter`, over a scripted Supabase client, a scripted `PUT /v1/user` and a scripted Adapty SDK (`dev-harness/lib/fakes/IdentityLab.ts`). The scenario's `identityLab` script makes one edge fail once or run slow (8 s). They reproduce App Review 2.1(b) on Build 12: a user-sync failure at launch left the identity spine unready for the whole session, and a cold start onto the paywall raced the spine. Plans are named "Lab annual" / "Lab monthly" so a lab screenshot is never mistaken for StoreKit data. Checkout, account A and account B have independent ownership. Delayed-callback scenarios queue immutable purchase/restore profiles and deliver them after an account transition. They prove identity generation, journal and admission gating only, not StoreKit, Adapty transfer behavior or a sandbox account.
 - The dev client's floating tools button (gear) sits on top of the paywall's Restore link; turn it off in the dev menu (Tools button) before `identity-restore-not-found`, or the tap opens the dev menu.

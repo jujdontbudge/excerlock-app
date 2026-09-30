@@ -13,6 +13,7 @@ export type IdentityCoordinatorDeps = {
   analyticsIdentify: (userId: string) => Promise<void>;
   subscriptionIdentify: (userId: string) => Promise<void>;
   attachIntegration: (userId: string) => Promise<void>;
+  prepareAccount?: (identity: AuthIdentity) => Promise<void>;
   onTombstone?: (userId: string) => Promise<void>;
   onReady?: (identity: AuthIdentity) => void;
   runIdentityOperation?: RunIdentityOperation;
@@ -222,6 +223,12 @@ export class IdentityCoordinator {
     if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
     try {
       await this.deps.attachIntegration(userId);
+    } catch {
+      return;
+    }
+    if (this.disposed || this.keyFor(this.deps.getIdentity()) !== key) return;
+    try {
+      await this.deps.prepareAccount?.(identity);
     } catch {
       return;
     }

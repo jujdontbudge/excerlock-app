@@ -39,8 +39,20 @@ from `ADAPTY_SECRET_KEY`, which authorizes server-side profile erasure.
 
 Authenticated `POST /v1/subscription/resync` derives the customer id only from
 the verified token and accepts no identity, environment, or access body. The
-documented profile API does not bind premium aggregates to a store environment,
-so resync is read-only and reports unavailable; aggregate access cannot grant.
+deployment selects exactly one authorization partition with
+`SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT`: Production deployments use
+`production`; an isolated TestFlight verification backend uses `sandbox`.
+The response binds that account and environment to the latest current webhook
+observation and adds the server's `verifiedAt` time. A missing, unknown or
+wrong-environment observation returns `hasAccess=false` and `status=unknown`.
+
+The route reaches Adapty before reading the mirror, so an unavailable upstream
+fails the request instead of creating a new admission lease. The documented
+profile API does not bind premium aggregates to a store environment, so resync
+never writes authorization from that aggregate. Its response proves a fresh
+online read of the environment-stamped webhook mirror, not a fresh StoreKit
+transaction or transfer. Client admission must cap its in-memory lease and
+must not persist or reinterpret this proof.
 Null/missing webhook customer ids are acknowledged without creating a user.
 
 Only the documented `access_level_updated` event for
@@ -48,7 +60,8 @@ Only the documented `access_level_updated` event for
 events expose profile-wide access and are acknowledged without assigning that
 aggregate to a production or sandbox partition.
 
-Shared-backend configuration accepts `production,sandbox` via
-`ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS`; production authorization is
-fixed to `SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT=production` and parsing
-rejects sandbox authorization for this deployment.
+Webhook ingestion can accept `production,sandbox` via
+`ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS`; authorization remains one
+deployment-selected partition. Production and TestFlight must not share an
+authorization deployment configured for both because the client cannot choose
+or override the server's partition.

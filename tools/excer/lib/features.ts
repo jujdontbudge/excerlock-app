@@ -5,7 +5,8 @@ import { read, walk } from './files.ts';
 
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
-export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[] };
+export type ProofAction = { kind: 'tap' | 'type'; value: string };
+export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; expect: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[] };
 
 export type Feature = {
   id: string;
@@ -61,9 +62,22 @@ function parseProofs(body: string): Proof[] {
     if (fields.open) proof.open = fields.open;
     if (fields.prompt) proof.prompt = fields.prompt;
     if (fields.relaunch === 'true') proof.relaunch = true;
+    if (fields['relaunch-after-expect'] === 'true') proof.relaunchAfterExpect = true;
+    if (fields['after-relaunch-expect']) proof.afterRelaunchExpect = fields['after-relaunch-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields['then-tap']) proof.thenTap = fields['then-tap'].split('|').map((item) => item.trim()).filter(Boolean);
     if (fields['then-open']) proof.thenOpen = fields['then-open'];
     if (fields['then-expect']) proof.thenExpect = fields['then-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields['deny-routes'] === 'protected') proof.denyRoutes = 'protected';
+    if (fields['deny-expect']) proof.denyExpect = fields['deny-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.notifications) proof.notifications = fields.notifications.split('|').map((item) => item.trim()).filter((item): item is 'home' | 'unlock' => item === 'home' || item === 'unlock');
+    if (fields['notification-expect']) proof.notificationExpect = fields['notification-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.actions) proof.actions = fields.actions.split('|').map((item) => item.trim()).filter(Boolean).map((item) => {
+      const pair = /^(tap|type)\s+(.+)$/.exec(item);
+      if (!pair?.[1] || !pair[2]) throw new Error(`Invalid proof action "${item}" in ${proof.name}`);
+      return { kind: pair[1] as ProofAction['kind'], value: pair[2] };
+    });
     if (fields.tap) proof.tap = fields.tap.split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.gesture === 'back') proof.gesture = 'back';
     return proof;
   });
 }
@@ -104,6 +118,28 @@ export function appRoutes(): string[] {
     .map((file) => relative(routesDir, file).replace(/\.tsx?$/, ''))
     .filter((route) => !/(^|\/)_layout$/.test(route) && !route.endsWith('+not-found'))
     .sort();
+}
+
+export function protectedAppRoutes(): { route: string; href: string }[] {
+  return appRoutes()
+    .filter((route) =>
+      route.startsWith('(tabs)/') ||
+      route === 'builder' ||
+      route === 'gym-picker' ||
+      route.startsWith('permissions/') ||
+      route.startsWith('settings/') ||
+      route.startsWith('unlock/') ||
+      route.startsWith('diagnostics/'),
+    )
+    .map((route) => ({
+      route,
+      href: `/${route}`
+        .replace(/\/\([^/]+\)/g, '')
+        .replace(/\/index$/, '')
+        .replace('[step]', 'X1')
+        .replace('[doc]', 'privacy')
+        .replace('[name]', 'motion'),
+    }));
 }
 
 export function scenarioIds(): string[] {

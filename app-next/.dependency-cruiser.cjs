@@ -4,7 +4,7 @@ const layers = [
   ['ports'],
   ['conditions', 'identity', 'telemetry'],
   ['app-selection', 'permissions', 'subscription'],
-  ['gyms', 'notifications'],
+  ['journey', 'gyms', 'notifications'],
   ['activity'],
   ['progress'],
   ['lock'],

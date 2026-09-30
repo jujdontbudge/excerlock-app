@@ -51,9 +51,14 @@ Proof fields:
 - `open`: a route or URL.
 - `prompt`: `grant` (the default), `deny` or `ask`.
 - `relaunch: true`: cold-launch again after the load, for behavior that happens only at startup.
+- `relaunch-after-expect: true` and `after-relaunch-expect`: after the initial actions and `expect` pass, save a before-relaunch screenshot, cold-relaunch, and require the second label set. Use this to prove a transition from a genuinely established runtime state across process death.
 - `tap`: labels to tap in order after `open`, separated by `|`. Use it to change state without a deep link, because opening a URL rebuilds navigation and remounts screens.
+- `actions`: ordered `tap <label>` and `type <text>` actions separated by `|`. Use it for a user path that interleaves form entry and buttons. Typed values are redacted to their character counts in `result.json`.
+- `gesture: back`: performs and records one iOS edge-swipe after the taps and before checking `expect`.
 - `wait`: how many seconds to wait. The default is 15.
 - `then-open` and `then-expect`: after `expect` is met, open another route and expect more labels. Use it to read a side effect, such as the fake analytics events on `dev`. The first screen is saved as `<name>.before.png`.
+- `then-tap`: after `expect` is met and its `<name>.before.png` is saved, tap another sequence before `then-open` / `then-expect`. Use it when a confirmation sheet must be evidenced before its destructive action.
+- `deny-routes: protected` and `deny-expect`: derive every paid route from the Expo route files, deep-link each one, and require the denial labels before continuing. Route attempts are recorded in `result.json`.
 
 Metro runs without a file watcher. Before driving the app, `excer` restarts Metro whenever a file under `app-next/src`, `app` or `modules` is newer than Metro's start, and it refuses to continue if the bundle does not build. Without this, the dev client silently runs its last cached bundle and a proof passes against old code. If you drive Metro some other way, check the bundle yourself.
 

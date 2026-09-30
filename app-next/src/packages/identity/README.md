@@ -20,9 +20,10 @@ Boot hydrates secure storage first and starts at most one anonymous request. Its
 
 New Apple/Google identities call auth-js 2.116.0's native-token `linkIdentity` overload. Apple sends the SHA-256 nonce to Apple and the raw nonce to Supabase. Existing-account recovery is explicit and uses `signInWithIdToken`; it never accepts a caller-provided source UID, aliases PostHog people, or transfers subscriptions client-side. Email conversion uses `updateUser({ email })` then `verifyOtp(... type: 'email_change')`; recovery uses the regular email OTP flow.
 
+An established account adds another verified Apple or Google login only through `linkWithApple` or `linkWithGoogle`. Those operations require a non-anonymous canonical session, preserve its UID and generation, and treat an already-owned provider as account recovery instead of selecting or merging the other account. Ordinary returning sign-in continues to reauthenticate or recover; it does not silently link credentials.
+
 Deletion keeps the secure session until authenticated server acceptance. Network loss and 5xx responses remain visibly retryable. After 204/410, local SDK identity is reset and a fresh anonymous session is created. Provisional-only deletion is local and sends no nonexistent server UID. The server's durable worker owns remote erasure and lost-response completion.
 
 ## Verification limits
 
 Unit tests prove request shapes, ordering, generation guards, storage behavior, and visible failure semantics. Native Apple audience/provider activation, Google redirect/provider configuration, email templates, and real device credentials still require preview-build and physical-device verification after root/native integration.
-

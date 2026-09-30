@@ -8,7 +8,9 @@ import { TabBar } from '../../src/packages/ui';
 import { TabId, tabItems } from '../../src/packages/ui/tabsCopy';
 import { tokens as t } from '../../src/packages/ui/tokens';
 import { useMotion } from '../../src/packages/ui/useMotion';
+import { useDevProtectedRouteMount } from '../../src/packages/launch/DevProtectedRouteMount';
 export default function TabLayout() {
+  useDevProtectedRouteMount();
   const motion = useMotion(),
     runtime = useRuntime();
   useEffect(() => startProgressSync(runtime), [runtime]);

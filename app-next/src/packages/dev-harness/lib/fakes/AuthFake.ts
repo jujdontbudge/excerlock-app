@@ -32,6 +32,8 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     identity,
     signInWithApple: () => signIn('apple'),
     signInWithGoogle: () => signIn('google'),
+    linkWithApple: () => signIn('apple'),
+    linkWithGoogle: () => signIn('google'),
     recoverWithApple: () => signIn('apple'),
     recoverWithGoogle: () => signIn('google'),
     sendEmailCode: async (value) => {
@@ -41,6 +43,10 @@ export function AuthFake(ctx: FakeContext): AuthPort {
       ctx.log('email_code_sent');
     },
     verifyEmailCode: async (code) => {
+      if (code !== '123456') throw new Error('Invalid code');
+      return signIn('email');
+    },
+    recoverWithEmailCode: async (code) => {
       if (code !== '123456') throw new Error('Invalid code');
       return signIn('email');
     },

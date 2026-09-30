@@ -421,6 +421,15 @@ export class SupabaseAuthAdapter implements AuthPort {
       : this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected));
   }
 
+  async linkWithApple(): Promise<Session> {
+    const expected = this.captureEstablishedIdentity();
+    const credential = await requestAppleCredential(this.appleDeps);
+    this.assertCanonicalIdentity(expected);
+    return this.runIdentityOperation(() =>
+      this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected),
+    );
+  }
+
   async recoverWithApple(): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
@@ -442,6 +451,15 @@ export class SupabaseAuthAdapter implements AuthPort {
     return this.runIdentityOperation(() => this.currentSession.kind === 'signedIn'
       ? this.reauthenticateWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected)
       : this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected));
+  }
+
+  async linkWithGoogle(): Promise<Session> {
+    const expected = this.captureEstablishedIdentity();
+    const credential = await requestGoogleCredential(this.googleDeps);
+    this.assertCanonicalIdentity(expected);
+    return this.runIdentityOperation(() =>
+      this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected),
+    );
   }
 
   async recoverWithGoogle(): Promise<Session> {
@@ -470,6 +488,14 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.setProvisional(expected.generation);
       throw new AuthError('Could not restore your saved sign-in. Please try again.', { code: 'REAUTH_RESTORE_FAILED' });
     }
+  }
+
+  private captureEstablishedIdentity(): { userId: string; generation: number } {
+    const expected = this.captureCanonicalIdentity();
+    if (this.currentIdentity.isAnonymous || this.currentSession.kind !== 'signedIn') {
+      throw new AuthError('Sign in before adding another login method.', { code: 'LINK_REQUIRES_ACCOUNT' });
+    }
+    return expected;
   }
 
   private async reauthenticateWithIdToken(
@@ -658,6 +684,13 @@ export class SupabaseAuthAdapter implements AuthPort {
     });
   }
 
+  async recoverWithEmailCode(code: string): Promise<Session> {
+    const normalizedCode = validateOtpCode(code);
+    if (!this.pendingEmail || this.pendingFlow !== 'recovery')
+      throw new AuthError('Please request a code first.', { code: 'OTP_NO_PENDING' });
+    return this.verifyRecoveryEmail(normalizeEmail(this.pendingEmail), normalizedCode);
+  }
+
   private async verifyRecoveryEmail(email: string, code: string): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
@@ -709,7 +742,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         }
         this.assertTransition(nextGeneration);
         this.expectedSignedOutGenerations.add(nextGeneration);
-        const { error } = await this.runSdk(() => this.supabase.auth.signOut());
+        const { error } = await this.runSdk(() => this.supabase.auth.signOut({ scope: 'local' }));
         if (this.generation !== nextGeneration || this.disposed) return;
         if (error) throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_FAILED' });
         this.currentSession = { kind: 'anonymous' };

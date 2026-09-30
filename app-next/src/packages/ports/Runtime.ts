@@ -6,7 +6,7 @@ import { StepsPort } from './StepsPort';
 import { WalkingPort } from './WalkingPort';
 import { GymPort } from './GymPort';
 import { AuthPort } from './AuthPort';
-import { SubscriptionPort } from './SubscriptionPort';
+import { SubscriptionAdmissionPort, SubscriptionPort } from './SubscriptionPort';
 import { AnalyticsPort } from './AnalyticsPort';
 import { NotificationsPort } from './NotificationsPort';
 import { SyncPort } from './SyncPort';
@@ -21,6 +21,7 @@ import type { StrideGatePort } from './lib/StrideGatePort';
 import type { SensorStreamModuleClient } from './SensorStreamPort';
 import type { OnboardingFlowPort } from './OnboardingFlowPort';
 import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
+import type { NotificationResponsesPort } from './NotificationResponsesPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -30,8 +31,10 @@ export type Runtime = {
   gym: GymPort;
   auth: AuthPort;
   subscription: SubscriptionPort;
+  subscriptionAdmission: SubscriptionAdmissionPort;
   analytics: AnalyticsPort;
   notifications: NotificationsPort;
+  notificationResponses: NotificationResponsesPort;
   sync: SyncPort;
   support: SupportPort;
   incidentReports: IncidentReportPort;

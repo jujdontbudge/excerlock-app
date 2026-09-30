@@ -240,13 +240,34 @@ export async function tap(udid: string, label: string): Promise<string> {
   if (missing.length > 0) throw new Error(`No accessible element labelled "${label}"`);
   const matches = nodes.filter((node) => labels([node])[0]?.includes(normalise(label)));
   const exact = (node: AxNode) => Number(labels([node])[0] !== normalise(label));
-  matches.sort((a, b) => exact(a) - exact(b) || Number(a.type !== 'Button') - Number(b.type !== 'Button'));
+  const interactionRank = (node: AxNode) => node.type === 'Button' ? 0 : node.type === 'TextField' ? 1 : 2;
+  matches.sort((a, b) => exact(a) - exact(b) || interactionRank(a) - interactionRank(b));
   const frame = matches[0]?.frame;
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);
   const y = Math.round(frame.y + frame.height / 2);
   must('idb', ['ui', 'tap', '--udid', udid, String(x), String(y)]);
   return `tapped "${label}" at ${x},${y}`;
+}
+
+export function typeText(udid: string, value: string): string {
+  ensureCompanion(udid);
+  must('idb', ['ui', 'text', '--udid', udid, value]);
+  return `typed ${value.length} characters`;
+}
+
+export function swipeBack(udid: string): string {
+  const nodes = tree(udid);
+  const screen = nodes
+    .map((node) => node.frame)
+    .filter((frame) => frame.x === 0 && frame.y === 0 && frame.width > 0 && frame.height > 0)
+    .sort((a, b) => b.width * b.height - a.width * a.height)[0];
+  if (!screen) throw new Error('Accessibility tree has no screen frame');
+  const xStart = Math.max(1, Math.round(screen.width * 0.01));
+  const xEnd = Math.round(screen.width * 0.85);
+  const y = Math.round(screen.height * 0.5);
+  must('idb', ['ui', 'swipe', '--udid', udid, String(xStart), String(y), String(xEnd), String(y), '--duration', '0.5']);
+  return `swiped back from ${xStart},${y} to ${xEnd},${y}`;
 }
 
 export async function metroClients(): Promise<number> {

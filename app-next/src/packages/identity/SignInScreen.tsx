@@ -9,7 +9,7 @@ import { Reveal } from '../ui/Reveal';
 import { useRuntime } from '../ports/useRuntime';
 import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
-import { isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
+import { AuthError, isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
 import { approveLaunchSignIn } from './launchSignInGate';
 
@@ -37,7 +37,7 @@ export function SignInScreen({
     ),
     [flagError, setFlagError] = useState(false),
     [flagAttempt, setFlagAttempt] = useState(0),
-    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | null>(null);
+    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | 'email' | null>(null);
   useEffect(() => {
     let active = true;
     void Promise.resolve(resolveSignInRequired(signInRequired, false))
@@ -86,7 +86,11 @@ export function SignInScreen({
           setRecoveryProvider(caught.provider);
           setError(caught.message);
         }
+      } else if (caught instanceof AuthError && caught.code === 'REAUTH_DIFFERENT_ACCOUNT') {
+        setRecoveryProvider(provider);
+        setError(caught.message);
       } else {
+        if (provider === 'email') setCode('');
         setError(provider === 'email' ? c.codeError : c.authError);
       }
     } finally {
@@ -100,6 +104,7 @@ export function SignInScreen({
     setRecoveryProvider(null);
     try {
       await runtime.auth.sendEmailCode(email.trim());
+      setCode('');
       if (phase === 'code') setNote(c.resent);
       setPhase('code');
     } catch (caught) {
@@ -237,13 +242,16 @@ export function SignInScreen({
           ) : null}
           {recoveryProvider ? (
             <SecondaryButton
-              label={`Recover with ${recoveryProvider === 'apple' ? 'Apple' : 'Google'}`}
+              label={recoveryProvider === 'email' ? 'Switch to this email account' : `Recover with ${recoveryProvider === 'apple' ? 'Apple' : 'Google'}`}
               disabled={busy}
               onPress={() => {
                 setBusy(true);
                 setError('');
-                const recovery =
-                  recoveryProvider === 'apple' ? runtime.auth.recoverWithApple() : runtime.auth.recoverWithGoogle();
+                const recovery = recoveryProvider === 'apple'
+                  ? runtime.auth.recoverWithApple()
+                  : recoveryProvider === 'google'
+                    ? runtime.auth.recoverWithGoogle()
+                    : runtime.auth.recoverWithEmailCode(code);
                 void recovery
                   .then((result) => {
                     if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();

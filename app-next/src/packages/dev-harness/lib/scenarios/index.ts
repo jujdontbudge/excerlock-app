@@ -3,6 +3,7 @@ import { conditionDemoScenarios } from './condition-demo-gate';
 import { unlockScenarios } from './unlock';
 import { identityLabScenarios } from './identity-lab';
 import { scenario1 } from './onboarding-walking-resume';
+import { returningUnpaidOtaHome, returningUnpaidOtaUnlock } from './returning-unpaid-ota';
 import { scenario2 } from './home-locked-walking';
 import { scenario3 } from './home-unlocked-met';
 import { scenario4 } from './home-walking-session';
@@ -17,7 +18,18 @@ import { scenario14 } from './window-crosses-midnight';
 import { scenario15 } from './trial-active';
 import { scenario16 } from './trial-expired';
 import { scenario17 } from './billing-issue';
-import { scenario18, returningSignedIn } from './signed-in-apple';
+import {
+  scenario18,
+  returningSignedIn,
+  returningUnpaid,
+  returningUnpaidRemoteBypassAttempt,
+  returningExpired,
+  reinstallKeychain,
+  subscriptionProofMatching,
+  subscriptionProofWrongAccount,
+  subscriptionProofWrongEnvironment,
+  subscriptionProofUnavailable,
+} from './signed-in-apple';
 import { scenario19 } from './analytics-6-weeks';
 import { scenario20 } from './analytics-day-zero';
 import { scenario21 } from './analytics-no-measurement';
@@ -45,6 +57,16 @@ export const scenarios = [
   scenario17,
   scenario18,
   returningSignedIn,
+  returningUnpaid,
+  returningUnpaidRemoteBypassAttempt,
+  returningExpired,
+  reinstallKeychain,
+  returningUnpaidOtaHome,
+  returningUnpaidOtaUnlock,
+  subscriptionProofMatching,
+  subscriptionProofWrongAccount,
+  subscriptionProofWrongEnvironment,
+  subscriptionProofUnavailable,
   scenario19,
   scenario20,
   scenario21,
