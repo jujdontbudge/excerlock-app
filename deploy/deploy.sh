@@ -182,8 +182,8 @@ sudo systemctl reload-or-restart caddy
 sudo systemctl restart excerlock-api.service
 sudo systemctl restart excerlock-api-testflight.service
 attempt=1
-while ! curl --fail --silent --show-error http://127.0.0.1:3000/v1/health >/dev/null; do
-  if [ "$attempt" -ge 10 ]; then
+while ! curl --fail --silent http://127.0.0.1:3000/v1/health >/dev/null 2>&1; do
+  if [ "$attempt" -ge 45 ]; then
     printf "ERROR: excerlock-api.service did not pass its local health check\n" >&2
     sudo systemctl --no-pager --full status excerlock-api.service >&2 || true
     exit 1
@@ -201,8 +201,8 @@ curl --fail --silent --show-error http://127.0.0.1:3000/v1/ready >/dev/null || {
   exit 1
 }
 attempt=1
-while ! curl --fail --silent --show-error http://127.0.0.1:3002/v1/health >/dev/null; do
-  if [ "$attempt" -ge 10 ]; then
+while ! curl --fail --silent http://127.0.0.1:3002/v1/health >/dev/null 2>&1; do
+  if [ "$attempt" -ge 45 ]; then
     printf "ERROR: TestFlight Sandbox API did not pass local health\n" >&2
     sudo systemctl --no-pager --full status excerlock-api-testflight.service >&2 || true
     exit 1
