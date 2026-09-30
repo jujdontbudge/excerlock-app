@@ -53,7 +53,13 @@ export function ProgressBadge() {
             />
           </Svg>
         </View>
-        <Label variant="section" style={{ color: p.deep }}>
+        <Label
+          style={{
+            ...p.badge.text,
+            color: p.deep,
+            alignSelf: 'center',
+            transform: [{ translateY: p.badge.text.fontSize * t.optical.centre }],
+          }}>
           {c.progressValue}
         </Label>
       </Animated.View>

@@ -7,7 +7,8 @@ export function Label({
   style,
   ...props
 }: TextProps & { variant?: keyof typeof t.type; tone?: keyof typeof t.text }) {
-  const onboarding = useSetupPresentation() && StyleSheet.flatten(style)?.position !== 'absolute';
+  const flat = StyleSheet.flatten(style);
+  const onboarding = useSetupPresentation() && flat?.position !== 'absolute';
   return (
     <Text
       {...props}
@@ -17,7 +18,7 @@ export function Label({
         t.type[variant],
         { color: t.text[tone], fontVariant: ['tabular-nums'] },
         style,
-        onboarding ? { alignSelf: 'stretch', textAlign: 'center' } : null,
+        onboarding ? { alignSelf: flat?.alignSelf ?? 'stretch', textAlign: 'center' } : null,
       ]}
     />
   );

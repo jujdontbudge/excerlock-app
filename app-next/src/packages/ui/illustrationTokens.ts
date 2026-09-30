@@ -96,6 +96,7 @@ export const illustrationTokens = {
         arrow: 28,
         padding: 14,
         shadow: '0px 12px 20px rgba(132,64,18,0.15)',
+        text: { fontSize: 27, lineHeight: 34, fontFamily: t.type.label.fontFamily },
       },
     },
     tile: {
