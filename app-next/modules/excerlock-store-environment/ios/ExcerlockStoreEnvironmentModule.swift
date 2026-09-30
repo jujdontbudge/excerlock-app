@@ -13,7 +13,7 @@ public final class ExcerlockStoreEnvironmentModule: Module {
           case .production: return "production"
           case .sandbox: return "sandbox"
           case .xcode: return nil
-          @unknown default: return nil
+          default: return nil
           }
         case .unverified: return nil
         }
