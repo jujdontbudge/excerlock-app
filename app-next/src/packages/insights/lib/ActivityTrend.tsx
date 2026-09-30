@@ -1,20 +1,22 @@
 import { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, NativeSyntheticEvent, StyleSheet, View, ViewProps } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Line, Path, Stop } from 'react-native-svg';
 import { Label } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
+import { analyticsCopy as c } from './analyticsCopy';
+import { Period } from './period';
 import { nearestEnabledTrendIndex, TrendPoint } from './trendModel';
 
-const HEIGHT = 156;
-const INSET = 14;
-const TOP = 32;
-const BOTTOM = 146;
-const BUBBLE = 46;
+const HEIGHT = t.layout.trendHeight;
+const INSET = t.space.md;
+const TOP = t.space.md;
+const BOTTOM = HEIGHT - t.space.md;
 
 type TouchEvent = NativeSyntheticEvent<{ locationX: number }>;
 
-export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
+export function ActivityTrend({ label, period, points, selectedOffset, onSelect }: {
   label: string;
+  period: Period;
   points: readonly TrendPoint[];
   selectedOffset: number;
   onSelect: (offset: number) => void;
@@ -38,10 +40,6 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   }, [onSelect, points, selectedIndex]);
   const selected = geometry.coordinates[selectedIndex] ?? geometry.coordinates[0];
   const selectedLabel = points[selectedIndex]?.label ?? '';
-  const right = plotWidth - INSET;
-  const bubbleX = selected
-    ? Math.max(INSET, Math.min(right - BUBBLE, selected.x - BUBBLE / 2))
-    : INSET;
   const responder: ViewProps = {
     onStartShouldSetResponder: () => true,
     onMoveShouldSetResponder: () => true,
@@ -50,12 +48,23 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   };
   return (
     <View style={s.card}>
-      <Label variant="label">{label}</Label>
+      <View style={s.context}>
+        {period === 'Day' ? points.map((point, index) => (
+          <View key={point.offset} style={s.daySlot}>
+            <View style={index === selectedIndex ? s.selectedDay : undefined}>
+              <Label variant="micro" tone={index === selectedIndex ? 'onAccent' : 'secondary'}>
+                {point.label}
+              </Label>
+            </View>
+          </View>
+        )) : <Label variant="micro" tone="secondary">{selectedLabel}</Label>}
+      </View>
       <View
         testID="Analytics trend scrubber"
         accessibilityRole="adjustable"
         accessibilityLabel={label}
-        accessibilityValue={{ text: selectedLabel }}
+        accessibilityHint={period === 'Month' ? c.monthTrendHint : undefined}
+        accessibilityValue={{ text: `${selectedLabel}, ${points[selectedIndex]?.value.toLocaleString('en-US') ?? '0'}` }}
         accessibilityActions={[{ name: 'decrement' }, { name: 'increment' }]}
         onAccessibilityAction={(event) => changeSelection(event.nativeEvent.actionName === 'increment' ? 1 : -1)}
         onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
@@ -69,17 +78,17 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
             </LinearGradient>
           </Defs>
           {geometry.coordinates.map((point, index) => (
-            <Line key={`grid-${index}`} x1={point.x} x2={point.x} y1={TOP - 6} y2={BOTTOM} stroke={t.chart.grid} strokeWidth="1" />
+            <Line key={`grid-${index}`} x1={point.x} x2={point.x} y1={TOP} y2={BOTTOM} stroke={t.chart.grid} strokeWidth={t.stroke.hairline} />
           ))}
           <Line
             x1={INSET}
-            x2={right}
+            x2={plotWidth - INSET}
             y1={geometry.averageY}
             y2={geometry.averageY}
             stroke={t.border.mutedStroke}
-            strokeWidth="2"
+            strokeWidth={t.stroke.hairline}
             strokeLinecap="round"
-            strokeDasharray="0.1 6"
+            strokeDasharray="1 5"
           />
           {geometry.area ? <Path d={geometry.area} fill="url(#trend-area)" /> : null}
           {geometry.line ? <Path d={geometry.line} fill="none" stroke={t.chart.exercise} strokeWidth={t.stroke.chart} strokeLinecap="round" strokeLinejoin="round" /> : null}
@@ -88,19 +97,16 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
               key={index}
               cx={point.x}
               cy={point.y}
-              r={points[index]?.disabled ? 3 : 4}
+              r={t.space.xs}
               fill={points[index]?.disabled ? t.state.disabledFill : t.surface.card}
               stroke={points[index]?.disabled ? t.state.disabledText : t.chart.exercise}
-              strokeWidth="1.5"
+              strokeWidth={t.stroke.selected}
             />
           ))}
           {selected ? (
             <>
-              <Line x1={selected.x} x2={selected.x} y1={28} y2={BOTTOM} stroke={t.border.mutedStroke} strokeWidth="1" strokeDasharray="3 3" />
-              <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.card} stroke={t.chart.exercise} strokeWidth="2.5" />
-              <Circle cx={selected.x} cy={selected.y} r="3" fill={t.chart.exercise} />
-              <Rect x={bubbleX} y="2" width={BUBBLE} height="24" rx="12" fill={t.text.primary} />
-              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.type.micro.fontFamily} fontSize={t.type.micro.fontSize}>{selectedLabel}</SvgText>
+              <Circle cx={selected.x} cy={selected.y} r={t.space.sm + t.space.xs / 2} fill={t.surface.card} stroke={t.chart.exercise} strokeWidth={t.stroke.chart} />
+              <Circle cx={selected.x} cy={selected.y} r={t.space.xs / 2} fill={t.chart.exercise} />
             </>
           ) : null}
         </Svg>
@@ -127,21 +133,22 @@ function graphGeometry(points: readonly TrendPoint[], plotWidth: number) {
 
 function smoothPath(points: readonly { x: number; y: number }[]) {
   if (!points.length) return '';
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
   let path = `M ${points[0].x} ${points[0].y}`;
   for (let index = 0; index < points.length - 1; index += 1) {
-    const previous = points[index - 1] ?? points[index];
     const current = points[index];
     const next = points[index + 1];
-    const after = points[index + 2] ?? next;
-    path += ` C ${current.x + (next.x - previous.x) / 6} ${current.y + (next.y - previous.y) / 6}, ${next.x - (after.x - current.x) / 6} ${next.y - (after.y - current.y) / 6}, ${next.x} ${next.y}`;
+    const third = (next.x - current.x) / 3;
+    path += ` C ${current.x + third} ${current.y}, ${next.x - third} ${next.y}, ${next.x} ${next.y}`;
   }
   return path;
 }
 
 const s = StyleSheet.create({
   card: { backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline,
-    borderRadius: t.radius.card, paddingHorizontal: t.space.lg, paddingTop: t.space.md,
+    borderRadius: t.radius.card, paddingHorizontal: t.space.lg, paddingTop: t.space.sm,
     paddingBottom: t.space.sm, gap: t.space.xs, overflow: 'hidden' },
+  context: { height: t.type.support.lineHeight + t.space.xs, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  daySlot: { flex: 1, alignItems: 'center' },
+  selectedDay: { backgroundColor: t.brand.primary, borderRadius: t.radius.pill, paddingHorizontal: t.space.xs },
   graph: { height: HEIGHT },
 });

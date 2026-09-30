@@ -13,6 +13,7 @@ export const analyticsCopy = {
       ? `Against your ${Math.round(baselineMinutes / 60)}h starting estimate`
       : 'Against your starting screen time',
   chart: 'Screen time replaced chart',
+  monthTrendHint: 'Shows the latest eight weeks. Drag to highlight a week.',
   chartAverage: (n: number) => `${Math.round(n)}m a day on average`,
   weekDots: 'Days met this week',
   measured: (n: number, m: number) => `Measured on ${n} of ${m} days`,

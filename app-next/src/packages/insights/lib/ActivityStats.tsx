@@ -1,31 +1,34 @@
 import { StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Label } from '../../ui';
-import { Icon } from '../../ui/Icon';
 import { tokens as t } from '../../ui/tokens';
 
-export type ActivityStat = { label: string; value: string; glyph?: 'flame'; a11y?: string };
+export type ActivityStat = { label: string; value: string; a11y?: string };
 
 export function ActivityStats({ stats }: { stats: ActivityStat[] }) {
   return (
-    <View style={s.row}>
+    <ScrollView testID="Analytics stats strip" horizontal directionalLockEnabled showsHorizontalScrollIndicator={false} style={s.strip} contentContainerStyle={s.row}>
       {stats.map((stat) => (
         <View key={stat.label} style={s.stat} accessible accessibilityLabel={stat.a11y ?? `${stat.label}: ${stat.value}`}>
-          <View style={s.valueRow}>
-            {stat.glyph ? <Icon name={stat.glyph} size={t.icon.sm} variant="utility" /> : null}
-            <Label variant="metricSmall" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stat.value}</Label>
-          </View>
-          <Label variant="support" tone="secondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+          <Label variant="section" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={s.value}>
+            {stat.value}
+          </Label>
+          <Label variant="support" tone="secondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={s.label}>
             {stat.label}
           </Label>
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 const s = StyleSheet.create({
-  row: { flexDirection: 'row', gap: t.space.sm },
-  stat: { flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.card,
+  strip: { alignSelf: 'stretch', marginRight: -t.layout.page, flexGrow: 0 },
+  row: { flexDirection: 'row', gap: t.space.sm, paddingRight: t.space.sm },
+  stat: { width: t.control.row + t.space.sm, minHeight: t.control.full,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.card,
     borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.field,
-    paddingHorizontal: t.space.xs },
-  valueRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: -t.space.sm },
+    paddingHorizontal: t.space.xs, paddingVertical: t.space.xs },
+  value: { width: '100%', textAlign: 'center', marginBottom: -t.space.xs,
+    transform: [{ translateY: t.type.section.fontSize * t.optical.centre }] },
+  label: { width: '100%', textAlign: 'center' },
 });

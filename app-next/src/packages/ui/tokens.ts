@@ -93,6 +93,7 @@ export const tokens = {
     fieldMax: 220,
     tabHeight: 49,
     chartHeight: 170,
+    trendHeight: 88,
     cardWidth: 171,
     sheetMax: 0.88,
     grabber: 40,

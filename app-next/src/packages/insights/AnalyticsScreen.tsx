@@ -39,6 +39,7 @@ const periodLabels: Record<string, Period> = { D: 'Day', W: 'Week', M: 'Month' }
 export function AnalyticsScreen() {
   const [period, setPeriod] = useState<Period>('Week');
   const [offset, setOffset] = useState(0);
+  const [monthTrendOffset, setMonthTrendOffset] = useState(0);
   const runtime = useRuntime();
   const now = useClock();
   const history = useHistory();
@@ -94,7 +95,7 @@ export function AnalyticsScreen() {
       ? 'Yesterday'
       : new Date(`${model.start}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const trend = useMemo(
-    () => trendPoints(period, today, history, primaryActivity),
+    () => trendPoints(period === 'Month' ? 'Week' : period, today, history, primaryActivity),
     [period, today, history, primaryActivity],
   );
   const previousModel = useMemo(
@@ -128,7 +129,7 @@ export function AnalyticsScreen() {
           <SegmentedControl
             options={['D', 'W', 'M']}
             value={period === 'Day' ? 'D' : period === 'Week' ? 'W' : 'M'}
-            onChange={(label) => { setPeriod(periodLabels[label]); setOffset(0); }}
+            onChange={(label) => { setPeriod(periodLabels[label]); setOffset(0); setMonthTrendOffset(0); }}
           />
         </View>
       </View>
@@ -164,14 +165,15 @@ export function AnalyticsScreen() {
                 <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
               )}
               </Animated.View>
-              <ActivityStats stats={stats} />
             </View>
           </GestureDetector>
+          <ActivityStats stats={stats} />
           <ActivityTrend
             label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
+            period={period}
             points={trend}
-            selectedOffset={offset}
-            onSelect={setOffset}
+            selectedOffset={period === 'Month' ? monthTrendOffset : offset}
+            onSelect={period === 'Month' ? setMonthTrendOffset : setOffset}
           />
       </View>
     </ScreenShell>
@@ -236,7 +238,7 @@ function gymStats(streak: number, minutes: number, values: (number | null)[]): A
 }
 
 function streakStat(streak: number): ActivityStat {
-  return { label: 'Streak', value: `${streak}`, glyph: 'flame', a11y: `Streak: ${streak} days` };
+  return { label: 'Streak', value: `${streak}`, a11y: `Streak: ${streak} days` };
 }
 
 const s = StyleSheet.create({

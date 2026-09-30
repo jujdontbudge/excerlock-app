@@ -14,22 +14,33 @@ depends: [home]
 Analytics tab, or the Analytics shortcut on Home.
 
 ## Driving it with excer
-Run `./excer demo analytics-6-weeks --open /analytics`.
+Run `./excer demo analytics-6-weeks --open /`, sign in, and open Analytics. The hard Paywall blocks a direct `/analytics` link before admission.
 
 ```proof
 name: six-weeks
 scenario: analytics-6-weeks
-open: /analytics
-expect: Analytics | This week: | Streak:
+open: /
+tap: Sign in | Continue with Apple | Analytics
+expect: Analytics | This week: | Streak: | Calories: | Distance: | Active time: | Floors:
+```
+
+```proof
+name: day-trend-strip
+scenario: analytics-6-weeks
+open: /
+tap: Sign in | Continue with Apple | Analytics | D
+expect: Daily steps ring | Streak: 2 days | TUE | MON
 ```
 
 ```proof
 name: day-zero
 scenario: analytics-day-zero
-open: /analytics
+open: /
+tap: Sign in | Continue with Apple | Analytics
 expect: Analytics | Streak: 0 days
 ```
 
 ## Gotchas
 - "Analytics" here means the in-app history screen. Product analytics (PostHog) is a separate concern, and health, location and screen-time details never go to it.
 - Unscheduled days are transparent to streaks.
+- The Month calendar navigates months; its compact trend shows the latest eight calendar weeks. Scrubbing that trend changes only its highlighted week, not the calendar month.
