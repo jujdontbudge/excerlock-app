@@ -98,7 +98,7 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
     const live = account(runtime.auth.identity());
     if (!live || live.userId !== selected.userId || live.generation !== selected.generation)
       throw new Error('Account changed while checking your subscription.');
-    if (result.type === 'unavailable') throw new Error('Your subscription could not be checked. Retry when connected.');
+    if (result.type === 'unavailable') throw new Error('Subscription verification is unavailable. Retry will not start another purchase.');
     if (result.type === 'ineligible') {
       beginPaywall();
       return 'unpaid';
@@ -111,7 +111,7 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
       phase: 'verifying',
       entryIntent: state.entryIntent,
       admission: null,
-      error: 'Your subscription could not be checked. Retry when connected.',
+      error: 'Subscription verification is unavailable. Retry will not start another purchase.',
     });
     return 'unavailable';
   }
@@ -152,7 +152,7 @@ export async function refreshAdmission(runtime: Runtime): Promise<'paid' | 'unpa
       phase: 'verifying',
       entryIntent: state.entryIntent,
       admission: null,
-      error: 'Your subscription could not be checked. Retry when connected.',
+      error: 'Subscription verification is unavailable. Retry will not start another purchase.',
     });
   }
   return 'unavailable';

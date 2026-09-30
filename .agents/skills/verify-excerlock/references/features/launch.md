@@ -232,7 +232,19 @@ name: unavailable-proof-fails-closed
 scenario: subscription-proof-unavailable
 open: /
 tap: Sign in | Continue with Apple
-expect: Checking your subscription | Retry | Back to start
+expect: Checking your subscription | Retry | Retry will not start another purchase | Account and help | Back to start
+then-open: /dev
+then-expect: Journey verifying · paid no · admitted no | Protected route mounts | None
+```
+
+```proof
+name: unavailable-proof-recovery-access
+scenario: subscription-proof-unavailable
+open: /
+tap: Sign in | Continue with Apple
+expect: Checking your subscription | Retry will not start another purchase | Account and help
+then-tap: Account and help
+then-expect: Account and help | Restore purchases | Help and feedback
 ```
 
 ## Gotchas

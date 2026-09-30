@@ -22,6 +22,7 @@ export default function SignInRoute() {
             <Heading title="Checking your subscription" />
             <Label>{journey.error ?? 'Connecting your subscription to your account…'}</Label>
             {journey.error ? <PrimaryButton label="Retry" onPress={() => void complete()} /> : null}
+            {journey.error ? <SecondaryButton label="Account and help" onPress={() => router.push('/recovery')} /> : null}
             <SecondaryButton label="Back to start" onPress={exit} />
           </>
         ) : (

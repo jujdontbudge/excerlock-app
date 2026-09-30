@@ -132,6 +132,14 @@ expect: Lease diagnostics offline first unavailable eligible eligible offline mi
 ```
 
 ```proof
+name: deployed-resync-contract-and-environment-rejected
+scenario: fresh-install
+open: /dev
+tap: Run subscription lease diagnostics
+expect: legacy unavailable/cleared wrong environment unavailable/cleared | Protected route mounts | None
+```
+
+```proof
 name: admitted-account-revocation-replaces-app
 scenario: identity-lab-lifecycle-revocation
 open: dev?lab=lifecycle-revocation

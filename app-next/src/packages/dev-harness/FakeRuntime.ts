@@ -466,7 +466,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       runSubscriptionLeaseDiagnostics: async () => {
         const identity = { userId: 'lease-user', generation: 7 };
         let monotonic = 1000;
-        let response: 'eligible' | 'offline' | 'short' | 'missing' | 'denied' = 'offline';
+        let response: 'eligible' | 'offline' | 'short' | 'missing' | 'denied' | 'legacy' | 'wrongEnvironment' = 'offline';
         const verifiedAt = '2026-09-29T17:00:00.000Z';
         const fetchImpl = (async () => {
           if (response === 'offline') throw new TypeError('Network unavailable');
@@ -478,18 +478,19 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           const denied = response === 'denied';
           return {
             ok: true,
-            json: async () => ({
-              accountId: identity.userId,
-              verifiedAt,
-              authorization: {
-                environment: 'sandbox',
+            json: async () => {
+              const authorization = {
+                environment: response === 'legacy' || response === 'wrongEnvironment' ? 'production' : 'sandbox',
                 status: denied ? 'expired' : 'active',
                 hasAccess: !denied,
                 expiresAt,
                 observedAt: verifiedAt,
                 source: 'webhook',
-              },
-            }),
+              };
+              return response === 'legacy'
+                ? { authorization, syncedAt: verifiedAt }
+                : { accountId: identity.userId, verifiedAt, authorization };
+            },
           } as Response;
         }) as typeof fetch;
         const admission = createServerSubscriptionAdmission({
@@ -526,13 +527,19 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         response = 'denied';
         const denied = await admission.verify(identity);
         const clearedOnDenial = admission.current(identity) === null;
+        response = 'legacy';
+        const legacy = await admission.verify(identity);
+        const clearedOnLegacy = admission.current(identity) === null;
+        response = 'wrongEnvironment';
+        const wrongEnvironment = await admission.verify(identity);
+        const clearedOnWrongEnvironment = admission.current(identity) === null;
         const current = ctx.snapshot().subscriptionLab;
         ctx.update({ subscriptionLab: {
           purchases: current?.purchases ?? 0,
           restores: current?.restores ?? 0,
           queued: current?.queued ?? 0,
           delivered: current?.delivered ?? 0,
-          leaseDiagnostics: `offline first ${offlineFirst.type} eligible ${eligible.type} offline mid-lease ${offlineMidLease.type}/${retainedOffline ? 'retained' : 'lost'} rollback ${retainedRollback ? 'retained' : 'lost'} five-minute cap ${expiredAtCap ? 'expired' : 'active'} short ${short.type} before boundary ${beforeBoundary ? 'active' : 'expired'} at boundary ${atBoundary ? 'expired' : 'active'} missing expiry ${missing.type} denial ${denied.type}/${clearedOnDenial ? 'cleared' : 'retained'}`,
+          leaseDiagnostics: `offline first ${offlineFirst.type} eligible ${eligible.type} offline mid-lease ${offlineMidLease.type}/${retainedOffline ? 'retained' : 'lost'} rollback ${retainedRollback ? 'retained' : 'lost'} five-minute cap ${expiredAtCap ? 'expired' : 'active'} short ${short.type} before boundary ${beforeBoundary ? 'active' : 'expired'} at boundary ${atBoundary ? 'expired' : 'active'} missing expiry ${missing.type} denial ${denied.type}/${clearedOnDenial ? 'cleared' : 'retained'} legacy ${legacy.type}/${clearedOnLegacy ? 'cleared' : 'retained'} wrong environment ${wrongEnvironment.type}/${clearedOnWrongEnvironment ? 'cleared' : 'retained'}`,
         } });
       },
       runLabLifecycleRevocation: async () => {
