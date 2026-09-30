@@ -23,7 +23,13 @@ and DNS now points at GCE. `deploy/deploy.sh` is host-agnostic: it only needs
 
 The same box serves the public site; `deploy/site.sh` and `deploy/deploy.sh`
 both install `deploy/Caddyfile` over `/etc/caddy/Caddyfile`, so every vhost must
-live in that one file. `/etc/excerlock/env` carries the Supabase identity
+live in that one file. Internal TestFlight uses a second `excerlock-api-testflight.service`
+process on port 3002, exposed only through the path-stripped
+`https://api.excerlock.com/testflight/` base URL. It selects the Sandbox
+subscription partition server-side; the Production process on port 3000
+continues to select only Production. Both processes use the existing database,
+so this is authorization isolation, not a separate identity or data environment.
+The TestFlight process disables its duplicate account-deletion retry worker. `/etc/excerlock/env` carries the Supabase identity
 variables (`SUPABASE_URL`, `SUPABASE_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 in addition to the baseline below; `RESEND_API_KEY` is unset, so incident-report
 emails are skipped while persistence still succeeds (`server/src/packages/incidents/lib/notify.ts`).
@@ -179,8 +185,12 @@ changing either machine. A real deploy then:
 5. runs `node dist/migrate.js` through `systemd-run` with the service's
    `/etc/excerlock/env`, **before** restarting the service;
 6. validates and installs the Caddy/systemd files, reloads Caddy, restarts
-   `excerlock-api.service`, and checks local `/v1/health`, local `/v1/ready`,
-   and the active systemd state.
+   both `excerlock-api.service` and `excerlock-api-testflight.service`, and
+   checks both local `/v1/health` and `/v1/ready` endpoints and active states;
+7. checks public Production and path-isolated TestFlight health/readiness.
+   The Production environment file must never select Sandbox. The second
+   unit overrides only its process-local port, Sandbox authorization and
+   duplicate deletion-worker setting after systemd loads that file.
 
 The migration step is part of every real deploy. Drizzle's journal makes an
 up-to-date deploy a no-op, but a pending migration changes the database before
@@ -205,6 +215,10 @@ ssh -i "$DEPLOY_SSH_KEY" "$DEPLOY_HOST" \
 curl --fail --show-error https://api.excerlock.com/v1/ready
 ssh -i "$DEPLOY_SSH_KEY" "$DEPLOY_HOST" \
   'curl --fail --show-error http://127.0.0.1:3000/v1/ready'
+curl --fail --show-error https://api.excerlock.com/testflight/v1/health
+curl --fail --show-error https://api.excerlock.com/testflight/v1/ready
+ssh -i "$DEPLOY_SSH_KEY" "$DEPLOY_HOST" \
+  'curl --fail --show-error http://127.0.0.1:3002/v1/ready'
 ```
 
 `/v1/health` is liveness only: it proves that the process answers and does not

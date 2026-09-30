@@ -102,8 +102,11 @@ export function buildClientExtra(values: EnvironmentValues, environment: BuildEn
       } catch { /* Report the key, never its value. */ }
       if (!valid) throw new Error(`${key} must be an HTTPS URL without private credentials`);
     }
-    if (environment === 'preview' && new URL(values.EXPO_PUBLIC_API_URL!).hostname === 'api.excerlock.com') {
-      throw new Error('Preview Sandbox verification requires an isolated API, not the Production API');
+    if (environment === 'preview') {
+      const api = new URL(values.EXPO_PUBLIC_API_URL!);
+      if (api.hostname === 'api.excerlock.com' && api.pathname.replace(/\/$/, '') !== '/testflight') {
+        throw new Error('Preview Sandbox verification requires the isolated /testflight API');
+      }
     }
   }
   return {

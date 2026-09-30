@@ -2,7 +2,12 @@
 # api.excerlock.com A record points at this box and ports 80/443 are reachable.
 api.excerlock.com {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:3000
+	handle_path /testflight/* {
+		reverse_proxy 127.0.0.1:3002
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
 }
 
 # The public website. Static files only, rsynced to /var/www/excerlock by

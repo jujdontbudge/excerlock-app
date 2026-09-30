@@ -20,6 +20,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SERVER_DIR="${REPO_ROOT}/server"
 REMOTE_DIR="/opt/excerlock/server"
 SERVICE_NAME="excerlock-api.service"
+SANDBOX_SERVICE_NAME="excerlock-api-testflight.service"
 
 usage() {
   cat <<'EOF'
@@ -115,7 +116,10 @@ fi
   die "deploy/Caddyfile not found"
 [[ -f "${SCRIPT_DIR}/${SERVICE_NAME}" ]] ||
   die "deploy/${SERVICE_NAME} not found"
+[[ -f "${SCRIPT_DIR}/${SANDBOX_SERVICE_NAME}" ]] ||
+  die "deploy/${SANDBOX_SERVICE_NAME} not found"
 
+require_command curl
 require_command npm
 require_command rsync
 require_command ssh
@@ -146,6 +150,10 @@ sudo test -r /etc/excerlock/env || {
   printf "ERROR: /etc/excerlock/env is missing or unreadable; create it before the first deploy\n" >&2
   exit 1
 }
+if sudo grep -Eq "^SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT[[:space:]]*=[[:space:]]*sandbox[[:space:]]*$" /etc/excerlock/env; then
+  printf "ERROR: the Production service must not authorize Sandbox\n" >&2
+  exit 1
+fi
 sudo install -d -m 0755 -o excerlock -g excerlock /opt/excerlock/server /opt/excerlock/server/dist /opt/excerlock/server/deploy /opt/excerlock/server/drizzle'
 
 # Expansion of attempt belongs to the remote shell, not this local script.
@@ -167,10 +175,12 @@ sudo -n systemd-run --quiet --pipe --wait --collect \
 sudo caddy validate --config /opt/excerlock/server/deploy/Caddyfile --adapter caddyfile
 sudo install -m 0644 -o root -g root /opt/excerlock/server/deploy/Caddyfile /etc/caddy/Caddyfile
 sudo install -m 0644 -o root -g root /opt/excerlock/server/deploy/excerlock-api.service /etc/systemd/system/excerlock-api.service
+sudo install -m 0644 -o root -g root /opt/excerlock/server/deploy/excerlock-api-testflight.service /etc/systemd/system/excerlock-api-testflight.service
 sudo systemctl daemon-reload
-sudo systemctl enable excerlock-api.service
+sudo systemctl enable excerlock-api.service excerlock-api-testflight.service
 sudo systemctl reload-or-restart caddy
 sudo systemctl restart excerlock-api.service
+sudo systemctl restart excerlock-api-testflight.service
 attempt=1
 while ! curl --fail --silent --show-error http://127.0.0.1:3000/v1/health >/dev/null; do
   if [ "$attempt" -ge 10 ]; then
@@ -190,7 +200,22 @@ curl --fail --silent --show-error http://127.0.0.1:3000/v1/ready >/dev/null || {
   printf "\n" >&2
   exit 1
 }
-sudo systemctl is-active --quiet excerlock-api.service'
+attempt=1
+while ! curl --fail --silent --show-error http://127.0.0.1:3002/v1/health >/dev/null; do
+  if [ "$attempt" -ge 10 ]; then
+    printf "ERROR: TestFlight Sandbox API did not pass local health\n" >&2
+    sudo systemctl --no-pager --full status excerlock-api-testflight.service >&2 || true
+    exit 1
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
+done
+curl --fail --silent --show-error http://127.0.0.1:3002/v1/ready >/dev/null || {
+  printf "ERROR: TestFlight Sandbox API is not ready\n" >&2
+  exit 1
+}
+sudo systemctl is-active --quiet excerlock-api.service
+sudo systemctl is-active --quiet excerlock-api-testflight.service'
 
 if "$DRY_RUN"; then
   printf 'Dry run requested; no commands will execute.\n'
@@ -247,9 +272,15 @@ log "Sync Caddy and systemd configuration"
 run_command rsync "${RSYNC_OPTIONS[@]}" \
   "${SCRIPT_DIR}/Caddyfile" \
   "${SCRIPT_DIR}/${SERVICE_NAME}" \
+  "${SCRIPT_DIR}/${SANDBOX_SERVICE_NAME}" \
   "${DEPLOY_HOST}:${REMOTE_DIR}/deploy/"
 
 log "Install production dependencies and activate the service"
 run_command ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "$REMOTE_ACTIVATE"
 
-log "Deploy complete: https://api.excerlock.com/v1/health"
+log "Check both public Production and TestFlight Sandbox endpoints"
+run_command curl --fail --silent --show-error https://api.excerlock.com/v1/health
+run_command curl --fail --silent --show-error https://api.excerlock.com/v1/ready
+run_command curl --fail --silent --show-error https://api.excerlock.com/testflight/v1/health
+run_command curl --fail --silent --show-error https://api.excerlock.com/testflight/v1/ready
+log "Production and isolated TestFlight Sandbox APIs deployed"
