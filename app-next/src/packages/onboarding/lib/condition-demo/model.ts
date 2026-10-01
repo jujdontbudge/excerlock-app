@@ -50,7 +50,7 @@ export function phasesFor(s: Scenario): Phase[] {
           ]
         : []),
       { name: 'walking', duration: s.place === 'treadmill' ? 0.9 : 1.4 },
-      { name: 'blocked', duration: 1.2 },
+      { name: 'blocked', duration: 1.5 },
     ];
   if (s.kind.startsWith('walk'))
     return [
@@ -110,7 +110,7 @@ export function snapshot(state: DemoState, s: Scenario) {
   const locked =
     phase === 'prop' ||
     phase === 'scan' ||
-    phase === 'blocked' ||
+    (phase === 'blocked' && local >= 0.5) ||
     phase === 'approach' ||
     phase === 'confirming' ||
     (phase === 'leave' && s.kind === 'gym-presence') ||
@@ -206,7 +206,7 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
       next.manual === 'walking'
         ? remaining
         : next.manual === 'blocked'
-          ? 1.2 - next.manualTime
+          ? 1.5 - next.manualTime
           : phase.duration - phase.local;
     const dt = Math.min(remaining, Math.max(0.0000001, boundary));
     if (snapshot(next, s).walking) {
@@ -215,7 +215,7 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
     }
     if (next.manual) {
       next.manualTime += dt;
-      if (next.manual === 'blocked' && next.manualTime >= 1.2 - 0.0000001) {
+      if (next.manual === 'blocked' && next.manualTime >= 1.5 - 0.0000001) {
         next.manual = null;
         next.manualTime = 0;
         next.time = phasesFor(s).slice(0, phasesFor(s).findIndex((item) => item.name === 'walking'))
