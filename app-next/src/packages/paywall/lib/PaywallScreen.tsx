@@ -1,13 +1,11 @@
 import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
-import { SymbolView } from 'expo-symbols';
+import { Linking, View } from 'react-native';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CloseButton, Label, PressableScale, ScreenShell } from '../../ui';
+import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
+import { Icon } from '../../ui/Icon';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { haptic } from '../../ui/haptics';
@@ -64,7 +62,9 @@ export function PaywallScreen({
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null),
     card = useRef<View>(null),
-    [fieldBottom, setFieldBottom] = useState(0);
+    heading = useRef<View>(null),
+    [fieldBottom, setFieldBottom] = useState(0),
+    [titleBand, setTitleBand] = useState({ top: 0, bottom: 0 });
   const stagedRule = useMemo(() => {
     if (committedRule || !answers.ruleId) return undefined;
     try {
@@ -126,7 +126,8 @@ export function PaywallScreen({
         } else restoreExisting = true;
       } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
       else if (result.type === 'already_subscribed') restoreExisting = true;
-      else if (result.type === 'user_cancelled') runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
+      else if (result.type === 'user_cancelled')
+        runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
     } catch (error) {
       runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
       reportError(error, 'purchase');
@@ -140,7 +141,8 @@ export function PaywallScreen({
   async function restore() {
     setBusy('restore');
     try {
-      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') notify(subscriptionCopy.notFound);
+      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound')
+        notify(subscriptionCopy.notFound);
       else {
         haptic('success');
         onAccess?.(runtime.subscription.entitlement());
@@ -182,21 +184,31 @@ export function PaywallScreen({
       const bottom = y + height;
       setFieldBottom((current) => (Math.abs(current - bottom) > 1 ? bottom : current));
     });
+  const measureTitle = () =>
+    heading.current?.measureInWindow((_, y, __, height) =>
+      setTitleBand((current) =>
+        Math.abs(current.top - y) > 1 || Math.abs(current.bottom - y - height) > 1
+          ? { top: y, bottom: y + height }
+          : current,
+      ),
+    );
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      tinted={false}
       contentStyle={{ gap: t.space.md, paddingTop: onClose ? 0 : insets.top }}
       background={
-        <>
-          <StatusBar style="light" />
-          <View style={{ position: 'absolute', inset: 0, backgroundColor: t.paywall.canvas }} />
-          {fieldBottom > 0 ? <PaywallField bottom={fieldBottom} /> : null}
-        </>
+        fieldBottom > 0 && titleBand.bottom > 0 ? <PaywallField bottom={fieldBottom} title={titleBand} /> : null
       }
       header={
         onClose ? (
-          <View style={{ paddingHorizontal: t.layout.page, height: t.layout.header, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              paddingHorizontal: t.layout.page,
+              height: t.layout.header,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+            }}>
             <CloseButton label="Close" onPress={onClose} />
           </View>
         ) : undefined
@@ -232,10 +244,10 @@ export function PaywallScreen({
               gap: t.space.sm,
               opacity: trialOn ? 1 : 0,
             }}>
-            <SymbolView name="checkmark.circle.fill" size={t.icon.md} tintColor={t.paywall.check} />
-            <Label variant="label" style={{ color: t.paywall.text }}>{subscriptionCopy.noPayment}</Label>
+            <Icon name="check" size={t.icon.md} variant="utility" />
+            <Label variant="label">{subscriptionCopy.noPayment}</Label>
           </View>
-          <GradientButton
+          <PrimaryButton
             label={
               recovery.type === 'accountConnection'
                 ? subscriptionCopy.signInToContinue
@@ -255,8 +267,16 @@ export function PaywallScreen({
             ]}>
             {[
               { label: subscriptionCopy.termsOfUse.title, onPress: () => openLink(subscriptionCopy.termsOfUse.url) },
-              { label: subscriptionCopy.restore, onPress: () => { if (busy === null) void restore(); } },
-              { label: subscriptionCopy.privacyPolicy.title, onPress: () => openLink(subscriptionCopy.privacyPolicy.url) },
+              {
+                label: subscriptionCopy.restore,
+                onPress: () => {
+                  if (busy === null) void restore();
+                },
+              },
+              {
+                label: subscriptionCopy.privacyPolicy.title,
+                onPress: () => openLink(subscriptionCopy.privacyPolicy.url),
+              },
             ].map((link) => (
               <PressableScale
                 key={link.label}
@@ -264,7 +284,7 @@ export function PaywallScreen({
                 haptic={link.label === subscriptionCopy.restore && busy !== null ? 'none' : 'tap'}
                 onPress={link.onPress}
                 style={{ minHeight: t.type.micro.lineHeight }}>
-                <Label variant="micro" style={{ color: t.paywall.faint, textDecorationLine: 'underline' }}>
+                <Label variant="micro" tone="secondary" style={{ textDecorationLine: 'underline' }}>
                   {link.label}
                 </Label>
               </PressableScale>
@@ -273,43 +293,44 @@ export function PaywallScreen({
         </>
       }>
       <View style={{ flex: 1, minHeight: fieldMinimum }} />
-      <Label
-        accessibilityRole="header"
-        accessibilityLabel={copy.title}
-        variant="display"
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={{
-          textAlign: 'center',
-          color: t.paywall.text,
-          textTransform: 'uppercase',
-          marginBottom: -t.space.md,
-          textShadowColor: t.paywall.titleShadow,
-          textShadowRadius: t.space.md,
-        }}>
-        {copy.title}
-      </Label>
+      <View ref={heading} onLayout={measureTitle} collapsable={false} style={{ marginBottom: -t.space.md }}>
+        <Label
+          accessibilityRole="header"
+          accessibilityLabel={copy.title}
+          variant="display"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{ textAlign: 'center', textShadowColor: t.paywall.titleHalo, textShadowRadius: t.space.md }}>
+          {copy.before}
+          <Label variant="display" style={{ color: t.brand.primary }}>
+            {copy.emphasis}
+          </Label>
+          {copy.after}
+        </Label>
+      </View>
       <View ref={card} onLayout={measureCard} collapsable={false} style={{ alignSelf: 'center' }}>
         <Reveal index={1}>
           <GlassView
             glassEffectStyle="regular"
-            colorScheme="dark"
-            tintColor={t.paywall.glassTint}
+            colorScheme="light"
+            tintColor={t.paywall.frost}
             style={{
               gap: t.space.md,
               paddingHorizontal: t.space.xl,
               paddingVertical: t.space.lg,
               borderRadius: t.radius.sheet,
               overflow: 'hidden',
-              backgroundColor: glass ? undefined : t.paywall.glass,
+              backgroundColor: glass ? undefined : t.surface.glass,
             }}>
-            <Label variant="section" style={{ textAlign: 'left', color: t.paywall.text }}>{subscriptionCopy.benefitsTitle}</Label>
+            <Label variant="section" style={{ textAlign: 'left' }}>
+              {subscriptionCopy.benefitsTitle}
+            </Label>
             {promises.map((promise) => (
               <View key={promise.text} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
                 <Label variant="section" accessible={false} style={{ width: t.icon.lg, textAlign: 'center' }}>
                   {promise.mark}
                 </Label>
-                <Label variant="body" style={{ flexShrink: 1, textAlign: 'left', color: t.paywall.text }}>
+                <Label variant="body" style={{ flexShrink: 1, textAlign: 'left' }}>
                   {promise.text}
                 </Label>
               </View>
@@ -323,52 +344,6 @@ export function PaywallScreen({
 
 function openLink(url: string) {
   void Linking.openURL(url).catch(() => notify(subscriptionCopy.linkError));
-}
-
-function GradientButton({ label, loading, onPress }: { label: string; loading: boolean; onPress: () => void }) {
-  const [pressed, setPressed] = useState(false),
-    m = useMotion();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ busy: loading }}
-      onPressIn={() => setPressed(!loading)}
-      onPressOut={() => setPressed(false)}
-      onPress={() => {
-        if (loading) return;
-        haptic('tap');
-        onPress();
-      }}>
-      <Animated.View
-        style={{
-          minHeight: t.control.full,
-          borderRadius: t.radius.pill,
-          overflow: 'hidden',
-          transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-          ...m.transition(['transform'], 'standard'),
-        }}>
-        <LinearGradient
-          colors={t.paywall.cta}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={{
-            flex: 1,
-            minHeight: t.control.full,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: t.space.md,
-            paddingHorizontal: t.space.xl,
-          }}>
-          <Label variant="section" style={{ color: t.paywall.text, textAlign: 'center' }}>
-            {label}
-          </Label>
-          <SymbolView name="arrow.right" size={t.icon.md} weight="bold" tintColor={t.paywall.text} />
-        </LinearGradient>
-      </Animated.View>
-    </Pressable>
-  );
 }
 
 function PlanRow({
@@ -387,9 +362,14 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    monthly = product.periodUnit !== 'month' ? product.localizedMonthlyPrice : null,
-    trial = product.offerLabel ? subscriptionCopy.trialBadge(product.offerLabel) : null,
-    detail = [trial, monthly ? subscriptionCopy.perMonthOnly(monthly) : null].filter(Boolean).join(' · ') || subscriptionCopy.billedMonthly;
+    monthly = `${product.localizedMonthlyPrice ?? product.localizedPrice}${subscriptionCopy.perMonthShort}`,
+    length = product.offerLabel?.replace(/\s*free$/i, '') ?? null,
+    after = !length
+      ? ''
+      : product.periodUnit !== 'month'
+        ? subscriptionCopy.then(perPeriod(product))
+        : subscriptionCopy.afterTrial,
+    top = length ? `${subscriptionCopy.free}${subscriptionCopy.forTrial(length)}` : perPeriod(product);
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -398,10 +378,10 @@ function PlanRow({
     if (selected) pop.value = m.sequence(m.timing(m.scale.selected, 'press'), m.spring(1, 'pop'));
   }, [selected, m, pop]);
   const scale = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
-  const strong = { color: t.paywall.text, fontFamily: t.font.bold };
+  const strong = { color: t.text.primary, fontFamily: t.font.bold };
   return (
     <PressableScale
-      label={`${planRowTitle(product)} · ${detail}`}
+      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${monthly}${after}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
@@ -414,29 +394,33 @@ function PlanRow({
             gap: t.space.md,
             paddingVertical: t.space.md,
             paddingHorizontal: t.space.lg,
-            borderRadius: t.radius.sheet,
-            borderWidth: t.stroke.selected,
-            borderColor: selected ? t.paywall.glow : t.paywall.rowBorder,
-            backgroundColor: t.paywall.canvas,
-            boxShadow: selected ? t.paywall.glowShadow : undefined,
+            borderRadius: t.radius.card,
+            borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
+            borderColor: selected ? t.brand.primary : t.border.outline,
+            backgroundColor: t.surface.card,
             ...m.transition(['borderColor'], 'standard'),
           }}>
           <View style={{ flex: 1 }}>
-            <Label variant="body" style={{ textAlign: 'left', color: t.paywall.muted }}>
+            <Label
+              variant="body"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={{ textAlign: 'left', color: t.text.secondary }}>
               {`${planName(product)} `}
-              <Label variant="body" style={strong}>{perPeriod(product)}</Label>
+              <Label variant="body" style={strong}>
+                {length ? subscriptionCopy.free : perPeriod(product)}
+              </Label>
+              {length ? subscriptionCopy.forTrial(length) : null}
             </Label>
-            <Label variant="body" numberOfLines={1} adjustsFontSizeToFit style={{ textAlign: 'left', color: t.paywall.muted }}>
-              {trial ? <Label variant="body" style={strong}>{trial}</Label> : null}
-              {trial && monthly ? ' · ' : null}
-              {monthly ? (
-                <>
-                  {trial ? null : subscriptionCopy.only}
-                  <Label variant="body" style={strong}>{monthly}</Label>
-                  {trial ? subscriptionCopy.perMonthShort : subscriptionCopy.perMonthTail}
-                </>
-              ) : null}
-              {!trial && !monthly ? subscriptionCopy.billedMonthly : null}
+            <Label
+              variant="body"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={{ textAlign: 'left', color: t.text.secondary }}>
+              <Label variant="body" style={strong}>
+                {monthly}
+              </Label>
+              {after}
             </Label>
           </View>
           <View
@@ -445,26 +429,35 @@ function PlanRow({
               height: t.icon.lg - t.space.sm,
               borderRadius: t.radius.pill,
               borderWidth: t.stroke.selected,
-              borderColor: selected ? t.paywall.radio : t.paywall.faint,
+              borderColor: selected ? t.brand.primary : t.border.mutedStroke,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
             {selected ? (
-              <View style={{ width: t.icon.sm, height: t.icon.sm, borderRadius: t.radius.pill, backgroundColor: t.paywall.radio }} />
+              <View
+                style={{
+                  width: t.icon.sm,
+                  height: t.icon.sm,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: t.brand.primary,
+                }}
+              />
             ) : null}
           </View>
         </Animated.View>
         {best ? (
           <View style={{ position: 'absolute', top: -t.space.md, right: t.space.xxl * 2 }}>
-            <LinearGradient
-              colors={t.paywall.pill}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={{ paddingHorizontal: t.space.md, paddingVertical: t.space.xs / 2, borderRadius: t.radius.pill }}>
-              <Label variant="label" style={{ color: t.paywall.text, fontFamily: t.font.bold }}>
+            <View
+              style={{
+                paddingHorizontal: t.space.md,
+                paddingVertical: t.space.xs / 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.brand.primary,
+              }}>
+              <Label variant="micro" style={{ color: t.text.onAccent }}>
                 {subscriptionCopy.bestOffer.toUpperCase()}
               </Label>
-            </LinearGradient>
+            </View>
           </View>
         ) : null}
       </Animated.View>

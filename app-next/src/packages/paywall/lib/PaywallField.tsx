@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { illustrationTokens as art } from '../../ui/illustrationTokens';
 import { popInAt } from '../../ui/presets';
@@ -12,13 +11,24 @@ import { BlockedBadge } from '../../onboarding/BlockedBadge';
 
 const field = art.paywall;
 export const fieldMinimum = field.minField;
+const appIcons: Partial<Record<FieldBrand, number>> = {
+  tiktok: require('../../../../assets/paywall/apps/tiktok.jpg'),
+  instagram: require('../../../../assets/paywall/apps/instagram.jpg'),
+  youtube: require('../../../../assets/paywall/apps/youtube.jpg'),
+  x: require('../../../../assets/paywall/apps/x.jpg'),
+  facebook: require('../../../../assets/paywall/apps/facebook.jpg'),
+  reddit: require('../../../../assets/paywall/apps/reddit.jpg'),
+  threads: require('../../../../assets/paywall/apps/threads.jpg'),
+  netflix: require('../../../../assets/paywall/apps/netflix.jpg'),
+  pinterest: require('../../../../assets/paywall/apps/pinterest.jpg'),
+};
 type FieldBrand = keyof typeof field.brands;
-type Spot = { key: string; x: number; y: number; delay: number } & (
+type Spot = { key: string; x: number; y: number; delay: number; opacity: number } & (
   | { kind: 'brand'; brand: FieldBrand }
-  | { kind: 'exercise'; symbol: SFSymbol; fill: number }
+  | { kind: 'exercise'; symbol: SFSymbol }
 );
 
-function layout(width: number, height: number): Spot[] {
+function layout(width: number, height: number, title: { top: number; bottom: number }): Spot[] {
   const { size, pitch } = field.tile,
     angle = (field.tilt * Math.PI) / 180,
     cos = Math.cos(angle),
@@ -36,31 +46,32 @@ function layout(width: number, height: number): Spot[] {
         localY = row * pitch - planeHeight / 2,
         x = width / 2 + localX * cos - localY * sin,
         y = height / 2 + localX * sin + localY * cos;
-      if (x < -size || x > width + size || y < -size || y > height + size / 2) continue;
+      if (x < -size || x > width + size || y < -size || y > height) continue;
+      const opacity = y + size * 0.2 < title.top ? 1 : y - size / 2 > title.bottom ? field.shade.card : field.shade.title;
       const delay = (Math.max(0, y) / pitch) * field.cascade.row + (Math.max(0, x) / pitch) * field.cascade.column,
-        base = { key: `${row}-${column}`, x: x - size / 2, y: y - size / 2, delay };
+        base = { key: `${row}-${column}`, x: x - size / 2, y: y - size / 2, delay, opacity };
       if ((row + column) % 3 === 1) {
-        spots.push({
-          ...base,
-          kind: 'exercise',
-          symbol: field.exercise[exercises % field.exercise.length] as SFSymbol,
-          fill: exercises % field.exerciseFills.length,
-        });
+        spots.push({ ...base, kind: 'exercise', symbol: field.exercise[exercises % field.exercise.length] as SFSymbol });
         exercises++;
       } else {
-        spots.push({ ...base, kind: 'brand', brand: field.order[(brands + row * 3) % field.order.length] });
+        spots.push({ ...base, kind: 'brand', brand: field.order[(brands * 3 + row * 4) % field.order.length] });
         brands++;
       }
     }
   return spots;
 }
 
-export function PaywallField({ bottom }: { bottom: number }) {
+export function PaywallField({ bottom, title }: { bottom: number; title: { top: number; bottom: number } }) {
   const m = useMotion(),
     box = useRef<View>(null),
     [frame, setFrame] = useState({ top: 0, width: 0 }),
     height = Math.max(field.minField, bottom - frame.top),
-    spots = useMemo(() => (frame.width ? layout(frame.width, height) : []), [frame.width, height]);
+    titleTop = title.top - frame.top,
+    titleBottom = title.bottom - frame.top,
+    spots = useMemo(
+      () => (frame.width ? layout(frame.width, height, { top: titleTop, bottom: titleBottom }) : []),
+      [frame.width, height, titleTop, titleBottom],
+    );
   return (
     <View
       ref={box}
@@ -77,62 +88,39 @@ export function PaywallField({ bottom }: { bottom: number }) {
           key={spot.key}
           entering={popInAt(m.reduced, spot.delay)}
           testID={spot.kind === 'brand' ? `locked-app-${spot.brand}` : `exercise-${spot.symbol}`}
-          style={{ position: 'absolute', left: spot.x, top: spot.y }}>
+          style={{ position: 'absolute', left: spot.x, top: spot.y, opacity: spot.opacity }}>
           <View style={{ transform: [{ rotate: `${field.tilt}deg` }] }}>
-            {spot.kind === 'brand' ? <LockedApp brand={spot.brand} /> : <ExerciseTile symbol={spot.symbol} fill={spot.fill} />}
+            {spot.kind === 'brand' ? <LockedApp brand={spot.brand} /> : <ExerciseMark symbol={spot.symbol} />}
           </View>
         </Animated.View>
       ))}
-      <LinearGradient
-        colors={t.paywall.fade}
-        locations={[0, 0.32, 1]}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: height * field.fadeShare }}
-      />
     </View>
   );
 }
 
 function LockedApp({ brand }: { brand: FieldBrand }) {
   const look: { fill: string; glyph: string; outline?: string } = field.brands[brand],
-    { size, radius } = field.tile;
+    { size, radius, zoom } = field.tile,
+    icon = appIcons[brand];
   return (
     <View style={{ width: size, height: size }}>
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: radius,
-          overflow: 'hidden',
-          borderWidth: t.stroke.hairline,
-          borderColor: t.paywall.tileEdge,
-          backgroundColor: look.fill === 'gradient' ? undefined : look.fill,
-        }}>
-        {look.fill === 'gradient' ? (
-          <LinearGradient
-            colors={art.welcome.brands.instagram}
-            start={{ x: 0, y: 1 }}
-            end={{ x: 1, y: 0 }}
-            style={{ position: 'absolute', inset: 0 }}
-          />
-        ) : null}
-        <View style={{ flex: 1, padding: size * (field.markInset[brand as keyof typeof field.markInset] ?? 0) }}>
+      <View style={{ width: size, height: size, borderRadius: radius, overflow: 'hidden', backgroundColor: look.fill }}>
+        {icon ? (
+          <Image source={icon} style={{ width: size, height: size, transform: [{ scale: zoom }] }} />
+        ) : (
           <BrandMark brand={brand} color={look.glyph} outline={look.outline} />
-        </View>
+        )}
       </View>
       <BlockedBadge variant="lock" size={field.tile.badge} offset={field.tile.badgeOffset} />
     </View>
   );
 }
 
-function ExerciseTile({ symbol, fill }: { symbol: SFSymbol; fill: number }) {
-  const { size, radius, glyph } = field.tile;
+function ExerciseMark({ symbol }: { symbol: SFSymbol }) {
+  const { size, glyph } = field.tile;
   return (
-    <LinearGradient
-      colors={field.exerciseFills[fill]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ width: size, height: size, borderRadius: radius, alignItems: 'center', justifyContent: 'center' }}>
-      <SymbolView name={symbol} size={size * glyph} tintColor={t.paywall.text} weight="semibold" resizeMode="scaleAspectFit" />
-    </LinearGradient>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <SymbolView name={symbol} size={size * glyph} tintColor={t.brand.primary} weight="semibold" resizeMode="scaleAspectFit" />
+    </View>
   );
 }

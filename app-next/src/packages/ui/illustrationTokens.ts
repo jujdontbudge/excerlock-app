@@ -138,9 +138,8 @@ export const illustrationTokens = {
   paywall: {
     minField: 40,
     tilt: -18,
-    fadeShare: 0.78,
-    markInset: { x: 0.16, threads: 0.08 },
-    tile: { size: 80, radius: 22, pitch: 104, badge: 26, badgeOffset: -7, glyph: 0.46 },
+    shade: { title: 0.1, card: 0.4 },
+    tile: { size: 76, radius: 17, pitch: 100, badge: 26, badgeOffset: -7, glyph: 0.92, zoom: 1.05 },
     cascade: { row: 55, column: 25 },
     exercise: [
       'figure.run',
@@ -155,14 +154,6 @@ export const illustrationTokens = {
       'figure.walk',
       'soccerball',
       'figure.boxing',
-    ],
-    exerciseFills: [
-      ['#7B5CFF', '#E35BD8'],
-      ['#B8F55A', '#F2E35C'],
-      ['#2FA6FF', '#5DE0E6'],
-      ['#FF8A5B', '#FF4F8B'],
-      ['#9B6BFF', '#5B7CFF'],
-      ['#F7C948', '#FF7A59'],
     ],
     order: ['tiktok', 'instagram', 'youtube', 'snapchat', 'x', 'facebook', 'reddit', 'threads', 'netflix', 'pinterest'],
     brands: {
