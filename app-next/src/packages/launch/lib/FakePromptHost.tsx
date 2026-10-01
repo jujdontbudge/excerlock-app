@@ -1,4 +1,3 @@
-import { FakeAppPicker } from '../../app-selection/FakeAppPicker';
 import { FakeSystemPrompt } from '../../ui';
 import { useDevSnapshot } from '../../lock/selectors';
 import { permissionsStore as usePermissionsStore } from '../../permissions/permissionsStore';
@@ -10,7 +9,6 @@ export function FakePromptHost() {
     location = usePermissionsStore((s) => s.data.location),
     dev = runtime.dev;
   if (!__DEV__ || !dev) return null;
-  if (prompt?.kind === 'picker') return <FakeAppPicker initial={prompt.initial} onResolve={dev.resolvePrompt} />;
   if (prompt?.kind !== 'permission') return null;
   return (
     <FakeSystemPrompt

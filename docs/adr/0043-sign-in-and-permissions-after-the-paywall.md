@@ -7,6 +7,8 @@ date: 2026-09-23
 
 ## Decision
 
+[ADR 0057](0057-permission-answers-before-setup-advances.md) supersedes the combined Screen Time/app-selection page and live permission advancement described here. Sign-in ordering, Setup needs and shared entry points remain accepted.
+
 Buying a plan now leads to sign-in and then only the permissions the enabled conditions need. It no longer goes straight to Home. The same screens open from one reminder card on Home and whenever a condition that needs something new is saved or turned back on.
 
 - `setupNeeds` (`app-next/src/domain/setupNeeds.ts`) is the single rule. It returns needs in this order:

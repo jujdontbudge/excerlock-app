@@ -3,6 +3,7 @@ import { createPersistedStore } from '../persistence/createPersistedStore';
 import { defaultUnits } from './profileStore';
 import * as v from '../persistence/validation';
 export type Settings = {
+  locationAlwaysAsked: boolean;
   gymPlaces: SavedPlace[];
   units: 'km' | 'mi';
   stopGrace: number;
@@ -13,8 +14,9 @@ export type Settings = {
 };
 export const settingsStore = createPersistedStore<Settings>(
   'settings',
-  { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true, analyticsEnabled: true, notificationsEnabled: true },
+  { locationAlwaysAsked: false, gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true, analyticsEnabled: true, notificationsEnabled: true },
   {
+    locationAlwaysAsked: v.bool,
     gymPlaces: v.array(
       v.shape({
         id: v.text,

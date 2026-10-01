@@ -107,10 +107,10 @@ export class ExpoLocationClient implements NativeLocationClient {
   }
 
   public async requestBackgroundAuthorization(): Promise<LocationAuthorizationStatus> {
-    this.authorizationStatus = mapPermission(
-      await this.expo.requestBackgroundPermissionsAsync(),
-      "background",
-    );
+    const background = mapPermission(await this.expo.requestBackgroundPermissionsAsync(), "background");
+    this.authorizationStatus = background === "authorizedAlways"
+      ? background
+      : mapPermission(await this.expo.getForegroundPermissionsAsync(), "foreground");
     return this.authorizationStatus;
   }
 

@@ -1,3 +1,4 @@
+import type { ComponentType } from 'react';
 import { SupportPort } from './SupportPort';
 import { StoreReviewPort } from './StoreReviewPort';
 import { IncidentReportPort } from './IncidentReportPort';
@@ -24,6 +25,7 @@ import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPort
 import type { NotificationResponsesPort } from './NotificationResponsesPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
+  appPickerHost?: ComponentType;
   screenTime: ScreenTimePort;
   steps: StepsPort;
   walking: WalkingPort;

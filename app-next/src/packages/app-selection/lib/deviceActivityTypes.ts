@@ -10,6 +10,7 @@ export type DeviceActivityEvent = Readonly<{
 }>;
 
 export type DeviceActivityApi = Readonly<{
+  selectionMetadata(id: string): { applicationCount: number; categoryCount: number; webDomainCount: number } | undefined;
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
   getFamilyActivitySelectionId(id: string): string | undefined;

@@ -22,7 +22,7 @@ import { buildIncidentDiagnostics } from '../../support/incidentDiagnostics';
 import { createIncidentReportPort } from '../../support/createIncidentReportPort';
 import { currentActivityTruth } from '../../activity/activityTruthStore';
 import { nativeGait } from './NativeGait';
-import { createNativeScreenTimePort } from '../../app-selection/createNativeScreenTimePort';
+import { createNativeScreenTimePort, NativeScreenTimePickerHost } from '../../app-selection/createNativeScreenTimePort';
 import { getExcerlockEnforcementModule } from '../../../../modules/excerlock-enforcement';
 import { linkedTrace } from '@linked-trace';
 import { NativeEnforcementTransport } from '../../enforcement/NativeEnforcementTransport';
@@ -170,6 +170,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       cancelWatchdog: async () => {
         await host.reconcile(true);
       },
+    }, {
+      isDenied: () => permissionsStore.getState().data.screenTime === 'denied',
+      remember: () => permissionsStore.getState().patch({ screenTime: 'denied' }),
     });
     const client = await createClientServices({
       extra: Constants.expoConfig?.extra,
@@ -595,7 +598,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         ...gait,
         start: () => safety.startCamera(() => gait.start()),
         stop: () => safety.stopCamera(() => gait.stop()),
-        permission: () => safety.prompt(() => gait.permission()),
+        permission: async () => {
+          const camera = await safety.prompt(() => gait.permission());
+          permissionsStore.getState().patch({ camera });
+          return camera;
+        },
       },
       safety: safety.read,
       gym: {
@@ -693,6 +700,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           throw new Error('Cloud synchronization is unavailable');
         },
       },
+      appPickerHost: NativeScreenTimePickerHost,
       screenTime: {
         ...rawScreenTime,
         requestAuthorization: async () => {

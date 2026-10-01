@@ -8,7 +8,7 @@ export default function PermissionRoute() {
     { name } = useLocalSearchParams<{ name: string }>();
   return (
     <SettingsPage onBack={() => r.back()}>
-      <PermissionDetail name={(name in permissionDetailCopy.permissionNames ? name : 'screenTime') as keyof Permissions} />
+      <PermissionDetail onDone={() => r.back()} name={(name in permissionDetailCopy.permissionNames ? name : 'screenTime') as keyof Permissions} />
     </SettingsPage>
   );
 }

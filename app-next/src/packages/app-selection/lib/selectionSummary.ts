@@ -6,6 +6,7 @@ import type {
 export type SelectionContents = Readonly<{
   applicationCount: number;
   categoryCount: number;
+  webDomainCount?: number;
 }>;
 
 export const DEFAULT_SELECTION_CONTENTS: SelectionContents = Object.freeze({

@@ -1,3 +1,4 @@
+import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Heading, SettingsGroup, SettingsRow, BottomSheet, ChoiceRow, Label } from '../ui';
@@ -19,7 +20,8 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
   return (
     <SettingsPage
       onBack={onBack}
-      overlay={
+      overlay={<>
+        <ScreenTimePickerHost />
         <BottomSheet open={grace} title={c.grace} onDismiss={() => setGrace(false)}>
           {c.graceOptions.map((label, i) => (
             <ChoiceRow
@@ -33,7 +35,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             />
           ))}
         </BottomSheet>
-      }>
+      </>}>
       <Heading title={c.preferences} />
       <SettingsGroup>
         <SettingsRow

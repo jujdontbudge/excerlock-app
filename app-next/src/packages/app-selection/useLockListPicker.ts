@@ -1,28 +1,30 @@
-import { useCallback, useState } from 'react';
-import { Alert, Linking } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { lockListCopy as c } from './lib/permissionsCopy';
 import { useRuntime } from '../ports/useRuntime';
 import { ScreenTimeAuthorizationError } from './ScreenTimeAuthorizationError';
 import { notify } from '../ui/Notice';
 
 export function useLockListPicker() {
+  const locked = useRef(false), router = useRouter();
   const runtime = useRuntime(),
     [busy, setBusy] = useState(false);
+  useFocusEffect(useCallback(() => { locked.current = false; }, []));
   const open = useCallback(async () => {
-    if (busy) return;
+    if (locked.current) return;
+    locked.current = true;
+    if (runtime.screenTime.authorizationStatus() !== 'granted') { router.push('/permissions/apps'); return; }
     setBusy(true);
     try {
       await runtime.screenTime.presentAppPicker();
     } catch (error) {
       if (error instanceof ScreenTimeAuthorizationError && error.status !== 'notDetermined')
-        Alert.alert(c.deniedTitle, c.deniedBody, [
-          { text: c.notNow, style: 'cancel' },
-          { text: c.openSettings, onPress: () => void Linking.openSettings() },
-        ]);
+        router.push('/permissions/apps');
       else notify(c.retry);
     } finally {
+      locked.current = false;
       setBusy(false);
     }
-  }, [busy, runtime]);
+  }, [router, runtime]);
   return { open, busy };
 }

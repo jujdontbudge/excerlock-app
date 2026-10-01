@@ -1,5 +1,8 @@
 export const permissionDetailCopy = {
   openSettings: 'Open Settings',
+  continue: 'Continue',
+  done: 'Done',
+  retry: 'Try again.',
   permissionNames: {
     screenTime: 'Screen Time',
     motion: 'Motion & Fitness',
@@ -8,18 +11,18 @@ export const permissionDetailCopy = {
     notifications: 'Notifications',
   },
   why: {
-    screenTime: 'Blocks your selected apps while a condition is unmet.',
+    screenTime: 'Blocks your Locked apps while a Condition is unmet.',
     motion: 'Detects walking and counts steps from your phone.',
     location: 'Keeps walk detection running while ExcerLock is closed and recognizes visits to your saved gyms.',
     camera: 'Checks walking movement when your phone is propped on a treadmill.',
-    notifications: 'Reminds you before the trial ends and when a condition needs attention.',
+    notifications: 'Reminds you before the trial ends and when a Condition needs attention.',
   },
   without: {
-    screenTime: 'Your selected apps cannot be blocked without access.',
+    screenTime: 'Your Locked apps cannot be blocked without access.',
     motion: 'Walking cannot be detected or counted without access.',
     location: 'Without Always access, walks cannot open your apps while ExcerLock is closed and automatic gym detection is off.',
     camera: 'Treadmill camera verification is unavailable without access.',
-    notifications: 'You will not receive trial or condition reminders.',
+    notifications: 'You will not receive trial or Condition reminders.',
   },
   statuses: {
     granted: 'Granted',

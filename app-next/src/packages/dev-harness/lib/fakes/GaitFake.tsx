@@ -1,11 +1,12 @@
 import { View } from 'react-native';
+import type { PermissionStatus } from '../../../model/types';
 import { GaitPort } from '../../../ports/GaitPort';
 import { FixtureGaitVisionProvider } from './FixtureGaitVisionProvider';
 import fixture from './real-walk-single.json';
 import { Pictogram } from '../../../ui/Pictogram';
 import { tokens as t } from '../../../ui/tokens';
 import { permissionsStore } from '../../../permissions/permissionsStore';
-export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
+export function GaitFake(preview = false, requestPermission?: () => Promise<PermissionStatus>): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
   let value: 'none' | 'walking' | 'still' = 'none',
     timer: ReturnType<typeof setInterval> | undefined;
   const listeners = new Set<Parameters<GaitPort['onSample']>[0]>();
@@ -13,7 +14,12 @@ export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'wal
     set: (next) => {
       value = next;
     },
-    permission: async () => (!preview && permissionsStore.getState().data.camera === 'denied' ? 'denied' : 'granted'),
+    permission: async () => {
+      if (preview) return 'granted';
+      const status = permissionsStore.getState().data.camera;
+      const answered = status === 'notDetermined' ? await requestPermission?.() ?? 'granted' : status;
+      return answered === 'granted' ? 'granted' : 'denied';
+    },
     start: async () => {
       if (!preview && permissionsStore.getState().data.camera === 'denied')
         throw Object.assign(new Error('Camera denied'), { code: 'ERR_GAIT_VISION_DENIED' });

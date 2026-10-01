@@ -21,6 +21,7 @@ export const planCopy = {
   reminderTitle: "We'll send you a reminder before your trial ends",
   reminderArt: 'A notification bell with one reminder',
   noPayment: 'No payment due now',
+  permissionRetry: 'Try again.',
   goals: {
     walking: '150% more steps',
     gym: '150% more time at the gym',

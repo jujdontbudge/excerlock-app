@@ -178,3 +178,10 @@ function Row({
     </Pressable>
   );
 }
+
+export function fakeSelectionSummary(selection: LockedApps) {
+  if (selection.isEmpty) return null;
+  const ids = restoreSelection(selection);
+  if (!ids.length) return { applicationCount: 4, categoryCount: 2 };
+  return { applicationCount: ids.filter((id) => id.startsWith('app-')).length, categoryCount: ids.filter((id) => id.startsWith('category-')).length };
+}

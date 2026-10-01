@@ -1,3 +1,4 @@
+import { permissionJourney, permissionConditionEntry, permissionGymSetup } from './permission-journey';
 import { scenario0 } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
 import { unlockScenarios } from './unlock';
@@ -39,6 +40,9 @@ import { scenario24 } from './walk-state-ready';
 import { scenario25 } from './trial-lapsed-while-closed';
 import { scenario26 } from './trial-lapses-in-session';
 export const scenarios = [
+  permissionJourney,
+  permissionConditionEntry,
+  permissionGymSetup,
   scenario0,
   scenario1,
   scenario2,

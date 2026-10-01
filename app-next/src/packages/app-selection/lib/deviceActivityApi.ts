@@ -3,6 +3,7 @@ import * as DeviceActivity from "react-native-device-activity";
 import type { DeviceActivityApi } from "./deviceActivityTypes";
 
 export const deviceActivityApi: DeviceActivityApi = {
+  selectionMetadata: (id) => DeviceActivity.activitySelectionMetadata({ activitySelectionId: id }),
   authorizationStatus: DeviceActivity.getAuthorizationStatus,
   requestAuthorization: DeviceActivity.requestAuthorization,
   getFamilyActivitySelectionId: DeviceActivity.getFamilyActivitySelectionId,

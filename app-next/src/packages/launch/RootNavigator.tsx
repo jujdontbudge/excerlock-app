@@ -46,7 +46,7 @@ export function RootNavigator() {
           <Stack.Screen name="linked-trace" />
         </Stack.Protected>
         <Stack.Protected guard={!__LINKED_RECORDER_TRACE__}>
-          <Stack.Protected guard={journey.canEnterApp}>
+          <Stack.Protected guard={journey.canEnterApp || (journey.phase === 'setup' && journey.paid)}>
             <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
           <Stack.Protected guard={journey.phase === 'welcome' || journey.phase === 'onboarding'}>

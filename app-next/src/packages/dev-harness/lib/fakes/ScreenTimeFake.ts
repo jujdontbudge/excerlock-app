@@ -1,3 +1,4 @@
+import { fakeSelectionSummary } from '../../../app-selection/FakeAppPicker';
 import { dayKey } from '../../../schedule/calendar';
 import { ScreenTimePort } from '../../../ports/ScreenTimePort';
 import { permissionsStore } from '../../../permissions/permissionsStore';
@@ -6,6 +7,7 @@ import { FakeContext } from '../FakeContext';
 import { ScreenTimeAuthorizationError } from '../../../app-selection/ScreenTimeAuthorizationError';
 export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
   return {
+    selectionSummary: () => fakeSelectionSummary(rulesStore.getState().data.lockedApps),
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
     presentAppPicker: async () => {
