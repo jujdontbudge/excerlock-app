@@ -212,7 +212,7 @@ open: /onboarding/S3
 tap: Import
 expect: ExcerLock is built on research | HACK | University of Oxford | Harvard University | University of Cambridge | No shame, no punishment | Continue
 then-tap: Continue
-then-expect: Give us a rating | 50K+ ExcerLock users | ExcerLock was made for people like you
+then-expect: Give us a rating | 50K+ ExcerLock users | ExcerLock was made for
 ```
 
 ```proof

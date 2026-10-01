@@ -11,7 +11,7 @@ export const researchRatingCopy = {
   ratingTitle: 'Give us a rating',
   rating: '4.7',
   ratingCount: '50K+ ExcerLock users',
-  communityTitle: 'ExcerLock was made for people like you',
+  communityTitle: 'ExcerLock was made for\npeople like you',
   communityCount: '50,000+ ExcerLock users',
   reviews: [
     { name: 'Maya', photo: require('../../../assets/onboarding/reviews/maya.jpg'), text: 'I used to skip exercise all the time. Now I actually look forward to getting my steps in before opening my apps.' },
