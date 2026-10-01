@@ -5,7 +5,7 @@ import { read, walk } from './files.ts';
 
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
-export type ProofAction = { kind: 'tap' | 'type'; value: string };
+export type ProofAction = { kind: 'tap' | 'type' | 'open'; value: string };
 export type Proof = { name: string; scenario?: string; open?: string; openWait?: number; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; expect: string[]; absent?: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[] };
 
 export type Feature = {
@@ -77,7 +77,7 @@ function parseProofs(body: string): Proof[] {
     if (fields.notifications) proof.notifications = fields.notifications.split('|').map((item) => item.trim()).filter((item): item is 'home' | 'unlock' => item === 'home' || item === 'unlock');
     if (fields['notification-expect']) proof.notificationExpect = fields['notification-expect'].split('|').map((item) => item.trim()).filter(Boolean);
     if (fields.actions) proof.actions = fields.actions.split('|').map((item) => item.trim()).filter(Boolean).map((item) => {
-      const pair = /^(tap|type)\s+(.+)$/.exec(item);
+      const pair = /^(tap|type|open)\s+(.+)$/.exec(item);
       if (!pair?.[1] || !pair[2]) throw new Error(`Invalid proof action "${item}" in ${proof.name}`);
       return { kind: pair[1] as ProofAction['kind'], value: pair[2] };
     });

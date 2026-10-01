@@ -122,5 +122,7 @@ export function createServerSubscriptionAdmission(options: {
     };
     return { type: 'eligible', lease: current(identity)! };
   };
-  return { verify, current, invalidate: () => { request += 1; lease = null; } };
+  const remainingMs: SubscriptionAdmissionPort['remainingMs'] = (identity) =>
+    lease && current(identity) ? lease.deadline - now() : 0;
+  return { verify, current, remainingMs, invalidate: () => { request += 1; lease = null; } };
 }

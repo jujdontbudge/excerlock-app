@@ -9,7 +9,11 @@ import { useScreenTracking } from '../telemetry/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
 import Constants from 'expo-constants';
 import { diagnosticsRoutesEnabled } from '../platform/diagnosticsRoutes';
-import { beginPaywall, useJourney, verifySelectedAccount } from '../journey/index';
+import { beginPaywall, renewAdmission, useJourney, verifySelectedAccount } from '../journey/index';
+import { StyleSheet, View } from 'react-native';
+import { FullWindowOverlay } from 'react-native-screens';
+import { BootScreen } from './lib/BootScreen';
+import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 export function RootNavigator() {
   const motion = useMotion();
   const router = useRouter();
@@ -31,6 +35,7 @@ export function RootNavigator() {
     beginPaywall();
     router.replace('/paywall');
   }, [journey.phase, journey.canEnterApp, router, runtime]);
+  useEffect(() => runtime.clock.subscribe(() => void renewAdmission(runtime)?.catch(reportRuntimeError)), [runtime]);
   return (
     <>
       <Stack
@@ -84,6 +89,13 @@ export function RootNavigator() {
         </Stack.Protected>
       </Stack>
       {__DEV__ && runtime.kind === 'fake' ? <FakePromptHost /> : null}
+      {journey.checking ? (
+        <FullWindowOverlay>
+          <View style={StyleSheet.absoluteFill}>
+            <BootScreen />
+          </View>
+        </FullWindowOverlay>
+      ) : null}
     </>
   );
 }

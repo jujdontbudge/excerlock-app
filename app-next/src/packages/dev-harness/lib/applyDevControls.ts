@@ -2,7 +2,8 @@ import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/launchSignInGate';
 import { beginOnboarding, beginPaywall, beginSignIn } from '../../journey/index';
 import { RuntimeControls } from '../../ports/RuntimeControls';
-export type DevParams = { scenario?: string; restore?: string; outcome?: string; prompt?: string; setup?: string; journey?: string; notification?: string; lab?: string };
+export type DevParams = { scenario?: string; restore?: string; outcome?: string; prompt?: string; setup?: string; journey?: string; notification?: string; lab?: string; advance?: string };
+const ADVANCE_STEP_MS = 30_000;
 export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
   if (p.scenario) await dev.load(p.scenario);
   if (p.setup && /^X[1-5]$/.test(p.setup)) {
@@ -20,4 +21,8 @@ export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
   if (p.notification === 'home' || p.notification === 'unlock') dev.deliverNotification(p.notification);
   if (p.lab === 'lifecycle-revocation') await dev.runLabLifecycleRevocation();
   if (p.lab === 'onboarding-path') dev.runOnboardingPathDiagnostics();
+  for (let left = Number(p.advance ?? 0); left > 0; left -= ADVANCE_STEP_MS) {
+    dev.advance(Math.min(ADVANCE_STEP_MS, left));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }

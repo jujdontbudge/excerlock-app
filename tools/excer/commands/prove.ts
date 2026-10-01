@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { findFeature, protectedAppRoutes, type Proof } from '../lib/features.ts';
+import { findFeature, protectedAppRoutes, type Proof, type ProofAction } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
 import { ensureApp, labels, openUrl, relaunch, screenshot, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
@@ -20,7 +20,7 @@ Exit 0 only when every expectation was seen. Feature files:
 type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[] };
 type NotificationAttempt = { destination: 'home' | 'unlock'; ok: boolean; missing: string[] };
 type GestureAttempt = { gesture: 'back'; result: string };
-type ActionAttempt = { action: 'tap' | 'type'; value: string; result: string };
+type ActionAttempt = { action: ProofAction['kind']; value: string; result: string };
 type RelaunchAttempt = { before: string[]; after: string[]; ok: boolean };
 type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[]; relaunchAttempt?: RelaunchAttempt };
 
@@ -36,13 +36,13 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const actionAttempts: ActionAttempt[] = [];
   for (const action of proof.actions ?? []) {
     try {
-      const result = action.kind === 'tap' ? await tap(udid, action.value) : typeText(udid, action.value);
+      const result = action.kind === 'tap' ? await tap(udid, action.value) : action.kind === 'open' ? (openUrl(udid, action.value), 'opened') : typeText(udid, action.value);
       actionAttempts.push({ action: action.kind, value: action.kind === 'type' ? `${action.value.length} characters` : action.value, result });
     } catch {
       failedTaps.push(`${action.kind} "${action.value}"`);
       break;
     }
-    await sleep(1000);
+    await sleep(action.kind === 'open' ? 3000 : 1000);
   }
   for (const label of proof.tap ?? []) {
     try {

@@ -59,6 +59,7 @@ export type SubscriptionAdmissionResult =
 export interface SubscriptionAdmissionPort {
   verify(identity: { userId: string; generation: number }): Promise<SubscriptionAdmissionResult>;
   current(identity: { userId: string; generation: number }): SubscriptionAdmissionLease | null;
+  remainingMs(identity: { userId: string; generation: number }): number;
   invalidate(): void;
 }
 export interface SubscriptionPort {

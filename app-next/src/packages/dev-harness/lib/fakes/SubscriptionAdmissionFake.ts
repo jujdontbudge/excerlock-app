@@ -6,18 +6,23 @@ import type {
 import type { AuthPort } from '../../../ports/AuthPort';
 import { FakeContext } from '../FakeContext';
 
+const MAX_LEASE_MS = 5 * 60_000;
+
 export function SubscriptionAdmissionFake(
   ctx: FakeContext,
   auth: AuthPort,
   subscription: SubscriptionPort,
 ): SubscriptionAdmissionPort {
   let lease: SubscriptionAdmissionLease | null = null;
-  const current: SubscriptionAdmissionPort['current'] = (identity) => {
-    if (!lease || lease.userId !== identity.userId || lease.generation !== identity.generation) return null;
-    return Date.parse(lease.expiresAt) > Date.parse(ctx.clock.now()) ? lease : null;
+  const remainingMs: SubscriptionAdmissionPort['remainingMs'] = (identity) => {
+    if (!lease || lease.userId !== identity.userId || lease.generation !== identity.generation) return 0;
+    const deadline = Math.min(Date.parse(lease.expiresAt), Date.parse(lease.verifiedAt) + MAX_LEASE_MS);
+    return Math.max(0, deadline - Date.parse(ctx.clock.now()));
   };
+  const current: SubscriptionAdmissionPort['current'] = (identity) => (remainingMs(identity) > 0 ? lease : null);
   return {
     current,
+    remainingMs,
     invalidate: () => { lease = null; },
     verify: async (identity) => {
       const proof = ctx.scenario.subscriptionProof ?? 'matching';

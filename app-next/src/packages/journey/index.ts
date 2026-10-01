@@ -32,10 +32,17 @@ const subscribe = (listener: () => void) => {
     listeners.delete(listener);
   };
 };
+const notify = () => listeners.forEach((listener) => listener());
 const set = (next: JourneyState) => {
   state = next;
-  listeners.forEach((listener) => listener());
+  notify();
 };
+type AdmissionResult = 'paid' | 'unpaid' | 'unavailable';
+const RENEW_BEFORE_MS = 60_000;
+const RENEW_RETRY_MS = 15_000;
+let refreshing: Promise<AdmissionResult> | null = null;
+let lastRenewal = Number.NEGATIVE_INFINITY;
+const renewing = () => refreshing !== null;
 const enter = (phase: Phase) => set({ phase, entryIntent: state.entryIntent, admission: null, error: null });
 export const beginOnboarding = () =>
   set({ phase: 'onboarding', entryIntent: 'onboarding', admission: null, error: null });
@@ -84,7 +91,7 @@ const waitForReady = (runtime: Runtime) =>
     }
   });
 
-export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 'unpaid' | 'unavailable'> {
+export async function verifySelectedAccount(runtime: Runtime): Promise<AdmissionResult> {
   enter('verifying');
   try {
     const identity = runtime.auth.identity();
@@ -117,16 +124,37 @@ export async function verifySelectedAccount(runtime: Runtime): Promise<'paid' | 
   }
 }
 
-export async function refreshAdmission(runtime: Runtime): Promise<'paid' | 'unpaid' | 'unavailable'> {
+export function refreshAdmission(runtime: Runtime): Promise<AdmissionResult> {
+  if (refreshing) return refreshing;
   const selected = account(runtime.auth.identity());
   const admitted = state.admission;
+  const phase = state.phase;
   if (
-    state.phase !== 'app' ||
+    (phase !== 'app' && phase !== 'setup') ||
     !selected ||
     !admitted ||
     admitted.userId !== selected.userId ||
     admitted.generation !== selected.generation
-  ) return 'unavailable';
+  ) return Promise.resolve('unavailable');
+  refreshing = reverify(runtime, selected, phase).finally(() => {
+    refreshing = null;
+    notify();
+  });
+  notify();
+  return refreshing;
+}
+
+export function renewAdmission(runtime: Runtime) {
+  const admitted = state.admission;
+  if (refreshing || (state.phase !== 'app' && state.phase !== 'setup') || !admitted) return;
+  if (runtime.subscriptionAdmission.remainingMs(admitted) > RENEW_BEFORE_MS) return;
+  const now = Date.parse(runtime.clock.now());
+  if (Math.abs(now - lastRenewal) < RENEW_RETRY_MS) return;
+  lastRenewal = now;
+  return refreshAdmission(runtime);
+}
+
+async function reverify(runtime: Runtime, selected: Admission, phase: 'app' | 'setup'): Promise<AdmissionResult> {
   const result = await runtime.subscriptionAdmission.verify(selected);
   const live = account(runtime.auth.identity());
   const currentAdmission = state.admission;
@@ -134,13 +162,13 @@ export async function refreshAdmission(runtime: Runtime): Promise<'paid' | 'unpa
     !live ||
     live.userId !== selected.userId ||
     live.generation !== selected.generation ||
-    state.phase !== 'app' ||
+    state.phase !== phase ||
     !currentAdmission ||
     currentAdmission.userId !== selected.userId ||
     currentAdmission.generation !== selected.generation
   ) return 'unavailable';
   if (result.type === 'eligible') {
-    set({ phase: 'app', entryIntent: state.entryIntent, admission: selected, error: null });
+    set({ phase, entryIntent: state.entryIntent, admission: selected, error: null });
     return 'paid';
   }
   if (result.type === 'ineligible') {
@@ -167,7 +195,7 @@ export function currentSetupAdmission(runtime: Runtime): Admission | null {
     !admission ||
     identity.userId !== admission.userId ||
     identity.generation !== admission.generation ||
-    !runtime.subscriptionAdmission.current(identity)
+    (!renewing() && !runtime.subscriptionAdmission.current(identity))
   )
     return null;
   return admission;
@@ -200,6 +228,8 @@ export function useJourney(runtime: Runtime) {
   );
   const now = useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
   void now;
-  const paid = matched && signedIn && Boolean(admission && runtime.subscriptionAdmission.current(admission));
-  return { ...current, paid, canEnterApp: current.phase === 'app' && paid };
+  const checking = useSyncExternalStore(subscribe, renewing, renewing);
+  const leased = matched && signedIn && Boolean(admission && runtime.subscriptionAdmission.current(admission));
+  const paid = leased || (matched && signedIn && checking);
+  return { ...current, paid, checking: paid && !leased, canEnterApp: current.phase === 'app' && paid };
 }

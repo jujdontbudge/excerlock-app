@@ -8,6 +8,7 @@ depends: [onboarding, paywall, setup, home]
 ## Sub-features
 - `BootGate` restores the persisted stores but starts each new entry at Welcome. A saved session, Setup or Entitlement cannot pick Home.
 - The Journey owns entry choice, account verification and paid admission; main routes require matching explicit authentication and valid Entitlement.
+- Paid admission is a five-minute lease. It renews itself in Setup and the main app a minute before it ends. After a long background, the current screen stays under the launch cover until the check settles (ADR 0059).
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
 ## How to get to it (user POV)
@@ -255,3 +256,22 @@ then-expect: Account and help | Restore purchases | Help and feedback
 - A dev build boots the fake runtime, with scenarios and fake adapters. Preview and production builds boot the real runtime (`src/runtime/environment.ts`). An unknown release environment fails closed.
 - If the app shows real prices and ignores `excerlock://dev`, it is running a cached OTA update instead of Metro. `./excer sim start` detects this and reinstalls the app.
 - `/` is a transient BootGate route. The OTA coordinator never counts it as a safe place to reload.
+
+```proof
+name: admission-renews-while-open
+scenario: trial-active
+open: /settings
+actions: open /dev?advance=600000
+expect: Settings | Manage subscription | Legal
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes
+```
+
+```proof
+name: long-setup-keeps-admission
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+actions: tap Continue with Apple | tap Start for $0.00 | tap Not now | open /dev?advance=360000 | tap Not now
+expect: Home
+absent: Start for $0.00
+```
