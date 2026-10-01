@@ -19,6 +19,7 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange: (days:
               label={controls.days[i]}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: selected }}
+              haptic="select"
               onPress={() => onChange(order.filter((day) => (day === d ? !selected : days.includes(day))))}
               style={{ minWidth: t.control.inline, alignItems: 'center' }}>
               <Animated.View

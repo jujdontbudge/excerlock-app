@@ -3,6 +3,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Heading, Label } from '../../../ui';
 import { tokens as t } from '../../../ui/tokens';
 import { useMotion } from '../../../ui/useMotion';
+import { useHapticCue } from '../../../ui/haptics';
 import { onboardingCopy } from '../onboardingCopy';
 import { impactCopy as c } from '../impactCopy';
 import { ImpactDots } from '../impact/ImpactDots';
@@ -14,6 +15,7 @@ export function DotGridReveal({ step, answers }: AnswerProps & { step: 'O12' | '
   const minutes = Number(answers.estimatedDailyMinutes ?? 180),
     m = useMotion(),
     summary = impactSummary(minutes);
+  useHapticCue('beat', m.reduced ? timing.fade : step === 'O14' ? timing.conclusion : timing.collapse, step);
   return (
     <>
       <Animated.View

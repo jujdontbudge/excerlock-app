@@ -27,6 +27,7 @@ import { getExcerlockEnforcementModule } from '../../../../modules/excerlock-enf
 import { linkedTrace } from '@linked-trace';
 import { NativeEnforcementTransport } from '../../enforcement/NativeEnforcementTransport';
 import { EnforcementHost } from '../../enforcement/EnforcementHost';
+import { isConditionShieldLift } from '../../enforcement/conditionShieldLift';
 import { RuntimeEnforcementSource } from '../../enforcement/RuntimeEnforcementSource';
 import { detectionStore } from '../../activity/detectionStore';
 import { rulesStore } from '../../conditions/rulesStore';
@@ -85,7 +86,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   let instanceMeasurements: Record<string, ExactStepMeasurement> = {};
   const stops: (() => void)[] = [];
   const listeners = new Set<() => void>();
-  let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [] };
+  let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [], shieldLifts: { confirmed: 0, source: null } };
   const cleanups: (() => void | Promise<void>)[] = [() => clock.dispose(), () => gait.stop()];
   let cleanupResult: Promise<void> | null = null;
   const cleanupResources = (): Promise<void> => {
@@ -523,7 +524,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                 else if (event.name === 'shields_lifted') client.analytics.track('shields_lifted', event.props);
                 else client.analytics.track('shields_applied', event.props);
               }
-              appliedPolicy = { state: snapshot.state, relief: snapshot.relief, openReason: snapshot.openReason };
+              const nextPolicy = { state: snapshot.state, relief: snapshot.relief, openReason: snapshot.openReason };
+              if (isConditionShieldLift(appliedPolicy, nextPolicy)) {
+                status = { ...status, shieldLifts: { confirmed: (status.shieldLifts?.confirmed ?? 0) + 1, source: wakeSource } };
+                listeners.forEach((listener) => listener());
+              }
+              appliedPolicy = nextPolicy;
             }
             if (
               applied === 'applied' &&

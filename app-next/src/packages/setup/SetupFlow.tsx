@@ -18,6 +18,7 @@ import { PermissionGuide } from './lib/PermissionGuide';
 import { systemAlert } from '../permissions/systemAlerts';
 import { SignInScreen } from '../identity/SignInScreen';
 import { needCopyKey, useSetupNeeds } from '../permissions/useSetupNeeds';
+import { haptic } from '../ui/haptics';
 
 export type SetupStep = 'account' | 'screenTime' | 'locationAlways' | SetupNeed;
 
@@ -71,8 +72,10 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
   const permissionNeed = need === 'screenTime' ? 'apps' : need === 'locationAlways' ? 'location' : need;
   const copy = c.flow[need === 'screenTime' ? 'screenTime' : needCopyKey(permissionNeed, location)];
   const settings = needBlocked(permissionNeed, pagePermissions) || (need === 'locationAlways' && settingsStore.getState().data.locationAlwaysAsked && pagePermissions.location !== 'always');
-  const track = (permission: 'screen_time' | 'motion' | 'location', granted: boolean) =>
+  const track = (permission: 'screen_time' | 'motion' | 'location', granted: boolean) => {
     runtime.analytics.track('permission_resolved', { permission, outcome: granted ? 'granted' : 'denied' });
+    haptic(granted ? 'success' : 'warning');
+  };
   const ask = async () => {
     if (locked.current) return;
     locked.current = true;
@@ -85,8 +88,9 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
         track('screen_time', status === 'granted');
         pass(...(status === 'granted' ? ['screenTime' as const] : ['screenTime' as const, 'apps' as const]));
       } else if (need === 'apps') {
-        await runtime.screenTime.presentAppPicker();
+        const apps = await runtime.screenTime.presentAppPicker();
         setSummary(runtime.screenTime.selectionSummary());
+        if (!apps.isEmpty) haptic('success');
       } else if (need === 'motion') {
         track('motion', (await runtime.steps.request()) === 'granted');
         pass('motion');
@@ -106,7 +110,10 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
       if (caught instanceof ScreenTimeAuthorizationError) {
         track('screen_time', false);
         pass('screenTime', 'apps');
-      } else notify(c.retry);
+      } else {
+        notify(c.retry);
+        haptic('error');
+      }
     } finally {
       locked.current = false;
       setBusy(false);

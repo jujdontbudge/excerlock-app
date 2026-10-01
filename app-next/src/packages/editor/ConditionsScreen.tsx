@@ -1,5 +1,5 @@
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { notify } from '../ui/Notice';
 import { View } from 'react-native';
 import { tokens as t } from '../ui/tokens';
@@ -22,7 +22,8 @@ import { Reveal } from '../ui/Reveal';
 import { ConfirmSheet } from '../ui/ConfirmSheet';
 import { toggleRule, deleteRule } from './lib/mutations';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
-import { useRuntimeStatus } from '../lock/selectors';
+import { useLockDecision, useRuntimeStatus } from '../lock/selectors';
+import { haptic } from '../ui/haptics';
 import { useLockListPicker } from '../app-selection/useLockListPicker';
 import { ruleNeedsSetup } from '../permissions/useSetupNeeds';
 export function ConditionsScreen({
@@ -38,7 +39,15 @@ export function ConditionsScreen({
     runtime = useRuntime(),
     { open: openLockList } = useLockListPicker(),
     { scheduleIssue } = useRuntimeStatus(),
-    [deleting, setDeleting] = useState<string | null>(null);
+    [deleting, setDeleting] = useState<string | null>(null),
+    decision = useLockDecision(),
+    toggled = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (toggled.current === null) return;
+    const resumed = toggled.current;
+    toggled.current = null;
+    haptic(resumed && decision.state === 'locked' ? 'lock' : 'commit');
+  }, [rules, decision.state]);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <ScreenShell dock
@@ -56,6 +65,7 @@ export function ConditionsScreen({
             if (deleting) {
               deleteRule(deleting);
               runtime.analytics.track('condition_deleted');
+              haptic('commit');
             }
             setDeleting(null);
           }}
@@ -123,10 +133,12 @@ export function ConditionsScreen({
                       now: runtime.clock.now(),
                       timezone: runtime.clock.timezone(),
                     });
+                    toggled.current = value;
                     if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
                   } catch (error) {
                     if (!(error instanceof SchedulePlanError)) throw error;
                     notify(c.scheduleLimit);
+                    haptic('error');
                   }
                 }}
                 onDelete={() => setDeleting(rule.id)}

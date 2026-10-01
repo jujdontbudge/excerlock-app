@@ -10,6 +10,7 @@ import { ruleDaysStore as useRuleDaysStore } from '../../conditions/ruleDaysStor
 import { useClock } from '../../lock/selectors';
 import { notify } from '../../ui/Notice';
 import { unlockCopy } from './unlockCopy';
+import { haptic } from '../../ui/haptics';
 export { PRESENCE_CONFIRM_MS };
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(),
@@ -102,8 +103,10 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
         const p = await runtime.gym.currentLocation(true);
         setLocation(p);
         setDenied(!p);
+        if (!p) haptic('warning');
       } catch {
         setDenied(true);
+        haptic('warning');
       } finally {
         setChecking(false);
       }
@@ -129,6 +132,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
         setWorking(false);
         setValue(0);
         notify(unlockCopy.retry);
+        haptic('error');
       }
     }
   };

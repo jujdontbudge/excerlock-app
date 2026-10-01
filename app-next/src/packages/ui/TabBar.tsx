@@ -33,6 +33,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
               label={tab.title}
               accessibilityRole="tab"
               accessibilityState={{ selected: selected === tab.id }}
+              haptic={selected === tab.id ? 'none' : 'select'}
               onPress={() => onSelect(tab.id)}
               style={{
                 minHeight: t.layout.tabHeight,

@@ -10,6 +10,7 @@ import { ruleName } from '../../conditions/ruleName';
 import { scheduleLabel } from '../../schedule/scheduleLabel';
 import { Rule } from '../../model/types';
 import { useMotion } from '../../ui/useMotion';
+import { useHapticOnChange } from '../../ui/haptics';
 import { PLAN_MOTION, PLAN_RING, planPercentLabel, taskMotion, smooth } from './planMotion';
 const Arc = Animated.createAnimatedComponent(Circle);
 const Counter = Animated.createAnimatedComponent(TextInput);
@@ -58,6 +59,7 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
     'Personalizing your routine', 'Preparing your goals', 'Putting your plan together'];
   const taskCount = tasks.length;
   useEffect(() => { callback.current = onComplete; }, [onComplete]);
+  useHapticOnChange(completed, (next, previous) => (!m.reduced && next === previous + 1 ? 'select' : 'none'));
   useEffect(() => {
     elapsed.set(withTiming(PLAN_MOTION.buildDone, { duration: m.reduced ? m.duration.standard : PLAN_MOTION.buildDone, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);

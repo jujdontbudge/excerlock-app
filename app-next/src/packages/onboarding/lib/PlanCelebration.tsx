@@ -5,6 +5,7 @@ import Animated, { cancelAnimation, Easing, interpolate, useAnimatedStyle, useSh
 import { Icon } from '../../ui/Icon';
 import { tokens as t } from '../../ui/tokens';
 import { useMotion } from '../../ui/useMotion';
+import { useHapticCue } from '../../ui/haptics';
 import { PLAN_MOTION as p, PLAN_BADGE as b } from './planMotion';
 
 export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; onDone: () => void }) {
@@ -16,6 +17,7 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
   const centerY = height / 2;
   const coverScale = Math.hypot(centerX, Math.max(centerY, height - centerY)) / (b.size / 2) + 1;
   useEffect(() => { callbacks.current = { onCovered, onDone }; }, [onCovered, onDone]);
+  useHapticCue('success', m.reduced ? 0 : p.burst);
   useEffect(() => {
     elapsed.set(withTiming(p.done, { duration: m.reduced ? m.duration.standard : p.done, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);

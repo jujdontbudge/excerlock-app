@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Href, useRouter } from 'expo-router';
 import { useRuntime } from '../../ports/useRuntime';
 import { requireRuntimeControls } from '../../ports/Runtime';
@@ -8,12 +8,14 @@ import { DevControls } from './DevControls';
 import { devCopy as c } from './devCopy';
 import { LivingIcon } from '../../ui/LivingIcon';
 import { useJourney } from '../../journey/index';
+import { recentHaptics, subscribeHaptics } from '../../ui/haptics';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
     router = useRouter(),
     view = useDevSnapshot(),
     journey = useJourney(runtime),
+    haptics = useSyncExternalStore(subscribeHaptics, recentHaptics, recentHaptics),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
@@ -29,6 +31,13 @@ export function DevMenu() {
       <Heading title={c.title} support={c.support} />
       <Label>{view.scenarioId}</Label>
       <Label>Journey {journey.phase} · paid {journey.paid ? 'yes' : 'no'} · admitted {journey.canEnterApp ? 'yes' : 'no'}</Label>
+      <SettingsGroup title={c.haptics}>
+        {haptics.length ? (
+          haptics.map((entry, i) => <Label key={`${entry.at}-${i}`}>{c.hapticEntry(entry.kind)}</Label>)
+        ) : (
+          <Label>{c.emptyHaptics}</Label>
+        )}
+      </SettingsGroup>
       <DevControls />
       <SettingsGroup>
         {dev.scenarios.map((s) => (

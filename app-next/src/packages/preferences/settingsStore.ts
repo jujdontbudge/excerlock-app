@@ -2,6 +2,7 @@ import { SavedPlace } from '../model/models';
 import { createPersistedStore } from '../persistence/createPersistedStore';
 import { defaultUnits } from './profileStore';
 import * as v from '../persistence/validation';
+import { setHapticsEnabled } from '../ui/haptics';
 export type Settings = {
   locationAlwaysAsked: boolean;
   gymPlaces: SavedPlace[];
@@ -35,3 +36,5 @@ export const settingsStore = createPersistedStore<Settings>(
     notificationsEnabled: v.bool,
   },
 );
+setHapticsEnabled(settingsStore.getState().data.haptics);
+settingsStore.subscribe((state) => setHapticsEnabled(state.data.haptics));

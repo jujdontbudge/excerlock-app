@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { Label } from '../ui';
 import { tokens as t } from '../ui/tokens';
 import { Icon } from '../ui/Icon';
-import { feedback } from '../ui/haptics';
+import { haptic } from '../ui/haptics';
 export function UnlockEntry({
   kind,
   label,
@@ -22,7 +22,7 @@ export function UnlockEntry({
         accessibilityRole="button"
         accessibilityLabel={label}
         onPress={() => {
-          feedback('press');
+          haptic('tap');
           onPress();
         }}
         style={({ pressed }) => ({

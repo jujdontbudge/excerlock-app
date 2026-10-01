@@ -13,6 +13,7 @@ import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { AuthError, isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
 import { approveLaunchSignIn } from './launchSignInGate';
+import { haptic } from '../ui/haptics';
 
 export function SignInScreen({
   onContinue,
@@ -69,10 +70,14 @@ export function SignInScreen({
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
-      if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
+      if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) {
+        haptic('success');
+        onContinue();
+      }
     } catch (caught) {
       if (isAuthCancelled(caught)) return;
       if (isAuthRecoveryRequired(caught)) {
+        haptic('warning');
         if (caught.provider === 'email') {
           setPhase('code');
           notify(c.codeSent);
@@ -84,6 +89,7 @@ export function SignInScreen({
         setRecoveryProvider(provider);
         notify(c.sameAccount);
       } else {
+        haptic('error');
         if (provider === 'email') setCode('');
         notify(provider === 'email' ? c.codeError : c.authError);
       }
@@ -105,6 +111,7 @@ export function SignInScreen({
         setPhase('code');
         notify(c.codeSent);
       } else {
+        haptic('error');
         notify(c.authError);
       }
     } finally {

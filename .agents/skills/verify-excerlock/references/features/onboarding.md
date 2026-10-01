@@ -107,6 +107,45 @@ open: /onboarding/O04
 expect: What should we call you? | First name
 ```
 
+Haptics follow the flow's events, and the dev menu's "Haptics log" is the simulator's evidence:
+- A choice changing sends `select`. Continue sends `tap`, or `commit` when the plan is saved on S3.
+- The impact story (O11 to O14) and O15 play one `beat` each.
+- The loop story plays `lock` on O17 and `success` on O18.
+- S2 ticks each task, then the "Plan created" badge plays `success`.
+- The Condition demo plays lock, progress detents and unlock once per entry, never on its auto-loop.
+
+`demoTime` starts the demo near its unlock; the taps on the inert promise caption only pace the proof.
+
+```proof
+name: choice-select-haptic
+scenario: fresh-install
+open: /onboarding/O22
+tap: Gain muscle
+expect: Gain muscle | Continue
+then-open: /dev
+then-expect: Haptics log | Haptic select
+```
+
+```proof
+name: plan-commit-haptic
+scenario: fresh-install
+open: /onboarding/S3
+tap: Import
+expect: Once you hit 10,000 steps
+then-open: /dev
+then-expect: Haptics log | Haptic commit
+```
+
+```proof
+name: demo-unlock-haptic
+scenario: condition-demo-walk-steps
+open: /onboarding/S3b?demoTime=5
+tap: Once you hit 10,000 steps | Once you hit 10,000 steps | Once you hit 10,000 steps
+expect: Once you hit 10,000 steps | Continue
+then-open: /dev
+then-expect: Haptics log | Haptic unlock | Haptic lock
+```
+
 The Condition demo's Continue stays disabled until the goal or state change plays. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/condition-demo-gate/INDEX.md`.
 
 ```proof

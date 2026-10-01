@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
+import { haptic } from '../../ui/haptics';
 import { tokens as t } from '../../ui/tokens';
 import { Icon } from '../../ui/Icon';
 import { Reveal } from '../../ui/Reveal';
@@ -112,8 +113,10 @@ export function PaywallScreen({
     try {
       const result = await runtime.subscription.purchase(selected);
       if (result.type === 'success') {
-        if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) onAccess?.(result.entitlement);
-        else restoreExisting = true;
+        if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) {
+          haptic('success');
+          onAccess?.(result.entitlement);
+        } else restoreExisting = true;
       } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
       else if (result.type === 'already_subscribed') restoreExisting = true;
       else if (result.type === 'user_cancelled') runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
@@ -121,6 +124,7 @@ export function PaywallScreen({
       runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
       reportError(error, 'purchase');
       notify(subscriptionCopy.error);
+      haptic('error');
     } finally {
       setBusy(null);
     }
@@ -130,10 +134,14 @@ export function PaywallScreen({
     setBusy('restore');
     try {
       if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') notify(subscriptionCopy.notFound);
-      else onAccess?.(runtime.subscription.entitlement());
+      else {
+        haptic('success');
+        onAccess?.(runtime.subscription.entitlement());
+      }
     } catch (error) {
       reportError(error, 'restore');
       notify(subscriptionCopy.error);
+      haptic('error');
     } finally {
       setBusy(null);
     }
@@ -207,7 +215,7 @@ export function PaywallScreen({
           <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md, minHeight: planRowHeight }}>
             {paywall?.products.map((item, index) => (
               <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
-                <PlanCard product={item} selected={selected === item.handle} onPress={() => choose(item.handle)} />
+                <PlanCard product={item} selected={selected === item.handle} locked={busy !== null} onPress={() => choose(item.handle)} />
               </Reveal>
             ))}
           </View>
@@ -234,7 +242,12 @@ export function PaywallScreen({
               { label: subscriptionCopy.privacyPolicy.title, onPress: () => openLink(subscriptionCopy.privacyPolicy.url) },
               { label: subscriptionCopy.restore, onPress: () => { if (busy === null) void restore(); } },
             ].map((link) => (
-              <PressableScale key={link.label} label={link.label} onPress={link.onPress} style={{ minHeight: t.type.micro.lineHeight }}>
+              <PressableScale
+                key={link.label}
+                label={link.label}
+                haptic={link.label === subscriptionCopy.restore && busy !== null ? 'none' : 'tap'}
+                onPress={link.onPress}
+                style={{ minHeight: t.type.micro.lineHeight }}>
                 <Label variant="micro" tone="secondary">
                   {link.label}
                 </Label>
@@ -278,10 +291,12 @@ function openLink(url: string) {
 function PlanCard({
   product,
   selected,
+  locked,
   onPress,
 }: {
   product: PaywallProduct;
   selected: boolean;
+  locked: boolean;
   onPress: () => void;
 }) {
   const m = useMotion(),
@@ -293,6 +308,7 @@ function PlanCard({
       label={planRowTitle(product)}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
+      haptic={selected || locked ? 'none' : 'select'}
       onPress={onPress}>
       <Animated.View
         style={{
