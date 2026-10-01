@@ -1,8 +1,10 @@
 # ExcerLock subscription catalog
 
-App `6787265352`. All 45 products live in one subscription group, `ExcerLock Premium` (`22372981`).
+App `6787265352`. The 45 grid products live in one subscription group, `ExcerLock Premium` (`22372981`).
 One group means a user gets one free trial across every price, and can crossgrade between any two
-plans with Apple prorating the difference.
+plans with Apple prorating the difference. The live launch plans below sit in a separate group,
+`ExcerLock Premium — Variant A` (`22279282`), so mixing a grid product with a launch plan on one
+paywall would let a person hold two subscriptions at once.
 
 Cleared for sale in the United States only. Prices are equalized across all 175 territories, so
 opening a new market is an availability change rather than a pricing change.
