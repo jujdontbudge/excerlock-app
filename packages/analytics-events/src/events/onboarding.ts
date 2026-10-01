@@ -8,7 +8,7 @@ export const onboardingEvents = {
 
 export interface OnboardingEventProps {
   onboarding_screen_viewed: {
-    screen: FlowScreen | 'plan-demo';
+    screen: FlowScreen | 'plan-demo' | 'research' | 'rating';
     scenario?: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-minutes';
     place?: 'outside' | 'treadmill';
   }

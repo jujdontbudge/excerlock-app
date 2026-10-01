@@ -54,3 +54,5 @@ Every core architectural decision belongs here in a short file explaining what w
 - Keep records concise. Do not invent past reasons or turn routine coding choices into ADRs.
 
 - [0024: Keep account access after subscription lapse](0024-keep-account-access-after-subscription-lapse.md) — **accepted**.
+
+- [0056: Research and rating after the imported plan](0056-onboarding-research-rating.md) — **accepted**.
