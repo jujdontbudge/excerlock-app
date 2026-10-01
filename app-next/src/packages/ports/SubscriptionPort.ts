@@ -27,7 +27,7 @@ export type PaywallProduct = {
   detail: string;
   localizedPrice: string;
   localizedPeriod: string;
-  localizedMonthlyPrice: string | null;
+  localizedWeeklyPrice: string | null;
   periodUnit: string | null;
   offerLabel: string | null;
   recommended: boolean;

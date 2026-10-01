@@ -362,7 +362,7 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    monthly = `${product.localizedMonthlyPrice ?? product.localizedPrice}${subscriptionCopy.perMonthShort}`,
+    weekly = `${product.localizedWeeklyPrice ?? product.localizedPrice}${subscriptionCopy.perWeekShort}`,
     lead = product.offerLabel ? subscriptionCopy.trialThen(trialLength(product.offerLabel)) : '',
     top = lead ? subscriptionCopy.free : perPeriod(product);
   useEffect(() => {
@@ -376,7 +376,7 @@ function PlanRow({
   const strong = { color: t.text.primary, fontFamily: t.font.bold };
   return (
     <PressableScale
-      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${lead}${monthly}`}
+      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${lead}${weekly}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
@@ -413,7 +413,7 @@ function PlanRow({
               style={{ textAlign: 'left', color: t.text.secondary }}>
               {lead}
               <Label variant="body" style={strong}>
-                {monthly}
+                {weekly}
               </Label>
             </Label>
           </View>

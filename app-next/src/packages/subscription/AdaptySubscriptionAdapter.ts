@@ -15,7 +15,7 @@ import type { RunIdentityOperation } from '../identity/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './lib/entitlementMapping';
 import { ADAPTY_FALLBACK_FILE_NAME } from './lib/fallbackPaywall';
 import { deviceLocale, pickRemoteConfig } from './lib/remoteConfig';
-import { monthlyPrice } from './lib/monthlyPrice';
+import { weeklyPrice } from './lib/weeklyPrice';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 import { PurchaseRecoveryJournal } from './PurchaseRecoveryJournal';
 
@@ -330,7 +330,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       detail: product.localizedDescription,
       localizedPrice: product.price?.localizedString ?? '',
       localizedPeriod: period,
-      localizedMonthlyPrice: monthlyPrice(product.price, product.subscription?.subscriptionPeriod, deviceLocale()),
+      localizedWeeklyPrice: weeklyPrice(product.price, product.subscription?.subscriptionPeriod, deviceLocale()),
       periodUnit: product.subscription?.subscriptionPeriod?.unit ?? null,
       offerLabel: free ? `${free.numberOfPeriods} ${free.subscriptionPeriod.unit} free` : null,
       recommended: recommendedProductId === product.vendorProductId,

@@ -47,7 +47,7 @@ export const subscriptionCopy = {
   trialOff: 'Enable free trial',
   bestOffer: 'Best offer',
   free: 'FREE',
-  perMonthShort: '/mo',
+  perWeekShort: '/wk',
   trialThen: (length: string) => `${length} trial then `,
   startFor: (price: string) => `Start for ${price}`,
   zeroPrice: '$0.00',
