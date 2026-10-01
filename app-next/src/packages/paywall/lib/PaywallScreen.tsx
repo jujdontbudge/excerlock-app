@@ -2,6 +2,7 @@ import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
@@ -47,6 +48,8 @@ export function PaywallScreen({
   recovery: PurchaseRecovery;
 }) {
   const runtime = useRuntime(),
+    insets = useSafeAreaInsets(),
+    linksSpace = insets.bottom + t.space.xs - t.type.micro.lineHeight,
     answers = useOnboardingStore((state) => state.data.answers),
     committedRule = useRulesStore((state) => state.data.rules[0]),
     [paywall, setPaywall] = useState<SubscriptionPaywall | null>(null),
@@ -219,13 +222,19 @@ export function PaywallScreen({
             loading={busy !== null}
             onPress={press}
           />
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg, paddingTop: t.space.xs }}>
+          <View
+            style={[
+              { flexDirection: 'row', justifyContent: 'center', gap: t.space.lg },
+              linksSpace > 0
+                ? { position: 'absolute', left: 0, right: 0, bottom: insets.bottom / 2 }
+                : { paddingTop: t.space.xs },
+            ]}>
             {[
               { label: subscriptionCopy.termsOfUse.title, onPress: () => openLink(subscriptionCopy.termsOfUse.url) },
               { label: subscriptionCopy.privacyPolicy.title, onPress: () => openLink(subscriptionCopy.privacyPolicy.url) },
               { label: subscriptionCopy.restore, onPress: () => { if (busy === null) void restore(); } },
             ].map((link) => (
-              <PressableScale key={link.label} label={link.label} onPress={link.onPress}>
+              <PressableScale key={link.label} label={link.label} onPress={link.onPress} style={{ minHeight: t.type.micro.lineHeight }}>
                 <Label variant="micro" tone="secondary">
                   {link.label}
                 </Label>
