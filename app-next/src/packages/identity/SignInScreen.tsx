@@ -14,13 +14,20 @@ import { AuthError, isAuthCancelled, isAuthRecoveryRequired } from '../ports/Aut
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
 import { approveLaunchSignIn } from './launchSignInGate';
 import { haptic } from '../ui/haptics';
+import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
+
+export type SignInPurpose = 'signUp' | 'signIn';
 
 export function SignInScreen({
+  purpose,
+  reportError,
   onContinue,
   signInRequired,
   onExit,
   requireFreshSignIn = false,
 }: {
+  purpose: SignInPurpose;
+  reportError: (error: unknown) => void;
   onContinue: () => void;
   signInRequired?: SignInRequiredSource;
   onExit?: () => void;
@@ -56,9 +63,18 @@ export function SignInScreen({
     };
   }, [flagAttempt, signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const returning = requireFreshSignIn && session.kind === 'signedIn';
-  const title = returning ? c.returningTitle : c.X4;
-  const support = returning ? c.returningBody : c.authBody;
+  const words = c[purpose];
+  const title = words.title;
+  const support = purpose === 'signIn' && requireFreshSignIn && session.kind === 'signedIn' ? c.returningBody : words.body;
+  const failed = (provider: 'apple' | 'google' | 'email', caught: unknown) => {
+    const reason = signInFailureClass(caught);
+    runtime.analytics.track('sign_in_failed', {
+      provider,
+      surface: purpose === 'signUp' ? 'sign_up' : 'sign_in',
+      reason_class: reason,
+    });
+    if (!expectedSignInFailure(reason)) reportError(caught);
+  };
   const signIn = async (provider: 'apple' | 'google' | 'email') => {
     if (busy) return;
     setBusy(true);
@@ -73,9 +89,14 @@ export function SignInScreen({
       if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) {
         haptic('success');
         onContinue();
+      } else {
+        haptic('error');
+        notify(c.authError);
+        failed(provider, new AuthError('Sign-in finished without an approved account.', { code: 'IDENTITY_NOT_READY' }));
       }
     } catch (caught) {
       if (isAuthCancelled(caught)) return;
+      if (!(isAuthRecoveryRequired(caught) && caught.provider === 'email')) failed(provider, caught);
       if (isAuthRecoveryRequired(caught)) {
         haptic('warning');
         if (caught.provider === 'email') {
@@ -113,6 +134,7 @@ export function SignInScreen({
       } else {
         haptic('error');
         notify(c.authError);
+        failed('email', caught);
       }
     } finally {
       setBusy(false);
@@ -148,6 +170,7 @@ export function SignInScreen({
           onVerify={() => signIn('email')}
           onResend={send}
           busy={busy}
+          body={words.codeBody}
         />
       ) : (
         <>
@@ -168,7 +191,7 @@ export function SignInScreen({
             </View>
           ) : (
             <>
-              <Heading title={c.emailTitle} centered />
+              <Heading title={words.emailTitle} centered />
               <Label tone="secondary" style={{ textAlign: 'center' }}>
                 {support}
               </Label>
@@ -237,7 +260,9 @@ export function SignInScreen({
                     else notify(c.authError);
                   })
                   .catch((caught) => {
-                    if (!isAuthCancelled(caught)) notify(c.authError);
+                    if (isAuthCancelled(caught)) return;
+                    notify(c.authError);
+                    failed(recoveryProvider, caught);
                   })
                   .finally(() => setBusy(false));
               }}

@@ -6,13 +6,15 @@ import { SetupFlow, type SetupStep } from './SetupFlow';
 import { beginPaywall, currentJourney, currentSetupAdmission, finishSetup } from '../journey/index';
 import { commitStagedPlan } from '../onboarding/OnboardingPlan';
 import { settingsStore } from '../preferences/settingsStore';
+import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { ScreenShell } from '../ui';
 export function SetupRoute() {
   const router = useRouter(),
     runtime = useRuntime(),
     { step } = useLocalSearchParams<{ step?: string }>(),
     admission = currentSetupAdmission(runtime),
-    needsStagedPlan = currentJourney().entryIntent === 'onboarding',
+    noConditions = useRulesStore((state) => state.data.rules.length === 0),
+    needsStagedPlan = currentJourney().entryIntent === 'onboarding' || noConditions,
     stagedPlanCommitted = useOnboardingStore((state) => state.data.answers.ruleCommitted !== false);
   useEffect(() => {
     if (!admission) {

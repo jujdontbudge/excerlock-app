@@ -3,6 +3,7 @@ import { conditionEvents, type ConditionEventProps } from './events/conditions'
 import { engagementEvents, type EngagementEventProps } from './events/engagement'
 import { onboardingEvents, type OnboardingEventProps } from './events/onboarding'
 import { paywallEvents, type PaywallEventProps } from './events/paywall'
+import { identityEvents, type IdentityEventProps } from './events/identity'
 import { shieldEvents, type ShieldEventProps } from './events/shield'
 import { subscriptionEvents, type SubscriptionEventProps } from './events/subscription'
 import { supportEvents, type SupportEventProps } from './events/support'
@@ -14,6 +15,7 @@ export const EVENTS = {
   ...conditionEvents,
   ...shieldEvents,
   ...paywallEvents,
+  ...identityEvents,
   ...engagementEvents,
   ...supportEvents,
   ...vendorEvents,
@@ -29,6 +31,7 @@ type EventPropsMap = OnboardingEventProps &
   ConditionEventProps &
   ShieldEventProps &
   PaywallEventProps &
+  IdentityEventProps &
   EngagementEventProps &
   SupportEventProps &
   VendorEventProps &

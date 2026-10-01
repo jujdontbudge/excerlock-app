@@ -19,6 +19,7 @@ import { systemAlert } from '../permissions/systemAlerts';
 import { SignInScreen } from '../identity/SignInScreen';
 import { needCopyKey, useSetupNeeds } from '../permissions/useSetupNeeds';
 import { haptic } from '../ui/haptics';
+import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 
 export type SetupStep = 'account' | 'screenTime' | 'locationAlways' | SetupNeed;
 
@@ -65,7 +66,7 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
   if (!current) return <ScreenShell>{null}</ScreenShell>;
   if (current === 'account') return (
     <ScreenShell header={<Header onClose={onClose} />}>
-      <SetupPresentation><SignInScreen onContinue={() => pass('account')} signInRequired requireFreshSignIn /></SetupPresentation>
+      <SetupPresentation><SignInScreen purpose="signUp" reportError={reportRuntimeError} onContinue={() => pass('account')} signInRequired requireFreshSignIn /></SetupPresentation>
     </ScreenShell>
   );
   const need = current;

@@ -9,6 +9,7 @@ import { onboardingLabels } from '../onboardingCopy';
 import { SignInScreen } from '../../../identity/SignInScreen';
 import { beginOnboarding, verifySelectedAccount } from '../../../journey/index';
 import { useRuntime } from '../../../ports/useRuntime';
+import { reportRuntimeError } from '../../../telemetry/reportRuntimeError';
 export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
   const [signInOpen, setSignInOpen] = useState(false);
   const runtime = useRuntime();
@@ -36,7 +37,7 @@ export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
         </View>
       </Reveal>
       <BottomSheet open={signInOpen} title={c.signIn} onDismiss={() => setSignInOpen(false)}>
-        <SignInScreen onContinue={() => void complete()} signInRequired={true} requireFreshSignIn />
+        <SignInScreen purpose="signIn" reportError={reportRuntimeError} onContinue={() => void complete()} signInRequired={true} requireFreshSignIn />
       </BottomSheet>
     </>
   );

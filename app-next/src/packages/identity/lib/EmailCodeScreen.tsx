@@ -6,17 +6,19 @@ export function EmailCodeScreen({
   onVerify,
   onResend,
   busy,
+  body,
 }: {
   code: string;
   onCode: (value: string) => void;
   onVerify: () => void;
   onResend: () => void;
   busy: boolean;
+  body: string;
 }) {
   return (
     <>
       <Heading title={c.codeTitle} centered />
-      <Label tone="secondary" style={{ textAlign: 'center' }}>{c.codeBody}</Label>
+      <Label tone="secondary" style={{ textAlign: 'center' }}>{body}</Label>
       <TextField
         label={c.codeLabel}
         value={code}

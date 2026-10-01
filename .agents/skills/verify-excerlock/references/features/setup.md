@@ -34,11 +34,9 @@ expect: Walks cannot open your apps yet | Turn on
 
 ```proof
 name: sign-in-provider-options
-scenario: trial-active
-open: dev?setup=X1
-expect: ExcerLock
-then-open: /setup/X1
-then-expect: Save your progress | Keep your plan connected to you. | Continue with Apple | Continue with Google | Continue with email
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+expect: Create your account | Your plan and subscription stay with your account. | Continue with Apple | Continue with Google | Continue with email
 ```
 
 ```proof
@@ -63,6 +61,29 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
+name: sign-in-after-paywall-is-sign-up
+scenario: returning-signed-in
+open: /sample-paywall?stage=sign-in
+expect: Create your account | Your plan and subscription stay with your account. | Continue with Apple
+```
+
+```proof
+name: welcome-sign-in-is-returning
+scenario: returning-signed-in
+open: /home
+tap: Sign in
+expect: Welcome back | Sign in again to open ExcerLock. | Continue with Apple
+```
+
+```proof
+name: start-over-sign-in-keeps-onboarding-plan
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+tap: Back | Sign in | Continue with Apple | Start for $0.00
+expect: Allow Screen Time
+```
+
+```proof
 name: returning-session-signed-in
 scenario: returning-signed-in
 open: /home
@@ -72,26 +93,26 @@ expect: Locked | Home
 
 ```proof
 name: sign-in-email
-scenario: trial-active
-open: /sign-in
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
 tap: Continue with email
-expect: Sign in with email | Email address | Send code | Back to sign-in options
+expect: Sign up with email | Email address | Send code | Back to sign-in options
 ```
 
 ```proof
 name: sign-in-google-action
 scenario: trial-active
-open: /sign-in
+open: /sample-paywall?stage=sign-in
 tap: Continue with Google
-expect: Home | Locked
+expect: Walk 10,000 steps | Walk 5,000 steps | Home
 ```
 
 ```proof
 name: sign-in-apple-action
 scenario: trial-active
-open: /sign-in
+open: /sample-paywall?stage=sign-in
 tap: Continue with Apple
-expect: Home | Locked
+expect: Walk 10,000 steps | Walk 5,000 steps | Home
 ```
 
 ## Gotchas

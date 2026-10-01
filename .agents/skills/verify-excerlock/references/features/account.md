@@ -78,10 +78,10 @@ expect: Not signed in | Sign in
 
 ```proof
 name: email-entry
-scenario: trial-active
-open: /sign-in
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
 tap: Continue with email
-expect: Sign in with email | Email address | Send code
+expect: Sign up with email | Email address | Send code
 ```
 
 ```proof
