@@ -38,6 +38,16 @@ export function popIn(reduced: boolean) {
         .stiffness(m.spring.pop.stiffness)
         .damping(m.spring.pop.damping);
 }
+export function popInAt(reduced: boolean, delay: number) {
+  return reduced
+    ? opacityIn('standard', delay)
+    : ZoomIn.withInitialValues({ scale: m.scale.pop })
+        .springify()
+        .mass(m.spring.pop.mass)
+        .stiffness(m.spring.pop.stiffness)
+        .damping(m.spring.pop.damping)
+        .delay(delay);
+}
 export const staggeredList = slideUp;
 type Direction = 'forward' | 'back';
 export function pageIn(reduced: boolean, direction: Direction) {

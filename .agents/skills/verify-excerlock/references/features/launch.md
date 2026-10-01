@@ -71,7 +71,7 @@ name: returning-unpaid-to-paywall
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 ```
 
 ```proof
@@ -79,7 +79,7 @@ name: returning-expired-to-paywall
 scenario: returning-expired
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases | Close
+expect: Start for $0.00 | Restore purchases | Close
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None
 ```
@@ -89,9 +89,9 @@ name: remote-flags-not-authority
 scenario: returning-unpaid-remote-bypass-attempt
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 deny-routes: protected
-deny-expect: Start for free | Restore purchases
+deny-expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in optional review preset enabled paywall variant error | Protected route mounts | None
 ```
@@ -101,9 +101,9 @@ name: unpaid-home-deep-link-blocked
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 then-open: /home
-then-expect: Start for free | Restore purchases
+then-expect: Start for $0.00 | Restore purchases
 ```
 
 ```proof
@@ -111,9 +111,9 @@ name: all-protected-deep-links-blocked
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 deny-routes: protected
-deny-expect: Start for free | Restore purchases
+deny-expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Protected route mounts | None
 ```
@@ -123,9 +123,9 @@ name: unpaid-home-notification-blocked
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 notifications: home
-notification-expect: Start for free | Restore purchases
+notification-expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered home · Handled 1
 ```
@@ -135,9 +135,9 @@ name: unpaid-unlock-notification-blocked
 scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 notifications: unlock
-notification-expect: Start for free | Restore purchases
+notification-expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered unlock · Handled 1
 ```
@@ -158,7 +158,7 @@ scenario: returning-unpaid
 open: /
 tap: Sign in | Continue with Apple
 gesture: back
-expect: Start for free | Restore purchases | Close
+expect: Start for $0.00 | Restore purchases | Close
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None
 ```
@@ -179,7 +179,7 @@ scenario: returning-unpaid-ota-home
 relaunch: true
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /home | Protected route mounts | None
 ```
@@ -190,7 +190,7 @@ scenario: returning-unpaid-ota-unlock
 relaunch: true
 open: /
 tap: Sign in | Continue with Apple
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protected route mounts | None
 ```

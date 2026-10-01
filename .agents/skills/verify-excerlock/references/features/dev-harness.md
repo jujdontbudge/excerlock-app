@@ -6,7 +6,7 @@ scenarios: [dynamic-type-xl, reduce-motion, returning-signed-in, identity-lab-ac
 depends: [launch]
 ---
 ## Sub-features
-- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Save your progress" sign-in step that follows a successful purchase, skipping only Apple's payment sheet. For a real StoreKit purchase on the simulator, launch with `app-next/scripts/storekit-sim.sh` (see `app-next/storekit/README.md`), then use the plain link and tap Start for free.
+- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Save your progress" sign-in step that follows a successful purchase, skipping only Apple's payment sheet. For a real StoreKit purchase on the simulator, launch with `app-next/scripts/storekit-sim.sh` (see `app-next/storekit/README.md`), then use the plain link and tap Start for $0.00.
 - `/dev`: the dev menu, scenario loading (`dev?scenario=<id>`), outcome controls (`restore`, `outcome`, `prompt`, `setup=X1..X5`), the component preview gallery, and the shield preview.
 - `/diagnostics/sensors`: a sensor smoke screen, available only in dev builds.
 - `/linked-trace`: the Linked Recorder research screen. It is compiled in only for research builds and is disabled in the App Store bundle.
@@ -145,7 +145,7 @@ name: admitted-account-revocation-replaces-app
 scenario: identity-lab-lifecycle-revocation
 open: dev?lab=lifecycle-revocation
 wait: 30
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Lifecycle revocation before app/admitted after paywall/revoked Entitlement none data account-a/1/Account A/Gym A | Protected route mounts | None
 ```

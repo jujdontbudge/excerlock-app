@@ -30,18 +30,21 @@ const sampleAnswers: Answers = {
 export function SamplePaywallRoute() {
   const router = useRouter(),
     phase = useJourney(useRuntime()).phase,
-    signIn = useLocalSearchParams<{ stage?: string }>().stage === 'sign-in';
+    params = useLocalSearchParams<{ stage?: string; answers?: string }>(),
+    signIn = params.stage === 'sign-in',
+    keep = params.answers === 'keep';
   useEffect(() => {
     if (!__DEV__ || Constants.isDevice) {
       router.replace('/');
       return;
     }
-    onboardingStore.getState().patch({ step: 'P', complete: false, setupComplete: false, answers: sampleAnswers });
-    stagePlan(sampleAnswers);
+    const answers = keep ? { ...sampleAnswers, ...onboardingStore.getState().data.answers } : sampleAnswers;
+    onboardingStore.getState().patch({ step: 'P', complete: false, setupComplete: false, answers });
+    stagePlan(answers);
     beginOnboarding();
     if (signIn) beginSignIn();
     else beginPaywall();
-  }, [router, signIn]);
+  }, [router, signIn, keep]);
   useEffect(() => {
     if (phase === 'paywall' && !signIn) router.replace('/paywall');
     if (phase === 'signIn' && signIn) router.replace('/sign-in');

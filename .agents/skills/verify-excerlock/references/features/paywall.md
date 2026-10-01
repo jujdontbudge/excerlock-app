@@ -9,8 +9,9 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The phone and locked-app artwork expand above the benefits and bottom-docked purchase controls. Start for free is the last control, with only safe-area spacing underneath; account recovery remains a separate route, not a paywall footer link.
-- Three promise rows reflect the selected fat/muscle targets, the goal chosen at O08, and the O10 screen-time estimate. When both body targets are selected, they take two rows and the time estimate takes the third; otherwise the goal choice fills the remaining row.
+- A tilted field of locked app tiles mixed with exercise and health tiles fills the top and fades out behind the "Become ADDICTED to exercise" headline. Below it sit the "Your plan" benefits card, the free trial switch, the stacked Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and Start for $0.00. Terms of Use · Privacy Policy · Restore purchases sit in the safe area underneath; account recovery remains a separate route, not a paywall footer link.
+- The benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
+- The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The dev fake serves both kinds; production serves trial-only plans until no-trial twins are attached in Adapty.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -24,9 +25,17 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 ```proof
 name: premium-headline
 scenario: fresh-install
-open: /onboarding/S3
-tap: Import | Continue | Try for $0.00 | Continue
-expect: Become ADDICTED to exercise | Your ExcerLock Home screen: Walk 10,000 steps | Feel stronger and healthier every week | Make time for what matters | Save 46 days a year | Start for free
+open: /sample-paywall
+expect: Become ADDICTED to exercise | Your plan | Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day | Free trial enabled | Start for $0.00
+```
+
+```proof
+name: trial-switch
+open: /sample-paywall
+tap: Free trial enabled
+expect: Enable free trial | Billed monthly | Continue
+then-tap: Enable free trial
+then-expect: Free trial enabled | 7 days free trial · only $4.17/mo | Start for $0.00
 ```
 
 ```proof
@@ -35,8 +44,8 @@ scenario: fresh-install
 open: /onboarding/O08
 tap: Less screen time | Continue | Lose fat | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Lose 15.0 pounds of fat | Spend less time scrolling | Save 46 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
 ```
 
 ```proof
@@ -45,8 +54,8 @@ scenario: fresh-install
 open: /onboarding/O08
 tap: More exercise | Continue | Gain muscle | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Gain 10.0 pounds of muscle | Make movement part of your day | Save 46 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
 ```
 
 ```proof
@@ -55,8 +64,8 @@ scenario: fresh-install
 open: /onboarding/O08
 tap: More exercise | Continue | Gain muscle | Lose fat | Continue | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Save 46 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
 ```
 
 ```proof
@@ -65,8 +74,8 @@ scenario: fresh-install
 open: /onboarding/O08
 tap: Overall wellness | Continue | Maintain | Continue
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Stay fit, strong and healthy for life | Make room for your wellbeing | Save 46 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
 ```
 
 ```proof
@@ -75,8 +84,8 @@ scenario: fresh-install
 open: /onboarding/O08
 tap: Something else | Continue | Maintain | Continue
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Stay fit, strong and healthy for life | Make time for what matters | Save 46 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
 ```
 
 ```proof
@@ -85,8 +94,8 @@ scenario: fresh-install
 open: /onboarding/O10
 tap: 4 to 6 hours
 expect: How many hours do you currently spend scrolling each day?
-then-open: /paywall
-then-expect: Save 76 days a year
+then-open: /sample-paywall?answers=keep
+then-expect: 5 hours less screen time a day
 ```
 
 ```proof
@@ -100,7 +109,7 @@ expect: Subscription | Billing issue | Manage in App Store | Restore purchases
 name: winback-after-trial
 scenario: trial-lapsed-while-closed
 relaunch: true
-expect: Your trial has ended | Start for free
+expect: Your trial has ended | Start for $0.00
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"
@@ -110,7 +119,7 @@ then-expect: "placement":"winback"
 name: lapse-in-session
 scenario: trial-lapses-in-session
 relaunch: true
-expect: Your trial has ended | Start for free
+expect: Your trial has ended | Start for $0.00
 wait: 45
 then-open: dev
 then-expect: "placement":"in_app"
@@ -121,7 +130,7 @@ name: identity-sync-retry
 scenario: identity-lab-user-sync-failed
 open: /paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
 ```
 
 ```proof
@@ -130,7 +139,7 @@ scenario: identity-lab-slow-cold-start
 relaunch: true
 open: dev?journey=paywall
 wait: 8
-expect: Start for free | Restore purchases
+expect: Start for $0.00 | Restore purchases
 absent: Loading plans | Starting ExcerLock
 ```
 
@@ -139,7 +148,7 @@ name: identity-slow-cold-start
 scenario: identity-lab-slow-cold-start
 relaunch: true
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
 ```
 
 ```proof
@@ -147,7 +156,7 @@ name: identity-anonymous-retry
 scenario: identity-lab-anonymous-failed
 open: /paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
 ```
 
 ```proof
@@ -155,7 +164,7 @@ name: identity-plans-retry
 scenario: identity-lab-plans-failed
 open: dev?journey=paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for free
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
 absent: Retry loading plans | couldn't load
 ```
 
@@ -163,7 +172,7 @@ absent: Retry loading plans | couldn't load
 name: identity-purchase-to-setup
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
-tap: Start for free | Continue with Apple
+tap: Start for $0.00 | Continue with Apple
 wait: 25
 expect: Choose apps
 then-open: dev
@@ -174,7 +183,7 @@ then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"res
 name: signin-first-purchase-needs-no-second-signin
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple | Start for free
+tap: Sign in | Continue with Apple | Start for $0.00
 wait: 25
 expect: Home | Locked
 then-open: /dev
@@ -194,9 +203,9 @@ expect: Choose apps
 name: identity-purchase-cancelled
 scenario: identity-lab-purchase-cancelled
 open: dev?journey=paywall
-tap: Start for free
+tap: Start for $0.00
 wait: 25
-expect: Start for free | Lab annual · $49.99 / year
+expect: Start for $0.00 | Lab annual · $49.99 / year
 absent: Choose a plan | Starting your plan | Please retry
 ```
 
@@ -204,11 +213,11 @@ absent: Choose a plan | Starting your plan | Please retry
 name: identity-purchase-error-retries-original-checkout
 scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
-tap: Start for free
+tap: Start for $0.00
 wait: 25
-expect: That didn't go through. Please try again. | Start for free
+expect: That didn't go through. Please try again. | Start for $0.00
 absent: could not finish | Starting your plan
-then-tap: Start for free | Continue with Apple
+then-tap: Start for $0.00 | Continue with Apple
 then-open: /dev
 then-expect: Journey setup · paid yes · admitted no | Active account Checkout | Purchase recovery none | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":0,"recovery":"none"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"} | Protected route mounts | None
 ```
@@ -217,7 +226,7 @@ then-expect: Journey setup · paid yes · admitted no | Active account Checkout 
 name: identity-purchase-pending
 scenario: identity-lab-purchase-pending
 open: dev?journey=paywall
-tap: Start for free
+tap: Start for $0.00
 wait: 25
 expect: Continue | Lab annual · $49.99 / year
 absent: still being confirmed | Check purchase status | pending approval
@@ -227,7 +236,7 @@ absent: still being confirmed | Check purchase status | pending approval
 name: identity-purchase-success-without-access
 scenario: identity-lab-purchase-success-without-access
 open: dev?journey=paywall
-tap: Start for free
+tap: Start for $0.00
 wait: 25
 expect: Sign in to continue
 absent: Payment received | being confirmed
@@ -239,7 +248,7 @@ then-expect: Journey accountRecovery · paid no · admitted no | Purchase recove
 name: identity-purchase-double-tap-is-serialized
 scenario: identity-lab-purchase-busy
 open: dev?journey=paywall
-tap: Start for free
+tap: Start for $0.00
 wait: 25
 expect: Continue with Apple
 then-open: /dev
@@ -305,7 +314,7 @@ then-expect: Journey signIn · paid no · admitted no | Purchase recovery accoun
 name: identity-account-switch-does-not-reuse-checkout
 scenario: identity-lab-apple-linked
 open: dev?journey=paywall
-tap: Start for free | Continue with Apple | Recover with Apple
+tap: Start for $0.00 | Continue with Apple | Recover with Apple
 wait: 25
 expect: Sign in to continue
 then-open: dev
