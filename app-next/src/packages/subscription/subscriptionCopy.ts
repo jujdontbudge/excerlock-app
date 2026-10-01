@@ -51,6 +51,9 @@ export const subscriptionCopy = {
   restore: 'Restore purchases',
   terms:
     'Subscriptions renew automatically unless canceled. Manage or cancel your subscription in your App Store account.',
+  termsOfUse: { title: 'Terms of Use', url: 'https://excerlock.com/terms' },
+  privacyPolicy: { title: 'Privacy Policy', url: 'https://excerlock.com/privacy' },
+  linkError: "That didn't open. Please try again.",
   error: "That didn't go through. Please try again.",
   notFound: 'No purchase found',
   awaitingApproval: 'Waiting for approval',
@@ -67,6 +70,9 @@ export const subscriptionCopy = {
 export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
 export const perMonth = (price: string) => `${price}/mo`;
+
+export const perPeriod = (product: { localizedPrice: string; localizedPeriod: string; periodUnit: string | null }) =>
+  product.periodUnit ? `${product.localizedPrice}/${product.periodUnit}` : `${product.localizedPrice} / ${product.localizedPeriod}`;
 
 const planNames: Record<string, string> = { year: 'Yearly', month: 'Monthly', week: 'Weekly', day: 'Daily' };
 export const planName = (product: { title: string; periodUnit: string | null }) =>

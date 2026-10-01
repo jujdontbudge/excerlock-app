@@ -1,6 +1,6 @@
 import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
 import { notify } from '../../ui/Notice';
@@ -14,7 +14,7 @@ import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
-import { subscriptionCopy, planRowTitle, planName, perMonth } from '../../subscription/subscriptionCopy';
+import { subscriptionCopy, planRowTitle, planName, perMonth, perPeriod } from '../../subscription/subscriptionCopy';
 import { onboardingStore as useOnboardingStore } from '../../onboarding/onboardingStore';
 import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
 import { draftFromAnswers } from '../../conditions/answersDraft';
@@ -26,7 +26,7 @@ import { PaywallHero } from './PaywallHero';
 import { paywallCopy as copy } from './paywallCopy';
 const paywallLoadRetries = 2,
   planRowHeight =
-    t.space.md * 3 + t.type.body.lineHeight + t.type.label.lineHeight + t.stroke.selected * 2;
+    t.space.md * 3 + t.type.body.lineHeight + t.type.label.lineHeight + t.type.micro.lineHeight + t.stroke.selected * 2;
 export function PaywallScreen({
   placement,
   reportError,
@@ -230,6 +230,22 @@ export function PaywallScreen({
             loading={busy !== null}
             onPress={press}
           />
+          <Label variant="micro" tone="secondary" style={{ textAlign: 'center', paddingTop: t.space.sm }}>
+            {subscriptionCopy.terms}
+          </Label>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg, paddingTop: t.space.xs }}>
+            {[subscriptionCopy.termsOfUse, subscriptionCopy.privacyPolicy].map((link) => (
+              <PressableScale
+                key={link.url}
+                label={link.title}
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(link.url).catch(() => notify(subscriptionCopy.linkError))}>
+                <Label variant="micro" tone="secondary" style={{ textDecorationLine: 'underline' }}>
+                  {link.title}
+                </Label>
+              </PressableScale>
+            ))}
+          </View>
         </>
       }>
       {rule ? <PaywallHero rule={rule} /> : <View style={{ flex: 1 }} />}
@@ -271,9 +287,8 @@ function PlanCard({
 }) {
   const m = useMotion(),
     ink = selected ? t.text.onAccent : t.text.primary,
-    price = product.localizedMonthlyPrice
-      ? perMonth(product.localizedMonthlyPrice)
-      : `${product.localizedPrice} / ${product.localizedPeriod}`;
+    price = perPeriod(product),
+    monthly = product.periodUnit !== 'month' && product.localizedMonthlyPrice ? perMonth(product.localizedMonthlyPrice) : ' ';
   return (
     <PressableScale
       label={planRowTitle(product)}
@@ -296,6 +311,9 @@ function PlanCard({
         </Label>
         <Label variant="label" style={{ color: ink, textAlign: 'center' }}>
           {price}
+        </Label>
+        <Label variant="micro" style={{ color: ink, textAlign: 'center' }}>
+          {monthly}
         </Label>
       </Animated.View>
       {product.offerLabel ? (
