@@ -18,7 +18,7 @@ export function Label({
         t.type[variant],
         { color: t.text[tone], fontVariant: ['tabular-nums'] },
         style,
-        onboarding ? { alignSelf: flat?.alignSelf ?? 'stretch', textAlign: 'center' } : null,
+        onboarding ? { alignSelf: flat?.alignSelf ?? 'stretch', textAlign: flat?.textAlign ?? 'center' } : null,
       ]}
     />
   );
