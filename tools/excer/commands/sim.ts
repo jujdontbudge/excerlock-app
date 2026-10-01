@@ -110,7 +110,7 @@ export async function simCommand(args: string[]): Promise<number> {
   }
 }
 
-export async function loadScenario(scenario: string, open?: string, prompt = 'grant', coldAfter = false): Promise<string> {
+export async function loadScenario(scenario: string, open?: string, prompt = 'grant', coldAfter = false, openWait = 1.5): Promise<string> {
   if (!scenarioIds().includes(scenario)) throw new UsageError(`Unknown scenario "${scenario}". Run: excer demo list`);
   const device = await ensureApp();
   await relaunch(device.udid);
@@ -122,7 +122,7 @@ export async function loadScenario(scenario: string, open?: string, prompt = 'gr
   }
   if (open) {
     openUrl(device.udid, open);
-    await sleep(1500);
+    await sleep(openWait * 1000);
   }
   return device.udid;
 }

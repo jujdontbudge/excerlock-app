@@ -13,6 +13,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../ui/tokens';
 import { illustrationTokens as art } from '../../../ui/illustrationTokens';
+import { PressableScale } from '../../../ui/PressableScale';
 import { BackButton } from '../../../ui/BackButton';
 import { useMotion } from '../../../ui/useMotion';
 import { haptic } from '../../../ui/haptics';
@@ -23,7 +24,7 @@ import { Schedule } from '../../../model/types';
 import { Answers } from '../../../model/answers';
 import { profileStore as useProfileStore } from '../../../preferences/profileStore';
 import { settingsStore as useSettingsStore } from '../../../preferences/settingsStore';
-import { advanceDemo, initialDemo, phasesFor, readyAfter, scenarioFor, snapshot } from './model';
+import { advanceDemo, beginHold, endHold, initialDemo, phasesFor, readyAfter, scenarioFor, snapshot } from './model';
 import { Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
@@ -84,14 +85,14 @@ function DemoScene({
   const readyTime = readyAfter(scenario);
   const clock = useSharedValue(initial);
   const running = useSharedValue(AppState.currentState === 'active');
-  const imagesReady = useSharedValue(scenario.kind.startsWith('gym'));
   const elapsed = useSharedValue(0);
+  const [mountedAt] = useState(Date.now);
+  const lastTick = useSharedValue(mountedAt);
   const reportedReady = useSharedValue(false);
   const lastPublish = useSharedValue(0);
   const [frame, setFrame] = useState(() => snapshot(initial, scenario));
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
   const [burst, setBurst] = useState(0);
-  const loaded = useRef(0);
   const cues = useRef(freshDemoCues());
   const cueMode = useRef({ reduced, paused: !!control?.paused });
   useEffect(() => {
@@ -108,9 +109,11 @@ function DemoScene({
     if (reduced || control?.paused) onReady();
   }, [reduced, control?.paused, onReady]);
   const animation = useFrameCallback((info) => {
-    if (!running.value || !imagesReady.value || (control?.paused && !clock.value.manual)) return;
+    const now = Date.now();
+    const delta = Math.max(0, (now - lastTick.value) / 1000);
+    lastTick.value = now;
+    if (!running.value || (control?.paused && !clock.value.manual)) return;
     const before = snapshot(clock.value, scenario);
-    const delta = Math.min(0.1, (info.timeSincePreviousFrame ?? 0) / 1000);
     clock.value = advanceDemo(clock.value, scenario, delta);
     elapsed.value += delta;
     if (!reportedReady.value && elapsed.value >= readyTime) {
@@ -120,23 +123,21 @@ function DemoScene({
     const next = snapshot(clock.value, scenario);
     if (before.phase !== next.phase || info.timestamp - lastPublish.value >= 100) {
       lastPublish.value = info.timestamp;
-      scheduleOnRN(publish, next, !before.goalMet && next.goalMet);
+      scheduleOnRN(publish, next, scenario.kind !== 'gym-presence' && !before.goalMet && next.goalMet);
     }
   });
   useEffect(() => {
     animation.setActive(true);
     const subscription = AppState.addEventListener('change', (state) => {
+      lastTick.value = Date.now();
       running.value = state === 'active';
+      if (state !== 'active') clock.set((value) => endHold(value));
     });
     return () => {
       subscription.remove();
       animation.setActive(false);
     };
-  }, [animation, running]);
-  const onLoad = useCallback(() => {
-    loaded.current += 1;
-    if (loaded.current >= 8) imagesReady.set(true);
-  }, [imagesReady]);
+  }, [animation, running, clock, lastTick]);
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
   const isGym = scenario.kind.startsWith('gym');
   const unlockPromise = scenario.kind === 'walk-steps'
@@ -214,8 +215,8 @@ function DemoScene({
               transform: [{ scale }],
             }}>
             {scenario.place === 'treadmill' ? <Treadmill clock={clock} /> : null}
-            {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
-            <Phone {...{ clock, scenario, reduced, frame }} />
+            {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced }} />}
+            <Phone {...{ clock, scenario, frame }} />
             {goalCard ? (
               <View style={[styles.info, isGym ? { top: demoRows.below, right: 14 } : { top: demoRows.column, left: 14 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
@@ -239,12 +240,25 @@ function DemoScene({
             ) : null}
           </View>
         </View>
+        {scenario.kind === 'walk-state' ? (
+          <View style={styles.hold}>
+            <PressableScale label="Hold to walk" haptic="none"
+              onPressIn={() => { clock.set((value) => beginHold(value, scenario)); publish(snapshot(clock.get(), scenario), false); }}
+              onPressOut={() => { clock.set((value) => endHold(value)); publish(snapshot(clock.get(), scenario), false); }}
+              style={styles.holdButton}>
+              <Text style={styles.holdLabel}>{frame.manual === 'walking' ? 'Release to stop' : 'Hold to walk'}</Text>
+            </PressableScale>
+          </View>
+        ) : null}
         {burst > 0 && !reduced ? <Confetti key={burst} width={dimensions.width} /> : null}
       </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
+  hold: { position: 'absolute', bottom: t.space.xl, alignSelf: 'center' },
+  holdButton: { paddingHorizontal: t.space.xl, backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.pill },
+  holdLabel: { ...t.type.label, color: t.text.primary },
   root: { flexGrow: 1 },
   stage: { flex: 1, minHeight: 650, overflow: 'hidden' },
   liveRegion: { position: 'absolute', width: 1, height: 1, opacity: 0 },

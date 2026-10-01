@@ -9,21 +9,22 @@ and Sunburst asset provenance under `condition-demo/gen/`. The soft cards and
 illustrated palette deliberately follow that approval instead of normal app
 chrome. Assets are copied unchanged; no frames were regenerated.
 
-`model.ts` is the deterministic storyboard/hold reducer. It covers walking state
-(outside 8 s; treadmill 13 s), step/minute targets (11 s), gym arrival (13 s), gym presence
-(14 s: unlocked while there, locked again on leaving) and gym time (18 s). Step/minute values come from the actual draft, including small
-reviewer targets. Saved gym name/radius come from settings. Timings compress the
-explanation and never replace the domain's real verification/grace timers.
+`model.ts` is the deterministic storyboard/hold reducer. Continue becomes available
+at 2.2 s for walking targets, 2 s for walking state outside, 2.4 s for walking
+state on a treadmill, 2.15 s for gym arrival, 2.4 s for gym presence, and 2.25 s
+for gym minutes. These are demo timings, never real detection or grace timers.
+Step/minute values come from the draft, and gym name/radius come from settings.
 
-Reanimated's UI-thread frame callback drives scene time, walking time, parallax,
-frame blending, map movement, and progress. All eight canvases in the selected
-set stay mounted and decode before the clock starts. At most two walking poses
-are visible: opaque current frame plus a linearly blended next frame, full
-canvases and fixed feet baseline. The stride and scrolling clock only advance
-while walking, including splitting deltas at phase boundaries. React gets phase
-changes and at most 10 counter updates per second. Backgrounding stops playback
-and releases a hold; unmounting stops the callback. Reduce Motion changes are
-observed, suppressing pose crossfades, bobbing, phone dissolves, and confetti.
+The UI-thread frame callback advances from wall time starting at scene mount;
+image decoding never gates playback. All eight canvases stay mounted, with at
+most two walking poses visible. Walking time and parallax advance only while
+walking, splitting deltas at phase boundaries. React receives phase changes and
+at most 10 counter updates per second. The illustrated shield switches directly
+from the same snapshot as the person and map. Continuous Conditions have no
+app splash or arrival-confirmation delay. Hold to walk switches immediately on
+press and release, then resumes the walking phase after 1.2 s stopped.
+Backgrounding pauses the clock and releases a hold; unmounting stops playback.
+Reduce Motion suppresses pose crossfades, bobbing, and confetti.
 
 The native Screen Time shield is an illustration, not a native enforcement
 surface. Copy is matched to the bundled shield extension. TikTok marks identify
@@ -39,17 +40,11 @@ onboarding questions. A paused scene still accepts the hold interaction. The
 status card's native accessibility identifier exposes scenario/place/phase/phone/
 locked state without adding diagnostic text to the user-facing copy.
 
-`E2E-D1` in the existing SIM harness selects all seven variants, commits through S3,
-seeks/captures every phase, tests a real sustained touch and release, records a
-10-second walking cycle, checks persisted rules after Continue/Back, and asserts
-live PostHog `onboarding_screen_viewed` rows (`screen='plan-demo'`) for each scenario/place. It does not
-claim native Screen Time or real motion/location enforcement on a simulator.
-
-Run only when the pinned simulator is free:
-
-```sh
-python3 app-next/e2e-next/run.py E2E-D1 --run-id condition-demo-<timestamp>
-```
+The seven `demo-*-gated` onboarding proofs check a blocked early Continue and a
+successful later Continue. `demo-unlock-haptic` checks the initial lock and unlock
+cues. Timed simulator captures, actual taps, and continuous-state transitions are
+indexed in `.excer/demo-3s/index.md`. They do not claim native Screen Time or real
+motion/location enforcement on a simulator.
 
 New onboarding capability and assets are **new-submission material, never OTA**.
 

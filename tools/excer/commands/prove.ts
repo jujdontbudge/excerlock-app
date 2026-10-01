@@ -26,11 +26,11 @@ type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: stri
 
 async function runProof(feature: string, proof: Proof, dir: string): Promise<Outcome> {
   let udid: string;
-  if (proof.scenario) udid = await loadScenario(proof.scenario, proof.open, proof.prompt ?? 'grant', proof.relaunch ?? false);
+  if (proof.scenario) udid = await loadScenario(proof.scenario, proof.open, proof.prompt ?? 'grant', proof.relaunch ?? false, proof.openWait ?? 1.5);
   else {
     udid = (await ensureApp()).udid;
     if (proof.open) openUrl(udid, proof.open);
-    await sleep(1500);
+    await sleep((proof.openWait ?? 1.5) * 1000);
   }
   const failedTaps: string[] = [];
   const actionAttempts: ActionAttempt[] = [];

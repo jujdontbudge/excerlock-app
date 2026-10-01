@@ -115,7 +115,7 @@ Haptics follow the flow's events, and the dev menu's "Haptics log" is the simula
 - S2 ticks each task, then the "Plan created" badge plays `success`.
 - The Condition demo plays lock, progress detents and unlock once per entry, never on its auto-loop.
 
-`demoTime` starts the demo near its unlock; the taps on the inert promise caption only pace the proof.
+The haptic proof watches the demo from its beginning; taps on the inert promise caption pace the proof.
 
 ```proof
 name: choice-select-haptic
@@ -140,69 +140,90 @@ then-expect: Haptics log | Haptic commit
 ```proof
 name: demo-unlock-haptic
 scenario: condition-demo-walk-steps
-open: /onboarding/S3b?demoTime=5
+open: /onboarding/S3b
 tap: Once you hit 10,000 steps | Once you hit 10,000 steps | Once you hit 10,000 steps
 expect: Once you hit 10,000 steps | Continue
 then-open: /dev
 then-expect: Haptics log | Haptic unlock | Haptic lock
 ```
 
-The Condition demo's Continue stays disabled until the goal or state change plays, which takes under three seconds for every Condition. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/condition-demo-gate/INDEX.md`.
+The Condition demo's Continue stays disabled until the goal or state change plays, which takes under three seconds for every Condition. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/demo-3s/index.md`.
 
 ```proof
 name: demo-walk-steps-gated
 scenario: condition-demo-walk-steps
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you hit 10,000 steps | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-walk-minutes-gated
 scenario: condition-demo-walk-minutes
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you walk for 20 minutes | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-walk-state-outside-gated
 scenario: condition-demo-walk-state-outside
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you start walking | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-walk-state-treadmill-gated
 scenario: condition-demo-walk-state-treadmill
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you start walking | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-gym-arrival-gated
 scenario: condition-demo-gym-arrival
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you arrive at the gym | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-gym-presence-gated
 scenario: condition-demo-gym-presence
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: While you're at the gym | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof
 name: demo-gym-minutes-gated
 scenario: condition-demo-gym-minutes
 open: /onboarding/S3b
+open-wait: 0.5
 tap: Continue
 expect: Once you spend 30 minutes | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
 ```
 
 ```proof

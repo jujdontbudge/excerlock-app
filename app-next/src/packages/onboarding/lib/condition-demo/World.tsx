@@ -6,7 +6,7 @@ import { illustrationTokens as art } from '../../../ui/illustrationTokens';
 import { DemoState } from './model';
 const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const hill = (y: number) =>
-  `M-400 ${y + 60} C-300 ${y},-200 ${y + 80},-100 ${y + 20} S100 ${y + 70},200 ${y + 10} S400 ${y + 70},500 ${y + 20} S700 ${y + 70},800 ${y + 10} L800 400 L-400 400 Z`;
+  `M0 ${y + 30} C100 ${y - 10},100 ${y + 70},200 ${y + 30} S300 ${y + 70},400 ${y + 30} L400 400 L0 400 Z`;
 function Layer({ index, clock }: { index: number; clock: SharedValue<DemoState> }) {
   const props = useAnimatedProps(() => ({
     matrix: [1, 0, 0, 1, -((clock.value.distance * [0.08, 0.18, 0.45, 1][index]) % 400), 0],
@@ -43,7 +43,7 @@ function Layer({ index, clock }: { index: number; clock: SharedValue<DemoState> 
           {index === 3 ? (
             <>
               <Path d={hill(318)} fill={art.demo.ground} />
-              <Path d="M-10 350 Q190 328 410 350 L410 400 L-10 400Z" fill={art.demo.path} />
+              <Path d="M0 350 Q100 328 200 350 T400 350 L400 400 L0 400Z" fill={art.demo.path} />
               {[30, 110, 210, 290, 370].map((x, i) => (
                 <Rect key={x} x={x} y={370 + (i % 2) * 10} width={18} height={6} rx={3} fill={art.demo.pebble} />
               ))}

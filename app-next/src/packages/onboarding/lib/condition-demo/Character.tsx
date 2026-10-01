@@ -28,14 +28,12 @@ function Frame({
   clock,
   scenario,
   reduced,
-  onLoad,
 }: {
   source: ImageSourcePropType;
   index: number;
   clock: SharedValue<DemoState>;
   scenario: Scenario;
   reduced: boolean;
-  onLoad: () => void;
 }) {
   const style = useAnimatedStyle(() => {
     const state = snapshot(clock.value, scenario);
@@ -52,7 +50,6 @@ function Frame({
       source={source}
       resizeMode="contain"
       fadeDuration={0}
-      onLoad={onLoad}
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, style]}
     />
   );
@@ -61,12 +58,10 @@ export function Character({
   clock,
   scenario,
   reduced,
-  onLoad,
 }: {
   clock: SharedValue<DemoState>;
   scenario: Scenario;
   reduced: boolean;
-  onLoad: () => void;
 }) {
   const bob = useAnimatedStyle(() => ({
     transform: [
@@ -94,7 +89,7 @@ export function Character({
         bob,
       ]}>
       {frames.map((source, index) => (
-        <Frame key={index} {...{ source, index, clock, scenario, reduced, onLoad }} />
+        <Frame key={index} {...{ source, index, clock, scenario, reduced }} />
       ))}
     </Animated.View>
   );

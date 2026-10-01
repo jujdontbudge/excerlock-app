@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { StyleSheet, Text as NativeText, TextProps, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
@@ -6,11 +5,9 @@ import Animated, {
   SharedValue,
   useAnimatedProps,
   useAnimatedStyle,
-  useDerivedValue,
 } from 'react-native-reanimated';
 import { tokens as t } from '../../../ui/tokens';
 import { illustrationTokens as art } from '../../../ui/illustrationTokens';
-import { motionFor } from '../../../ui/useMotion';
 import { DemoState, Scenario, snapshot } from './model';
 import { demoRows } from './layout';
 const ScanArc = Animated.createAnimatedComponent(Circle);
@@ -43,27 +40,23 @@ export function ClayLock() {
 export function Phone({
   clock,
   scenario,
-  reduced,
   frame,
 }: {
   clock: SharedValue<DemoState>;
   scenario: Scenario;
-  reduced: boolean;
   frame: ReturnType<typeof snapshot>;
 }) {
   const scanArc = useAnimatedProps(() => ({ strokeDashoffset: 264 * (1 - snapshot(clock.value, scenario).p) }));
-  const { timing } = useMemo(() => motionFor(reduced), [reduced]);
-  const shieldAlpha = useDerivedValue(() => timing(snapshot(clock.value, scenario).phone === 'shield' ? 1 : 0, 'standard'));
-  const shield = useAnimatedStyle(() => ({ opacity: shieldAlpha.value }));
+  const shield = useAnimatedStyle(() => ({ opacity: snapshot(clock.value, scenario).phone === 'shield' ? 1 : 0 }));
   const xl = useAnimatedStyle(() => ({ opacity: snapshot(clock.value, scenario).phone === 'excerlock' ? 1 : 0 }));
   const splash = useAnimatedStyle(() => {
     const state = snapshot(clock.value, scenario);
     return {
       opacity:
-        state.phone === 'tiktok' && !['leave', 'unlocked'].includes(state.phase)
-          ? Math.max(0, Math.min(1, (1.3 - state.local) / 0.3))
-          : state.phone === 'tiktok' && state.phase === 'unlocked' && scenario.kind !== 'gym-minutes'
-            ? Math.max(0, Math.min(1, (1.3 - state.local) / 0.3))
+        state.phone === 'tiktok' && scenario.kind !== 'walk-state' && !['leave', 'unlocked'].includes(state.phase)
+          ? Math.max(0, Math.min(1, (0.25 - state.local) / 0.1))
+          : state.phone === 'tiktok' && state.phase === 'unlocked' && scenario.kind !== 'gym-minutes' && scenario.kind !== 'gym-presence'
+            ? Math.max(0, Math.min(1, (0.25 - state.local) / 0.1))
             : 0,
     };
   });

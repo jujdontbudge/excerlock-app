@@ -49,6 +49,7 @@ expect: Locked | Arrive at the gym | I'm at the gym
 Proof fields:
 - `scenario`: loaded after a cold relaunch.
 - `open`: a route or URL.
+- `open-wait`: seconds to settle after opening (default 1.5). Use a shorter wait for early taps on time-gated screens; measure exact deadlines with timestamped captures.
 - `prompt`: `grant` (the default), `deny` or `ask`.
 - `relaunch: true`: cold-launch again after the load, for behavior that happens only at startup.
 - `relaunch-after-expect: true` and `after-relaunch-expect`: after the initial actions and `expect` pass, save a before-relaunch screenshot, cold-relaunch, and require the second label set. Use this to prove a transition from a genuinely established runtime state across process death.

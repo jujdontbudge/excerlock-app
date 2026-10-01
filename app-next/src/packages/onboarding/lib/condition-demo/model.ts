@@ -45,27 +45,27 @@ export function phasesFor(s: Scenario): Phase[] {
     return [
       ...(s.place === 'treadmill'
         ? [
-            { name: 'prop', duration: 0.5 },
-            { name: 'scan', duration: 0.75 },
+            { name: 'prop', duration: 0.4 },
+            { name: 'scan', duration: 0.5 },
           ]
         : []),
-      { name: 'walking', duration: s.place === 'treadmill' ? 1 : 1.5 },
+      { name: 'walking', duration: s.place === 'treadmill' ? 0.9 : 1.4 },
       { name: 'blocked', duration: 1.2 },
     ];
   if (s.kind.startsWith('walk'))
     return [
-      { name: 'walking', duration: 2.5 },
+      { name: 'walking', duration: 2.2 },
       { name: 'unlocked', duration: 3 },
     ];
   return [
     { name: 'approach', duration: 1 },
-    { name: 'confirming', duration: 0.3 },
+    ...(s.kind === 'gym-presence' ? [] : [{ name: 'confirming', duration: 0.15 }]),
     ...(s.kind === 'gym-minutes'
       ? [
-          { name: 'counting', duration: 1.4 },
+          { name: 'counting', duration: 1.1 },
           { name: 'unlocked', duration: 2 },
         ]
-      : [{ name: 'unlocked', duration: s.kind === 'gym-presence' ? 1 : 3 }]),
+      : [{ name: 'unlocked', duration: s.kind === 'gym-presence' ? 0.8 : 3 }]),
     { name: 'leave', duration: 1.2 },
   ];
 }
@@ -165,7 +165,7 @@ export function snapshot(state: DemoState, s: Scenario) {
             ? 'Leaving the gym locks your apps again'
             : 'Today stays unlocked'
           : 'Location detected at the gym';
-  const mapFraction = phase === 'approach' ? ease(p) * 0.995 : phase === 'leave' ? 1 - ease(p) * 0.6 : 1;
+  const mapFraction = phase === 'approach' ? ease(p) * 0.995 : phase === 'leave' ? 1 - ease(p) : 1;
   return {
     time: state.time,
     manual: state.manual,
@@ -218,7 +218,8 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
       if (next.manual === 'blocked' && next.manualTime >= 1.2 - 0.0000001) {
         next.manual = null;
         next.manualTime = 0;
-        next.time = s.place === 'treadmill' ? 5 : 0;
+        next.time = phasesFor(s).slice(0, phasesFor(s).findIndex((item) => item.name === 'walking'))
+          .reduce((sum, item) => sum + item.duration, 0);
       }
     } else next.time = (next.time + dt) % phase.total;
     remaining -= dt;
