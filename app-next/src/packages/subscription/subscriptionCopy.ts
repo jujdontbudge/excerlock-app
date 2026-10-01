@@ -39,7 +39,6 @@ export const subscriptionCopy = {
   },
   noPayment: 'No payment due now',
   trialBadge: (offer: string) => `${offer} trial`,
-  restoreShort: 'Restore',
   plans: [
     { id: 'annual', title: 'Annual', price: '$–.–– / year · 7-day free trial' },
     { id: 'monthly', title: 'Monthly', price: '$–.–– / month' },

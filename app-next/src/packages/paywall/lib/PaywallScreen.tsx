@@ -178,18 +178,7 @@ export function PaywallScreen({
                 {copy.before.trim()}
               </Label>
             ) : <View style={{ flex: 1 }} />}
-            <View style={{ width: t.control.full, alignItems: 'flex-end' }}>
-              <PressableScale
-                label={subscriptionCopy.restore}
-                accessibilityState={{ disabled: busy !== null }}
-                onPress={() => {
-                  if (busy === null) void restore();
-                }}>
-                <Label variant="support" tone="secondary">
-                  {subscriptionCopy.restoreShort}
-                </Label>
-              </PressableScale>
-            </View>
+            <View style={{ width: t.control.full }} />
           </View>
           {placement === 'onboarding' ? (
             <Label accessible={false} variant="display" numberOfLines={1} adjustsFontSizeToFit style={{ textAlign: 'center', paddingRight: t.space.xxl }}>
@@ -230,18 +219,15 @@ export function PaywallScreen({
             loading={busy !== null}
             onPress={press}
           />
-          <Label variant="micro" tone="secondary" style={{ textAlign: 'center', paddingTop: t.space.sm }}>
-            {subscriptionCopy.terms}
-          </Label>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg, paddingTop: t.space.xs }}>
-            {[subscriptionCopy.termsOfUse, subscriptionCopy.privacyPolicy].map((link) => (
-              <PressableScale
-                key={link.url}
-                label={link.title}
-                accessibilityRole="link"
-                onPress={() => void Linking.openURL(link.url).catch(() => notify(subscriptionCopy.linkError))}>
-                <Label variant="micro" tone="secondary" style={{ textDecorationLine: 'underline' }}>
-                  {link.title}
+            {[
+              { label: subscriptionCopy.termsOfUse.title, onPress: () => openLink(subscriptionCopy.termsOfUse.url) },
+              { label: subscriptionCopy.privacyPolicy.title, onPress: () => openLink(subscriptionCopy.privacyPolicy.url) },
+              { label: subscriptionCopy.restore, onPress: () => { if (busy === null) void restore(); } },
+            ].map((link) => (
+              <PressableScale key={link.label} label={link.label} onPress={link.onPress}>
+                <Label variant="micro" tone="secondary">
+                  {link.label}
                 </Label>
               </PressableScale>
             ))}
@@ -274,6 +260,10 @@ export function PaywallScreen({
       </View>
     </ScreenShell>
   );
+}
+
+function openLink(url: string) {
+  void Linking.openURL(url).catch(() => notify(subscriptionCopy.linkError));
 }
 
 function PlanCard({
