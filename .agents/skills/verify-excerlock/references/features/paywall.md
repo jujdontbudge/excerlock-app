@@ -174,7 +174,7 @@ scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
 tap: Start for $0.00 | Continue with Apple
 wait: 25
-expect: Choose apps
+expect: Allow Screen Time
 then-open: dev
 then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"}
 ```
@@ -196,7 +196,7 @@ scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall&restore=restored
 tap: Restore purchases | Continue with Apple
 wait: 25
-expect: Choose apps
+expect: Allow Screen Time
 ```
 
 ```proof
