@@ -9,7 +9,7 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- A tilted field of locked TikTok, Instagram, YouTube, Snapchat, X, Facebook, Reddit, Threads, Netflix and Pinterest App Store icons, mixed with orange SF Symbol exercise and health marks, fills the top of the orange screen. Tiles touching the headline go faint and tiles behind the frosted Benefits card show through at reduced strength. Below sit the free trial switch, the white Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and the orange Start for $0.00 button. Each row shows only a per-month price, never the yearly amount: with the trial on it reads "FREE" on top and "<days> day trial then <price>/mo" underneath; with the trial off it shows the plan name over the per-month price. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link.
+- A tilted field of locked TikTok, Instagram, YouTube, Snapchat, X, Facebook, Reddit, Threads, Netflix and Pinterest App Store icons, mixed with orange SF Symbol exercise and health marks, fills the top of the orange screen. Tiles touching the headline go faint and tiles behind the frosted Benefits card show through at reduced strength. Below sit the free trial switch, the white Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and the orange Start for $0.00 button. With the trial on, each row reads "FREE" on top and "<days> day trial then <price>/mo" underneath, with no yearly amount. With the trial off, each row shows the plan name and billed price (Yearly $49.99/year) over the per-month price. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link.
 - The Benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
 - The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The dev fake serves both kinds; production serves trial-only plans until no-trial twins are attached in Adapty.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
@@ -33,7 +33,7 @@ expect: Become ADDICTED to exercise | Benefits | Lose 15.0 pounds of fat | Walk 
 name: trial-switch
 open: /sample-paywall
 tap: Free trial enabled
-expect: Enable free trial | Annual · $49.99 / year · Yearly · $4.17/mo | Monthly · $9.99 / month · Monthly · $9.99/mo | Continue
+expect: Enable free trial | Yearly $49.99/year · $4.17/mo | Monthly $9.99/month · $9.99/mo | Continue
 then-tap: Enable free trial
 then-expect: Free trial enabled | Yearly FREE · 7 day trial then $4.17/mo | Monthly FREE · 7 day trial then $9.99/mo | Start for $0.00
 ```

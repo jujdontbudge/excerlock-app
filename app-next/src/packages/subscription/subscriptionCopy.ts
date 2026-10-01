@@ -84,6 +84,9 @@ export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscrip
 
 export const perMonth = (price: string) => `${price}/mo`;
 
+export const perPeriod = (product: { localizedPrice: string; localizedPeriod: string; periodUnit: string | null }) =>
+  product.periodUnit ? `${product.localizedPrice}/${product.periodUnit}` : `${product.localizedPrice} / ${product.localizedPeriod}`;
+
 const planNames: Record<string, string> = { year: 'Yearly', month: 'Monthly', week: 'Weekly', day: 'Daily' };
 export const planName = (product: { title: string; periodUnit: string | null }) =>
   (product.periodUnit && planNames[product.periodUnit]) || product.title;

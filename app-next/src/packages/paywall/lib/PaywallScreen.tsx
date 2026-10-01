@@ -17,7 +17,7 @@ import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
-import { subscriptionCopy, planRowTitle, planName } from '../../subscription/subscriptionCopy';
+import { subscriptionCopy, planRowTitle, planName, perPeriod } from '../../subscription/subscriptionCopy';
 import { onboardingStore as useOnboardingStore } from '../../onboarding/onboardingStore';
 import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
 import { draftFromAnswers } from '../../conditions/answersDraft';
@@ -363,7 +363,8 @@ function PlanRow({
     pop = useSharedValue(1),
     first = useRef(true),
     monthly = `${product.localizedMonthlyPrice ?? product.localizedPrice}${subscriptionCopy.perMonthShort}`,
-    lead = product.offerLabel ? subscriptionCopy.trialThen(trialLength(product.offerLabel)) : '';
+    lead = product.offerLabel ? subscriptionCopy.trialThen(trialLength(product.offerLabel)) : '',
+    top = lead ? subscriptionCopy.free : perPeriod(product);
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -375,7 +376,7 @@ function PlanRow({
   const strong = { color: t.text.primary, fontFamily: t.font.bold };
   return (
     <PressableScale
-      label={`${planRowTitle(product)} · ${planName(product)}${lead ? ` ${subscriptionCopy.free}` : ''} · ${lead}${monthly}`}
+      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${lead}${monthly}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
@@ -400,9 +401,9 @@ function PlanRow({
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ textAlign: 'left', color: t.text.secondary }}>
-              {lead ? `${planName(product)} ` : null}
+              {`${planName(product)} `}
               <Label variant="body" style={strong}>
-                {lead ? subscriptionCopy.free : planName(product)}
+                {top}
               </Label>
             </Label>
             <Label
