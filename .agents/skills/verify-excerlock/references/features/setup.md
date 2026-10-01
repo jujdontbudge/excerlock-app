@@ -2,12 +2,12 @@
 id: setup
 title: Setup, sign-in and permissions
 routes: [setup/[step], permissions/[step], sign-in]
-scenarios: [home-permission-needed, home-no-apps, home-walking-session, trial-active]
+scenarios: [home-permission-needed, home-no-apps, home-walking-session, trial-active, permission-journey, permission-condition-entry, permission-gym-setup]
 events: [permission_resolved]
 depends: [paywall, conditions]
 ---
 ## Sub-features
-- After the paywall, `/setup/X1` requires an explicit Apple, Google or email-code sign-in; no skip and no saved-session Continue. Each cold launch also requires explicit sign-in before any main-app route, even when a secure session and completed Setup are restored. Then comes one screen per Setup need, in the order `apps` (Screen Time and the locked apps), `motion`, `location` (Always for unlock-while-walking, While Using for a gym) and `gym` (opens the gym picker). The list comes from `src/domain/setupNeeds.ts`.
+- After the paywall, `/setup/X1` requires an explicit Apple, Google or email-code sign-in; no skip and no saved-session Continue. Each cold launch also requires explicit sign-in before any main-app route, even when a secure session and completed Setup are restored. Then comes Allow Screen Time, Choose apps to lock, Motion, Location While Using and (for Walking state) its Always upgrade, then Gym. Pages remain in place until the real request resolves; allow and deny advance automatically. Choosing Locked apps retains a counts summary and requires Continue. The list comes from `permissions/setupNeeds.ts`.
 - `PermissionGuide` draws the exact iOS alert with an arrow pointing at the choice to tap.
 - Home's reminder card ("Your apps are not locked yet", "Walks cannot open your apps yet") and saving a condition that needs something new both open the same screens at `/permissions/<step>`, without sign-in.
 - Sign-in with Apple, Google or an email code, also reachable from Settings and the welcome screen.
@@ -99,3 +99,136 @@ expect: Home | Locked
 - `excer` pre-grants simulator location, motion, camera and photos, so real iOS alerts do not block the screen. To see a real alert, run `xcrun simctl privacy <udid> reset all com.johansardar.excerlock`.
 - iOS offers the upgrade from While Using to Always location only once. After a refusal, the flow sends the user to Settings.
 - Setup steps `X3`–`X5` exist only so older saved installs can resume.
+
+```proof
+name: screen-time-separate-page
+scenario: permission-journey
+open: /permissions/apps
+expect: Allow Screen Time | Tap “Continue” | Don’t Allow
+absent: Choose apps to lock
+```
+
+```proof
+name: screen-time-pretend-deny-requests
+scenario: permission-journey
+open: /permissions/apps
+prompt: grant
+tap: Don’t Allow
+expect: Choose apps to lock | Choose apps | Your choices stay on your iPhone.
+absent: Count your steps
+```
+
+```proof
+name: screen-time-denial-skips-picker
+scenario: permission-journey
+open: /permissions/apps
+prompt: deny
+tap: Continue
+expect: Count your steps | Allow
+absent: Choose apps to lock
+```
+
+```proof
+name: motion-denial-advances
+scenario: permission-journey
+open: /permissions/apps
+prompt: deny
+tap: Continue | Allow
+expect: Unlock apps as you walk | Allow While Using App
+```
+
+```proof
+name: location-denial-advances
+scenario: permission-journey
+open: /permissions/apps
+prompt: deny
+tap: Continue | Allow | Allow While Using App
+expect: Pick your gym | Choose gym
+absent: Change to Always Allow
+```
+
+```proof
+name: picker-summary-before-continue
+scenario: home-no-apps
+open: /permissions/apps
+tap: Choose apps | Social | Done
+expect: Choose apps to lock | Locked apps | Change apps | Continue
+```
+
+```proof
+name: home-reminder-opens-picker
+scenario: home-no-apps
+open: /home
+tap: Choose apps
+expect: Choose apps to lock | Choose apps
+```
+
+- Real-permission evidence uses `EXPO_PUBLIC_EXCER_NATIVE_PERMISSIONS=1` on Metro and excer commands. Identity, purchase and activity remain fixtures; permission requests and Apple picker use production native adapters. This option disables excer's automatic privacy grants. Uninstall/reinstall for fresh answers, and use `privacy reset all` if TCC retains an answer. Ordinary proof blocks use the fake boundary for deterministic automation.
+- Screen Time's authorization sheet has no accessibility labels on this simulator; capture it and use screenshot-derived coordinates for Allow with Passcode/Done. Simulator passcode `123456` is accepted.
+- ScreensDesign research is recorded in `docs/research/permission-app-selection.md`.
+
+```proof
+name: settings-unanswered-motion
+scenario: permission-journey
+open: /settings/permission/motion
+expect: Motion & Fitness | Don’t Allow | Allow | Continue
+absent: Open Settings | Not requested
+```
+
+```proof
+name: settings-unanswered-notifications
+scenario: permission-journey
+open: /settings/permission/notifications
+expect: Notifications | Don’t Allow | Allow | Continue
+absent: Open Settings | Not requested
+```
+
+
+```proof
+name: condition-needs-motion
+scenario: permission-condition-entry
+open: /builder
+tap: Walking | Continue | Continue | Reach a step goal | Continue | Continue | Continue | Save
+expect: Count your steps | Allow | Don’t Allow
+```
+
+```proof
+name: paid-setup-gym-picker
+scenario: permission-gym-setup
+open: /paywall
+tap: Sign in | Continue with Apple | Choose gym
+expect: Save gym
+```
+
+```proof
+name: settings-camera-denial-return
+scenario: permission-journey
+open: /settings/permission/camera
+prompt: deny
+tap: Allow
+expect: Home
+then-open: /settings/permission/camera
+then-expect: Camera | Open Settings
+```
+
+```proof
+name: settings-notifications-denial-return
+scenario: permission-journey
+open: /settings/permission/notifications
+prompt: deny
+tap: Don’t Allow
+expect: Home
+then-open: /settings/permission/notifications
+then-expect: Notifications | Open Settings
+```
+
+```proof
+name: always-denial-settings
+scenario: home-walking-session
+open: /settings/permission/location
+prompt: deny
+tap: Keep Only While Using
+expect: Home
+then-open: /settings/permission/location
+then-expect: Location | Open Settings
+```

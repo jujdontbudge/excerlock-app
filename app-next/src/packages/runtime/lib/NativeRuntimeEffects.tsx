@@ -1,3 +1,4 @@
+import { getCameraPermissionsAsync } from 'expo-image-picker';
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { usePathname, useRootNavigationState } from 'expo-router';
@@ -102,6 +103,9 @@ export function NativeRuntimeEffects() {
       });
     };
     const refresh = () => {
+      void getCameraPermissionsAsync().then((result) => {
+        permissionsStore.getState().patch({ camera: result.granted ? 'granted' : result.status === 'undetermined' ? 'notDetermined' : 'denied' });
+      }).catch(reportRuntimeError);
       void expoLocalNotifications.permission(false).then(update).catch(reportRuntimeError);
     };
     refresh();

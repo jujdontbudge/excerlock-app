@@ -1,3 +1,4 @@
+import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { HomeLockStatus } from './HomeLockStatus';
 import { HomeConditionCard } from './HomeConditionCard';
 import { scheduleLabel } from '../schedule/scheduleLabel';
@@ -109,6 +110,7 @@ export function HomeScreen() {
   });
   return (
     <ScreenShell dock
+      overlay={<ScreenTimePickerHost />}
       onLayout={markHomeLayout}
       orangeBackground
       safeBottom={false}

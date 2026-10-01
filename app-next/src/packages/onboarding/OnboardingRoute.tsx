@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { notify } from '../ui/Notice';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
 import { useOnboarding } from './lib/useOnboarding';
@@ -30,6 +30,7 @@ export function OnboardingRoute() {
     [celebrating, setCelebrating] = useState(false),
     [asking, setAsking] = useState(false),
     [demoReady, setDemoReady] = useState(false);
+  const promptBusy = useRef(false);
   const onDemoReady = useCallback(() => setDemoReady(true), []);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
@@ -42,12 +43,17 @@ export function OnboardingRoute() {
   const advance = async () => {
     if (flow.step === 'S3b' && !demoReady) return;
     if (flow.step === 'S3d') {
-      if (asking) return;
+      if (promptBusy.current) return;
       if (runtime.notifications.status() === 'notDetermined') {
+        promptBusy.current = true;
         setAsking(true);
         try {
           await runtime.notifications.request();
+        } catch {
+          notify(c.permissionRetry);
+          return;
         } finally {
+          promptBusy.current = false;
           setAsking(false);
         }
       }

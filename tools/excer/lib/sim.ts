@@ -1,7 +1,7 @@
 import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { appRoot, stateDir, timestamp } from './paths.ts';
 import { walk } from './files.ts';
 import { must, run, sleep } from './shell.ts';
@@ -99,6 +99,7 @@ export function install(udid: string, path?: string): string {
 }
 
 export function grantPermissions(udid: string): void {
+  if (process.env.EXPO_PUBLIC_EXCER_NATIVE_PERMISSIONS === '1') return;
   for (const service of ['location-always', 'motion', 'camera', 'photos'])
     run('xcrun', simctlArgs(udid, ['privacy', udid, 'grant', service, bundleId]));
 }
@@ -186,29 +187,26 @@ export function launchDevClient(udid: string): void {
 }
 
 export function screenshot(udid: string, path = join(stateDir('shots'), `${timestamp()}.png`)): string {
-  must('xcrun', simctlArgs(udid, ['io', udid, 'screenshot', path]));
+  must('xcrun', simctlArgs(udid, ['io', udid, 'screenshot', resolve(path)]));
   return path;
 }
 
 export type AxNode = { AXLabel?: string | null; AXValue?: string | null; type?: string; frame: { x: number; y: number; width: number; height: number } };
 
-const companionSocket = (udid: string) => `/tmp/idb/${udid}_companion.sock`;
-
 export function ensureCompanion(udid: string): void {
-  if (run('idb', ['ui', 'describe-all', '--udid', udid]).code === 0) return;
-  const socket = companionSocket(udid);
-  run('/bin/mkdir', ['-p', '/tmp/idb']);
-  run('/bin/rm', ['-f', socket]);
-  const log = openSync(join(stateDir(), `idb-companion-${udid}.log`), 'w');
+  if (run('idb', ['ui', 'describe-all', '--udid', udid], { timeout: 10000 }).code === 0) return;
+  const logPath = join(stateDir(), `idb-companion-${udid}.log`);
+  const log = openSync(logPath, 'w');
   const set = deviceSet(udid);
-  const child = spawn('idb_companion', ['--udid', udid, '--grpc-domain-sock', socket, ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
+  const child = spawn('idb_companion', ['--udid', udid, '--grpc-port', '0', ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
   child.unref();
   closeSync(log);
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (existsSync(socket) && run('idb', ['ui', 'describe-all', '--udid', udid]).code === 0) return;
+    const port = readFileSync(logPath, 'utf8').match(/"grpc_port"\s*:\s*(\d+)/)?.[1];
+    if (port && run('idb', ['connect', '127.0.0.1', port], { timeout: 10000 }).code === 0) return;
     run('/bin/sleep', ['0.5']);
   }
-  throw new Error(`idb_companion did not start for ${udid}; see ${join(stateDir(), `idb-companion-${udid}.log`)}`);
+  throw new Error(`idb_companion did not start for ${udid}; see ${logPath}`);
 }
 
 export function tree(udid: string): AxNode[] {
@@ -252,7 +250,7 @@ export async function tap(udid: string, label: string): Promise<string> {
   const matches = nodes.filter((node) => labels([node])[0]?.includes(normalise(label)));
   const exact = (node: AxNode) => Number(labels([node])[0] !== normalise(label));
   const interactionRank = (node: AxNode) => node.type === 'Button' ? 0 : node.type === 'TextField' ? 1 : 2;
-  matches.sort((a, b) => exact(a) - exact(b) || interactionRank(a) - interactionRank(b));
+  matches.sort((a, b) => interactionRank(a) - interactionRank(b) || exact(a) - exact(b));
   const frame = matches[0]?.frame;
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);

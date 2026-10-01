@@ -1,3 +1,4 @@
+import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { useState } from 'react';
 import { notify } from '../ui/Notice';
 import { View } from 'react-native';
@@ -42,7 +43,8 @@ export function ConditionsScreen({
   return (
     <ScreenShell dock
       safeBottom={false}
-      overlay={
+      overlay={<>
+        <ScreenTimePickerHost />
         <ConfirmSheet
           open={deleting !== null}
           title={c.deleteTitle}
@@ -58,7 +60,7 @@ export function ConditionsScreen({
             setDeleting(null);
           }}
         />
-      }>
+      </>}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
         <View style={{ flex: 1 }}><Heading title={c.title} /></View>
         {ordered.length ? (

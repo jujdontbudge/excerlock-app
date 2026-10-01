@@ -1,3 +1,4 @@
+import { requestCameraPermissionsAsync } from 'expo-image-picker';
 import { requireOptionalNativeModule } from 'expo';
 import { GaitPort } from '../../ports/GaitPort';
 import { getExcerlockGaitVisionPreview } from '../../../../modules/excerlock-gait-vision';
@@ -18,15 +19,7 @@ export function nativeGait(): GaitPort | null {
       const subscription = module.addListener('onGaitSample', cb);
       return () => subscription.remove();
     },
-    permission: async () => {
-      try {
-        await module.start();
-        await module.stop();
-        return 'granted';
-      } catch {
-        return 'denied';
-      }
-    },
+    permission: async () => (await requestCameraPermissionsAsync()).granted ? 'granted' : 'denied',
     Preview: () => <Preview active style={{ flex: 1 }} />,
   };
 }

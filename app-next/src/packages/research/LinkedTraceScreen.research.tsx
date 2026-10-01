@@ -42,7 +42,7 @@ const SAVED_NOTE = 'The trace is saved on this phone. Share it now, or reconnect
 const RETURNED_NOT_SAVED = 'That test link is not an active or saved test on this phone, so there was nothing to finalize. Start test begins a clean run.';
 
 export function LinkedTraceScreen() {
-  const runtime = useRuntime();
+  const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost;
   const entitlementStatus = useEntitlementStore((state) => state.data.entitlement.status);
   const params = useLocalSearchParams<{ sessionId?: string | string[]; nonce?: string | string[]; protocolVersion?: string | string[] }>();
   const paramSessionId = Array.isArray(params.sessionId) ? params.sessionId[0] : params.sessionId;
@@ -391,7 +391,7 @@ export function LinkedTraceScreen() {
   const showSavedSection = finalized.length > 0 && phase !== 'running' && phase !== 'review' && phase !== 'expired';
 
   return (
-    <ScreenShell orangeBackground={false} contentStyle={s.content}>
+    <ScreenShell orangeBackground={false} contentStyle={s.content} overlay={AppPickerHost ? <AppPickerHost /> : null}>
       <Heading title={title} support="Research build · everything stays on this phone · two-hour limit" />
 
       <StatusCard

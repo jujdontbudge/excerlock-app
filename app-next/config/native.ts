@@ -63,7 +63,7 @@ export const nativePlugins: ExpoPlugin[] = [
     {
       isIosBackgroundLocationEnabled: true,
       locationWhenInUsePermission:
-        "Allow ExcerLock to check whether you are at a saved gym.",
+        "Allow ExcerLock to support walking detection and recognize visits to your saved gyms.",
       // Always also powers the lock-window keep-alive (ADR 0036/0040): without
       // it iOS suspends ExcerLock and a pocket walk can never lift the shields.
       locationAlwaysAndWhenInUsePermission:

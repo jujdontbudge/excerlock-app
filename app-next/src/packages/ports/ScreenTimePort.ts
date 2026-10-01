@@ -3,6 +3,7 @@ import { Unsubscribe } from '../model/models';
 import type { WatchdogRegistration } from './watchdog';
 export type LockApplyResult = { applied: boolean; reason?: string };
 export interface ScreenTimePort {
+  selectionSummary(): { applicationCount: number; categoryCount: number; webDomainCount?: number } | null;
   authorizationStatus(): PermissionStatus;
   requestAuthorization(): Promise<PermissionStatus>;
   presentAppPicker(): Promise<LockedApps>;

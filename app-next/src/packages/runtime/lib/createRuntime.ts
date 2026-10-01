@@ -99,6 +99,11 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
         runtime.gait = nativeGait() ?? runtime.gait;
       }
     }
+    if (process.env.EXPO_PUBLIC_EXCER_NATIVE_PERMISSIONS === '1' && Platform.OS === 'ios') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- explicit dev-only harness uses production permission adapters
+      const { attachNativePermissionHarness } = require('./NativePermissionHarness') as typeof import('./NativePermissionHarness');
+      attachNativePermissionHarness(runtime);
+    }
     return runtime;
   }
   throw new Error('Demo services are unavailable in a release build');

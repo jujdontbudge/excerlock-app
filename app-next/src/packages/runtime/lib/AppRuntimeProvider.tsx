@@ -65,21 +65,13 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       {children}
       <NotificationLandingHost />
       <OtaResumeHost />
-      {runtime.kind === 'real' ? <NativePickerHost /> : null}
+      {runtime.kind === 'real' ? <NativeEffects /> : null}
     </RuntimeContext.Provider>
   );
 }
 
-function NativePickerHost() {
-  const { NativeScreenTimePickerHost } =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
-    require('../../app-selection/createNativeScreenTimePort') as typeof import('../../app-selection/createNativeScreenTimePort');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
+function NativeEffects() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so fake runtimes have no native effects
   const { NativeRuntimeEffects } = require('./NativeRuntimeEffects') as typeof import('./NativeRuntimeEffects');
-  return (
-    <>
-      <NativeScreenTimePickerHost />
-      <NativeRuntimeEffects />
-    </>
-  );
+  return <NativeRuntimeEffects />;
 }

@@ -1,3 +1,4 @@
+import { FakePickerHost } from './FakePickerHost';
 import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
 import { stores } from '../launch/stores';
@@ -34,6 +35,7 @@ import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
+import { approveLaunchSignIn } from '../identity/launchSignInGate';
 import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
@@ -53,7 +55,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   const ctx = new FakeContext(scenarios[0]),
     notificationResponses = NotificationResponsesFake((snapshot) => ctx.update({ notificationResponses: snapshot })),
     walking = WalkingFake(ctx),
-    gait = GaitFake(),
+    gait = GaitFake(false, () => ctx.request('camera')),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
@@ -190,6 +192,12 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
             : undefined,
           otaResume: null,
         });
+        if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
+          if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
+          approveLaunchSignIn(auth.identity());
+          const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
+          if (await verifySelectedAccount(journeyRuntime) === 'paid') finishSetup(journeyRuntime);
+        }
         walking.resume();
       },
       advance: ctx.clock.advance,
@@ -590,6 +598,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     };
   return {
     kind: 'fake',
+    appPickerHost: FakePickerHost,
     clock: ctx.clock,
     screenTime: ScreenTimeFake(ctx),
     steps: StepsFake(ctx),

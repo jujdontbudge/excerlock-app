@@ -2,7 +2,19 @@ export const setupCopy = {
   settings: 'Open Settings',
   notNow: 'Not now',
   retry: "That didn't work. Please try again.",
+  chooseBody: 'Choose the distracting apps and categories your Conditions will lock.',
+  choose: 'Choose apps',
+  change: 'Change apps',
+  continue: 'Continue',
+  selected: 'Locked apps',
+  privacy: 'Your choices stay on your iPhone.',
+  summary: (apps: number, categories: number, websites = 0) => `${apps} ${apps === 1 ? 'app' : 'apps'} · ${categories} ${categories === 1 ? 'category' : 'categories'}${websites > 0 ? ` · ${websites} ${websites === 1 ? 'website' : 'websites'}` : ''}`,
   flow: {
+    screenTime: {
+      title: 'Allow Screen Time',
+      action: 'Continue',
+      blocked: 'Screen Time is off for ExcerLock. Turn it on in Settings.',
+    },
     apps: {
       title: 'Choose apps to lock',
       action: 'Continue',

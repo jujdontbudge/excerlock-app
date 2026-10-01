@@ -1,7 +1,7 @@
 const { withInfoPlist } = require("expo/config-plugins");
 
 const MOTION_USAGE_DESCRIPTION =
-  "ExcerLock uses Motion & Fitness data to verify that you're walking during Walk & Scroll sessions.";
+  "ExcerLock uses Motion & Fitness data to count steps and detect walking for your Conditions.";
 
 function withExcerlockMotion(config) {
   return withInfoPlist(config, (nextConfig) => {

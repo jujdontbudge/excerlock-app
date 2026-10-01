@@ -4,7 +4,6 @@ import type { LockApplyResult, ScreenTimePort } from '../ports/ScreenTimePort';
 import { deviceActivityApi } from './lib/deviceActivityApi';
 import { nativeScreenTimePicker, NativeScreenTimePickerHost } from './lib/NativeScreenTimePickerHost';
 import { NATIVE_LOCKED_SELECTION } from './nativeSelection';
-import { rulesStore } from '../conditions/rulesStore';
 import { ScreenTimeAuthorizationError } from './ScreenTimeAuthorizationError';
 
 export type NativeScreenTimeEnforcementHandler = Readonly<{
@@ -19,20 +18,32 @@ export type NativeScreenTimePort = ScreenTimePort & {
 };
 const mapAuthorization = (value: 0 | 1 | 2): PermissionStatus => value === 2 ? 'granted' : value === 1 ? 'denied' : 'notDetermined';
 
-export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler): NativeScreenTimePort {
+export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler, denial: Readonly<{ isDenied(): boolean; remember(): void }>): NativeScreenTimePort {
   let authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
   let authorizationPromptBusy = false;
   let pickerBusy = false;
-  const readAuthorization = () => { authorization = mapAuthorization(deviceActivityApi.authorizationStatus()); return authorization; };
+  const readAuthorization = () => {
+    const status = mapAuthorization(deviceActivityApi.authorizationStatus());
+    authorization = status === 'notDetermined' && denial.isDenied() ? 'denied' : status;
+    return authorization;
+  };
   const requestAuthorization = async () => {
     if (authorizationPromptBusy) return authorization;
     authorizationPromptBusy = true;
     try {
       if (readAuthorization() === 'notDetermined') await deviceActivityApi.requestAuthorization('individual');
       return readAuthorization();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Family Controls authorization canceled.')) {
+        denial.remember();
+        return readAuthorization();
+      }
+      if (readAuthorization() === 'denied') return authorization;
+      throw error;
     } finally { authorizationPromptBusy = false; }
   };
   return {
+    selectionSummary: () => deviceActivityApi.selectionMetadata(NATIVE_LOCKED_SELECTION) ?? null,
     authorizationStatus: readAuthorization,
     requestAuthorization,
     presentAppPicker: async () => {
@@ -42,16 +53,9 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
       pickerBusy = true;
       try {
         const contents = await nativeScreenTimePicker.pick(NATIVE_LOCKED_SELECTION);
-        const selectedFromPicker = Boolean(
-          contents && (contents.applicationCount > 0 || contents.categoryCount > 0),
-        );
-        const persisted = deviceActivityApi.getFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION);
-        const selected = selectedFromPicker || Boolean(persisted);
-        if (!selected) return rulesStore.getState().data.lockedApps;
-        return {
-          handle: { token: NATIVE_LOCKED_SELECTION },
-          isEmpty: false,
-        };
+        const summary = contents ?? deviceActivityApi.selectionMetadata(NATIVE_LOCKED_SELECTION);
+        const selected = Boolean(summary && (summary.applicationCount > 0 || summary.categoryCount > 0 || (summary.webDomainCount ?? 0) > 0));
+        return { handle: selected ? { token: NATIVE_LOCKED_SELECTION } : null, isEmpty: !selected };
       } finally { pickerBusy = false; }
     },
     applyLock: enforcement.applyLock,

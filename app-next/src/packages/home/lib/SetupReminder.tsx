@@ -1,5 +1,6 @@
+import { useCallback, useRef } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Label, PrimaryButton } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
 import { homeCopy as c } from '../homeCopy';
@@ -7,6 +8,8 @@ import { Reveal } from '../../ui/Reveal';
 import { needCopyKey, permissionsHref, useSetupNeeds } from '../../permissions/useSetupNeeds';
 
 export function SetupReminder() {
+  const locked = useRef(false);
+  useFocusEffect(useCallback(() => { locked.current = false; }, []));
   const router = useRouter(),
     { needs, location } = useSetupNeeds(),
     need = needs[0];
@@ -32,7 +35,11 @@ export function SetupReminder() {
             {c.needsBody}
           </Label>
         </View>
-        <PrimaryButton label={c.fixNeed[key]} onPress={() => router.push(permissionsHref(need))} />
+        <PrimaryButton label={c.fixNeed[key]} onPress={() => {
+          if (locked.current) return;
+          locked.current = true;
+          router.push(permissionsHref(need));
+        }} />
       </View>
     </Reveal>
   );

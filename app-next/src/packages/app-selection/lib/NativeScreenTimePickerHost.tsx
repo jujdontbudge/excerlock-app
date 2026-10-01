@@ -56,6 +56,7 @@ export class NativeScreenTimePickerCoordinator
     this.selectionContents = Object.freeze({
       applicationCount: metadata.applicationCount,
       categoryCount: metadata.categoryCount,
+      webDomainCount: metadata.webDomainCount,
     });
   }
 
@@ -100,18 +101,16 @@ export function NativeScreenTimePickerHost({
     return null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so fake runtimes never touch the native module
-  const { DeviceActivitySelectionSheetViewPersisted: Picker } = require(
-    "react-native-device-activity",
-  ) as {
-    DeviceActivitySelectionSheetViewPersisted: typeof DeviceActivitySelectionSheetViewPersisted;
-  };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- native view loads only for an active picker
+  const { requireNativeViewManager } = require('expo-modules-core') as typeof import('expo-modules-core');
+  const Picker = requireNativeViewManager('ReactNativeDeviceActivityViewPersistedModule') as typeof DeviceActivitySelectionSheetViewPersisted;
 
   return (
     <Picker
       key={request.requestId}
       familyActivitySelectionId={request.selection}
       includeEntireCategory={false}
+      {...{ showNavigationBar: true }}
       style={{ width: 1, height: 1, position: "absolute" }}
       onSelectionChange={({ nativeEvent }) => {
         picker.selectionChanged(nativeEvent);
