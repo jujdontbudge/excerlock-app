@@ -67,7 +67,10 @@ export function SegmentedControl({
             label={option}
             accessibilityRole="tab"
             accessibilityState={{ selected: option === value }}
-            onPress={() => onChange(option)}
+            haptic={option === value ? 'none' : 'select'}
+            onPress={() => {
+              if (option !== value) onChange(option);
+            }}
             style={{
               paddingVertical: t.space.md,
               paddingHorizontal: t.space.xs,

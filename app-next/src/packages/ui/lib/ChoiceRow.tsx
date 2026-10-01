@@ -9,6 +9,7 @@ import { Reveal } from '../Reveal';
 import type { ChoiceEmphasis } from './ActivityCard';
 import { SelectionCheck } from '../SelectionCheck';
 import { useMotion } from '../useMotion';
+import type { HapticIntent } from '../haptics';
 export function ChoiceRow({
   title,
   support,
@@ -20,6 +21,7 @@ export function ChoiceRow({
   multiple = false,
   compact = false,
   emphasis = 'outline',
+  haptic = multiple || !selected ? 'select' : 'none',
 }: {
   title: string;
   support?: string;
@@ -31,6 +33,7 @@ export function ChoiceRow({
   multiple?: boolean;
   compact?: boolean;
   emphasis?: ChoiceEmphasis;
+  haptic?: HapticIntent;
 }) {
   const m = useMotion();
   const solid = emphasis === 'solid' && selected;
@@ -40,6 +43,7 @@ export function ChoiceRow({
       label={title}
       accessibilityRole={multiple ? 'checkbox' : 'radio'}
       accessibilityState={{ checked: selected, selected }}
+      haptic={haptic}
       onPress={onPress}>
       <Animated.View
         style={{

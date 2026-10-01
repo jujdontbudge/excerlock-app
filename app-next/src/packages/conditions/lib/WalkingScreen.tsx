@@ -49,6 +49,7 @@ export function WalkingScreen({
                   title={p.title}
                   multiple
                   selected={selected}
+                  haptic={selected ? 'none' : 'select'}
                   compact
                   onPress={() => {
                     const next: ('outside' | 'treadmill')[] = both

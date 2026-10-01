@@ -10,7 +10,6 @@ import { Label } from '../Label';
 import { CloseButton } from './CloseButton';
 import { controls } from '../controlsCopy';
 import { useMotion } from '../useMotion';
-import { feedback } from '../haptics';
 import { useSheetKeyboard } from './useSheetKeyboard';
 type Props = PropsWithChildren<{
   open: boolean;
@@ -73,10 +72,7 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
         style={StyleSheet.absoluteFill}
         accessibilityRole="button"
         accessibilityLabel={controls.dismissSheet}
-        onPress={() => {
-          feedback();
-          onDismiss();
-        }}
+        onPress={onDismiss}
       />
       <Animated.View
         layout={layoutTransition(m.reduced)}

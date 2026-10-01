@@ -2,17 +2,19 @@ import { PropsWithChildren, useState } from 'react';
 import { Insets, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useMotion } from './useMotion';
-import { feedback } from './haptics';
+import { haptic, HapticIntent } from './haptics';
 import { tokens as t } from './tokens';
 export function PressableScale({
   children,
   label,
   style,
+  haptic: intent = 'tap',
   ...props
 }: PropsWithChildren<
   Omit<PressableProps, 'style'> & {
     label: string;
     style?: StyleProp<ViewStyle>;
+    haptic?: HapticIntent;
   }
 >) {
   const [pressed, setPressed] = useState(false);
@@ -40,7 +42,7 @@ export function PressableScale({
         props.onPressOut?.(e);
       }}
       onPress={(e) => {
-        feedback();
+        haptic(intent);
         props.onPress?.(e);
       }}>
       <Animated.View

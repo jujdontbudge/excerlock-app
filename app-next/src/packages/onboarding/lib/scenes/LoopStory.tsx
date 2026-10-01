@@ -5,6 +5,7 @@ import { Label } from '../../../ui';
 import { tokens as t } from '../../../ui/tokens';
 import { Reveal } from '../../../ui/Reveal';
 import { useMotion } from '../../../ui/useMotion';
+import { useHapticCue } from '../../../ui/haptics';
 import { finalLoopTitle, loopSubheads, onboardingCopy } from '../onboardingCopy';
 import { LOOP_SCENE, LoopScene } from './LoopScene';
 
@@ -17,6 +18,11 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
     [headings, setHeadings] = useState<Partial<Record<(typeof steps)[number], number>>>({}),
     headingHeight = Math.max(minHeadingHeight, ...Object.values(headings).map((v) => v ?? 0)),
     canvasWidth = box.width && box.height ? Math.min(box.width, (box.height * LOOP_SCENE.width) / LOOP_SCENE.height) : 0;
+  useHapticCue(
+    step === 'O17' ? 'lock' : step === 'O18' ? 'success' : 'none',
+    m.reduced ? m.duration.standard : m.duration.emphasized,
+    step,
+  );
   return (
     <>
       <View style={{ minHeight: headingHeight, position: 'relative' }}>

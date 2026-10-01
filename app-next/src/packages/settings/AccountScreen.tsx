@@ -8,6 +8,7 @@ import { LivingIcon } from '../ui/LivingIcon';
 import { beginWelcome } from '../journey/index';
 import { Reveal } from '../ui/Reveal';
 import { notify } from '../ui/Notice';
+import { haptic } from '../ui/haptics';
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
   const session = useSessionStore((s) => s.data.session),
     runtime = useRuntime(),
@@ -22,8 +23,10 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
       } else await runtime.auth.signOut();
       beginWelcome();
       setConfirm(false);
+      haptic('commit');
     } catch {
       notify(c.error);
+      haptic('error');
     } finally {
       setBusy(false);
     }

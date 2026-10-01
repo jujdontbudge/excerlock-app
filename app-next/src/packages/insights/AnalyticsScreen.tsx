@@ -24,6 +24,7 @@ import { ActivityTrend } from './lib/ActivityTrend';
 import { PeriodHeader } from './lib/PeriodHeader';
 import { trendPoints } from './lib/trendModel';
 import { offsetAfterPeriodSwipe } from './lib/periodSwipe';
+import { haptic } from '../ui/haptics';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const duration = (minutes: number) => {
@@ -112,8 +113,11 @@ export function AnalyticsScreen() {
     : 0;
   const metricUnit = primaryActivity === 'walking' ? 'steps' : 'minutes';
   const movePeriod = useCallback((translationX: number) => {
-    setOffset((current) => offsetAfterPeriodSwipe(current, translationX));
-  }, []);
+    const next = offsetAfterPeriodSwipe(offset, translationX);
+    if (next === offset) return;
+    haptic('select');
+    setOffset(next);
+  }, [offset]);
   const periodSwipe = useMemo(
     () => Gesture.Pan()
       .activeOffsetX([-24, 24])
@@ -190,6 +194,7 @@ function PeriodStep({ direction, onPress, disabled }: {
       label={direction === 'back' ? 'Previous day' : 'Next day'}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
+      haptic="select"
       onPress={onPress}
       style={s.step}>
       <View style={direction === 'back' ? { transform: [{ scaleX: -1 }] } : undefined}>

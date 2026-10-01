@@ -4,6 +4,7 @@ import { Heading, Label } from '../../../ui';
 import { tokens as t } from '../../../ui/tokens';
 import { TickingNumber } from '../../../ui/TickingNumber';
 import { useMotion } from '../../../ui/useMotion';
+import { useHapticCue } from '../../../ui/haptics';
 import { Icon } from '../../../ui/Icon';
 import { onboardingCopy, onboardingLabels as c } from '../onboardingCopy';
 import { impactCopy } from '../impactCopy';
@@ -13,6 +14,7 @@ import { AnswerProps } from '../types';
 export function O11({ answers }: AnswerProps) {
   const summary = impactSummary(Number(answers.estimatedDailyMinutes ?? 180)),
     m = useMotion();
+  useHapticCue('beat', m.reduced ? timing.fade : timing.conclusion);
   return (
     <>
       <Heading title={onboardingCopy.O11.title} centered />

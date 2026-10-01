@@ -28,6 +28,7 @@ export function ActivityCard({
       label={title}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
+      haptic={selected ? 'none' : 'select'}
       onPress={onPress}>
       <Animated.View
         style={{

@@ -6,6 +6,7 @@ import { clampRadius, distanceMetres, roundCoordinate } from './geometry';
 import { gymPickerCopy as c } from './lib/gymPickerCopy';
 import { tokens as t } from '../ui/tokens';
 import { notify } from '../ui/Notice';
+import { haptic } from '../ui/haptics';
 export const defaultCentre: Coordinates = { latitude: 41.884, longitude: -87.652 };
 export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPlace) {
   const [stage, setStage] = useState<'find' | 'place'>('place');
@@ -158,9 +159,15 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
         ...pin,
         radiusMeters: radius,
       });
-      if (alive.current) onSaved();
+      if (alive.current) {
+        haptic('commit');
+        onSaved();
+      }
     } catch {
-      if (alive.current) notify(c.saveError);
+      if (alive.current) {
+        notify(c.saveError);
+        haptic('error');
+      }
     } finally {
       if (alive.current) setBusy(false);
     }

@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useRuntime } from '../../ports/useRuntime';
 export function useDemoProgress() {
-  const { steps, advance, presence, placement } = useLocalSearchParams<{
+  const { steps, stepsAfter, advance, presence, placement } = useLocalSearchParams<{
       steps?: string;
+      stepsAfter?: string;
       advance?: string;
       presence?: string;
       placement?: string;
@@ -18,9 +19,15 @@ export function useDemoProgress() {
   useEffect(() => {
     const dev = runtime.dev;
     if (!__DEV__ || runtime.kind !== 'fake' || !dev) return;
-    if (steps !== undefined && Number.isFinite(Number(steps)) && Number(steps) >= 0)
+    if (steps === undefined || !Number.isFinite(Number(steps)) || Number(steps) < 0) return;
+    const delay = Number(stepsAfter);
+    if (!Number.isFinite(delay) || delay <= 0) {
       dev.setSteps(Number(steps));
-  }, [steps, runtime]);
+      return;
+    }
+    const timer = setTimeout(() => dev.setSteps(Number(steps)), Math.min(delay, 5000));
+    return () => clearTimeout(timer);
+  }, [steps, stepsAfter, runtime]);
   useEffect(() => {
     const dev = runtime.dev;
     if (!__DEV__ || runtime.kind !== 'fake' || !dev) return;

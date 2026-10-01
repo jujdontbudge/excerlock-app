@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
-import { feedback } from '../../ui/haptics';
+import { haptic } from '../../ui/haptics';
 import { useUnlockMotion } from './useUnlockMotion';
 export function useCeremony(value: number, lifted: boolean, message: string) {
   const progress = useSharedValue(0),
@@ -15,7 +15,7 @@ export function useCeremony(value: number, lifted: boolean, message: string) {
   }, [value, progress, m]);
   useEffect(() => {
     const next = Math.floor(value * 4);
-    if (next > tick.current && !reduced) feedback('selection');
+    if (next > tick.current && next < 4 && !reduced) haptic('detent');
     tick.current = next;
   }, [value, tick, reduced]);
   useEffect(() => {

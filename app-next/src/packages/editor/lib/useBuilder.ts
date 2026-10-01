@@ -14,6 +14,7 @@ import { saveRule } from './mutations';
 import { useRuntime } from '../../ports/useRuntime';
 import { SchedulePlanError } from '../../schedule/scheduleRepresentability';
 import { ruleNeedsSetup } from '../../permissions/useSetupNeeds';
+import { haptic } from '../../ui/haptics';
 export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?: () => void) {
   const runtime = useRuntime();
   const gymCount = useSettingsStore((s) => s.data.gymPlaces.length);
@@ -89,11 +90,13 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
             timezone: runtime.clock.timezone(),
           });
           runtime.analytics.track(saved === 'created' ? 'condition_created' : 'condition_edited');
+          haptic('commit');
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();
         } catch (error) {
           if (!(error instanceof SchedulePlanError)) throw error;
           notify(conditionsCopy.scheduleLimit);
+          haptic('error');
         }
       } else if (backup) {
         setBackup(null);
