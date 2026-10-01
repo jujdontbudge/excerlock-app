@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore } from '../onboarding/onboardingStore';
 import { stagePlan } from '../onboarding/OnboardingPlan';
-import { beginPaywall, beginSignIn, useJourney } from '../journey/index';
+import { beginOnboarding, beginPaywall, beginSignIn, useJourney } from '../journey/index';
 import { useRuntime } from '../ports/useRuntime';
 import { ScreenShell } from '../ui';
 import type { Answers } from '../model/answers';
@@ -38,6 +38,7 @@ export function SamplePaywallRoute() {
     }
     onboardingStore.getState().patch({ step: 'P', complete: false, setupComplete: false, answers: sampleAnswers });
     stagePlan(sampleAnswers);
+    beginOnboarding();
     if (signIn) beginSignIn();
     else beginPaywall();
   }, [router, signIn]);
