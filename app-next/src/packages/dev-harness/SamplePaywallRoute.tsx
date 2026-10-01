@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore } from '../onboarding/onboardingStore';
 import { stagePlan } from '../onboarding/OnboardingPlan';
-import { beginPaywall, useJourney } from '../journey/index';
+import { beginPaywall, beginSignIn, useJourney } from '../journey/index';
 import { useRuntime } from '../ports/useRuntime';
 import { ScreenShell } from '../ui';
 import type { Answers } from '../model/answers';
@@ -29,7 +29,8 @@ const sampleAnswers: Answers = {
 
 export function SamplePaywallRoute() {
   const router = useRouter(),
-    phase = useJourney(useRuntime()).phase;
+    phase = useJourney(useRuntime()).phase,
+    signIn = useLocalSearchParams<{ stage?: string }>().stage === 'sign-in';
   useEffect(() => {
     if (!__DEV__ || Constants.isDevice) {
       router.replace('/');
@@ -37,10 +38,12 @@ export function SamplePaywallRoute() {
     }
     onboardingStore.getState().patch({ step: 'P', complete: false, setupComplete: false, answers: sampleAnswers });
     stagePlan(sampleAnswers);
-    beginPaywall();
-  }, [router]);
+    if (signIn) beginSignIn();
+    else beginPaywall();
+  }, [router, signIn]);
   useEffect(() => {
-    if (phase === 'paywall') router.replace('/paywall');
-  }, [phase, router]);
+    if (phase === 'paywall' && !signIn) router.replace('/paywall');
+    if (phase === 'signIn' && signIn) router.replace('/sign-in');
+  }, [phase, router, signIn]);
   return <ScreenShell>{null}</ScreenShell>;
 }

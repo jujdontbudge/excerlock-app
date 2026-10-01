@@ -6,7 +6,7 @@ scenarios: [dynamic-type-xl, reduce-motion, returning-signed-in, identity-lab-ac
 depends: [launch]
 ---
 ## Sub-features
-- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall.
+- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Save your progress" sign-in step that follows a successful purchase, skipping only Apple's payment sheet (the simulator has no sandbox tester).
 - `/dev`: the dev menu, scenario loading (`dev?scenario=<id>`), outcome controls (`restore`, `outcome`, `prompt`, `setup=X1..X5`), the component preview gallery, and the shield preview.
 - `/diagnostics/sensors`: a sensor smoke screen, available only in dev builds.
 - `/linked-trace`: the Linked Recorder research screen. It is compiled in only for research builds and is disabled in the App Store bundle.
