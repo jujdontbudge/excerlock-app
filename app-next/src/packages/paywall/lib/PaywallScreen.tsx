@@ -17,7 +17,7 @@ import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
-import { subscriptionCopy, planRowTitle, planName, perPeriod } from '../../subscription/subscriptionCopy';
+import { subscriptionCopy, planRowTitle, planName } from '../../subscription/subscriptionCopy';
 import { onboardingStore as useOnboardingStore } from '../../onboarding/onboardingStore';
 import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
 import { draftFromAnswers } from '../../conditions/answersDraft';
@@ -27,7 +27,7 @@ import { defaultPlanHandle } from './paywallVariant';
 import { paywallPromises } from './paywallPromises';
 import { fieldMinimum, PaywallField } from './PaywallField';
 import { TrialSwitch } from './TrialSwitch';
-import { pairOf, planFor, planPairs, trialSwitchable, withTrial, zeroPrice } from './paywallPlans';
+import { pairOf, planFor, planPairs, trialLength, trialSwitchable, withTrial, zeroPrice } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
 const glass = isLiquidGlassAvailable(),
   paywallLoadRetries = 2,
@@ -363,13 +363,7 @@ function PlanRow({
     pop = useSharedValue(1),
     first = useRef(true),
     monthly = `${product.localizedMonthlyPrice ?? product.localizedPrice}${subscriptionCopy.perMonthShort}`,
-    length = product.offerLabel?.replace(/\s*free$/i, '') ?? null,
-    after = !length
-      ? ''
-      : product.periodUnit !== 'month'
-        ? subscriptionCopy.then(perPeriod(product))
-        : subscriptionCopy.afterTrial,
-    top = length ? `${subscriptionCopy.free}${subscriptionCopy.forTrial(length)}` : perPeriod(product);
+    lead = product.offerLabel ? subscriptionCopy.trialThen(trialLength(product.offerLabel)) : '';
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -381,7 +375,7 @@ function PlanRow({
   const strong = { color: t.text.primary, fontFamily: t.font.bold };
   return (
     <PressableScale
-      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${monthly}${after}`}
+      label={`${planRowTitle(product)} · ${planName(product)}${lead ? ` ${subscriptionCopy.free}` : ''} · ${lead}${monthly}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
@@ -406,21 +400,20 @@ function PlanRow({
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ textAlign: 'left', color: t.text.secondary }}>
-              {`${planName(product)} `}
+              {lead ? `${planName(product)} ` : null}
               <Label variant="body" style={strong}>
-                {length ? subscriptionCopy.free : perPeriod(product)}
+                {lead ? subscriptionCopy.free : planName(product)}
               </Label>
-              {length ? subscriptionCopy.forTrial(length) : null}
             </Label>
             <Label
               variant="body"
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ textAlign: 'left', color: t.text.secondary }}>
+              {lead}
               <Label variant="body" style={strong}>
                 {monthly}
               </Label>
-              {after}
             </Label>
           </View>
           <View

@@ -36,6 +36,13 @@ export function withTrial(products: readonly PaywallProduct[], handle: string): 
   return pair ? planFor(pair, true).handle : handle;
 }
 
+export function trialLength(offerLabel: string): string {
+  const [count = '', unit = ''] = offerLabel.split(' '),
+    amount = Number(count);
+  if (unit.startsWith('week')) return `${amount * 7} day`;
+  return `${count} ${unit.replace(/s$/, '')}`;
+}
+
 export function zeroPrice(price: string): string {
   return price.replace(/\d(?:[\d.,   ]*\d)?/, (amount) => {
     const decimals = /[.,](\d{1,2})$/.exec(amount);

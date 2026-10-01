@@ -47,10 +47,8 @@ export const subscriptionCopy = {
   trialOff: 'Enable free trial',
   bestOffer: 'Best offer',
   free: 'FREE',
-  forTrial: (length: string) => ` for ${length}`,
   perMonthShort: '/mo',
-  then: (price: string) => ` · then ${price}`,
-  afterTrial: ' after the trial',
+  trialThen: (length: string) => `${length} trial then `,
   startFor: (price: string) => `Start for ${price}`,
   zeroPrice: '$0.00',
   noPayment: 'No payment due now',
@@ -85,9 +83,6 @@ export const subscriptionCopy = {
 export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
 export const perMonth = (price: string) => `${price}/mo`;
-
-export const perPeriod = (product: { localizedPrice: string; localizedPeriod: string; periodUnit: string | null }) =>
-  product.periodUnit ? `${product.localizedPrice}/${product.periodUnit}` : `${product.localizedPrice} / ${product.localizedPeriod}`;
 
 const planNames: Record<string, string> = { year: 'Yearly', month: 'Monthly', week: 'Weekly', day: 'Daily' };
 export const planName = (product: { title: string; periodUnit: string | null }) =>
