@@ -49,7 +49,6 @@ export function OnboardingShell({
     <SetupPresentation>
       <ScreenShell
         scrollResetKey={step}
-        scrollEnabled={step !== 'S1'}
         fullBleed={step === 'S3b'}
         overlay={overlay}
         contentStyle={step === 'S3b'

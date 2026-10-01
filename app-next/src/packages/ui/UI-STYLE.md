@@ -24,7 +24,7 @@ Orange, guided by black outlines. Some grey, little white. Light, never dark mod
 One selected-state language per context, set by the `emphasis` prop. `outline` (default, in the app): black outline unselected, orange border + `surface.selected` selected. `solid` (onboarding and setup questions): the selected choice fills `brand.primary` with white label and glyph.
 
 ## Layout
-Section gap 16 · grid gap 12 · card padding 16 · numbers use `type.metric` / `metricSmall` · one hero number per screen, centred, then tiles, then chart, then lists. The back and close controls stay put while content scrolls.
+Section gap 16 · grid gap 12 · card padding 16 · numbers use `type.metric` / `metricSmall` · one hero number per screen, centred, then tiles, then chart, then lists. Screens scroll as one piece; only the tab bar and sheets stay pinned.
 
 ## Feedback
 Screens stay still and say nothing about their own work (ADR 0053). While something runs, the button keeps its label and colour and ignores taps (`loading`). A cancel says nothing. When the user must know something, call `notify()` from `Notice.tsx`: one short, plain sentence that floats over the screen and fades. Never show red text, spinners, "…ing…" copy or raw error messages; `excerlock/no-status-text` enforces this.

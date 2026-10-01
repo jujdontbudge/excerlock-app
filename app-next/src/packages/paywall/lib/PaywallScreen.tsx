@@ -153,7 +153,6 @@ export function PaywallScreen({
   };
   return (
     <ScreenShell
-      scrollsAsOne
       scrollResetKey={paywall ? 'plans' : 'loading'}
       contentStyle={{ gap: t.space.md, paddingTop: 0 }}
       header={

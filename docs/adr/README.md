@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0054: Screens scroll as one piece](0054-screens-scroll-as-one-piece.md) — **accepted**.
 - [0053: Screens stay still and never show error or status text](0053-screens-stay-still-and-say-nothing.md) — **accepted**.
 - [0048: Ship without HealthKit](0048-ship-without-healthkit.md) — **accepted**.
 - [0047: Remove Clerk authentication from the API](0047-remove-clerk-authentication.md) — **accepted**.
