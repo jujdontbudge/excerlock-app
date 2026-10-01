@@ -10,7 +10,7 @@ depends: [conditions]
 - Welcome (the Introduction pager with Get started and Sign in).
 - Profile questions `O01`–`O24`, in the order given by `app-next/src/packages/onboarding/lib/flow.ts` `preBranch`. `O23` and `O24` ask for a target in pounds only when the corresponding body goal was chosen.
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
-- Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks once per install; demo `--prompt ask` forwards to the real StoreKit prompt.
+- Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks for the review prompt one second into every visit and keeps Continue locked until that request finishes; demo `--prompt ask` forwards to the real StoreKit prompt.
 - Tail steps `S1`–`S3d`: summary, plan build, trial preview and the reminder (which asks for notifications), then `P`, the paywall.
 - The PostHog `onboarding_variant` payload may reorder or drop steps within `preBranch` and `tail`. It never changes the branch.
 - Answers persist as they change, and a relaunch resumes on the same step.
@@ -147,7 +147,7 @@ then-open: /dev
 then-expect: Haptics log | Haptic unlock | Haptic lock
 ```
 
-The Condition demo's Continue stays disabled until the goal or state change plays. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/condition-demo-gate/INDEX.md`.
+The Condition demo's Continue stays disabled until the goal or state change plays, which takes under three seconds for every Condition. These scenarios resume at `S3b` with each kind of Condition; the videos and timed button-state evidence are indexed in `.excer/condition-demo-gate/INDEX.md`.
 
 ```proof
 name: demo-walk-steps-gated

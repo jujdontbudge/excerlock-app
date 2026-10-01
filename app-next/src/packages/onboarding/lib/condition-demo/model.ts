@@ -45,28 +45,28 @@ export function phasesFor(s: Scenario): Phase[] {
     return [
       ...(s.place === 'treadmill'
         ? [
-            { name: 'prop', duration: 2 },
-            { name: 'scan', duration: 3 },
+            { name: 'prop', duration: 0.5 },
+            { name: 'scan', duration: 0.75 },
           ]
         : []),
-      { name: 'walking', duration: 5 },
-      { name: 'blocked', duration: 3 },
+      { name: 'walking', duration: s.place === 'treadmill' ? 1 : 1.5 },
+      { name: 'blocked', duration: 1.2 },
     ];
   if (s.kind.startsWith('walk'))
     return [
-      { name: 'walking', duration: 7 },
-      { name: 'unlocked', duration: 4 },
+      { name: 'walking', duration: 2.5 },
+      { name: 'unlocked', duration: 3 },
     ];
   return [
-    { name: 'approach', duration: 4 },
-    { name: 'confirming', duration: 3 },
+    { name: 'approach', duration: 1 },
+    { name: 'confirming', duration: 0.3 },
     ...(s.kind === 'gym-minutes'
       ? [
-          { name: 'counting', duration: 6 },
-          { name: 'unlocked', duration: 3 },
+          { name: 'counting', duration: 1.4 },
+          { name: 'unlocked', duration: 2 },
         ]
-      : [{ name: 'unlocked', duration: 4 }]),
-    { name: 'leave', duration: s.kind === 'gym-presence' ? 3 : 2 },
+      : [{ name: 'unlocked', duration: s.kind === 'gym-presence' ? 1 : 3 }]),
+    { name: 'leave', duration: 1.2 },
   ];
 }
 export function readyAfter(s: Scenario): number {
@@ -206,7 +206,7 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
       next.manual === 'walking'
         ? remaining
         : next.manual === 'blocked'
-          ? 3 - next.manualTime
+          ? 1.2 - next.manualTime
           : phase.duration - phase.local;
     const dt = Math.min(remaining, Math.max(0.0000001, boundary));
     if (snapshot(next, s).walking) {
@@ -215,7 +215,7 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
     }
     if (next.manual) {
       next.manualTime += dt;
-      if (next.manual === 'blocked' && next.manualTime >= 3 - 0.0000001) {
+      if (next.manual === 'blocked' && next.manualTime >= 1.2 - 0.0000001) {
         next.manual = null;
         next.manualTime = 0;
         next.time = s.place === 'treadmill' ? 5 : 0;
