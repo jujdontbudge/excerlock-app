@@ -1,5 +1,18 @@
 # Local StoreKit harness
 
+## Simulator purchase through Xcode (works)
+
+`scripts/storekit-sim.sh` attaches `ExcerLock.storekit` to the shared scheme's Run action and launches the
+app from Xcode on `ExcerLock-Next` (or `EXCER_SIM`). The StoreKit store applies only when Xcode
+launches the app, not `simctl` or `xcodebuild test`. Prebuild first with `EXCERLOCK_ENV=preview`,
+`EXPO_PUBLIC_API_URL=https://api.excerlock.com/testflight` and `LANG=en_US.UTF-8` for `pod install`,
+then build once with `xcodebuild` into the default DerivedData. Then run the script. The app connects to
+Metro by itself; don't reload it with a dev-client URL, because Expo then crashes with "The app context
+has been lost". Plans read "Premium A …" when the local store is active. `excerlock://sample-paywall`
+then Start for free opens Apple's "[Environment: Xcode]" sheet; Subscribe, then OK, lands on sign-in.
+Apple sandbox accounts can't buy on the simulator ("Password reuse not available for account").
+
+
 This directory is source for an explicitly generated Debug-only Xcode UI-test harness. Run
 `npm run ios:storekit-harness` only after iOS prebuild. Normal prebuild, preview, Release, archive,
 and EAS builds do not run the generator or include this configuration.
