@@ -109,7 +109,8 @@ expect: Subscription | Billing issue | Manage in App Store | Restore purchases
 name: winback-after-trial
 scenario: trial-lapsed-while-closed
 relaunch: true
-expect: Your trial has ended | Start for $0.00
+tap: Sign in | Continue with Apple
+expect: Become ADDICTED to exercise | Start for $0.00
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"
@@ -118,11 +119,11 @@ then-expect: "placement":"winback"
 ```proof
 name: lapse-in-session
 scenario: trial-lapses-in-session
-relaunch: true
-expect: Your trial has ended | Start for $0.00
+open: /home
+expect: Close | Become ADDICTED to exercise | Start for $0.00
 wait: 45
 then-open: dev
-then-expect: "placement":"in_app"
+then-expect: "placement":"winback"
 ```
 
 ```proof
