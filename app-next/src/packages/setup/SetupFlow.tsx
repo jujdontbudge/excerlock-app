@@ -68,6 +68,7 @@ export function SetupFlow({
   const track = (permission: 'screen_time' | 'motion' | 'location', granted: boolean) =>
     runtime.analytics.track('permission_resolved', { permission, outcome: granted ? 'granted' : 'denied' });
   const ask = async () => {
+    if (busy) return;
     if (need === 'gym') return router.push('/gym-picker');
     setBusy(true);
     try {
@@ -106,7 +107,7 @@ export function SetupFlow({
     <ScreenShell
       scrollResetKey={need}
       header={<Header onClose={onClose} skip={() => { if (!busy) pass(need); }} />}
-      overlay={alert ? <PermissionGuide key={alert.title + alert.message} alert={alert} /> : null}
+      overlay={alert ? <PermissionGuide key={alert.title + alert.message} alert={alert} onPress={() => void ask()} /> : null}
       footer={
         <PrimaryButton
           label={settings ? c.settings : copy.action}
