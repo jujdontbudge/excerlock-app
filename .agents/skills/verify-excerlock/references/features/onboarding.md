@@ -10,6 +10,7 @@ depends: [conditions]
 - Welcome (the Introduction pager with Get started and Sign in).
 - Profile questions `O01`–`O24`, in the order given by `app-next/src/packages/onboarding/lib/flow.ts` `preBranch`. `O23` and `O24` ask for a target in pounds only when the corresponding body goal was chosen.
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
+- Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks once per install; demo `--prompt ask` forwards to the real StoreKit prompt.
 - Tail steps `S1`–`S3d`: summary, plan build, trial preview and the reminder (which asks for notifications), then `P`, the paywall.
 - The PostHog `onboarding_variant` payload may reorder or drop steps within `preBranch` and `tail`. It never changes the branch.
 - Answers persist as they change, and a relaunch resumes on the same step.
@@ -204,7 +205,29 @@ tap: Continue
 expect: Once you spend 30 minutes | Continue
 ```
 
+```proof
+name: research-after-import
+scenario: fresh-install
+open: /onboarding/S3
+tap: Import
+expect: ExcerLock is built on research | HACK | University of Oxford | Harvard University | University of Cambridge | Stanford University | No shame, no punishment | Continue
+then-tap: Continue
+then-expect: Give us a rating | 50K+ ExcerLock users | ExcerLock was made for people like you
+```
+
+```proof
+name: rating-back-reentry
+scenario: fresh-install
+open: /onboarding/S4
+tap: Continue | Back | Continue
+expect: Give us a rating | 4.7 | 50K+ ExcerLock users | Maya | Daniel
+then-open: /dev
+then-expect: rating | research
+```
+
 ## Gotchas
+- The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
+- The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
 - Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
 - The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).
 - Step ids are persisted, so renaming one breaks resume for installs already in the field.

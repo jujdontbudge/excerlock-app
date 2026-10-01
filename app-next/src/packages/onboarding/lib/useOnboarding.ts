@@ -45,6 +45,9 @@ export function useOnboarding() {
         .patch({ answers: { ...current, ruleId: draft.id, ruleCreatedAt: draft.createdAt } });
     }
     runtime.analytics.screen(step);
+    if (step === 'S4' || step === 'S5') {
+      runtime.analytics.track('onboarding_screen_viewed', { screen: step === 'S4' ? 'research' : 'rating' });
+    }
     if (step === 'S3b') {
       const demo = scenarioFor(draftFromAnswers(current), profileStore.getState().data.walkPlaces.join(','));
       runtime.analytics.track('onboarding_screen_viewed', {

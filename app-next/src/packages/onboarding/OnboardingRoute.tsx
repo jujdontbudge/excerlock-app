@@ -16,6 +16,8 @@ import { PlanCelebration } from './lib/PlanCelebration';
 import { PlanSummary } from './PlanSummary';
 import { ConditionDemo } from './lib/condition-demo/ConditionDemo';
 import { PlanTrialPreview } from './PlanTrialPreview';
+import { ResearchScreen } from './lib/ResearchScreen';
+import { RatingScreen } from './lib/RatingScreen';
 import { TrialReminder } from './lib/TrialReminder';
 import { planCopy as c } from '../conditions/planCopy';
 import { useImpactPlayback } from './lib/impact/useImpactPlayback';
@@ -94,6 +96,8 @@ export function OnboardingRoute() {
         <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers} />
       </View>
     );
+  if (flow.step === 'S4') body = <ResearchScreen />;
+  if (flow.step === 'S5') body = <RatingScreen />;
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
   if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} />;
   if (flow.step === 'S3d') body = <TrialReminder />;

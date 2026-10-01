@@ -1,3 +1,5 @@
+import * as StoreReview from 'expo-store-review';
+import { createStoreReviewPort } from './createStoreReviewPort';
 import type { FakeRuntimeInstance } from '../../dev-harness/FakeRuntime';
 import type { Runtime } from '../../ports/Runtime';
 import { getProductionRuntime } from '../productionRuntime';
@@ -18,6 +20,7 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
     const { Platform } = require('react-native') as typeof import('react-native');
     const runtime = FakeRuntime({
+      nativeReview: createStoreReviewPort(StoreReview),
       createAccountData: () => {
         const emptyActivity = (): ActivityAccountData => ({
           detection: {

@@ -2,6 +2,8 @@
 
 ## Index
 
+- [0058: Research and rating after the imported plan](0058-onboarding-research-rating.md) — **accepted**.
+- [0057: Permission answers precede Setup advancement; Screen Time and Locked apps have separate pages](0057-permission-answers-before-setup-advances.md) — **accepted**.
 - [0056: One semantic haptics language in `ui/haptics`](0056-semantic-haptics-language.md) — **proposed**.
 - [0055: The Sandbox API accepts pinned Xcode StoreKit test purchases](0055-sandbox-api-accepts-xcode-storekit-test-purchases.md) — **accepted**.
 - [0054: Screens scroll as one piece](0054-screens-scroll-as-one-piece.md) — **accepted**.
@@ -55,3 +57,4 @@ Every core architectural decision belongs here in a short file explaining what w
 - Keep records concise. Do not invent past reasons or turn routine coding choices into ADRs.
 
 - [0024: Keep account access after subscription lapse](0024-keep-account-access-after-subscription-lapse.md) — **accepted**.
+

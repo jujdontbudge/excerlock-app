@@ -1,0 +1,5 @@
+# Placeholder portraits
+
+Generated with the built-in image_gen tool on 2026-10-01 as a single contact sheet, cropped and compressed to six 192 × 192 JPEGs (quality 82). Fictional adults; names and testimonials are placeholder copy in `src/packages/onboarding/researchRatingCopy.ts`.
+
+Prompt: Create a single photographic contact sheet asset containing exactly six square head-and-shoulders profile portraits in a precise 3 columns by 2 rows grid, no gaps, no borders, equal tiles. Each tile a different fictional adult: smiling Black woman with natural curls outdoors; East Asian man in casual t-shirt by a window; white woman with brown hair outdoors; South Asian man with short hair in a casual gym shirt; Latina woman with wavy hair by a window; white man with short beard outdoors. Diverse natural everyday people, candid phone camera style, soft natural daylight, realistic skin texture, relaxed faces, shoulders visible, each face centered with generous space for circular cropping. No text, logos, watermarks or accessories hiding faces.

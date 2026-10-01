@@ -193,25 +193,30 @@ export function screenshot(udid: string, path = join(stateDir('shots'), `${times
 
 export type AxNode = { AXLabel?: string | null; AXValue?: string | null; type?: string; frame: { x: number; y: number; width: number; height: number } };
 
+const companionSocket = (udid: string) => `/tmp/idb/${udid}_companion.sock`;
+const idbArgs = (udid: string, args: string[]) => existsSync(companionSocket(udid))
+  ? ['--companion', companionSocket(udid), ...args] : args;
+
 export function ensureCompanion(udid: string): void {
-  if (run('idb', ['ui', 'describe-all', '--udid', udid], { timeout: 10000 }).code === 0) return;
-  const logPath = join(stateDir(), `idb-companion-${udid}.log`);
-  const log = openSync(logPath, 'w');
+  if (run('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]), { timeout: 10000 }).code === 0) return;
+  const socket = companionSocket(udid);
+  run('/bin/mkdir', ['-p', '/tmp/idb']);
+  run('/bin/rm', ['-f', socket]);
+  const log = openSync(join(stateDir(), `idb-companion-${udid}.log`), 'w');
   const set = deviceSet(udid);
-  const child = spawn('idb_companion', ['--udid', udid, '--grpc-port', '0', ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
+  const child = spawn('idb_companion', ['--udid', udid, '--grpc-domain-sock', socket, ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
   child.unref();
   closeSync(log);
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    const port = readFileSync(logPath, 'utf8').match(/"grpc_port"\s*:\s*(\d+)/)?.[1];
-    if (port && run('idb', ['connect', '127.0.0.1', port], { timeout: 10000 }).code === 0) return;
+    if (existsSync(socket) && run('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]), { timeout: 10000 }).code === 0) return;
     run('/bin/sleep', ['0.5']);
   }
-  throw new Error(`idb_companion did not start for ${udid}; see ${logPath}`);
+  throw new Error(`idb_companion did not start for ${udid}; see ${join(stateDir(), `idb-companion-${udid}.log`)}`);
 }
 
 export function tree(udid: string): AxNode[] {
   ensureCompanion(udid);
-  return JSON.parse(must('idb', ['ui', 'describe-all', '--udid', udid])) as AxNode[];
+  return JSON.parse(must('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]))) as AxNode[];
 }
 
 const normalise = (text: string) => text.replace(/ /g, ' ').trim();
@@ -255,13 +260,16 @@ export async function tap(udid: string, label: string): Promise<string> {
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);
   const y = Math.round(frame.y + frame.height / 2);
-  must('idb', ['ui', 'tap', '--udid', udid, String(x), String(y)]);
+  const screen = nodes.find((node) => node.type === 'Application')?.frame;
+  if (screen && (x < screen.x || y < screen.y || x >= screen.x + screen.width || y >= screen.y + screen.height))
+    throw new Error(`"${label}" is off screen; scroll it into view before tapping`);
+  must('idb', idbArgs(udid, ['ui', 'tap', '--udid', udid, String(x), String(y)]));
   return `tapped "${label}" at ${x},${y}`;
 }
 
 export function typeText(udid: string, value: string): string {
   ensureCompanion(udid);
-  must('idb', ['ui', 'text', '--udid', udid, value]);
+  must('idb', idbArgs(udid, ['ui', 'text', '--udid', udid, value]));
   return `typed ${value.length} characters`;
 }
 
@@ -275,7 +283,7 @@ export function swipeBack(udid: string): string {
   const xStart = Math.max(1, Math.round(screen.width * 0.01));
   const xEnd = Math.round(screen.width * 0.85);
   const y = Math.round(screen.height * 0.5);
-  must('idb', ['ui', 'swipe', '--udid', udid, String(xStart), String(y), String(xEnd), String(y), '--duration', '0.5']);
+  must('idb', idbArgs(udid, ['ui', 'swipe', '--udid', udid, String(xStart), String(y), String(xEnd), String(y), '--duration', '0.5']));
   return `swiped back from ${xStart},${y} to ${xEnd},${y}`;
 }
 

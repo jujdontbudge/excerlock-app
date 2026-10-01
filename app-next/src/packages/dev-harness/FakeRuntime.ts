@@ -39,6 +39,7 @@ import { approveLaunchSignIn } from '../identity/launchSignInGate';
 import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
+  nativeReview?: Runtime['review'];
   createAccountData(): {
     prepare(): Promise<void>;
     deactivate(): Promise<void>;
@@ -627,7 +628,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     notificationResponses,
     sync: SyncFake(),
     support: SupportFake(ctx),
-    review: ReviewFake(ctx),
+    review: ReviewFake(ctx, options.nativeReview),
     incidentReports: IncidentReportFake(ctx),
     dataExport: {
       requestShare: async (buildPayload) => {
