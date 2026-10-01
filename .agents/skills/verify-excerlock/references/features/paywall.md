@@ -9,8 +9,8 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- A tilted field of locked app tiles mixed with exercise and health tiles fills the top and fades out behind the "Become ADDICTED to exercise" headline. Below it sit the "Your plan" benefits card, the free trial switch, the stacked Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and Start for $0.00. Terms of Use · Privacy Policy · Restore purchases sit in the safe area underneath; account recovery remains a separate route, not a paywall footer link.
-- The benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
+- The paywall is dark, after the Garage Ringtones reference. A tilted field of locked TikTok, Instagram, YouTube, Snapchat, X, Facebook, Reddit, Threads, Netflix and Pinterest tiles, mixed with SF Symbol exercise and health tiles on gradients, fills the top and fades to black behind the BECOME ADDICTED TO EXERCISE headline and the frosted Benefits card. Below sit the glowing free trial switch, the stacked Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and the gradient Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link.
+- The Benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
 - The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The dev fake serves both kinds; production serves trial-only plans until no-trial twins are attached in Adapty.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
@@ -26,7 +26,7 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /sample-paywall
-expect: Become ADDICTED to exercise | Your plan | Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day | Free trial enabled | Start for $0.00
+expect: Become ADDICTED to exercise | Benefits | Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day | Free trial enabled | Start for $0.00
 ```
 
 ```proof

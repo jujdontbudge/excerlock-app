@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { Label, PressableScale } from '../../ui';
-import { Icon } from '../../ui/Icon';
 import { scheduleHaptic } from '../../ui/haptics';
 import { useMotion } from '../../ui/useMotion';
 import { tokens as t } from '../../ui/tokens';
@@ -17,7 +16,7 @@ const beat = t.motion.duration.press / 2,
     linger: 1.6,
     sparks: 24,
     spark: { size: t.space.md, near: t.space.xxl, far: t.control.full * 2 },
-    sparkColors: [t.brand.lockHighlight, t.brand.decorative, t.swatch.yellow, t.brand.light, t.brand.primary],
+    sparkColors: t.paywall.sparks,
     haptics: {
       on: [['tap', 0], ['detent', beat], ['detent', beat * 2], ['lock', beat * 3], ['success', beat * 6]],
       off: [['tap', 0], ['beat', beat * 3]],
@@ -58,12 +57,11 @@ export function TrialSwitch({ on, locked, onToggle }: { on: boolean; locked: boo
     onToggle(next);
   };
   const track = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(clamp(progress.value), [0, 1], [t.border.divider, t.brand.primary]),
+    backgroundColor: interpolateColor(clamp(progress.value), [0, 1], [t.paywall.switchOff, t.paywall.check]),
   }));
   const thumb = useAnimatedStyle(() => ({
     transform: [{ translateX: progress.value * travel }, { scaleX: stretch.value }],
   }));
-  const check = useAnimatedStyle(() => ({ opacity: clamp(progress.value) }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: row.value }] }));
   const glow = useAnimatedStyle(() => ({
     opacity: ring.value === 0 ? 0 : 1 - ring.value,
@@ -83,9 +81,9 @@ export function TrialSwitch({ on, locked, onToggle }: { on: boolean; locked: boo
             {
               position: 'absolute',
               inset: 0,
-              borderRadius: t.radius.card,
+              borderRadius: t.radius.sheet,
               borderWidth: t.stroke.chart,
-              borderColor: t.brand.decorative,
+              borderColor: t.paywall.glow,
             },
             glow,
           ]}
@@ -96,13 +94,13 @@ export function TrialSwitch({ on, locked, onToggle }: { on: boolean; locked: boo
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: t.space.lg,
-            borderRadius: t.radius.card,
-            borderWidth: on ? t.stroke.selected : t.stroke.hairline,
-            borderColor: on ? t.brand.primary : t.border.outline,
-            backgroundColor: on ? t.surface.selected : t.surface.card,
-            ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
+            borderRadius: t.radius.sheet,
+            borderWidth: t.stroke.selected,
+            borderColor: t.paywall.glow,
+            backgroundColor: t.paywall.canvas,
+            boxShadow: t.paywall.glowShadow,
           }}>
-          <Label variant="label" style={{ flex: 1, textAlign: 'left' }}>
+          <Label variant="label" style={{ flex: 1, textAlign: 'left', color: t.paywall.text }}>
             {on ? subscriptionCopy.trialOn : subscriptionCopy.trialOff}
           </Label>
           <Animated.View
@@ -127,11 +125,8 @@ export function TrialSwitch({ on, locked, onToggle }: { on: boolean; locked: boo
                   boxShadow: t.shadow.control,
                 },
                 thumb,
-              ]}>
-              <Animated.View style={check}>
-                <Icon name="check" size={t.icon.sm} variant="utility" />
-              </Animated.View>
-            </Animated.View>
+              ]}
+            />
           </Animated.View>
         </Animated.View>
         <View
