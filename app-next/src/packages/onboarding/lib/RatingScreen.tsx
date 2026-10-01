@@ -22,13 +22,15 @@ function Laurel({ flip = false }: { flip?: boolean }) {
     style={{ width: t.control.indicator, height: t.control.full, transform: flip ? [{ scaleX: -1 }] : undefined }} />;
 }
 
-export function RatingScreen() {
+export function RatingScreen({ onPrompted }: { onPrompted: () => void }) {
   const runtime = useRuntime();
   useEffect(() => {
     let active = true;
-    const timer = setTimeout(() => { void requestOnboardingRating(runtime.review, () => active); }, 800);
+    const timer = setTimeout(() => {
+      void requestOnboardingRating(runtime.review, () => active).finally(() => { if (active) onPrompted(); });
+    }, t.motion.ratingPromptDelay);
     return () => { active = false; clearTimeout(timer); };
-  }, [runtime]);
+  }, [runtime, onPrompted]);
   return <View style={[StyleSheet.absoluteFill, { gap: t.space.lg }]}>
     <Label variant="display" style={{ textAlign: 'left' }}>{c.ratingTitle}</Label>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: t.space.lg, paddingBottom: t.space.lg }} showsVerticalScrollIndicator={false}>

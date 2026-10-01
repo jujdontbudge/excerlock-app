@@ -32,9 +32,11 @@ export function OnboardingRoute() {
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
     [celebrating, setCelebrating] = useState(false),
     [asking, setAsking] = useState(false),
-    [demoReady, setDemoReady] = useState(false);
+    [demoReady, setDemoReady] = useState(false),
+    [ratingReady, setRatingReady] = useState(false);
   const promptBusy = useRef(false);
   const onDemoReady = useCallback(() => setDemoReady(true), []);
+  const onRatingPrompted = useCallback(() => setRatingReady(true), []);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -45,6 +47,10 @@ export function OnboardingRoute() {
     );
   const advance = async () => {
     if (flow.step === 'S3b' && !demoReady) return;
+    if (flow.step === 'S5') {
+      if (!ratingReady) return;
+      setRatingReady(false);
+    }
     if (flow.step === 'S3d') {
       if (promptBusy.current) return;
       if (runtime.notifications.status() === 'notDetermined') {
@@ -97,7 +103,7 @@ export function OnboardingRoute() {
       </View>
     );
   if (flow.step === 'S4') body = <ResearchScreen />;
-  if (flow.step === 'S5') body = <RatingScreen />;
+  if (flow.step === 'S5') body = <RatingScreen onPrompted={onRatingPrompted} />;
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
   if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} />;
   if (flow.step === 'S3d') body = <TrialReminder />;
@@ -106,9 +112,9 @@ export function OnboardingRoute() {
       step={flow.step}
       progress={flow.progress}
       direction={flow.direction}
-      onBack={() => { if (flow.step === 'S3b') setDemoReady(false); flow.back(); }}
+      onBack={() => { if (flow.step === 'S3b') setDemoReady(false); if (flow.step === 'S5') setRatingReady(false); flow.back(); }}
       onContinue={() => void advance()}
-      valid={canContinue(flow.step, flow.answers) && (flow.step !== 'S3b' || demoReady)}
+      valid={canContinue(flow.step, flow.answers) && (flow.step !== 'S3b' || demoReady) && (flow.step !== 'S5' || ratingReady)}
       continuing={flow.isAdvancing || asking}
       continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? c.trialCta : undefined}
       hideContinue={flow.step === 'S2' || playback.hideContinue}

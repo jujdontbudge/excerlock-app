@@ -121,6 +121,7 @@ export const tokens = {
   optical: { centre: 0.27 },
   motion: {
     duration: { press: 100, standard: 240, emphasized: 480, breathe: 3600 },
+    ratingPromptDelay: 1000,
     easing: {
       standard: [0.2, 0, 0, 1],
       enter: [0.16, 1, 0.3, 1],
