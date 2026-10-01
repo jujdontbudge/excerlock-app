@@ -55,6 +55,7 @@ const envSchema = z.object({
   ADAPTY_API_URL: z.preprocess(blankToUndefined, z.string().url().default(DEFAULT_ADAPTY_API_URL)),
   ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: acceptedStoreEnvironments,
   SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: z.enum(["production", "sandbox"]).default("production"),
+  XCODE_STOREKIT_ROOT_SHA256: z.preprocess(blankToUndefined, z.string().regex(/^[0-9a-f]{64}$/).optional()),
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
   POSTHOG_PROJECT_ID: optionalString,
@@ -181,6 +182,7 @@ export interface Environment {
   adaptyApiUrl: string;
   adaptyWebhookAcceptedStoreEnvironments: readonly ("production" | "sandbox")[];
   subscriptionAuthorizationStoreEnvironment: "production" | "sandbox";
+  xcodeStoreKitRootSha256: string | undefined;
   posthogApiKey: string | undefined;
   posthogHost: string;
   posthogPersonalApiKey: string | undefined;
@@ -233,6 +235,7 @@ export function parseEnv(
     adaptyApiUrl: parsed.ADAPTY_API_URL,
     adaptyWebhookAcceptedStoreEnvironments: parsed.ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS,
     subscriptionAuthorizationStoreEnvironment: parsed.SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT,
+    xcodeStoreKitRootSha256: parsed.SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT === "sandbox" ? parsed.XCODE_STOREKIT_ROOT_SHA256 : undefined,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
     posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,

@@ -12,4 +12,5 @@ export type {
 } from "./lib/repository.js";
 export { authorizeEnvironment, authorizeProduction } from "./lib/repository.js";
 export { createAdaptyProfileGateway, createSubscriptionResyncService } from "./lib/resync.js";
+export { verifyXcodeTransaction, xcodeAuthorization } from "./lib/xcodeStoreKit.js";
 export type { AdaptyProfileGateway, SubscriptionResyncResult } from "./lib/resync.js";

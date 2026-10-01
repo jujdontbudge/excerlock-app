@@ -21,5 +21,14 @@ public final class ExcerlockStoreEnvironmentModule: Module {
         return nil
       }
     }
+    AsyncFunction("xcodeEntitlementTransactions") { () async -> [String] in
+      var transactions: [String] = []
+      for await result in Transaction.currentEntitlements {
+        if case .verified(let transaction) = result, transaction.environment == .xcode {
+          transactions.append(result.jwsRepresentation)
+        }
+      }
+      return transactions
+    }
   }
 }

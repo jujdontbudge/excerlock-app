@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { config } from "../packages/config/config.js";
-import { createDrizzleAdaptyWebhookRepository, createAdaptyProfileGateway, createSubscriptionResyncService } from "../packages/subscriptions/index.js";
+import { createDrizzleAdaptyWebhookRepository, createAdaptyProfileGateway, createSubscriptionResyncService, verifyXcodeTransaction, xcodeAuthorization } from "../packages/subscriptions/index.js";
 import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 
 export interface SubscriptionResync { resync(userId: string): Promise<unknown> }
@@ -10,7 +10,14 @@ export function createSubscriptionRoutes(dependencies: { resync?: SubscriptionRe
     app.post("/subscription/resync", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
       const userId = await requireActiveRouteUserId(request, reply);
       if (!userId) return;
-      if (request.body && typeof request.body === "object" && Object.keys(request.body as object).length > 0) {
+      const body = request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>) : {};
+      const keys = Object.keys(body);
+      if (config.xcodeStoreKitRootSha256 && keys.length === 1 && keys[0] === "storeKitTestTransaction" && typeof body.storeKitTestTransaction === "string") {
+        const expiresAt = verifyXcodeTransaction(body.storeKitTestTransaction, config.xcodeStoreKitRootSha256);
+        if (expiresAt) return xcodeAuthorization(userId, expiresAt);
+        return reply.code(400).send({ error: { code: "INVALID_STOREKIT_TEST_TRANSACTION", message: "StoreKit test transaction was not accepted" } });
+      }
+      if (keys.length > 0) {
         return reply.code(400).send({ error: { code: "INVALID_RESYNC_REQUEST", message: "Subscription resync does not accept identity or environment input" } });
       }
       if (!config.adaptySecretKey && !dependencies.resync) return reply.code(503).send({ error: { code: "SUBSCRIPTION_RESYNC_UNAVAILABLE", message: "Subscription resync is temporarily unavailable" } });

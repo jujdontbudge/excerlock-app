@@ -10,7 +10,7 @@ import { createOnboardingFlowPort } from '../onboarding/flowOrder';
 import { initializeSentrySdk } from '@sentry-binding';
 import { getOtaObservabilityContext } from '../updates/updates';
 import { readClientConfiguration } from '../platform/clientConfiguration';
-import { verifiedStoreEnvironment } from '../platform/NativeStoreEnvironment';
+import { verifiedStoreEnvironment, xcodeEntitlementTransactions } from '../platform/NativeStoreEnvironment';
 import { subscriptionBackend } from '../platform/subscriptionBackend';
 import { settingsStore } from '../preferences/settingsStore';
 import { profileStore } from '../preferences/profileStore';
@@ -76,6 +76,7 @@ export async function createClientServices(options: {
         environment: backend.environment,
         getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
         getIdentity: () => identity.auth.identity(),
+        storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
       })
     : unavailableSubscriptionAdmission();
   const dataExport = createAccountBoundExport(

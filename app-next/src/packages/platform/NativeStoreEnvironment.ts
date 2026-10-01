@@ -1,3 +1,3 @@
-import { verifiedStoreEnvironment } from '../../../modules/excerlock-store-environment';
+import { verifiedStoreEnvironment, xcodeEntitlementTransactions } from '../../../modules/excerlock-store-environment';
 
-export { verifiedStoreEnvironment };
+export { verifiedStoreEnvironment, xcodeEntitlementTransactions };

@@ -1,6 +1,9 @@
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
-type StoreEnvironmentModule = { verifiedEnvironment(): Promise<string | null> };
+type StoreEnvironmentModule = {
+  verifiedEnvironment(): Promise<string | null>;
+  xcodeEntitlementTransactions?(): Promise<string[]>;
+};
 const module = requireOptionalNativeModule<StoreEnvironmentModule>('ExcerlockStoreEnvironment');
 
 export async function verifiedStoreEnvironment(): Promise<'production' | 'sandbox' | null> {
@@ -16,5 +19,15 @@ export async function verifiedStoreEnvironment(): Promise<'production' | 'sandbo
     return null;
   } finally {
     if (timer) clearTimeout(timer);
+  }
+}
+
+export async function xcodeEntitlementTransactions(): Promise<string[]> {
+  if (!module?.xcodeEntitlementTransactions) return [];
+  try {
+    const value = await module.xcodeEntitlementTransactions();
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
   }
 }

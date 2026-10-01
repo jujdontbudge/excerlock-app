@@ -46,6 +46,7 @@ export function createServerSubscriptionAdmission(options: {
   getIdentity(): { userId: string | null; generation: number };
   fetchImpl?: typeof fetch;
   monotonicNow?: () => number;
+  storeKitTestTransactions?: () => Promise<string[]>;
 }): SubscriptionAdmissionPort {
   const now = options.monotonicNow ?? (() => performance.now());
   let lease: LiveLease | null = null;
@@ -61,6 +62,8 @@ export function createServerSubscriptionAdmission(options: {
     const auth = await options.getAuthContext();
     if (started !== request || !auth || auth.userId !== identity.userId || auth.generation !== identity.generation)
       return { type: 'unavailable' };
+    const storeKitTestTransaction = (await options.storeKitTestTransactions?.())?.[0];
+    if (started !== request) return { type: 'unavailable' };
     let response: Response;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -68,7 +71,7 @@ export function createServerSubscriptionAdmission(options: {
       response = await (options.fetchImpl ?? fetch)(`${options.apiBaseUrl.replace(/\/$/, '')}/v1/subscription/resync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(storeKitTestTransaction ? { storeKitTestTransaction } : {}),
         signal: controller.signal,
       });
     } catch {

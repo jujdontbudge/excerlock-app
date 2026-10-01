@@ -9,7 +9,7 @@ User=excerlock
 Group=excerlock
 WorkingDirectory=/opt/excerlock/server
 EnvironmentFile=/etc/excerlock/env
-ExecStart=/usr/bin/env PORT=3002 SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT=sandbox DELETION_WORKER_ENABLED=false /usr/bin/node dist/index.js
+ExecStart=/usr/bin/env PORT=3002 SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT=sandbox DELETION_WORKER_ENABLED=false XCODE_STOREKIT_ROOT_SHA256=5d97603ef81b29173c4081818d40f46671943aeca3b9c7a6b015b654dddc2705 /usr/bin/node dist/index.js
 Restart=always
 RestartSec=3
 UMask=0077
