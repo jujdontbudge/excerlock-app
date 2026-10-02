@@ -7,7 +7,7 @@ export type PaywallOperation = 'load' | 'purchase' | 'restore'
 export type PurchaseFailureClass = 'cancelled' | 'declined' | 'network' | 'unavailable' | 'unknown'
 
 export const paywallEvents = {
-  paywall_viewed: { owner: 'client', transmittedProperties: ['placement', 'has_trial', 'variation_id'] },
+  paywall_viewed: { owner: 'client', transmittedProperties: ['placement', 'has_trial', 'variation_id', 'first_paywall_view', 'is_embedded', 'update_id'] },
   purchase_started: { owner: 'client', transmittedProperties: ['placement', 'plan_id'] },
   purchase_failed: { owner: 'client', transmittedProperties: ['reason_class'] },
   paywall_error: { owner: 'client', transmittedProperties: ['operation'] },
@@ -17,7 +17,7 @@ export const paywallEvents = {
 } as const satisfies EventSpecMap
 
 export interface PaywallEventProps {
-  paywall_viewed: { placement: PaywallPlacement; has_trial: boolean; variation_id?: string }
+  paywall_viewed: { placement: PaywallPlacement; has_trial: boolean; variation_id?: string; first_paywall_view?: boolean; is_embedded?: boolean; update_id?: string }
   purchase_started: { placement: PaywallPlacement; plan_id: string }
   purchase_failed: { reason_class: PurchaseFailureClass }
   paywall_error: { operation: PaywallOperation }

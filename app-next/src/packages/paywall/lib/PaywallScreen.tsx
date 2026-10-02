@@ -1,3 +1,4 @@
+import { recordPaywallImpression } from './paywallImpression';
 import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
@@ -59,6 +60,7 @@ export function PaywallScreen({
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
     chosen = useRef(false),
+    impression = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null),
     card = useRef<View>(null),
@@ -85,11 +87,6 @@ export function PaywallScreen({
         setPaywall(next);
         setSelected(withTrial(next.products, defaultPlanHandle(next.products, latest.current.variantKey)));
         latest.current.onLoaded?.(next);
-        runtime.analytics.track('paywall_viewed', {
-          placement,
-          has_trial: next.products.some((item) => item.offerLabel !== null),
-          variation_id: next.flowVariationId || undefined,
-        });
         break;
       } catch (error) {
         reportError(error, 'load');
@@ -99,6 +96,13 @@ export function PaywallScreen({
     }
     setBusy(null);
   }, [placement, reportError, runtime]);
+  useEffect(() => {
+    if (!paywall || impression.current) return;
+    impression.current = true;
+    void recordPaywallImpression(runtime.analytics, {
+      placement, has_trial: paywall.products.some((item) => item.offerLabel !== null), variation_id: paywall.flowVariationId || undefined,
+    }).catch((error) => reportError(error, 'load'));
+  }, [paywall, placement, runtime, reportError]);
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);

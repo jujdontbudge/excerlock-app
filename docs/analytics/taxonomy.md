@@ -17,9 +17,12 @@ Source of truth: `app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts`. Ev
 | `treadmill_scan_failed` | `reason` (`denied`/`timeout`) |
 | `gym_unlock_confirmed`, `gym_unlock_checked`, `gym_unlock_tapped` | optional `preview`; checked/tapped may include numeric `distance` |
 | `condition_created` | optional coarse `activity` (currently demo/test usage) |
+| `paywall_viewed` | placement and plan metadata; `first_paywall_view` once per known fresh install, `is_embedded`, and the running `update_id`; one impression per mounted view after plans load |
 | `$feature_flag_called` | `$feature_flag`, `$feature_flag_response`; once per stable generation/name/placement snapshot |
 
 Every emission registers `environment`, `runtime_version`, `update_id`, `walk_places`, and `$device_id`.
+
+The first Paywall observation also persists its embedded status and update ID locally, including when analytics consent prevents an emission. Older installs are excluded from the first-view count; their history cannot be reconstructed. It carries no onboarding answers or sensor detail (ADR 0060).
 
 ## Feature flags
 
