@@ -996,7 +996,6 @@ export class OtaCoordinator {
         if (guard) await this.storage.saveGuard(guard); else await this.storage.clearGuard();
         return finalCheck;
       }
-      setOtaCover(true);
     }
     try { await this.updates.reload(); }
     catch (error) {
@@ -1151,6 +1150,7 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
 
 export const OTA_FIRST_OPEN_BUDGET_MS = 8_000;
 const OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS = 1_500;
+const OTA_FIRST_OPEN_DESTINATION_RESERVE_MS = tokens.motion.duration.emphasized * 2;
 const OTA_INSTALL_KEY = 'excerlock-next.ota-install.v1';
 const moduleStartedAt = performance.now();
 const splashReloadImage = require('../../../assets/splash-cover.png');
@@ -1311,7 +1311,7 @@ export function useFirstOpenUpdate() {
     const deadline = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS - (performance.now() - started.current));
     let timer = setTimeout(expire, deadline);
     const prepare = () => { if (live && first.current && !reloading.current) setSettled(true); };
-    let preparation = setTimeout(prepare, Math.max(0, deadline - tokens.motion.duration.emphasized));
+    let preparation = setTimeout(prepare, Math.max(0, deadline - OTA_FIRST_OPEN_DESTINATION_RESERVE_MS));
     void loadInstall().then(async (value) => {
       if (!live) return;
       first.current = freshLaunch && value.catchup && !value.reloadUpdateId && !value.paywallReached && !observed.currentlyRunning.isEmergencyLaunch;
@@ -1326,7 +1326,7 @@ export function useFirstOpenUpdate() {
             clearTimeout(preparation);
             const remaining = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - (Date.now() - nativeStart));
             timer = setTimeout(expire, remaining);
-            preparation = setTimeout(prepare, Math.max(0, remaining - tokens.motion.duration.emphasized));
+            preparation = setTimeout(prepare, Math.max(0, remaining - OTA_FIRST_OPEN_DESTINATION_RESERVE_MS));
           }
         } catch {}
         if (live) setReady(true);
