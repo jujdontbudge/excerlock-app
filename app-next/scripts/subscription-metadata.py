@@ -8,8 +8,8 @@ review needs, per SKU:
   * an `en-US` localization whose display name and description come from the grid,
   * membership in the grid's subscription group, and a group level matching the grid order,
   * an introductory offer matching the grid's trial variant,
-  * a state of `READY_TO_SUBMIT` (a missing App Store review screenshot keeps a product in
-    `MISSING_METADATA`; uploading one is a separate concern from this contract).
+  * a state of `READY_TO_SUBMIT` or later in review (`WAITING_FOR_REVIEW`, `IN_REVIEW`,
+    `APPROVED`); a missing App Store review screenshot keeps a product in `MISSING_METADATA`.
 
 The StoreKit harness catalog is the source of truth for identifiers, tiers, periods, groups
 and trials. Display names are derived from it as `<Period> $<price> (<trial>)`, which keeps
@@ -28,7 +28,7 @@ Exit codes mirror `catalog-drift.py`:
 `--report-only` prints the same report but always exits 0. `--snapshot-file` re-reads a saved
 snapshot instead of calling `asc`, and `--write-snapshot` saves what it read, so runs are
 reproducible offline. `--fill` applies only what is missing or differs: it never touches a
-subscription that is already `READY_TO_SUBMIT`, and it never changes prices or availability.
+subscription that is ready or in review, and it never changes prices or availability.
 """
 import argparse
 import json
@@ -43,6 +43,7 @@ DEFAULT_GRID = Path(__file__).resolve().parent.parent / 'storekit' / 'ExcerLock.
 LOCALE = 'en-US'
 MAX_NAME = 35
 MAX_DESCRIPTION = 55
+READY_STATES = ('READY_TO_SUBMIT', 'WAITING_FOR_REVIEW', 'IN_REVIEW', 'APPROVED')
 
 # The harness catalog names its groups 'Premium A'/'Premium B'/'Premium Grid'; App Store
 # Connect calls them 'ExcerLock Premium — Variant A'/'— Variant B'/'ExcerLock Premium'.
@@ -413,7 +414,7 @@ def audit(snapshot, contracts):
         if durations != expected_durations:
             report('offer', 'introductory offers ' + (', '.join(durations) or 'none') +
                    ', expected ' + (', '.join(expected_durations) or 'none'))
-        if row.get('state') != 'READY_TO_SUBMIT':
+        if row.get('state') not in READY_STATES:
             blocker = 'App Store review screenshot missing' if not (
                 row.get('productReviewScreenshotId') or row.get('versionImageCount')) else 'metadata mismatch'
             report('state', row.get('state') + ' (' + blocker + ')')
@@ -434,11 +435,11 @@ def audit(snapshot, contracts):
 
 
 def state_counts(snapshot, contracts):
-    counts = {'READY_TO_SUBMIT': 0, 'MISSING_METADATA': 0, 'other': 0}
+    counts = {'ready': 0, 'MISSING_METADATA': 0, 'other': 0}
     for row in snapshot.get('subscriptions') or []:
         if row.get('productId') not in contracts:
             continue
-        state = row.get('state')
+        state = 'ready' if row.get('state') in READY_STATES else row.get('state')
         if state in counts:
             counts[state] += 1
         else:
@@ -451,25 +452,25 @@ def print_report(snapshot, contracts, findings, stream=None):
         stream = sys.stdout
     counts = state_counts(snapshot, contracts)
     print('Subscription metadata: ' + str(len(contracts)) + ' SKUs, ' +
-          str(counts['READY_TO_SUBMIT']) + ' READY_TO_SUBMIT, ' +
+          str(counts['ready']) + ' ready or in review, ' +
           str(counts['MISSING_METADATA']) + ' MISSING_METADATA' +
           (', ' + str(counts['other']) + ' other state' if counts['other'] else ''), file=stream)
     if not findings:
-        print('SUBSCRIPTION METADATA ALIGNED: every SKU is READY_TO_SUBMIT and matches the grid', file=stream)
+        print('SUBSCRIPTION METADATA ALIGNED: every SKU is ready or in review and matches the grid', file=stream)
         return
     for finding in findings:
         print('  ' + str(finding['productId']) + ' ' + finding['kind'] + ': ' + finding['detail'], file=stream)
     blocked = sorted({finding['productId'] for finding in findings if finding['kind'] == 'state'})
     print('SUBSCRIPTION METADATA GAPS: ' + str(len(findings)) + ' finding(s) across ' +
-          str(len(contracts)) + ' SKUs; ' + str(len(blocked)) + ' SKU(s) not READY_TO_SUBMIT', file=stream)
+          str(len(contracts)) + ' SKUs; ' + str(len(blocked)) + ' SKU(s) not ready', file=stream)
     if blocked:
-        print('  not READY_TO_SUBMIT: ' + ', '.join(blocked), file=stream)
+        print('  not ready: ' + ', '.join(blocked), file=stream)
 
 
 def plan_fill(snapshot, contracts):
     """Return the ordered list of mutations that bring the snapshot up to the contract.
 
-    Subscriptions that are already `READY_TO_SUBMIT` are never planned against, fields that
+    Subscriptions that are ready or in review are never planned against, fields that
     already match are skipped, and nothing here changes prices or availability.
     """
     by_product = {row.get('productId'): row for row in snapshot.get('subscriptions') or []}
@@ -478,7 +479,7 @@ def plan_fill(snapshot, contracts):
         product_id = contract['productId']
         row = by_product.get(product_id)
         require(row is not None, 'cannot fill unknown product ' + product_id)
-        if row.get('state') == 'READY_TO_SUBMIT':
+        if row.get('state') in READY_STATES:
             continue
         if row.get('groupName') != contract['groupName']:
             raise CollectionError(product_id + ' is in group ' + str(row.get('groupName')) +

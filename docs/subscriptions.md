@@ -6,8 +6,8 @@ plans with Apple prorating the difference. The live launch plans below sit in a 
 `ExcerLock Premium — Variant A` (`22279282`), so mixing a grid product with a launch plan on one
 paywall would let a person hold two subscriptions at once.
 
-Cleared for sale in the United States only. Prices are equalized across all 175 territories, so
-opening a new market is an availability change rather than a pricing change.
+Every product is available in all 175 territories and in new territories as Apple adds them.
+Prices are equalized across territories from the US price.
 
 ## Launch plans
 
@@ -91,32 +91,51 @@ display name and description, group, group order, introductory offer, `READY_TO_
 fails while any SKU is `MISSING_METADATA`; `npm run catalog:metadata:fill` applies only the
 missing or differing fields.
 
-## Open item
+## Review status
 
-The 45 grid products and the four non-READY A/B products are `MISSING_METADATA` for one reason
-only: no App Store review screenshot is attached, so App Store Connect will not move them to
-`READY_TO_SUBMIT`. Their localizations, prices, availability, introductory offers, group
-membership and group order are in place and checked by `scripts/subscription-metadata.py`. Copy,
-its derivation and the exact errors seen while filling it are recorded in
-`app-next/evidence/asc-subscription-metadata/README.md`.
+Until October 1, 2026 the 45 grid products and the four A/B products below were stuck in
+`MISSING_METADATA` because none had an App Store review screenshot. That day each got a
+screenshot of the live paywall, a review note and worldwide availability, and all 49 went to
+review in submission `30483355-0df4-4a5d-ade7-2af17f74a393` with both group versions:
+`premium.a.winback.annual`, `premium.b.annual`, `premium.b.monthly` and
+`premium.b.winback.annual`. The no-trial twins `premium.a.annual.notrial` and
+`premium.a.monthly.notrial` went in the earlier submission `2c9e8064`. Grid free trials (3 days on
+`.t3`, one week on `.t7`) were extended from the US to all 175 territories with
+`asc subscriptions offers introductory create --all-territories`; that needs no review.
 
 Project-local check (from `app-next/`):
 
 ```
-python3 scripts/subscription-metadata.py            # fails while a SKU is not READY_TO_SUBMIT
-python3 scripts/subscription-metadata.py --fill     # idempotent; never touches READY_TO_SUBMIT SKUs
+python3 scripts/subscription-metadata.py            # fails while a SKU is not ready or in review
+python3 scripts/subscription-metadata.py --fill     # idempotent; never touches ready or in-review SKUs
 ```
 
-Uploading the approved review image per subscription version is the remaining step:
+Copy, its derivation and the exact errors seen while filling it are recorded in
+`app-next/evidence/asc-subscription-metadata/README.md`.
 
-```
-asc subscriptions versions images upload --version-id <SUBSCRIPTION_VERSION_ID> --file ./review.png
-```
+## Changing price or trial without an app update
+
+Once Apple approves a product, the app sells it as soon as an Adapty paywall carrying it is
+served; no OTA or build is needed. Adapty locks the products of a live paywall, so a price or
+trial change is a new paywall, not an edit:
+
+1. Duplicate the live paywall in the Adapty dashboard and swap in the approved products for the
+   new price and trial. Duplicating keeps the remote config (`title`, `body`,
+   `recommendedProductId`); set `recommendedProductId` to the new plan.
+   `adapty paywalls create` takes Adapty product UUIDs but cannot set remote config.
+2. Point the placements at it with `adapty placements update <PLACEMENT_ID> --app <APP>
+   --developer-id <onboarding|in_app|winback> --title <TITLE>
+   --audiences '[{"segment_ids":[],"paywall_id":"<PAYWALL_ID>","priority":0}]'`. Devices pick up
+   the new paywall on their next fetch.
+
+To test prices against each other, run an Adapty A/B test on the placement instead of
+repointing it. Serve products from one subscription group per paywall: grid products sit in
+`ExcerLock Premium`, while existing subscribers hold Variant A plans, so offering them a grid plan
+could leave them paying for two subscriptions.
 
 ## Taking a price off sale
 
-Availability defaults to the price territory, so every product is purchasable in the US today.
-Removing one from sale is a web-session flow:
+Removing a product from sale is a web-session flow:
 
 ```
 asc web subscriptions availability remove-from-sale --subscription-id <ASC_ID>
