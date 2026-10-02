@@ -1150,7 +1150,8 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
 
 export const OTA_FIRST_OPEN_BUDGET_MS = 8_000;
 const OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS = 1_500;
-const OTA_FIRST_OPEN_DESTINATION_RESERVE_MS = tokens.motion.duration.emphasized * 2;
+const OTA_FIRST_OPEN_DESTINATION_RESERVE_MS = tokens.motion.duration.emphasized * 3;
+const OTA_FIRST_OPEN_HANDOFF_RESERVE_MS = tokens.motion.duration.standard;
 const OTA_INSTALL_KEY = 'excerlock-next.ota-install.v1';
 const moduleStartedAt = performance.now();
 const splashReloadImage = require('../../../assets/splash-cover.png');
@@ -1308,7 +1309,7 @@ export function useFirstOpenUpdate() {
       expired.current = true;
       if (live && !reloading.current) { setReady(true); releaseStartupCover(); setSettled(true); }
     };
-    const deadline = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS - (performance.now() - started.current));
+    const deadline = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS - OTA_FIRST_OPEN_HANDOFF_RESERVE_MS - (performance.now() - started.current));
     let timer = setTimeout(expire, deadline);
     const prepare = () => { if (live && first.current && !reloading.current) setSettled(true); };
     let preparation = setTimeout(prepare, Math.max(0, deadline - OTA_FIRST_OPEN_DESTINATION_RESERVE_MS));
@@ -1324,7 +1325,7 @@ export function useFirstOpenUpdate() {
           if (live && !expired.current && nativeStart !== undefined && nativeStart <= Date.now()) {
             clearTimeout(timer);
             clearTimeout(preparation);
-            const remaining = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - (Date.now() - nativeStart));
+            const remaining = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - OTA_FIRST_OPEN_HANDOFF_RESERVE_MS - (Date.now() - nativeStart));
             timer = setTimeout(expire, remaining);
             preparation = setTimeout(prepare, Math.max(0, remaining - OTA_FIRST_OPEN_DESTINATION_RESERVE_MS));
           }
