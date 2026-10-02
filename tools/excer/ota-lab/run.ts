@@ -99,7 +99,12 @@ export async function runLabCase(name: string): Promise<number> {
         result.launchToInteractiveMs = (prepared ? exposed.at : frame.at) - launched;
         screenshot(device.udid, join(dir, 'first-interactive.png'));
       }
-      const page = frame.page === '/paywall' ? 'P' : frame.page?.split('/').at(-1) ?? '';
+      const signInSheet = spec.landAt === 'sign-in' && labels().includes('Continue with Apple');
+      const page = signInSheet ? 'sign-in' : frame.page === '/paywall' ? 'P' : frame.page?.split('/').at(-1) ?? '';
+      if (signInSheet && !acted) {
+        acted = true;
+        await fetch(`${origin}/events`, { method: 'POST', body: JSON.stringify({ event: 'sign-in-open', page: '/sign-in' }) });
+      }
       if (expectedBack && page === expectedBack) {
         await fetch(`${origin}/events`, { method: 'POST', body: JSON.stringify({ event: 'back-returned', page: frame.page }) });
         expectedBack = null;
@@ -115,8 +120,10 @@ export async function runLabCase(name: string): Promise<number> {
         await sleep(200); continue;
       }
       if (spec.action && !acted && ((['purchase', 'restore', 'setup'].includes(spec.action) && page === 'P') || (spec.action === 'permission' && page === 'S3d'))) {
+        const actionLabel = spec.action === 'restore' ? 'Restore purchases' : spec.action === 'permission' ? 'Continue' : 'Start for $0.00';
+        if (!labels().includes(actionLabel)) { await sleep(200); continue; }
         acted = true;
-        await tap(spec.action === 'restore' ? 'Restore purchases' : spec.action === 'permission' ? 'Continue' : 'Start for $0.00');
+        await tap(actionLabel);
         await sleep(200); continue;
       }
       if (spec.action === 'setup' && page === 'sign-in') {
