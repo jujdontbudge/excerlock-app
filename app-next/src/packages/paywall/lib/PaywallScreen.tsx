@@ -1,4 +1,5 @@
 import { recordPaywallImpression } from './paywallImpression';
+import { finishOtaLaunch } from '../../updates/updates';
 import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
@@ -198,6 +199,7 @@ export function PaywallScreen({
     );
   return (
     <ScreenShell
+      onLayout={() => requestAnimationFrame(finishOtaLaunch)}
       scrollResetKey={paywall ? 'plans' : 'loading'}
       contentStyle={{ gap: t.space.md, paddingTop: onClose ? 0 : insets.top }}
       background={

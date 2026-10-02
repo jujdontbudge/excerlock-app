@@ -10,7 +10,7 @@ import { onboardingLabels as c } from './onboardingCopy';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
 import { SetupPresentation } from '../../ui/SetupPresentation';
 import { Reveal } from '../../ui/Reveal';
-import { shouldCoverOtaDestination, useOtaCover } from '../../updates/updates';
+import { finishOtaLaunch, shouldCoverOtaDestination, useOtaCover } from '../../updates/updates';
 export function OnboardingShell({
   children,
   step,
@@ -64,6 +64,7 @@ export function OnboardingShell({
   return (
     <SetupPresentation>
       <ScreenShell
+        onLayout={() => requestAnimationFrame(finishOtaLaunch)}
         scrollResetKey={step}
         fullBleed={step === 'S3b'}
         overlay={overlay}

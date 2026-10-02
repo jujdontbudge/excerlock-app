@@ -21,10 +21,10 @@ export function RootNavigator() {
   const [coverDestination, setCoverDestination] = useState(shouldCoverOtaDestination);
   useEffect(() => {
     if (pathname === '/') return;
-    const frame = requestAnimationFrame(finishOtaLaunch);
+    const frame = pathname.startsWith('/onboarding/') || pathname === '/paywall' ? null : requestAnimationFrame(finishOtaLaunch);
     const timer = setTimeout(() => setCoverDestination(false), t.motion.duration.emphasized);
     if (pathname === '/paywall' || pathname.startsWith('/setup/') || isOtaSafeRoute(pathname)) void noteOtaPaywallReached().catch(reportRuntimeError);
-    return () => { clearTimeout(timer); cancelAnimationFrame(frame); };
+    return () => { clearTimeout(timer); if (frame !== null) cancelAnimationFrame(frame); };
   }, [pathname]);
   const router = useRouter();
   const runtime = useRuntime();

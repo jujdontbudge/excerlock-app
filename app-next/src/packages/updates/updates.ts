@@ -1,9 +1,10 @@
 import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Image } from 'react-native';
 import Constants from 'expo-constants';
 import { tokens } from '../ui/tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hideRetainedNativeSplash } from './retainNativeSplash';
 
 
 export const OTA_FOREGROUND_STALE_MS = 6 * 60 * 60 * 1000;
@@ -333,9 +334,11 @@ export function createExpoUpdatesClient(): OtaUpdatesClient {
       return { isNew: false, updateId: null };
     },
     async reload() {
+      const image = Image.resolveAssetSource(splashReloadImage);
+      if (!image?.uri.startsWith('file://')) throw new Error('Local reload cover unavailable');
       await Updates.reloadAsync({ reloadScreenOptions: {
         backgroundColor: tokens.surface.card,
-        image: splashReloadImage,
+        image: { url: `${image.uri}#excerlock-cover` },
         imageFullScreen: true,
         imageResizeMode: 'stretch',
         spinner: { enabled: false },
@@ -1177,6 +1180,12 @@ export function readOnboardingFlowVersion(manifest: unknown): number | null {
 function setOtaCover(value: boolean) {
   cover = value;
   coverListeners.forEach((listener) => listener());
+  if (!value) requestAnimationFrame(() => requestAnimationFrame(() => void hideNativeReloadCover().catch(() => undefined)));
+}
+
+async function hideNativeReloadCover() {
+  hideRetainedNativeSplash();
+  await Updates.hideReloadScreen();
 }
 
 export function useOtaCover(): boolean {

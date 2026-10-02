@@ -1,0 +1,118 @@
+diff --git a/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift b/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift
+index edc2151..e656a6f 100644
+--- a/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift
++++ b/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift
+@@ -72,11 +72,10 @@ final class RelaunchProcedure: StateMachineProcedure {
+         if success {
+           self.setLauncher(self.launcherWithDatabase)
+           self.requestStartErrorMonitoring()
++          self.reloadScreenManager?.show()
+           RCTReloadCommandSetBundleURL(self.launcherWithDatabase.launchAssetUrl)
+           RCTTriggerReloadCommandListeners(self.triggerReloadCommandListenersReason)
+ 
+-          self.reloadScreenManager?.show()
+-
+           // TODO(wschurman): this was moved to after the RCT calls to unify reload
+           // code between JS API call and error recovery handler. double check that
+           // this is okay
+diff --git a/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenManager.swift b/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenManager.swift
+index f079137..3df198a 100644
+--- a/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenManager.swift
++++ b/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenManager.swift
+@@ -6,9 +6,10 @@ public class ReloadScreenManager: Reloadable {
+   private var currentReloadScreen: ReloadScreenView?
+   private var overlayWindow: UIWindow?
+   private var isShowing = false
++  private var safetyTimer: DispatchWorkItem?
+ 
+   init() {
+-    NotificationCenter.default.addObserver(self, selector: #selector(hide), name: Notification.Name("RCTContentDidAppearNotification"), object: nil)
++    NotificationCenter.default.addObserver(self, selector: #selector(contentAppeared), name: Notification.Name("RCTContentDidAppearNotification"), object: nil)
+   }
+ 
+   public func setConfiguration(_ options: ReloadScreenOptions?) {
+@@ -23,13 +24,25 @@ public class ReloadScreenManager: Reloadable {
+     do {
+       try showReloadScreen()
+       isShowing = true
++      if currentConfiguration?.image?.url?.fragment == "excerlock-cover" {
++        let timer = DispatchWorkItem { [weak self] in self?.hide() }
++        safetyTimer = timer
++        DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: timer)
++      }
+     } catch {
+       isShowing = false
+     }
+   }
+ 
++  @objc
++  private func contentAppeared() {
++    if currentConfiguration?.image?.url?.fragment != "excerlock-cover" { hide() }
++  }
++
+   @objc
+   public func hide() {
++    safetyTimer?.cancel()
++    safetyTimer = nil
+     if !isShowing {
+       return
+     }
+@@ -44,6 +57,7 @@ public class ReloadScreenManager: Reloadable {
+     if let windowScene = UIApplication.shared.connectedScenes
+       .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+       overlayWindow = UIWindow(windowScene: windowScene)
++      overlayWindow?.frame = windowScene.coordinateSpace.bounds
+     } else {
+       overlayWindow = UIWindow(frame: UIScreen.main.bounds)
+     }
+@@ -54,7 +68,6 @@ public class ReloadScreenManager: Reloadable {
+ 
+     window.windowLevel = UIWindow.Level.alert + 1
+     window.backgroundColor = UIColor.clear
+-    window.isHidden = false
+ 
+     let reloadScreenView = ReloadScreenView(frame: window.bounds)
+     reloadScreenView.updateConfiguration(config)
+@@ -63,7 +76,10 @@ public class ReloadScreenManager: Reloadable {
+     viewController.view = reloadScreenView
+ 
+     window.rootViewController = viewController
+-    window.makeKeyAndVisible()
++    viewController.view.frame = window.bounds
++    window.layoutIfNeeded()
++    reloadScreenView.layoutIfNeeded()
++    window.isHidden = false
+ 
+     currentReloadScreen = reloadScreenView
+   }
+diff --git a/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenView.swift b/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenView.swift
+index e8642a3..2963209 100644
+--- a/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenView.swift
++++ b/node_modules/expo-updates/ios/EXUpdates/ReloadScreen/ReloadScreenView.swift
+@@ -122,6 +122,10 @@ public class ReloadScreenView: UIView {
+   }
+ 
+   private func loadImage(source: URL, into imageView: UIImageView) {
++    if source.isFileURL, let image = UIImage(contentsOfFile: source.path) {
++      imageView.image = image.preparingForDisplay() ?? image
++      return
++    }
+     Task {
+       await loadImageFromURL(source, into: imageView)
+     }
+diff --git a/node_modules/expo-updates/ios/EXUpdates/UpdatesModule.swift b/node_modules/expo-updates/ios/EXUpdates/UpdatesModule.swift
+index 55efaca..69f0701 100644
+--- a/node_modules/expo-updates/ios/EXUpdates/UpdatesModule.swift
++++ b/node_modules/expo-updates/ios/EXUpdates/UpdatesModule.swift
+@@ -160,11 +160,9 @@ public final class UpdatesModule: Module, UpdatesEventManagerObserver {
+     }.runOnQueue(.main)
+ 
+     AsyncFunction("hideReloadScreen") {
+-#if DEBUG
+       if let reloadScreenManager = AppController.sharedInstance.reloadScreenManager {
+         reloadScreenManager.hide()
+       }
+-#endif
+     }.runOnQueue(.main)
+   }
+ 

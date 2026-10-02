@@ -5,7 +5,7 @@ const font = {
   extraBold: 'Baloo2_800ExtraBold',
 } as const;
 export const tokens = {
-  splash: { imageSize: 140 },
+  splash: { imageSize: 140, ink: '#F05216' },
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
     tabBarGradient: ['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1'],
