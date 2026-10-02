@@ -80,7 +80,7 @@ LEVEL_PARK_BASE = 100
 # catalog records in docs/subscriptions.md). Their group order is the live order.
 A_B_CONTRACTS = {
     'com.johansardar.excerlock.premium.a.monthly': {
-        'group': 'Premium A', 'period': 'P1M', 'trial': 't0', 'level': 2,
+        'group': 'Premium A', 'period': 'P1M', 'trial': 't7', 'level': 2,
         'name': 'Premium Monthly', 'description': 'Earn screen time by moving. Billed monthly.'},
     'com.johansardar.excerlock.premium.a.annual': {
         'group': 'Premium A', 'period': 'P1Y', 'trial': 't7', 'level': 1,
