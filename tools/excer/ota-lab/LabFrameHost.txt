@@ -1,0 +1,78 @@
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'expo-router';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRuntime } from '../../ports/useRuntime';
+import { useOtaCover, getOtaObservabilityContext, otaLabSnapshot, otaLabStageSecond } from '../../updates/updates';
+import { onboardingStore } from '../../onboarding/onboardingStore';
+import { pathFor, progressFraction, answeredStep } from '../../onboarding/lib/flow';
+import { draftFromAnswers } from '../../conditions/answersDraft';
+import { toRule } from '../../conditions/draft';
+import { scheduleDraft, toSchedule } from '../../conditions/scheduleDraft';
+import { rulesStore } from '../../conditions/rulesStore';
+
+export function LabFrameHost() {
+  const runtime = useRuntime();
+  const pathname = usePathname();
+  const covered = useOtaCover();
+  const second = useRef(false);
+  const secondStaged = useRef(false);
+  const checkedAnswers = useRef(false);
+  useEffect(() => {
+    if (pathname === '/' || checkedAnswers.current || getOtaObservabilityContext().is_embedded !== false) return;
+    checkedAnswers.current = true;
+    void AsyncStorage.getItem('excerlock-ota-lab.answers').then((baseline) => {
+      const current = onboardingStore.getState().data.answers;
+      const ok = baseline === null || Object.entries(JSON.parse(baseline)).every(([key, value]) => JSON.stringify(value) === JSON.stringify(current[key]));
+      return fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'answers-preserved', ok, checked: baseline !== null }) });
+    }).catch(() => undefined);
+  }, [pathname]);
+  useEffect(() => {
+    void fetch('http://127.0.0.1:8098/settings').then((response) => response.json()).then((settings) => {
+      if (settings.releaseAtPage === '/lab/permission') runtime.dev?.setPromptMode('ask');
+      (globalThis as typeof globalThis & { otaLabSlowEntry?: boolean }).otaLabSlowEntry = settings.transition === true;
+      second.current = Boolean(settings.second);
+      if (settings.legacy) void AsyncStorage.setItem('excerlock-next.ota-install.v1', JSON.stringify({ firstOpened: true, catchup: false, reloadUpdateId: null, paywallReached: true }))
+        .then(() => fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'legacy-ready' }) })).catch(() => undefined);
+    }).catch(() => undefined);
+  }, [runtime]);
+  useEffect(() => {
+    const original = runtime.analytics.track;
+    runtime.analytics.track = (event, properties) => {
+      original(event, properties);
+      if (event === 'paywall_viewed') void fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event, properties }) }).catch(() => undefined);
+    };
+    return () => { runtime.analytics.track = original; };
+  }, [runtime]);
+  useEffect(() => {
+    let signature = '';
+    const publish = () => {
+      const ota = getOtaObservabilityContext();
+      const state = onboardingStore.getState().data;
+      const path = pathFor(state.answers, state.flowOrder);
+      const page = pathname.split('/').at(-1) ?? '';
+      const required = page.startsWith('W') || page.startsWith('G') || page.startsWith('S') ? ['O04', 'O20', 'O22']
+        : ['O11', 'O12', 'O13', 'O14'].includes(page) ? ['O10'] : ['O23', 'O24'].includes(page) ? ['O22'] : [];
+      const expected = pathname.startsWith('/setup/') ? toRule(draftFromAnswers(state.answers), toSchedule(scheduleDraft(state.answers))) : null;
+      const setupMatchesAnswers = expected ? rulesStore.getState().data.rules.some((rule) => rule.activity === expected.activity &&
+        JSON.stringify(rule.mode) === JSON.stringify(expected.mode) && JSON.stringify(rule.schedule) === JSON.stringify(expected.schedule)) : undefined;
+      const event = { event: 'frame', page: pathname, updateId: ota.update_id, embedded: ota.is_embedded, cover: covered, setupMatchesAnswers,
+        ...otaLabSnapshot(), variant: Constants.expoConfig?.extra?.otaLabVariant, progress: progressFraction({ step: page, answers: state.answers }, state.flowOrder),
+        path, completed: state.completedSteps, prerequisiteAnswersPresent: required.every((id) => answeredStep(id, state.answers)),
+        purchaseBusy: runtime.subscription.operation().busy, prompt: runtime.dev?.snapshot().prompt?.kind ?? null };
+      const next = JSON.stringify(event);
+      if (next === signature) return;
+      signature = next;
+      void fetch('http://127.0.0.1:8098/events', { method: 'POST', body: next }).catch(() => undefined);
+      if (event.prompt) void fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'permission-start', page: '/lab/permission' }) }).catch(() => undefined);
+      if (second.current && event.pending && !secondStaged.current) {
+        secondStaged.current = true;
+        void otaLabStageSecond().catch(() => undefined);
+      }
+    };
+    publish();
+    const timer = setInterval(publish, 100);
+    return () => clearInterval(timer);
+  }, [runtime, pathname, covered]);
+  return null;
+}

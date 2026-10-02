@@ -12,7 +12,7 @@ depends: [conditions]
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
 - Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks for the review prompt one second into every visit and keeps Continue locked until that request finishes; demo `--prompt ask` forwards to the real StoreKit prompt.
 - Tail steps `S1`–`S3d`: summary, plan build, trial preview and the reminder (which asks for notifications), then `P`, the paywall.
-- The PostHog `onboarding_variant` payload may reorder or drop steps within `preBranch` and `tail`. It never changes the branch.
+- The PostHog `onboarding_variant` payload may reorder or drop optional steps within `preBranch` and `tail`, while preserving required questions and their prerequisite order. It never changes the branch. The effective order freezes when onboarding starts.
 - Answers persist as they change, and a relaunch resumes on the same step.
 
 ## How to get to it (user POV)
@@ -251,4 +251,32 @@ then-expect: rating | research
 - The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
 - Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
 - The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).
-- Step ids are persisted, so renaming one breaks resume for installs already in the field.
+- Step IDs and answer identifiers are persisted. Unknown pages resume at the first unfinished prerequisite in the current flow; renamed answer pages need a compatible mapping. Structural flow edits must bump the manifest's onboarding flow version (ADR 0060).
+- Native OTA behavior requires the local Release update lab in `docs/ota.md`; the development harness only proves resume and denied-route rules. First installs grant one reload before the Paywall, at a settled page boundary or behind the first-open cover.
+
+
+```proof
+name: renamed-page-resumes-at-unfinished-follow-up
+scenario: onboarding-unknown-page-resume
+relaunch: true
+open: /
+expect: How many pounds of muscle do you want to gain? | 10.0 lb | Continue
+absent: Block apps. Move more.
+```
+
+```proof
+name: resume-requires-activity-answer
+scenario: onboarding-prerequisite-resume
+relaunch: true
+open: /
+expect: Walking | Gym | Continue
+absent: Set your walking goal
+```
+
+```proof
+name: ota-unsafe-boundaries
+scenario: fresh-install
+open: /dev?lab=onboarding-path
+actions: open /dev
+expect: Paywall deferred | Sign-in deferred | Question deferred | Setup deferred | Permission deferred
+```

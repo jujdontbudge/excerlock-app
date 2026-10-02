@@ -4,6 +4,7 @@ import { doctorCommand, doctorHelp, newCommand, newHelp, serverCommand, serverHe
 import { moveCommand, moveHelp } from './commands/move.ts';
 import { help as proveHelp, proveCommand } from './commands/prove.ts';
 import { demoCommand, demoHelp, simCommand, simHelp } from './commands/sim.ts';
+import { otaLabCommand, otaLabHelp } from './commands/otaLab.ts';
 import { UsageError } from './lib/shell.ts';
 
 const usage = `excer: control and verification for ExcerLock
@@ -15,6 +16,7 @@ const usage = `excer: control and verification for ExcerLock
   excer demo <scenario> | list      start the app in a scripted scenario
   excer sim <command>               drive the owned simulator (status, start, open, tap, shot, tree)
   excer prove <feature>             run a feature's proofs on the simulator and save evidence
+  excer ota-lab <command>           local Release OTA lab
   excer server health|ready [--prod]
   excer server smoke                real API + Postgres, one account from sign-up to erasure
   excer new package <name>
@@ -25,6 +27,7 @@ Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.m
 
 const helps: Record<string, string> = {
   check: checkHelp,
+  "ota-lab": otaLabHelp,
   feature: featureHelp,
   demo: demoHelp,
   sim: simHelp,
@@ -46,6 +49,8 @@ async function main(argv: string[]): Promise<number> {
     return 0;
   }
   switch (command) {
+    case 'ota-lab':
+      return otaLabCommand(args);
     case 'check':
       return checkCommand(args);
     case 'feature':

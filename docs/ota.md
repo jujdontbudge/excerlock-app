@@ -2,9 +2,9 @@
 
 
 Single owner: `app-next/src/packages/updates/updates.ts` owns every `expo-updates` call.
-No other source file may import `expo-updates` (enforced by `./excer check`). Config
-(`runtimeVersion`, `updates` block), `eas.json`, dependency manifests,
-`createRuntime`, and root mounting remain root-owned; T03 does not edit them.
+No other shipping source file may import `expo-updates` (enforced by `./excer check`).
+First-install onboarding catch-up is defined in [ADR 0060](adr/0060-first-install-onboarding-ota-catchup.md).
+The ordinary tab coordinator below still applies to existing installs.
 
 ### Coordinator mount contract (T03 revision: live getters, pending-first, no auto-clear)
 
@@ -57,9 +57,11 @@ foreground captured before a 75s check/fetch can never reload:
   auto-clears on mount. A pending id equal to the currently running id is
   rejected and cleared (`already-running`), never retried.
 - Persist a `resumeEnvelope` (`route` + `draftIds`) before every reload. On the
-  next hydrated launch, consume it once and clear it before navigation. A route
-  resumes only when the current Journey already admits the selected account and
-  the route is one of the existing safe tab roots. The envelope never restores
+  next hydrated launch, consume it once and clear it before navigation. An onboarding
+  envelope is consumed by the launch gate and resumes unfinished onboarding or the
+  explicit before-Paywall destination. The tab host leaves that envelope untouched.
+  A tab route resumes only when the current Journey already admits the selected account
+  and the route is one of the existing safe tab roots. The envelope never restores
   Identity, Entitlement, Journey admission, unlock routes, or payment authority.
 - `checkAndStage` is diagnostics-only (never used by the hook launch path);
   it stages without reloading and respects the same budgets/running guard.
@@ -147,3 +149,52 @@ wait for Ready for Sale, then publish JS to both the old and the new runtime
 until the old runtime's 30-day active-install share is under 5%. Never orphan
 a runtime that still has installs. Version bumps never change
 `runtimeVersion`.
+
+
+### First-install onboarding catch-up for build 18
+
+Native `ON_LOAD` owns the first download. JavaScript observes `useUpdates()` through the update package, never starts a concurrent startup check/fetch, and holds only a fresh install. The eight-second budget uses Expo's native controller-start log timestamp so it includes the gap before React Native initializes. If that timestamp is unavailable, the native-duration/runtime clock reserves 1.5 seconds for bootstrap. Page-entry motion has a reserved part of the budget. Expo timestamps have one-second resolution, so the hold is conservatively shorter by up to a second. Runtime hydration proceeds behind the cover. During the final emphasized motion duration (480 ms), navigation prepares the destination behind that cover so expiry exposes an interactive page without paying for another mount. Transiently unsafe startup boundaries retry within the remaining budget; these retries never start network checks or downloads. A failed download opens the embedded onboarding without an error message. Returning installs retain the normal native three-second fallback and have no JavaScript hold.
+
+The cover uses the existing running-lock artwork and UI tokens. `reloadAsync` receives a full-screen image with the spinner and fade disabled. The new root renders its own cover above native navigation and retains the native splash until the cover image has loaded and crossed two render frames. Font loading preserves that same cover instance. The first destination skips the native slide and its initial page-entry motion, then releases the cover on the next frame, preventing the blank index route from flashing when Expo removes its overlay on first content. Later page changes retain their normal motion.
+
+`config/onboardingFlow.json` declares the version and a SHA-256 fingerprint of tokenized flow, step IDs, answer model and validation, answer-to-Condition mapping, store, navigation and flag-order definitions. Choice identifiers, multiple-selection behavior and answer-processing functions are included through a semantic AST snapshot that removes display copy and icons. A changed fingerprint requires a version above HEAD and origin/main. Update the fingerprint with `EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab fingerprint`. Copy and artwork changes keep the version. Never reinterpret a saved answer: introduce a new key or choice identifier for a new meaning.
+
+The effective order is frozen when onboarding starts. A downloaded same-version update reloads at the next stable Continue or Back boundary, after answers, completed pages, profile and runtime writes settle. A different or missing version waits until the final Continue before the Paywall. The explicit Paywall envelope finishes the old flow; newly inserted questions are not asked during that handoff, so the new Paywall and Setup must remain compatible with existing answers. Unknown saved page names use the current `pathFor` order and completed/answered pages to select the first unfinished prerequisite. Flag orders cannot omit required questions or put the impact story before its estimate.
+
+The install record `excerlock-next.ota-install.v1` permits one catch-up reload until the first Paywall. The current first-onboarding Journey also suppresses tab reloads after Setup; later cold sessions regain the existing tab-root coordinator once that Journey has ended. An admitted Sign in shortcut ends catch-up when it reaches Setup or the app. The existing two-attempt per-update guard and one-shot resume envelope remain required. Live safety is rechecked after every asynchronous storage write. Purchase/restore, sign-in, Paywall and later routes, permission prompts, background state, Reanimated page entry, native navigation transitions and page overlays deny catch-up reload authority. If permission dismissal is still unsafe at the final handoff, it waits up to one second and otherwise keeps the reminder open for another Continue.
+
+`paywall_viewed` fires once per mounted view after plans load. Every impression adds `is_embedded` and `update_id`. The first observed impression on a known fresh install sets `first_paywall_view` and persists its observation in `excerlock-next.first-paywall.v1`; older installs are excluded from that new-install count because their historical first view cannot be reconstructed. PostHog's existing running-update super-property remains registered after reset. No answer or sensor detail is added to analytics.
+
+### Local Release update lab
+
+Everything lives under `tools/excer/ota-lab/`; generated projects, exports and evidence live under ignored `.excer/ota-lab/`. This lab uses the assigned hidden worker simulator, port 8092 for development proofs, and loopback port 8098 for Updates. It never contacts EAS. `EXCER_OTA_LAB_URL` accepts HTTP loopback URLs only and rejects EAS build/profile and Trace Lab environments.
+
+Preparation makes an isolated source snapshot with local fake service ports and native Expo Updates enabled in Release. It strips production client configuration, the dev launcher and upload tooling. Production runtime construction and background task imports are disabled in that snapshot. Production sources retain the real adapters. No native runtime-version bump is needed.
+
+```sh
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab prepare
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab native
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab build
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab serve
+```
+
+Keep the server in its own terminal. `build` uses BB's tracked local Xcode build, caches in `.excer/ota-lab/derived`, the Release configuration and generic arm64 simulator destination with signing disabled. If BB cannot confirm the CLI build, use its `xcode_build` tool with the same workspace, scheme, arguments and derived-data path; do not treat an unconfirmed run as success. Never build an App Store archive for this lab. Changes to the shipping code require fresh preparation and an incremental build before verification.
+
+```sh
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab list
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab run first-fast
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab run first-held
+EXCER_SIM=ExcerLock-ota-first-launch EXCER_METRO_PORT=8092 ./excer ota-lab run same-o07 added-page
+```
+
+Multiple named cases run serially. Every case has its own five-minute deadline, fresh install, video, screenshots for each visited page, accessibility labels, `result.json`, event trace and a snapshot of native update launch/failure counts. The result records launch to first exposed page and the interval from native reload request to destination cover dismissal. The video is authoritative for flashes and completed visual transitions. Failed and superseded attempts remain in evidence; use the final report's table to identify the verified run.
+
+The server implements Expo Updates manifests and assets, identity/hash validation, gzip delivery, rollback directives, delayed, never-completing, cut-off and corrupt transfers, and fresh IDs/timestamps for successive publications. Asset keys match Expo's bundled packager hashes, so unchanged bundled assets are reused. `/control` selects a prepared variant and its delay or release page. `/network` severs pending local update transfers and rejects new update requests while offline; control and evidence remain reachable. This models transport loss for the lab URL, not device-wide Wi-Fi switching. `/events` contains only route, update, timing and boolean proof metadata; saved-answer comparison stays on-device and reports a boolean.
+
+Prepared updates cover copy, card radius, an added informational page before the current position, removed muscle follow-up, an informational page added only to the Gym branch, renamed name page and a throw before first content. Every structural fixture increments the flow version. Back-to-back publication uses a lab-only check/fetch after the native first download has completed, through the sole update owner, so two real downloaded candidates can compete before one boundary reload. The shipping startup never makes that second check.
+
+Purchase and restore cases use an eight-second fake-port barrier, and notification permission uses the existing fake prompt UI. These prove update safety with overlapping operations, not StoreKit transactions or physical permission sheets. Crash evidence must include a native failed launch and sensible embedded recovery; merely opening embedded code is insufficient. A rollback first installs the copy update and then supplies the directive on reopening.
+
+The production resolved config before this change and after it differs only at `.extra.onboardingFlowVersion`, which is required by the flow contract. Removing that additive field produces an identical resolved object; update URL, channel, runtime and native configuration are unchanged. The report links the exact resolved-config diff and separate lab opt-in isolation evidence. Literal byte identity with the original config cannot coexist with adding the required manifest field.
+
+The transition case stretches one page's Reanimated entry to four times its token duration only in the isolated lab. It presses Get started while entry is active and asserts that the reload waits for its completion. Changed-flow cases proceed through purchase and Sign in, skip the shared Screen Time ask, and require the Walking motion or Gym location Setup page. Their committed Condition is compared with preserved answers on-device; only the matching boolean reaches the lab server. The network-interruption case accepts embedded fallback when the severed download cannot finish, and checks that the same question remains visible.

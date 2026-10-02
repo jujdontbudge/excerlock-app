@@ -30,7 +30,9 @@ export type Scenario = {
   id: string;
   title: string;
   onboarding: 'fresh' | `resumeAt:${string}` | 'complete';
-  onboardingAnswers?: Record<string, string | number | boolean | number[]>;
+  onboardingCheckpoint?: { started: boolean; completedSteps: string[]; seenSteps: string[] };
+  otaOnboardingResume?: boolean;
+  onboardingAnswers?: Record<string, string | number | boolean | number[] | string[]>;
   profile?: Partial<Profile>;
   rules: Rule[];
   lockedApps: LockedApps;

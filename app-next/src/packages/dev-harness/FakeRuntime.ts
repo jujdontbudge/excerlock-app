@@ -36,6 +36,7 @@ import { createServerSubscriptionAdmission } from '../subscription/ServerSubscri
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
 import { approveLaunchSignIn } from '../identity/launchSignInGate';
+import { evaluateSafeBoundary } from '../updates/updates';
 import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
@@ -583,7 +584,10 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       runOnboardingPathDiagnostics: () => {
         const path = pathFor({ activity: 'walking', walkingMode: 'steps', bodyGoal: 'maintain' });
-        ctx.update({ onboardingPath: path.join(' ') });
+        const idle = { purchaseOrRestoreBusy: false, permissionPromptPending: false, cameraActive: false, walkingActive: false, proppedActive: false, isForeground: true };
+        const boundaries = [['Paywall', '/paywall'], ['Sign-in', '/sign-in'], ['Question', '/onboarding/O07'], ['Setup', '/setup/X1']].map(([title, route]) => `${title} ${evaluateSafeBoundary({ ...idle, route }).safe ? 'unsafe' : 'deferred'}`);
+        boundaries.push(`Permission ${evaluateSafeBoundary({ ...idle, route: '/home', permissionPromptPending: true }).safe ? 'unsafe' : 'deferred'}`);
+        ctx.update({ onboardingPath: `${path.join(' ')} · ${boundaries.join(' · ')}` });
       },
       deliverNotification: (destination) => {
         notificationResponses.deliver(destination);

@@ -24,6 +24,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
       route: scenario.otaResumeRoute,
       draftIds: [],
       savedAtMs: Date.parse(scenario.clock.now),
+      ...(scenario.otaOnboardingResume ? { onboarding: true } : {}),
     });
   } else await otaStorage.clearEnvelope();
   if (scenario.purchaseRecovery) {
@@ -50,9 +51,10 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   onboardingStore.getState().patch({
     step: scenario.onboarding.startsWith('resumeAt:') ? scenario.onboarding.slice(9) : 'O01',
     complete,
+    ...(scenario.onboardingCheckpoint ?? {}),
     setupComplete: complete,
     answers: scenario.onboarding.startsWith('resumeAt:')
-      ? { activity: 'walking', walkingMode: 'steps', goal: 5000, ...scenario.onboardingAnswers }
+      ? { ...(scenario.onboardingCheckpoint ? {} : { activity: 'walking', walkingMode: 'steps', goal: 5000 }), ...scenario.onboardingAnswers }
       : {},
   });
 }

@@ -1,3 +1,4 @@
+import { onboardingOtaResumeScenarios } from './onboarding-ota-resume';
 import { permissionJourney, permissionConditionEntry, permissionGymSetup } from './permission-journey';
 import { scenario0 } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
@@ -80,6 +81,7 @@ export const scenarios = [
   scenario25,
   scenario26,
   ...unlockScenarios,
+  ...onboardingOtaResumeScenarios,
   ...conditionDemoScenarios,
   ...identityLabScenarios,
 ];
