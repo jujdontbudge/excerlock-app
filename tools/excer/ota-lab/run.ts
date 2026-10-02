@@ -7,6 +7,7 @@ import { bundleId, ensureCompanion, ownedDevice, screenshot, simctlArgs } from '
 import { cases, type LabCase } from './cases.ts';
 import { labRoot } from './prepare.ts';
 import type { LabEvent } from './server.ts';
+import { reviewVideo } from './review.ts';
 
 const origin = 'http://127.0.0.1:8098';
 const localApp = () => join(labRoot(), 'derived/Build/Products/Release-iphonesimulator/ExcerLock.app');
@@ -208,7 +209,7 @@ export async function runLabCase(name: string): Promise<number> {
     await Promise.race([new Promise<void>((done) => video.once('exit', () => done())), sleep(3000)]);
     events = await readEvents();
     for (const start of events.filter((entry) => entry.event === 'reload-start')) {
-      const end = events.find((entry) => entry.event === 'cover-hidden' && entry.at > start.at);
+      const end = events.find((entry) => entry.event === 'native-cover-hidden' && entry.at > start.at);
       if (end) result.reloadCoverMs.push(end.at - start.at);
     }
     if (result.status === 'pass' && result.reloadCoverMs.some((duration) => duration > 2000)) {
@@ -230,6 +231,14 @@ export async function runLabCase(name: string): Promise<number> {
       }
     } else if (spec.variant === 'crash' && result.status !== 'blocked') {
       result.status = 'blocked'; result.error = 'Native update database was unavailable for crash recovery assertion';
+    }
+    try {
+      const review = reviewVideo(dir, videoStartedAtMs, launched, result.launchToInteractiveMs, events);
+      if (review.status === 'fail' && result.status === 'pass') {
+        result.status = 'fail'; result.assertions = [...(result.assertions ?? []), 'video contains a blank pale frame after visible content'];
+      }
+    } catch (error) {
+      if (result.status === 'pass') { result.status = 'blocked'; result.error = error instanceof Error ? error.message : String(error); }
     }
     writeFileSync(join(dir, 'result.json'), JSON.stringify({ ...result, events, crashReopens, launchedAtMs: launched, videoStartedAtMs }, null, 2));
     console.log(`${result.status}: ${spec.title}\nFirst interactive: ${result.launchToInteractiveMs ?? 'unmeasured'} ms; reload cover: ${result.reloadCoverMs.join(', ') || 'none measured'} ms\nEvidence: ${dir}${result.error ? `\n${result.error}` : ''}`);

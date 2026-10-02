@@ -48,6 +48,7 @@ export function snapshotLab() {
   change('src/packages/updates/updates.ts', (source) => source
     .replace('await Updates.reloadAsync({', "await fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'reload-start', updateId: Updates.updateId, pending: candidate?.id ?? null }) });\n      await Updates.reloadAsync({")
     .replace('cover = value;', "cover = value;\n  if (!value) void fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'cover-hidden', updateId: Updates.updateId, embedded: Updates.isEmbeddedLaunch }) }).catch(() => undefined);")
+    .replace('await Updates.hideReloadScreen();', "await Updates.hideReloadScreen();\n  await fetch('http://127.0.0.1:8098/events', { method: 'POST', body: JSON.stringify({ event: 'native-cover-hidden', updateId: Updates.updateId, embedded: Updates.isEmbeddedLaunch }) });")
     + `
 const otaLabJsModuleEpochMs = Date.now();
 export const otaLabSnapshot = () => ({ pending: candidate?.id ?? null, version: candidate?.flowVersion ?? null, navigationTransition,

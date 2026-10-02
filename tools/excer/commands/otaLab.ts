@@ -1,15 +1,16 @@
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { onboardingFlowFingerprint } from '../checks/onboardingFlow.ts';
 import { cases } from '../ota-lab/cases.ts';
 import { exportVariants, labApp, labEnv, labRoot } from '../ota-lab/prepare.ts';
 import { runLabCase } from '../ota-lab/run.ts';
 import { startLabServer } from '../ota-lab/server.ts';
+import { reviewVideo } from '../ota-lab/review.ts';
 import { must, run, UsageError } from '../lib/shell.ts';
 import { ownedDevice } from '../lib/sim.ts';
 import { repoRoot } from '../lib/paths.ts';
 
-export const otaLabHelp = `excer ota-lab fingerprint | prepare | native | build | serve | list | run <case> [case...]
+export const otaLabHelp = `excer ota-lab fingerprint | prepare | native | build | serve | list | run <case> [case...] | review <evidence-dir>
 
 Local only. prepare exports the isolated lab and seven updates. native generates its iOS
 project and installs cached Pods. build runs a tracked local Release simulator build.
@@ -49,6 +50,13 @@ export async function otaLabCommand(args: string[]): Promise<number> {
       await new Promise<void>(() => {}); return 0;
     }
     case 'list': cases.forEach((entry) => console.log(`${entry.name}\t${entry.title}`)); return 0;
+    case 'review': {
+      if (!name) throw new UsageError('ota-lab review needs an evidence directory');
+      const result = JSON.parse(readFileSync(join(name, 'result.json'), 'utf8'));
+      const review = reviewVideo(name, result.videoStartedAtMs, result.launchedAtMs, result.launchToInteractiveMs, result.events);
+      console.log(JSON.stringify(review, null, 2));
+      return review.status === 'pass' ? 0 : 1;
+    }
     case 'run': {
       if (!name) throw new UsageError('ota-lab run needs a case from ota-lab list');
       let failed = 0;
