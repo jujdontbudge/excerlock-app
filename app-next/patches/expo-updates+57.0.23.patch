@@ -1,3 +1,56 @@
+diff --git a/node_modules/expo-updates/ios/EXUpdates/ErrorRecovery.swift b/node_modules/expo-updates/ios/EXUpdates/ErrorRecovery.swift
+index c554369..49e55df 100644
+--- a/node_modules/expo-updates/ios/EXUpdates/ErrorRecovery.swift
++++ b/node_modules/expo-updates/ios/EXUpdates/ErrorRecovery.swift
+@@ -82,6 +82,7 @@ public final class ErrorRecovery: NSObject {
+   private var isRunning: Bool
+   private var isWaitingForRemoteUpdate: Bool
+   private var rctContentHasAppeared: Bool
++  private var monitoringGeneration = 0
+   private let remoteLoadTimeout: Int
+ 
+   private let errorRecoveryQueue: DispatchQueue
+@@ -106,7 +107,6 @@ public final class ErrorRecovery: NSObject {
+     errorRecoveryQueue: DispatchQueue,
+     remoteLoadTimeout: Int
+   ) {
+-    // tasks should never be added to the pipeline after this point, only removed
+     self.pipeline = [
+       .waitForRemoteUpdate,
+       .launchNew,
+@@ -123,6 +123,14 @@ public final class ErrorRecovery: NSObject {
+   }
+ 
+   public func startMonitoring() {
++    errorRecoveryQueue.async {
++      self.monitoringGeneration += 1
++      if !self.isRunning {
++        self.pipeline = [.waitForRemoteUpdate, .launchNew, .launchCached, .crash]
++        self.encounteredErrors = []
++        self.isWaitingForRemoteUpdate = false
++      }
++    }
+     setRCTErrorHandlers()
+   }
+ 
+@@ -313,13 +321,14 @@ public final class ErrorRecovery: NSObject {
+       self.pipeline = self.pipeline.filter({ task in
+         task == .waitForRemoteUpdate || task == .crash
+       })
++      let generation = self.monitoringGeneration
++      self.errorRecoveryQueue.asyncAfter(deadline: DispatchTime.now() + .seconds(10)) {
++        if self.monitoringGeneration == generation { self.unsetRCTErrorHandlers() }
++      }
+     }
+     // wait 10s before unsetting error handlers; even though we won't try to relaunch if our handlers
+     // are triggered after now, we still want to give the app a reasonable window of time to start the
+     // ErrorRecoveryTaskWaitForRemoteUpdate task and check for a new update is there is one
+-    errorRecoveryQueue.asyncAfter(deadline: DispatchTime.now() + .seconds(10)) {
+-      self.unsetRCTErrorHandlers()
+-    }
+   }
+ 
+   private func setRCTErrorHandlers() {
 diff --git a/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift b/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift
 index edc2151..e656a6f 100644
 --- a/node_modules/expo-updates/ios/EXUpdates/Procedures/RelaunchProcedure.swift

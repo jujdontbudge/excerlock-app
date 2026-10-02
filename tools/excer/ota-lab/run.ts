@@ -87,11 +87,12 @@ export async function runLabCase(name: string): Promise<number> {
       treeCache = null;
       events = await readEvents();
       const frame = events.filter((entry) => entry.event === 'frame' && entry.at > minimumFrameAt).at(-1);
+      const crashStart = events.filter((entry) => entry.event === 'reload-start').at(-1)?.at ?? launched;
+      if (spec.variant === 'crash' && (!frame || (frame.jsModuleEpochMs ?? 0) <= crashStart) && Date.now() - crashStart > (crashReopens + 1) * 20000 && crashReopens < 2) {
+        crashReopens++; minimumFrameAt = Date.now(); terminate(); launch(); handled = '';
+        await sleep(200); continue;
+      }
       if (!frame || frame.cover || frame.page === '/') {
-        const crashStart = events.filter((entry) => entry.event === 'reload-start').at(-1)?.at ?? launched;
-        if (spec.variant === 'crash' && Date.now() - crashStart > (crashReopens + 1) * 20000 && crashReopens < 2) {
-          crashReopens++; terminate(); launch();
-        }
         await sleep(200); continue;
       }
       if (result.launchToInteractiveMs === null) {
@@ -186,6 +187,7 @@ export async function runLabCase(name: string): Promise<number> {
       if (page === 'O01' && spec.landAt === 'sign-in') { await tap('Sign in'); handled = key; continue; }
       for (const label of buttons[page] ?? []) {
         if (page === 'O04') { if (!tree().some((entry) => entry.AXValue === 'Alex')) { await tap(label); idb(['ui', 'text', 'Alex']); treeCache = null; } }
+        else if (page === 'O22' && tree().some((entry) => entry.AXLabel === label && entry.AXValue?.includes('checkbox, checked'))) continue;
         else if (labels().includes(label)) await tap(label);
       }
       if (page === 'O20') await tap(spec.activity === 'gym' ? 'Gym' : 'Walking');
