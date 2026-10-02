@@ -59,6 +59,8 @@ varies only the initial plan choice — a layout-level variant needs a design-sy
 
 ## References
 
+- [ADR 0060](0060-first-install-onboarding-ota-catchup.md) freezes each started onboarding's order and narrows payload validation to retain prerequisite questions. Structural order handling belongs to the versioned onboarding flow contract.
+
 - `app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts` (registry, `getPayload`, exposure dedup)
 - `app-next/src/onboarding/flowOrder.ts`, `app-next/src/onboarding/stepId.ts`, `app-next/src/onboarding/flow.ts`
 - `app-next/src/features/subscription/PaywallSlot.tsx`, `app-next/src/features/setup/useSignInRequiredSource.ts`

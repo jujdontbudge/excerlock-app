@@ -48,6 +48,8 @@
 
 ## Recording decisions
 
+- [0060: First installs catch up at stable onboarding boundaries](0060-first-install-onboarding-ota-catchup.md) — **accepted**.
+
 Every core architectural decision belongs here in a short file explaining what was decided, why, and the project's state when the decision was made. Document the rationale that code cannot explain: constraints, assumptions, meaningful alternatives and consequences.
 
 - Read relevant ADRs before changing architecture; check status rather than treating every historical record as current authority.
@@ -58,4 +60,3 @@ Every core architectural decision belongs here in a short file explaining what w
 - Keep records concise. Do not invent past reasons or turn routine coding choices into ADRs.
 
 - [0024: Keep account access after subscription lapse](0024-keep-account-access-after-subscription-lapse.md) — **accepted**.
-

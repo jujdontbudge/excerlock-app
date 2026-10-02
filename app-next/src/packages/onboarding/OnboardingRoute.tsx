@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { notify } from '../ui/Notice';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
 import { useOnboarding } from './lib/useOnboarding';
@@ -28,12 +28,14 @@ import { tokens as t } from '../ui/tokens';
 export function OnboardingRoute() {
   const focused = useIsFocused();
   const runtime = useRuntime();
-  const flow = useOnboarding(),
+  const pageObscured = useRef(false);
+  const flow = useOnboarding({ isPageStable: () => !pageObscured.current }),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
     [celebrating, setCelebrating] = useState(false),
     [asking, setAsking] = useState(false),
     [demoReady, setDemoReady] = useState(false),
     [ratingReady, setRatingReady] = useState(false);
+  useLayoutEffect(() => { pageObscured.current = wheel !== null || celebrating || asking; }, [wheel, celebrating, asking]);
   const promptBusy = useRef(false);
   const onDemoReady = useCallback(() => setDemoReady(true), []);
   const onRatingPrompted = useCallback(() => setRatingReady(true), []);
@@ -109,6 +111,8 @@ export function OnboardingRoute() {
   if (flow.step === 'S3d') body = <TrialReminder />;
   return (
     <OnboardingShell
+      onTransitionStarted={flow.transitionStarted}
+      onTransitionSettled={flow.transitionSettled}
       step={flow.step}
       progress={flow.progress}
       direction={flow.direction}

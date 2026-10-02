@@ -19,6 +19,8 @@ Purchase recovery is separate from admission. Subscription owns the versioned lo
 
 An OTA resume envelope is navigation continuity only. It is consumed once and cleared before navigation, and it can restore only an existing OTA-safe tab root after the current Journey independently admits the selected account. It cannot restore Identity, Entitlement, Journey admission, unlock routes or payment authority.
 
+[ADR 0060](0060-first-install-onboarding-ota-catchup.md) adds navigation continuity for unfinished first-install onboarding and the handoff immediately before the Paywall. Returning legacy installs retain Welcome-first cold launch, and this exception grants no paid admission.
+
 ## Context
 
 TestFlight build 14 implemented ADR 0049's explicit sign-in on launch but opened sign-in immediately for a returning install, then entered Home after authentication without an account-bound subscription check. ADR 0024 deliberately allowed post-Setup Home after lapse. Both conflict with the owner's explicit hard Paywall request. ADR 0043's payment-then-sign-in order remains the default full-Onboarding path; a Welcome sign-in is the shortcut for existing subscribers.

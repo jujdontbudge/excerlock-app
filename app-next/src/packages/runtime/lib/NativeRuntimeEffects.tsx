@@ -5,7 +5,7 @@ import { usePathname, useRootNavigationState } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useRuntime } from '../../ports/useRuntime';
 import { useRuntimeStatus } from '../../lock/selectors';
-import { getOtaObservabilityContext, useOtaCoordinator } from '../../updates/updates';
+import { getOtaObservabilityContext, useOtaCoordinator, isOtaNavigationTransition } from '../../updates/updates';
 import { trialReminderPlan } from '../../notifications/notificationPlan';
 import { expoLocalNotifications } from '../../notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../../permissions/permissionsStore';
@@ -40,7 +40,7 @@ export function NativeRuntimeEffects() {
       const operation = runtime.subscription.operation();
       return {
         route: pathname,
-        isForeground: live.current && AppState.currentState === 'active',
+        isForeground: live.current && AppState.currentState === 'active' && !isOtaNavigationTransition(),
         purchaseOrRestoreBusy: operation.busy || operation.pending,
         permissionPromptPending: safety?.permissionPromptPending ?? null,
         cameraActive: safety?.cameraActive ?? null,

@@ -1,6 +1,6 @@
 const layers = [
-  ['model', 'persistence', 'platform', 'trace', 'ui', 'updates'],
-  ['preferences', 'schedule'],
+  ['model', 'persistence', 'platform', 'trace', 'ui'],
+  ['preferences', 'schedule', 'updates'],
   ['ports'],
   ['conditions', 'identity', 'telemetry'],
   ['app-selection', 'permissions', 'subscription'],

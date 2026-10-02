@@ -32,6 +32,8 @@ export function parseOnboardingFlowOrder(payload: unknown): FlowOrder | null {
   if (parsedPre === undefined && parsedTail === undefined) return null;
   const order: FlowOrder = { preBranch: parsedPre ?? [...preBranch], tail: parsedTail ?? [...tail] };
   if (order.tail[order.tail.length - 1] !== 'P') return null;
+  if (order.preBranch[0] !== 'O01' || !['O04', 'O10', 'O20', 'O22'].every((step) => order.preBranch.includes(step))) return null;
+  if (['O11', 'O12', 'O13', 'O14'].some((step) => order.preBranch.includes(step) && order.preBranch.indexOf(step) < order.preBranch.indexOf('O10'))) return null;
   return order;
 }
 

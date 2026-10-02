@@ -20,7 +20,7 @@ export function OtaResumeHost() {
     attempted.current = true;
     let mounted = true;
     void otaResumeStorage.loadEnvelope().then(async (envelope) => {
-      if (!mounted || !envelope) return;
+      if (!mounted || !envelope || envelope.onboarding) return;
       const route = normalizeOtaRoute(envelope.route) ?? envelope.route;
       const canRestore = journey.canEnterApp && isOtaSafeRoute(route);
       await otaResumeStorage.clearEnvelope();

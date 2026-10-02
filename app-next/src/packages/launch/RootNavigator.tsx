@@ -1,6 +1,6 @@
 import { useMotion } from '../ui/useMotion';
-import { Stack, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Stack, useRouter, usePathname } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { entitlementStore as useEntitlementStore } from '../subscription/entitlementStore';
 import { tokens as t } from '../ui/tokens';
 import { FakePromptHost } from './lib/FakePromptHost';
@@ -14,8 +14,18 @@ import { StyleSheet, View } from 'react-native';
 import { FullWindowOverlay } from 'react-native-screens';
 import { BootScreen } from './lib/BootScreen';
 import { reportRuntimeError } from '../telemetry/reportRuntimeError';
+import { finishOtaLaunch, isOtaSafeRoute, noteOtaPaywallReached, setOtaNavigationTransition, shouldCoverOtaDestination } from '../updates/updates';
 export function RootNavigator() {
   const motion = useMotion();
+  const pathname = usePathname();
+  const [coverDestination, setCoverDestination] = useState(shouldCoverOtaDestination);
+  useEffect(() => {
+    if (pathname === '/') return;
+    const frame = requestAnimationFrame(finishOtaLaunch);
+    const timer = setTimeout(() => setCoverDestination(false), t.motion.duration.emphasized);
+    if (pathname === '/paywall' || pathname.startsWith('/setup/') || isOtaSafeRoute(pathname)) void noteOtaPaywallReached().catch(reportRuntimeError);
+    return () => { clearTimeout(timer); cancelAnimationFrame(frame); };
+  }, [pathname]);
   const router = useRouter();
   const runtime = useRuntime();
   const journey = useJourney(runtime);
@@ -39,9 +49,10 @@ export function RootNavigator() {
   return (
     <>
       <Stack
+        screenListeners={{ transitionStart: () => setOtaNavigationTransition(true), transitionEnd: () => setOtaNavigationTransition(false) }}
         screenOptions={{
           headerShown: false,
-          animation: motion.reduced ? 'fade' : 'slide_from_right',
+          animation: coverDestination ? 'none' : motion.reduced ? 'fade' : 'slide_from_right',
           animationDuration: t.motion.duration.emphasized,
         }}>
         <Stack.Screen name="index" />

@@ -3,6 +3,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import type { LinkedRecorderIdentifiers } from './plugins/linkedRecorderResearchConfig';
 import { buildClientExtra, resolveBuildEnvironment, updateChannel } from './config/environment';
 import { loadBuildEnvironment } from './config/loadEnvironment';
+import { otaLabUrl } from './config/otaLab';
+import onboardingFlow from './config/onboardingFlow.json';
 import { nativeConfig } from './config/native';
 import { googleOAuthRedirect } from './config/googleOAuth';
 // CommonJS is the single executable owner used by Expo config, target configs,
@@ -29,18 +31,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const linkedRecorderResearch = linkedRecorderConfig.assertResearchBuildAllowed(process.env);
   const linkedRecorderStandalone = linkedRecorderConfig.standaloneEnabled(process.env);
   const linkedIdentifiers = linkedRecorderConfig.identifiers(process.env);
+  const labUrl = otaLabUrl(process.env);
   const environment = resolveBuildEnvironment(process.env);
   const values = loadBuildEnvironment();
   const extra = buildClientExtra(values, environment, { requireUploadToken: process.env.EAS_BUILD === 'true' });
   // A research bundle (Metro dev or standalone lab) runs the lab-local identity
   // graph, which reads no client identity group. It embeds only the environment
   // marker, so neither a production value nor a placeholder can reach it.
-  const clientExtra = linkedRecorderResearch ? { environment } : extra;
+  const clientExtra = labUrl ? { environment: 'dev', otaLab: true } : linkedRecorderResearch ? { environment } : extra;
   // Upload tooling reads this at build time. Never include the token in Expo config.
-  if (!linkedRecorderResearch && process.env.NODE_ENV !== 'test' && values.SENTRY_AUTH_TOKEN && !process.env.SENTRY_AUTH_TOKEN) {
+  if (!linkedRecorderResearch && !labUrl && process.env.NODE_ENV !== 'test' && values.SENTRY_AUTH_TOKEN && !process.env.SENTRY_AUTH_TOKEN) {
     process.env.SENTRY_AUTH_TOKEN = values.SENTRY_AUTH_TOKEN;
   }
-  const googleIosClientId = linkedRecorderResearch ? undefined : values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleIosClientId = linkedRecorderResearch || labUrl ? undefined : values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const google = googleIosClientId ? googleOAuthRedirect(googleIosClientId) : null;
   const plugins = linkedRecorderResearch
     ? [
@@ -76,24 +79,26 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ...config.ios?.infoPlist,
         ...nativeConfig.ios?.infoPlist,
         ...(linkedRecorderResearch ? { CFBundleDisplayName: 'ExcerLock Trace Lab' } : {}),
+        ...(labUrl ? { NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }, NSLocalNetworkUsageDescription: 'Connect to the local update lab.' } : {}),
       },
     },
-    plugins: [...plugins],
+    plugins: labUrl ? [...plugins.filter((plugin) => !['expo-dev-client', '@sentry/react-native/expo'].includes(String(Array.isArray(plugin) ? plugin[0] : plugin))), './plugins/withOtaLab'] : [...plugins],
     extra: {
       ...config.extra,
+      onboardingFlowVersion: onboardingFlow.version,
       ...clientExtra,
       // Trace Lab omits every client identity group: no Supabase/Adapty/API
       // placeholder and no Google OAuth client or redirect scheme. The lab
       // identity graph is local, and the artifact proof rejects the presence of
       // any production identity field.
-      ...(!linkedRecorderResearch && extra.clientAuth
+      ...(!linkedRecorderResearch && !labUrl && extra.clientAuth
         ? { clientAuth: { ...extra.clientAuth, googleIosClientId, googleRedirectUri: google?.redirectUri } }
         : {}),
     },
     updates: linkedRecorderResearch ? linkedRecorderConfig.updatesConfig() : {
-      url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',
+      url: labUrl ?? 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',
       enabled: true,
-      requestHeaders: { 'expo-channel-name': updateChannel(environment) },
+      requestHeaders: { 'expo-channel-name': labUrl ? 'local-lab' : updateChannel(environment) },
       checkAutomatically: 'ON_LOAD',
       fallbackToCacheTimeout: 3000,
       useEmbeddedUpdate: true,

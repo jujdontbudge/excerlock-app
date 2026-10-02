@@ -41,8 +41,8 @@ A package imports only packages from a lower layer, never from its own layer, so
 
 | Layer | Packages |
 |---|---|
-| 1 | `model` (shared nouns: Rule, Schedule, Entitlement, Answers…), `persistence` (persisted stores), `platform` (environment, client configuration, runtime lifecycle), `trace` (research trace switch), `ui` (design system, motion, icons, tokens), `updates` (OTA coordinator) |
-| 2 | `preferences` (profile and settings stores), `schedule` (calendar math, schedule windows and schedule views) |
+| 1 | `model` (shared nouns: Rule, Schedule, Entitlement, Answers…), `persistence` (persisted stores), `platform` (environment, client configuration, runtime lifecycle), `trace` (research trace switch), `ui` (design system, motion, icons, tokens) |
+| 2 | `updates` (OTA coordinator and launch cover), `preferences` (profile and settings stores), `schedule` (calendar math, schedule windows and schedule views) |
 | 3 | `ports` (port interfaces, `Runtime`, `useRuntime`) |
 | 4 | `conditions` (condition model, stores and editing steps), `identity` (sign-in, session), `telemetry` (PostHog, Sentry) |
 | 5 | `app-selection` (Screen Time picker and selection), `permissions` (permission state, setup needs, system alerts), `subscription` (entitlement, Adapty) |

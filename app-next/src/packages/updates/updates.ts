@@ -1,6 +1,8 @@
 import * as Updates from 'expo-updates';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
+import Constants from 'expo-constants';
+import { tokens } from '../ui/tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -22,16 +24,18 @@ export type OtaSafetyInput = {
   proppedActive: boolean | null | undefined;
   isForeground: boolean | null | undefined;
   route: string | null | undefined;
+  onboardingBoundary?: 'first-open' | 'page';
 };
 
 export type OtaSafetyGetter = () => OtaSafetyInput;
 
-export type OtaEnvelopeGetter = () => { route: string; draftIds: string[] } | null;
+export type OtaEnvelopeGetter = () => { route: string; draftIds: string[]; onboarding?: boolean } | null;
 
 export type OtaResumeEnvelope = {
   route: string;
   draftIds: string[];
   savedAtMs: number;
+  onboarding?: boolean;
 };
 
 export type OtaPersistedGuard = {
@@ -107,6 +111,8 @@ export function evaluateSafeBoundary(input: OtaSafetyInput): OtaSafeEvaluation {
   if (input.proppedActive) return { safe: false, reason: 'propped-active' };
   if (input.isForeground == null) return { safe: false, reason: 'unknown-foreground' };
   if (!input.isForeground) return { safe: false, reason: 'not-foreground' };
+  if (input.onboardingBoundary === 'first-open' && input.route === '/') return { safe: true, reason: 'safe' };
+  if (input.onboardingBoundary === 'page' && /^\/onboarding\/[A-Za-z0-9_-]+$/.test(input.route ?? '')) return { safe: true, reason: 'safe' };
   if (!isOtaSafeRoute(input.route)) return { safe: false, reason: 'non-root-route' };
   return { safe: true, reason: 'safe' };
 }
@@ -257,6 +263,7 @@ export function createAsyncStorageOtaStorage(): OtaStorage {
         route: vv.route,
         draftIds: vv.draftIds.filter((d) => typeof d === 'string'),
         savedAtMs: vv.savedAtMs,
+        ...(vv.onboarding === true ? { onboarding: true } : {}),
       };
     },
     async saveEnvelope(envelope) {
@@ -326,7 +333,14 @@ export function createExpoUpdatesClient(): OtaUpdatesClient {
       return { isNew: false, updateId: null };
     },
     async reload() {
-      await Updates.reloadAsync();
+      await Updates.reloadAsync({ reloadScreenOptions: {
+        backgroundColor: tokens.surface.card,
+        image: splashReloadImage,
+        imageFullScreen: true,
+        imageResizeMode: 'stretch',
+        spinner: { enabled: false },
+        fade: false,
+      } });
     },
   };
 }
@@ -552,7 +566,7 @@ export class OtaCoordinator {
 
   private readLiveEnvelope(
     getEnvelope: OtaEnvelopeGetter | null | undefined,
-  ): { route: string; draftIds: string[] } | null {
+  ): ReturnType<OtaEnvelopeGetter> {
     if (getEnvelope == null) return null;
     if (typeof getEnvelope !== 'function') throw new Error('ota envelope getter invalid');
     return getEnvelope();
@@ -874,7 +888,13 @@ export class OtaCoordinator {
   ): Promise<OtaReloadResult> {
     const pending = this.pendingUpdateId;
     if (!pending) return { status: 'no-pending' };
-    if (this.pendingSource === 'observation' &&
+    const boundary = getSafety().onboardingBoundary;
+    if (!boundary && onboardingCatchupSession) return { status: 'deferred-unsafe', reason: 'onboarding-install', updateId: pending };
+    if (boundary) {
+      const installed = await loadInstall();
+      if (!installed.catchup || installed.reloadUpdateId || installed.paywallReached) return { status: 'deferred-unsafe', reason: 'install-reload-used', updateId: pending };
+    }
+    if (!boundary && this.pendingSource === 'observation' &&
         (this.pendingStagedAtSeq == null || this.pendingStagedAtSeq >= currentSeq)) {
       return { status: 'deferred-unsafe', reason: 'needs-fresh-foreground', updateId: pending };
     }
@@ -908,11 +928,13 @@ export class OtaCoordinator {
       const envelope = supplied ?? { route: safety.route ?? '', draftIds: [] };
       const safe = evaluateSafeBoundary(safety);
       if (!safe.safe) return { reason: safe.reason };
-      if (normalizeOtaRoute(envelope.route) !== normalizeOtaRoute(safety.route) ||
+      const coherentOnboarding = safety.onboardingBoundary && envelope.onboarding === true &&
+        (/^\/onboarding\/[A-Za-z0-9_-]+$/.test(envelope.route) || envelope.route === '/paywall');
+      if ((!coherentOnboarding && normalizeOtaRoute(envelope.route) !== normalizeOtaRoute(safety.route)) ||
           !Array.isArray(envelope.draftIds) || envelope.draftIds.some((id) => typeof id !== 'string')) {
         return { reason: 'incoherent-resume-envelope' };
       }
-      return { envelope: { route: envelope.route, draftIds: [...envelope.draftIds] } };
+      return { envelope: { route: envelope.route, draftIds: [...envelope.draftIds], ...(envelope.onboarding ? { onboarding: true } : {}) } };
     };
     const initialCandidate = candidateCheck();
     if (initialCandidate) return initialCandidate;
@@ -942,7 +964,7 @@ export class OtaCoordinator {
       return { status: 'failed', error: 'resume envelope persistence failed' };
     }
     const afterEnvelope = revalidate();
-    if (afterEnvelope) return afterEnvelope;
+    if (afterEnvelope) { await this.storage.clearEnvelope(); return afterEnvelope; }
     const nextCount = guard?.updateId === pending ? guard.launchCount + 1 : 1;
     try { await this.storage.saveGuard({ updateId: pending, launchCount: nextCount }); }
     catch {
@@ -952,6 +974,7 @@ export class OtaCoordinator {
     const beforeReload = revalidate();
     if (beforeReload) {
       try {
+        await this.storage.clearEnvelope();
         if (guard) await this.storage.saveGuard(guard);
         else await this.storage.clearGuard();
       } catch {
@@ -960,7 +983,28 @@ export class OtaCoordinator {
       }
       return beforeReload;
     }
-    await this.updates.reload();
+    if (boundary) {
+      const claimed = await claimCatchupReload(pending);
+      if (!claimed) return { status: 'deferred-unsafe', reason: 'install-reload-used', updateId: pending };
+      const finalCheck = revalidate();
+      if (finalCheck) {
+        await releaseCatchupReload(pending);
+        await this.storage.clearEnvelope();
+        if (guard) await this.storage.saveGuard(guard); else await this.storage.clearGuard();
+        return finalCheck;
+      }
+      setOtaCover(true);
+    }
+    try { await this.updates.reload(); }
+    catch (error) {
+      if (boundary) {
+        await releaseCatchupReload(pending);
+        releaseStartupCover();
+        await this.storage.clearEnvelope();
+        if (guard) await this.storage.saveGuard(guard); else await this.storage.clearGuard();
+      }
+      throw error;
+    }
     return { status: 'reloaded', updateId: pending };
   }
 
@@ -974,7 +1018,7 @@ export function createOtaCoordinator(deps: OtaCoordinatorDeps): OtaCoordinator {
 export type OtaCoordinatorHookOptions = {
   coordinator?: OtaCoordinator;
   getSafety?: () => OtaSafetyInput;
-  getEnvelope?: () => { route: string; draftIds: string[] } | null;
+  getEnvelope?: () => { route: string; draftIds: string[]; onboarding?: boolean } | null;
   now?: () => number;
   report?: OtaReport;
 };
@@ -1016,9 +1060,10 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
   const runningId =
     (observed?.currentlyRunning?.updateId as string | undefined) ?? null;
   const downloaded = observed?.downloadedUpdate as unknown as
-    | { updateId?: unknown }
+    | { updateId?: unknown; type?: string; createdAt?: Date }
     | undefined;
-  const downloadedId = typeof downloaded?.updateId === 'string' ? (downloaded.updateId as string) : null;
+  const downloadedId = downloaded?.type === Updates.UpdateInfoType.ROLLBACK && downloaded.createdAt
+    ? `rollback:${downloaded.createdAt.toISOString()}` : typeof downloaded?.updateId === 'string' ? downloaded.updateId : null;
 
   useEffect(() => {
     if (startupDoneRef.current) return;
@@ -1090,5 +1135,237 @@ export function useOtaCoordinator(options?: OtaCoordinatorHookOptions): OtaCoord
     return () => subscription.remove();
   }, [coordinator]);
 
+  useEffect(() => {
+    const previous = activeBoundaryHost;
+    activeBoundaryHost = { coordinator, getSafety: () => getSafetyRef.current?.() ?? OTA_UNKNOWN_SAFETY };
+    if (candidate) coordinator.observeDownloadedUpdate(candidate.id, Updates.updateId);
+    return () => { activeBoundaryHost = previous; };
+  }, [coordinator]);
+
   return coordinator;
 }
+
+
+export const OTA_FIRST_OPEN_BUDGET_MS = 8_000;
+const OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS = 1_500;
+const OTA_INSTALL_KEY = 'excerlock-next.ota-install.v1';
+const moduleStartedAt = performance.now();
+const splashReloadImage = require('../../../assets/splash-cover.png');
+type InstallRecord = { firstOpened: true; catchup: boolean; reloadUpdateId: string | null; paywallReached: boolean };
+let install: InstallRecord | null = null;
+let installLoading: Promise<InstallRecord> | null = null;
+let candidate: { id: string; flowVersion: number | null } | null = null;
+let cover = true;
+let freshLaunch = false;
+let onboardingCatchupSession = false;
+let startupHolding = Updates.isEnabled;
+let bootstrapDone = false;
+const coverListeners = new Set<() => void>();
+let activeBoundaryHost: { coordinator: OtaCoordinator; getSafety: OtaSafetyGetter } | null = null;
+
+export function runningOnboardingFlowVersion(): number {
+  return readOnboardingFlowVersion(Constants.expoConfig) ?? 1;
+}
+
+export function readOnboardingFlowVersion(manifest: unknown): number | null {
+  if (!manifest || typeof manifest !== 'object') return null;
+  const extra = (manifest as { extra?: { onboardingFlowVersion?: unknown; expoClient?: { extra?: { onboardingFlowVersion?: unknown } } } }).extra;
+  const version = extra?.expoClient?.extra?.onboardingFlowVersion ?? extra?.onboardingFlowVersion;
+  return typeof version === 'number' && Number.isSafeInteger(version) && version > 0 ? version : null;
+}
+
+function setOtaCover(value: boolean) {
+  cover = value;
+  coverListeners.forEach((listener) => listener());
+}
+
+export function useOtaCover(): boolean {
+  return useSyncExternalStore((listener) => {
+    coverListeners.add(listener);
+    return () => { coverListeners.delete(listener); };
+  }, () => cover, () => cover);
+}
+
+async function loadInstall(): Promise<InstallRecord> {
+  if (install) return install;
+  if (installLoading) return installLoading;
+  installLoading = (async () => {
+    const entries = await AsyncStorage.multiGet([OTA_INSTALL_KEY, 'excerlock-next.onboarding.v1']);
+    const raw = entries[0]?.[1];
+    if (raw) {
+      const value = JSON.parse(raw) as InstallRecord;
+      if (value.firstOpened !== true || typeof value.catchup !== 'boolean' || typeof value.paywallReached !== 'boolean' ||
+          (value.reloadUpdateId !== null && typeof value.reloadUpdateId !== 'string')) throw new OtaStorageError('Invalid install reload record');
+      install = value;
+    } else {
+      freshLaunch = !entries[1]?.[1];
+      install = { firstOpened: true, catchup: !entries[1]?.[1], reloadUpdateId: null, paywallReached: false };
+      await AsyncStorage.setItem(OTA_INSTALL_KEY, JSON.stringify(install));
+    }
+    onboardingCatchupSession = install.catchup && !install.paywallReached;
+    return install;
+  })();
+  return installLoading;
+}
+
+async function claimCatchupReload(id: string): Promise<boolean> {
+  const value = await loadInstall();
+  if (!value.catchup || value.reloadUpdateId || value.paywallReached) return false;
+  const next = { ...value, reloadUpdateId: id };
+  await AsyncStorage.setItem(OTA_INSTALL_KEY, JSON.stringify(next));
+  install = next;
+  return true;
+}
+
+async function releaseCatchupReload(id: string) {
+  if (install?.reloadUpdateId !== id) return;
+  const next = { ...install, reloadUpdateId: null };
+  await AsyncStorage.setItem(OTA_INSTALL_KEY, JSON.stringify(next));
+  install = next;
+}
+
+export async function noteOtaPaywallReached() {
+  const value = await loadInstall();
+  if (value.paywallReached) return;
+  const next = { ...value, paywallReached: true };
+  await AsyncStorage.setItem(OTA_INSTALL_KEY, JSON.stringify(next));
+  install = next;
+}
+
+export async function canResumeFirstOnboarding(): Promise<boolean> {
+  const value = await loadInstall();
+  return value.catchup && !value.paywallReached;
+}
+
+export async function isKnownFirstInstall(): Promise<boolean> {
+  return (await loadInstall()).catchup;
+}
+
+export async function reloadAtOnboardingBoundary(args: {
+  next: string;
+  isStable: () => boolean;
+  persist: () => Promise<void>;
+}): Promise<'continue' | 'reloaded' | 'deferred'> {
+  if (!Updates.isEnabled || !candidate || !activeBoundaryHost) return 'continue';
+  const value = await loadInstall();
+  if (!value.catchup || value.reloadUpdateId || value.paywallReached) return 'continue';
+  const pending = candidate;
+  if (args.next !== 'P' && pending.flowVersion !== runningOnboardingFlowVersion()) return 'continue';
+  await args.persist();
+  const host = activeBoundaryHost;
+  const getSafety = (): OtaSafetyInput => {
+    const safety = host.getSafety();
+    return { ...safety, isForeground: safety.isForeground === true && AppState.currentState === 'active' && args.isStable() && candidate?.id === pending.id,
+      onboardingBoundary: 'page' };
+  };
+  if (args.next === 'P') {
+    const deadline = performance.now() + 1000;
+    while (!evaluateSafeBoundary(getSafety()).safe && candidate?.id === pending.id && performance.now() < deadline)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  const result = await host.coordinator.tryReloadIfSafe({
+    getSafety,
+    getEnvelope: () => ({ route: args.next === 'P' ? '/paywall' : `/onboarding/${args.next}`, draftIds: [], onboarding: true }),
+  });
+  if (result.status === 'reloaded') return 'reloaded';
+  return args.next === 'P' && result.status === 'deferred-unsafe' && result.reason !== 'install-reload-used' ? 'deferred' : 'continue';
+}
+
+export function useFirstOpenUpdate() {
+  const observed = Updates.useUpdates();
+  const [ready, setReady] = useState(!Updates.isEnabled);
+  const [settled, setSettled] = useState(!Updates.isEnabled);
+  const [retry, setRetry] = useState(0);
+  const started = useRef(((performance as Performance & { rnStartupTiming?: { initializeRuntimeStart?: number } }).rnStartupTiming?.initializeRuntimeStart ?? moduleStartedAt) - (observed.currentlyRunning.launchDuration ?? 0));
+  const first = useRef(false);
+  const expired = useRef(false);
+  const reloading = useRef(false);
+  const startupCoordinator = useRef<OtaCoordinator | null>(null);
+  if (startupCoordinator.current === null) startupCoordinator.current = createOtaCoordinator({ updates: createExpoUpdatesClient(), storage: createAsyncStorageOtaStorage() });
+  const downloaded = observed.downloadedUpdate;
+  const id = downloaded?.type === Updates.UpdateInfoType.ROLLBACK ? `rollback:${downloaded.createdAt.toISOString()}` : downloaded?.updateId ?? null;
+  const version = downloaded?.type === Updates.UpdateInfoType.NEW ? readOnboardingFlowVersion(downloaded.manifest) : null;
+  useEffect(() => {
+    candidate = observed.isUpdatePending && id ? { id, flowVersion: version } : null;
+    const coordinator = startupCoordinator.current!;
+    if (!coordinator.isStartupObserved) coordinator.observeStartup({ currentlyRunningUpdateId: Updates.updateId, downloadedUpdateId: id });
+    else coordinator.observeDownloadedUpdate(id, Updates.updateId);
+    if (activeBoundaryHost && id) activeBoundaryHost.coordinator.observeDownloadedUpdate(id, Updates.updateId);
+  }, [id, version, observed.isUpdatePending]);
+  useEffect(() => {
+    if (!Updates.isEnabled) { releaseStartupCover(); return; }
+    let live = true;
+    const expire = () => {
+      expired.current = true;
+      if (live && !reloading.current) { setReady(true); releaseStartupCover(); setSettled(true); }
+    };
+    const deadline = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - OTA_FIRST_OPEN_BOOTSTRAP_RESERVE_MS - (performance.now() - started.current));
+    let timer = setTimeout(expire, deadline);
+    const prepare = () => { if (live && first.current && !reloading.current) setSettled(true); };
+    let preparation = setTimeout(prepare, Math.max(0, deadline - tokens.motion.duration.emphasized));
+    void loadInstall().then(async (value) => {
+      if (!live) return;
+      first.current = freshLaunch && value.catchup && !value.reloadUpdateId && !value.paywallReached && !observed.currentlyRunning.isEmergencyLaunch;
+      if (!first.current) { setReady(true); releaseStartupCover(); setSettled(true); }
+      else {
+        try {
+          const entries = await Updates.readLogEntriesAsync(60_000);
+          const nativeStart = entries.filter((entry) => entry.message === 'AppController sharedInstance created')
+            .reduce<number | undefined>((latest, entry) => latest === undefined || entry.timestamp > latest ? entry.timestamp : latest, undefined);
+          if (live && !expired.current && nativeStart !== undefined && nativeStart <= Date.now()) {
+            clearTimeout(timer);
+            clearTimeout(preparation);
+            const remaining = Math.max(0, OTA_FIRST_OPEN_BUDGET_MS - (Date.now() - nativeStart));
+            timer = setTimeout(expire, remaining);
+            preparation = setTimeout(prepare, Math.max(0, remaining - tokens.motion.duration.emphasized));
+          }
+        } catch {}
+        if (live) setReady(true);
+      }
+    }).catch(() => { if (live) { setReady(true); releaseStartupCover(); setSettled(true); } });
+    return () => { live = false; clearTimeout(timer); clearTimeout(preparation); };
+  }, [observed.currentlyRunning.isEmergencyLaunch]);
+  useEffect(() => {
+    if (!ready || !first.current || expired.current || reloading.current) return;
+    if (observed.isUpdatePending && id) {
+      reloading.current = true;
+      void startupCoordinator.current!.tryReloadIfSafe({
+        getSafety: () => {
+          const safety = activeBoundaryHost?.getSafety();
+          return { purchaseOrRestoreBusy: false, permissionPromptPending: false, cameraActive: false, walkingActive: false, proppedActive: false,
+            ...safety, route: '/', isForeground: AppState.currentState === 'active' && !expired.current && safety?.isForeground !== false,
+            onboardingBoundary: 'first-open' };
+        },
+        getEnvelope: () => ({ route: '/onboarding/O01', draftIds: [], onboarding: true }),
+      }).then((result) => {
+        if (result.status !== 'reloaded') {
+          reloading.current = false;
+          if (result.status === 'deferred-unsafe' && !expired.current) {
+            setTimeout(() => { if (!expired.current) setRetry((value) => value + 1); }, tokens.motion.duration.press);
+          } else { releaseStartupCover(); setSettled(true); }
+        }
+      }).catch(() => { reloading.current = false; releaseStartupCover(); setSettled(true); });
+    } else if (!observed.isDownloading && !observed.isStartupProcedureRunning) { releaseStartupCover(); void Promise.resolve().then(() => setSettled(true)); }
+  }, [ready, id, observed.isUpdatePending, observed.isDownloading, observed.isStartupProcedureRunning, retry]);
+  return ready && settled;
+}
+
+
+function releaseStartupCover() {
+  startupHolding = false;
+  if (bootstrapDone) setOtaCover(false);
+}
+
+export function finishOtaLaunch() {
+  bootstrapDone = true;
+  if (!startupHolding) setOtaCover(false);
+}
+
+export function shouldCoverOtaDestination(): boolean {
+  return freshLaunch || Boolean(install?.catchup && !install.paywallReached);
+}
+
+
+let navigationTransition = false;
+export function setOtaNavigationTransition(inFlight: boolean) { navigationTransition = inFlight; }
+export function isOtaNavigationTransition() { return navigationTransition; }

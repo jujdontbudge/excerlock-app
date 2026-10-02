@@ -70,9 +70,31 @@ export function progressFraction(state: FlowState, order?: FlowOrder | null): nu
 }
 export function resumeStep(persisted: unknown, order?: FlowOrder | null): string {
   if (typeof persisted !== 'object' || persisted === null) return 'O01';
-  const state = persisted as Partial<FlowState>;
-  if (typeof state.step !== 'string' || !state.answers) return 'O01';
-  if (/^T[1-4]$/.test(state.step)) return 'P';
-  const path = pathFor(state.answers, applicableOrder({ step: state.step, answers: state.answers }, order));
-  return path.includes(state.step) ? state.step : path[0] ?? 'O01';
+  const state = persisted as Partial<FlowState> & { completedSteps?: string[]; seenSteps?: string[] };
+  if (!state.answers) return 'O01';
+  const path = pathFor(state.answers, order);
+  const completed = new Set(state.completedSteps ?? []);
+
+  if (completed.size === 0 && typeof state.step === 'string') {
+    const index = path.indexOf(state.step);
+    const answered = path.reduce((last, step, position) => answeredStep(step, state.answers!) ? position : last, -1);
+    path.slice(0, index >= 0 ? index : answered + 1).forEach((step) => completed.add(step));
+  }
+  return path.find((step) => !completed.has(step) || (answerStepHasKey(step) && !answeredStep(step, state.answers!))) ?? 'P';
+}
+
+export function answeredStep(step: string, answers: Answers): boolean {
+  const keys: Record<string, string> = {
+    O04: 'name', O05: 'referralSource', O06: 'ageBand', O07: 'gender', O08: 'improveFirst',
+    O10: 'estimatedDailyMinutes', O20: 'activity', O22: 'bodyGoal', O23: 'muscleGainLb', O24: 'fatLossLb',
+    W0: 'currentDailySteps', W1: 'walkPlaces', W2: 'walkingMode', W3: answers.walkingMode === 'minutes' ? 'walkMinutes' : 'stepGoal',
+    G0F: 'gymSessionsPerWeek', G0H: 'gymSessionHours', G1: 'gymMode', G2: 'gymMinutes',
+  };
+  const key = keys[step];
+  return key !== undefined && answers[key] !== undefined && answers[key] !== '';
+}
+
+
+function answerStepHasKey(step: string): boolean {
+  return ['O04', 'O05', 'O06', 'O07', 'O08', 'O10', 'O20', 'O22', 'O23', 'O24', 'W0', 'W1', 'W2', 'W3', 'G0F', 'G0H', 'G1', 'G2'].includes(step);
 }

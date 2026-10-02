@@ -1,7 +1,8 @@
 import { pageIn, pageOut } from '../../ui/presets';
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useLayoutEffect, useRef } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
 import { useMotion } from '../../ui/useMotion';
@@ -9,6 +10,7 @@ import { onboardingLabels as c } from './onboardingCopy';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
 import { SetupPresentation } from '../../ui/SetupPresentation';
 import { Reveal } from '../../ui/Reveal';
+import { shouldCoverOtaDestination, useOtaCover } from '../../updates/updates';
 export function OnboardingShell({
   children,
   step,
@@ -16,6 +18,8 @@ export function OnboardingShell({
   direction,
   onBack,
   onContinue,
+  onTransitionStarted,
+  onTransitionSettled,
   valid = true,
   overlay,
   continueLabel,
@@ -28,6 +32,8 @@ export function OnboardingShell({
   direction: 'forward' | 'back';
   onBack: () => void;
   onContinue: () => void;
+  onTransitionStarted: (step: string) => void;
+  onTransitionSettled: (step: string) => void;
   valid?: boolean;
   overlay?: ReactNode;
   continueLabel?: string;
@@ -43,7 +49,17 @@ export function OnboardingShell({
         : ['O16', 'O17', 'O18'].includes(step)
           ? 'loop'
           : step;
-  const enter = pageIn(m.reduced, direction);
+  const previousFamily = useRef<string | null>(null);
+  const covered = useOtaCover();
+  const skipEntry = covered && shouldCoverOtaDestination();
+  useLayoutEffect(() => {
+    if (previousFamily.current !== family && !skipEntry) onTransitionStarted(step);
+    previousFamily.current = family;
+  }, [family, step, onTransitionStarted, skipEntry]);
+  const enter = pageIn(m.reduced, direction).withCallback((finished) => {
+    'worklet';
+    if (finished) scheduleOnRN(onTransitionSettled, step);
+  });
   const exit = pageOut(m.reduced, direction);
   return (
     <SetupPresentation>
@@ -81,7 +97,7 @@ export function OnboardingShell({
           )
         }>
         <View style={{ flexGrow: 1 }}>
-          <Animated.View key={family} entering={enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
+          <Animated.View key={family} entering={skipEntry ? undefined : enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
             {children}
           </Animated.View>
         </View>
