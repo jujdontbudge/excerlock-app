@@ -56,3 +56,8 @@ export const subscriptionProofUnavailable = base('subscription-proof-unavailable
   launchSignInRequired: true,
   subscriptionProof: 'unavailable',
 });
+export const subscriptionProofLapsed = base('subscription-proof-lapsed', 'Subscription proof says the subscription lapsed', {
+  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
+  launchSignInRequired: true,
+  subscriptionProof: 'ineligible',
+});

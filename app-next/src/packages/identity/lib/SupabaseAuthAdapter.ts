@@ -27,6 +27,7 @@ export type AuthAdapterDeps = {
   onAccountSwitchReset?: () => Promise<void>;
   bootTimeoutMs?: number;
   runIdentityOperation?: RunIdentityOperation;
+  readStoredSession?: () => Promise<SupabaseSession | null>;
 };
 
 const BOOT_TIMEOUT_MS = 5000;
@@ -42,6 +43,9 @@ function sessionFromUser(user: SupabaseUser | null): Session {
   else if (user.app_metadata?.provider === 'google') provider = 'google';
   return { kind: 'signedIn', provider, email: user.email ?? null };
 }
+
+const isOfflineRefreshError = (error: unknown) =>
+  typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'AuthRetryableFetchError';
 
 function isAnonymousUser(user: SupabaseUser | null): boolean {
   if (!user) return true;
@@ -59,6 +63,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private onAfterDelete: () => Promise<void>;
   private onAccountSwitchReset: () => Promise<void>;
   private bootTimeoutMs: number;
+  private readStoredSession: () => Promise<SupabaseSession | null>;
 
   private generation = 0;
   private currentIdentity: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
@@ -88,6 +93,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.onAfterDelete = deps.onAfterDelete ?? (async () => undefined);
     this.onAccountSwitchReset = deps.onAccountSwitchReset ?? (async () => undefined);
     this.bootTimeoutMs = deps.bootTimeoutMs ?? BOOT_TIMEOUT_MS;
+    this.readStoredSession = deps.readStoredSession ?? (async () => null);
     this.runIdentityOperation = deps.runIdentityOperation ?? (async (operation) => operation());
     this.registerAuthCallback();
     this.registerForegroundRetry();
@@ -180,6 +186,14 @@ export class SupabaseAuthAdapter implements AuthPort {
       if (!error && data.session?.user) {
         this.applySupabaseSession(data.session, { preserveGeneration: true });
         return this.currentIdentity;
+      }
+      if (error && isOfflineRefreshError(error)) {
+        const stored = await this.readStoredSession();
+        if (this.generation !== startGeneration || this.disposed) return this.currentIdentity;
+        if (stored?.user) {
+          this.applySupabaseSession(stored, { preserveGeneration: true });
+          return this.currentIdentity;
+        }
       }
       if (error) {
         const message = (error as { message?: string })?.message ?? '';

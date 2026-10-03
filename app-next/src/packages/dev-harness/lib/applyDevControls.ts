@@ -1,11 +1,11 @@
 import { onboardingStore } from '../../onboarding/onboardingStore';
-import { authorizeDemoScenario } from '../../identity/launchSignInGate';
+import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
 import { beginOnboarding, beginPaywall, beginSignIn } from '../../journey/index';
 import { RuntimeControls } from '../../ports/RuntimeControls';
-export type DevParams = { scenario?: string; restore?: string; outcome?: string; prompt?: string; setup?: string; journey?: string; notification?: string; lab?: string; advance?: string };
+export type DevParams = { scenario?: string; keep?: string; restore?: string; outcome?: string; prompt?: string; setup?: string; journey?: string; notification?: string; lab?: string; advance?: string };
 const ADVANCE_STEP_MS = 30_000;
 export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
-  if (p.scenario) await dev.load(p.scenario);
+  if (p.scenario) await dev.load(p.scenario, p.keep === '1');
   if (p.setup && /^X[1-5]$/.test(p.setup)) {
     authorizeDemoScenario(true);
     onboardingStore.getState().patch({ complete: true, setupComplete: false, setupStep: p.setup });

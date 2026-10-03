@@ -26,7 +26,7 @@ module.exports = defineConfig([
         'error',
         {
           selector:
-            'CallExpression[callee.type="Identifier"][callee.name=/^(profile|rules|ruleDays|session|entitlement|permissions|settings|onboarding)Store$/]',
+            'CallExpression[callee.type="Identifier"][callee.name=/^(?!use|create|stop)[a-z][A-Za-z]*Store$/]',
           message:
             'Alias bound Zustand stores to useXStore when calling them as hooks so React Compiler preserves hook order.',
         },
@@ -41,7 +41,7 @@ module.exports = defineConfig([
         'error',
         {
           selector:
-            'CallExpression[callee.type="Identifier"][callee.name=/^(profile|rules|ruleDays|session|entitlement|permissions|settings|onboarding)Store$/]',
+            'CallExpression[callee.type="Identifier"][callee.name=/^(?!use|create|stop)[a-z][A-Za-z]*Store$/]',
           message: 'Call bound stores through use-prefixed hook names.',
         },
         {

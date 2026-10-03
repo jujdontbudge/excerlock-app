@@ -7,7 +7,7 @@ events: [permission_resolved]
 depends: [paywall, conditions]
 ---
 ## Sub-features
-- After the paywall, `/setup/X1` requires an explicit Apple, Google or email-code sign-in; no skip and no saved-session Continue. Each cold launch also requires explicit sign-in before any main-app route, even when a secure session and completed Setup are restored. Then comes Allow Screen Time, Choose apps to lock, Motion, Location While Using and (for Walking state) its Always upgrade, then Gym. Pages remain in place until the real request resolves; allow and deny advance automatically. Choosing Locked apps retains a counts summary and requires Continue. The list comes from `permissions/setupNeeds.ts`.
+- After the paywall, `/setup/X1` requires an explicit Apple, Google or email-code sign-in unless this install already remembers the account; no skip. The sign-in is remembered until Sign out or Delete account, so closing, killing or updating the app never asks again; a reinstall does (ADR 0061). Then comes Allow Screen Time, Choose apps to lock, Motion, Location While Using and (for Walking state) its Always upgrade, then Gym. Pages remain in place until the real request resolves; allow and deny advance automatically. Choosing Locked apps retains a counts summary and requires Continue. The list comes from `permissions/setupNeeds.ts`.
 - `PermissionGuide` draws the exact iOS alert with an arrow pointing at the choice to tap.
 - Home's reminder card ("Your apps are not locked yet", "Walks cannot open your apps yet") and saving a condition that needs something new both open the same screens at `/permissions/<step>`, without sign-in.
 - Sign-in with Apple, Google or an email code, also reachable from Settings and the welcome screen.
@@ -40,24 +40,27 @@ expect: Create your account | Your plan and subscription stay with your account.
 ```
 
 ```proof
-name: returning-session-blocked
+name: returning-session-opens-home
 scenario: returning-signed-in
 open: /home
-expect: Block apps. Move more. | Get started | Sign in
+expect: Locked | Home
 ```
 
 ```proof
-name: returning-settings-blocked
+name: returning-settings-opens
 scenario: returning-signed-in
 open: /settings/account
-expect: Block apps. Move more. | Get started | Sign in
+expect: Account | Signed in with Apple | Sign out
 ```
 
 ```proof
-name: returning-paywall-blocked
+name: sign-out-relaunch-stays-welcome
 scenario: returning-signed-in
-open: /paywall
+open: /settings/account
+tap: Sign out
 expect: Block apps. Move more. | Get started | Sign in
+relaunch-after-expect: true
+after-relaunch-expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
@@ -69,8 +72,8 @@ expect: Create your account | Your plan and subscription stay with your account.
 
 ```proof
 name: welcome-sign-in-is-returning
-scenario: returning-signed-in
-open: /home
+scenario: reinstall-keychain
+open: /
 tap: Sign in
 expect: Welcome back | Sign in again to open ExcerLock. | Continue with Apple
 ```
@@ -81,14 +84,6 @@ scenario: fresh-install
 open: /sample-paywall?stage=sign-in
 tap: Back | Sign in | Continue with Apple | Start for $0.00
 expect: Allow Screen Time
-```
-
-```proof
-name: returning-session-signed-in
-scenario: returning-signed-in
-open: /home
-tap: Sign in | Continue with Apple
-expect: Locked | Home
 ```
 
 ```proof
@@ -116,7 +111,7 @@ expect: Walk 10,000 steps | Walk 5,000 steps | Home
 ```
 
 ## Gotchas
-- `returning-signed-in` restores a signed-in fake Session but deliberately withholds launch approval. Other demo scenarios explicitly grant fake launch approval so unrelated feature proofs can open their route; no production build grants approval from persisted session data.
+- `returning-signed-in` restores a signed-in fake Session with completed Setup and no remembered account, like an install updated from build 17, and BootGate resumes it to Home. `reinstall-keychain` keeps the Keychain session but has no saved app data, so it starts at Welcome.
 - `excer` pre-grants simulator location, motion, camera and photos, so real iOS alerts do not block the screen. To see a real alert, run `xcrun simctl privacy <udid> reset all com.johansardar.excerlock`.
 - iOS offers the upgrade from While Using to Always location only once. After a refusal, the flow sends the user to Settings.
 - Setup steps `X3`–`X5` exist only so older saved installs can resume.

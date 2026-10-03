@@ -3,4 +3,5 @@ export const paywallCopy = {
   before: 'Become ',
   emphasis: 'ADDICTED',
   after: ' to exercise',
+  account: 'Account and help',
 } as const;

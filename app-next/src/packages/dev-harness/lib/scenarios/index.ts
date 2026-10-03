@@ -30,6 +30,7 @@ import {
   subscriptionProofWrongAccount,
   subscriptionProofWrongEnvironment,
   subscriptionProofUnavailable,
+  subscriptionProofLapsed,
 } from './signed-in-apple';
 import { scenario19 } from './analytics-6-weeks';
 import { scenario20 } from './analytics-day-zero';
@@ -71,6 +72,7 @@ export const scenarios = [
   subscriptionProofWrongAccount,
   subscriptionProofWrongEnvironment,
   subscriptionProofUnavailable,
+  subscriptionProofLapsed,
   scenario19,
   scenario20,
   scenario21,

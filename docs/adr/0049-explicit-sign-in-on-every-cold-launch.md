@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-29
 ---
 
 # 0049: Explicit sign-in before the main app on every cold launch
+
+Superseded by [ADR 0061](0061-stay-signed-in-and-admitted-across-launches.md): a sign-in now lasts until Sign out or Delete account.
 
 ## Decision
 

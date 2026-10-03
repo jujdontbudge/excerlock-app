@@ -12,7 +12,7 @@ import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { AuthError, isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
-import { approveLaunchSignIn } from './launchSignInGate';
+import { rememberSignIn } from './rememberedSignIn';
 import { haptic } from '../ui/haptics';
 import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
 
@@ -86,7 +86,7 @@ export function SignInScreen({
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
-      if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) {
+      if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) {
         haptic('success');
         onContinue();
       } else {
@@ -256,7 +256,7 @@ export function SignInScreen({
                     : runtime.auth.recoverWithEmailCode(code);
                 void recovery
                   .then((result) => {
-                    if (result.kind === 'signedIn' && approveLaunchSignIn(runtime.auth.identity())) onContinue();
+                    if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) onContinue();
                     else notify(c.authError);
                   })
                   .catch((caught) => {

@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **accepted**.
 - [0059: Paid admission renews in place before its five-minute lease ends](0059-admission-renews-in-place.md) — **accepted**.
 - [0058: Research and rating after the imported plan](0058-onboarding-research-rating.md) — **accepted**.
 - [0057: Permission answers precede Setup advancement; Screen Time and Locked apps have separate pages](0057-permission-answers-before-setup-advances.md) — **accepted**.

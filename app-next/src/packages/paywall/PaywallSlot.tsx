@@ -6,12 +6,12 @@ import type { PaywallVariant } from '../telemetry/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
 import { useRouter } from 'expo-router';
-import { useLaunchSignIn } from '../identity/launchSignInGate';
+import { useSignedIn } from '../identity/rememberedSignIn';
 import { beginOnboarding, beginSignIn, beginWelcome, notePurchaseRecovery, verifySelectedAccount } from '../journey/index';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
-  const signedIn = useLaunchSignIn(runtime.auth);
+  const signedIn = useSignedIn(runtime.auth);
   const setupComplete = useOnboardingStore((state) => state.data.setupComplete);
   const placement: SubscriptionPaywall['placement'] = setupComplete && signedIn ? 'winback' : 'onboarding';
   const experiments = runtime.experiments;
@@ -81,6 +81,7 @@ export function PaywallSlot() {
       onAccess={() => void onAccess()}
       recovery={recovery}
       onClose={setupComplete && signedIn ? back : undefined}
+      onAccount={setupComplete && signedIn ? () => router.push('/recovery') : undefined}
       onBack={setupComplete && signedIn ? undefined : back}
     />
   );

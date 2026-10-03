@@ -6,7 +6,7 @@ import { AccountScreen } from './AccountScreen';
 import { LegalScreen } from './LegalScreen';
 import { FeedbackScreen } from '../support/FeedbackScreen';
 import { useRuntime } from '../ports/useRuntime';
-import { useLaunchSignIn } from '../identity/launchSignInGate';
+import { useSignedIn } from '../identity/rememberedSignIn';
 import { restorePurchases } from '../subscription/restorePurchases';
 import { subscriptionCopy } from '../subscription/subscriptionCopy';
 import { settingsCopy as c } from './lib/settingsCopy';
@@ -22,7 +22,7 @@ export function RecoveryScreen({
   onRestored: () => void;
 }) {
   const runtime = useRuntime();
-  const approved = useLaunchSignIn(runtime.auth);
+  const approved = useSignedIn(runtime.auth);
   const [section, setSection] = useState<'menu' | 'account' | 'feedback' | 'terms' | 'privacy'>('menu');
   const [exportOpen, setExportOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);

@@ -238,6 +238,16 @@ export async function waitForLabels(udid: string, expected: string[], seconds: n
   return { found: expected.filter((want) => !missing.includes(want)), missing, nodes };
 }
 
+export async function waitForLabelsGone(udid: string, unwanted: string[], seconds: number): Promise<boolean> {
+  const deadline = Date.now() + seconds * 1000;
+  while (Date.now() < deadline) {
+    const text = labels(tree(udid));
+    if (!unwanted.some((label) => text.some((item) => item.includes(normalise(label))))) return true;
+    await sleep(500);
+  }
+  return false;
+}
+
 export async function watchForLabels(udid: string, unwanted: string[], seconds: number): Promise<string[]> {
   const deadline = Date.now() + seconds * 1000;
   const shown = new Set<string>();

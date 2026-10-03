@@ -5,7 +5,7 @@ import { settingsCopy as c } from './lib/settingsCopy';
 import { sessionStore as useSessionStore } from '../identity/sessionStore';
 import { useRuntime } from '../ports/useRuntime';
 import { LivingIcon } from '../ui/LivingIcon';
-import { beginWelcome } from '../journey/index';
+import { forgetAccount } from '../journey/index';
 import { Reveal } from '../ui/Reveal';
 import { notify } from '../ui/Notice';
 import { haptic } from '../ui/haptics';
@@ -21,7 +21,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         await runtime.auth.deleteAccount();
         notify(c.deleted);
       } else await runtime.auth.signOut();
-      beginWelcome();
+      forgetAccount(runtime);
       setConfirm(false);
       haptic('commit');
     } catch {

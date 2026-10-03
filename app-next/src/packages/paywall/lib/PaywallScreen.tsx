@@ -37,6 +37,7 @@ export function PaywallScreen({
   reportError,
   variantKey = 'control',
   onClose,
+  onAccount,
   onLoaded,
   onAccess,
   recovery,
@@ -45,6 +46,7 @@ export function PaywallScreen({
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
   variantKey?: PaywallVariant;
   onClose?: () => void;
+  onAccount?: () => void;
   onBack?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
@@ -207,8 +209,15 @@ export function PaywallScreen({
               height: t.layout.header,
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: onAccount ? 'space-between' : 'flex-end',
             }}>
+            {onAccount ? (
+              <PressableScale label={copy.account} onPress={onAccount}>
+                <Label variant="support" tone="secondary">
+                  {copy.account}
+                </Label>
+              </PressableScale>
+            ) : null}
             <CloseButton label="Close" onPress={onClose} />
           </View>
         ) : undefined

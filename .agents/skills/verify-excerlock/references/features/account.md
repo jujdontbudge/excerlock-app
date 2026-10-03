@@ -88,15 +88,23 @@ expect: Sign up with email | Email address | Send code
 name: unpaid-account-recovery
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple | Account and help
+tap: Account and help
 expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
+```
+
+```proof
+name: account-and-help-back-returns-to-paywall
+scenario: returning-unpaid
+open: /
+tap: Account and help | Back
+expect: Start for $0.00 | Restore purchases | Account and help
 ```
 
 ```proof
 name: recovery-without-subscription
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple | Account and help | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
+tap: Account and help | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
 expect: Account | Signed in with Apple | Delete account
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | subscription_management_opened {} | export_requested {"rules":1,"days":1,"earnedUnlocks":0,"visits":0} | restore {} | Protected route mounts | None
@@ -115,6 +123,6 @@ wait: 30
 ```
 
 ## Gotchas
-- A restored signed-in session is not launch approval. `/settings/account` deep links redirect to sign-in until Apple, Google or an email code is completed in this process (ADR 0049; setup/returning-settings-blocked).
+- A sign-in is remembered on this install until Sign out or Delete account, so `/settings/account` opens directly for a returning account (ADR 0061; setup/returning-settings-opens). A reinstall asks for sign-in again.
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
 - The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.

@@ -13,7 +13,7 @@ import { ScreenTimeAuthorizationError } from '../app-selection/ScreenTimeAuthori
 import { permissionsStore } from '../permissions/permissionsStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { rulesStore } from '../conditions/rulesStore';
-import { useLaunchSignIn } from '../identity/launchSignInGate';
+import { useSignedIn } from '../identity/rememberedSignIn';
 import { PermissionGuide } from './lib/PermissionGuide';
 import { systemAlert } from '../permissions/systemAlerts';
 import { SignInScreen } from '../identity/SignInScreen';
@@ -30,10 +30,10 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
   onStep?: (step: SetupStep) => void;
 }) {
   const focused = useIsFocused();
-  const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost, router = useRouter(), launchApproved = useLaunchSignIn(runtime.auth);
+  const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost, router = useRouter(), signedIn = useSignedIn(runtime.auth);
   const { needs, location, permissions } = useSetupNeeds();
   const [steps] = useState<SetupStep[]>(() => [
-    ...(account && !launchApproved ? ['account' as const] : []),
+    ...(account && !signedIn ? ['account' as const] : []),
     ...needs.flatMap((need): SetupStep[] => {
       if (need === 'apps') return permissions.screenTime === 'granted' ? ['apps'] : ['screenTime', 'apps'];
       if (need === 'location' && permissions.location === 'denied') return ['location'];

@@ -2,20 +2,20 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, reinstall-keychain, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, reinstall-keychain, subscription-proof-matching, subscription-proof-unavailable, subscription-proof-lapsed, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
-- `BootGate` restores the persisted stores but starts each new entry at Welcome. A saved session, Setup or Entitlement cannot pick Home.
-- The Journey owns entry choice, account verification and paid admission; main routes require matching explicit authentication and valid Entitlement.
-- Paid admission is a five-minute lease. It renews itself in Setup and the main app a minute before it ends. After a long background, the current screen stays under the launch cover until the check settles (ADR 0059).
+- `BootGate` restores the persisted stores, then resumes a returning account once per cold launch: a signed-in account remembered on this install opens Home (or Setup if it never finished), with no sign-in. A fresh install, a reinstall, or a signed-out device starts at Welcome (ADR 0061).
+- The Journey owns entry choice, account verification and paid admission. The last server-verified admission is remembered on the device, so a subscriber opens Home at once, even offline, while the server check runs in the background. A server answer of lapsed opens the Paywall. With no saved check, the launch cover stays up for one server check.
+- Paid admission renews itself in Setup and the main app a minute before the five-minute server lease ends; while the server is unreachable the remembered admission holds until three days after the subscription's paid-through date (ADR 0059, ADR 0061).
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
 ## How to get to it (user POV)
-Open the app. A first install, returning subscriber, or lapsed subscriber lands on Welcome. Choose the full Onboarding or Sign in; valid subscription and account verification are required before Home.
+Open the app. A subscriber who signed in on this phone lands on Home, even after closing the app, restarting the phone or going offline. A lapsed subscriber lands on the Paywall. A first install, a reinstall or a signed-out phone lands on Welcome, where Get started or Sign in continue.
 
 ## Driving it with excer
-`./excer sim start` launches the app on the real boot path. Then `./excer demo <scenario> --open /` shows where each Journey lands.
+`./excer sim start` launches the app on the real boot path. Then `./excer demo <scenario> --open /` shows where each Journey lands. `excerlock://dev?scenario=<id>&keep=1` loads a scenario as a fresh launch while keeping the saved data, which simulates reopening the app.
 
 ```proof
 name: first-launch-welcome
@@ -25,29 +25,26 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
-name: subscriber-starts-welcome
+name: subscriber-opens-home
 scenario: returning-signed-in
 open: /
-expect: Block apps. Move more. | Get started | Sign in
-```
-
-```proof
-name: admitted-cold-relaunch-starts-welcome
-scenario: returning-signed-in
-open: /
-tap: Sign in | Continue with Apple
 expect: day streak | Apps blocked until
 relaunch-after-expect: true
-after-relaunch-expect: Block apps. Move more. | Get started | Sign in
+after-relaunch-expect: day streak | Apps blocked until
 then-open: /dev
-then-expect: Journey welcome · paid no · admitted no | Conditions | 1 | Profile Alex | active | Protected route mounts | None
+then-expect: Journey app · paid yes · admitted yes
 ```
 
 ```proof
-name: unpaid-starts-welcome
-scenario: returning-unpaid
+name: sign-in-survives-relaunch
+scenario: reinstall-keychain
 open: /
-expect: Block apps. Move more. | Get started | Sign in
+tap: Sign in | Continue with Apple
+expect: day streak | Add condition
+relaunch-after-expect: true
+after-relaunch-expect: day streak | Add condition
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes
 ```
 
 ```proof
@@ -58,20 +55,27 @@ expect: Block apps. Move more. | Get started | Sign in
 ```
 
 ```proof
-name: cached-entitlement-does-not-skip-onboarding
-scenario: returning-signed-in
+name: offline-relaunch-keeps-home
+scenario: subscription-proof-matching
 open: /
-tap: Get started | Get started | Get started
-expect: What is your gender? | Continue
-then-open: /paywall
-then-expect: What is your gender? | Continue
+expect: day streak | Apps blocked until
+then-open: /dev?scenario=subscription-proof-unavailable&keep=1
+then-expect: day streak | Apps blocked until
+```
+
+```proof
+name: lapsed-while-away-opens-paywall
+scenario: subscription-proof-matching
+open: /
+expect: day streak | Apps blocked until
+then-open: /dev?scenario=subscription-proof-lapsed&keep=1
+then-expect: Start for $0.00 | Restore purchases
 ```
 
 ```proof
 name: returning-unpaid-to-paywall
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 ```
 
@@ -79,7 +83,6 @@ expect: Start for $0.00 | Restore purchases
 name: returning-expired-to-paywall
 scenario: returning-expired
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases | Close
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None
@@ -89,7 +92,6 @@ then-expect: Journey paywall | Protected route mounts | None
 name: remote-flags-not-authority
 scenario: returning-unpaid-remote-bypass-attempt
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 deny-routes: protected
 deny-expect: Start for $0.00 | Restore purchases
@@ -101,7 +103,6 @@ then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in op
 name: unpaid-home-deep-link-blocked
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 then-open: /home
 then-expect: Start for $0.00 | Restore purchases
@@ -111,7 +112,6 @@ then-expect: Start for $0.00 | Restore purchases
 name: all-protected-deep-links-blocked
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 deny-routes: protected
 deny-expect: Start for $0.00 | Restore purchases
@@ -123,7 +123,6 @@ then-expect: Protected route mounts | None
 name: unpaid-home-notification-blocked
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 notifications: home
 notification-expect: Start for $0.00 | Restore purchases
@@ -135,7 +134,6 @@ then-expect: Journey paywall | Protected route mounts | None | Notification resp
 name: unpaid-unlock-notification-blocked
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 notifications: unlock
 notification-expect: Start for $0.00 | Restore purchases
@@ -144,20 +142,19 @@ then-expect: Journey paywall | Protected route mounts | None | Notification resp
 ```
 
 ```proof
-name: forged-onboarding-return-and-paywall-back-blocked
-scenario: returning-unpaid
+name: forged-onboarding-return-blocked
+scenario: reinstall-keychain
 open: /onboarding/S3d?returnTo=%2Fhome
-tap: Continue | Back
-expect: We'll send you a reminder before your trial ends | No payment due now
+tap: Continue
+expect: Start for $0.00 | Restore purchases | No payment due now
 then-open: /dev
-then-expect: Journey onboarding | Protected route mounts | None
+then-expect: Protected route mounts | None
 ```
 
 ```proof
 name: unpaid-paywall-back-gesture-blocked
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple
 gesture: back
 expect: Start for $0.00 | Restore purchases | Close
 then-open: /dev
@@ -168,7 +165,7 @@ then-expect: Journey paywall | Protected route mounts | None
 name: unpaid-paywall-close-returns-welcome
 scenario: returning-unpaid
 open: /
-tap: Sign in | Continue with Apple | Close
+tap: Close
 expect: Block apps. Move more. | Get started | Sign in
 then-open: /dev
 then-expect: Journey welcome | Protected route mounts | None
@@ -179,7 +176,6 @@ name: unpaid-home-ota-envelope-blocked
 scenario: returning-unpaid-ota-home
 relaunch: true
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /home | Protected route mounts | None
@@ -190,25 +186,15 @@ name: unpaid-unlock-ota-envelope-blocked
 scenario: returning-unpaid-ota-unlock
 relaunch: true
 open: /
-tap: Sign in | Continue with Apple
 expect: Start for $0.00 | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protected route mounts | None
 ```
 
 ```proof
-name: returning-paid-after-signin
-scenario: returning-signed-in
-open: /
-tap: Sign in | Continue with Apple
-expect: day streak | Apps blocked until
-```
-
-```proof
 name: account-bound-proof-matches
 scenario: subscription-proof-matching
 open: /
-tap: Sign in | Continue with Apple
 expect: day streak | Apps blocked until
 ```
 
@@ -216,7 +202,6 @@ expect: day streak | Apps blocked until
 name: wrong-account-proof-fails-closed
 scenario: subscription-proof-wrong-account
 open: /
-tap: Sign in | Continue with Apple
 expect: Let's try that again | Try again | Back to start
 absent: Checking your subscription | Connecting your subscription
 ```
@@ -225,7 +210,6 @@ absent: Checking your subscription | Connecting your subscription
 name: wrong-environment-proof-fails-closed
 scenario: subscription-proof-wrong-environment
 open: /
-tap: Sign in | Continue with Apple
 expect: Let's try that again | Try again | Back to start
 absent: Checking your subscription | Connecting your subscription
 ```
@@ -234,7 +218,6 @@ absent: Checking your subscription | Connecting your subscription
 name: unavailable-proof-fails-closed
 scenario: subscription-proof-unavailable
 open: /
-tap: Sign in | Continue with Apple
 expect: Let's try that again | Try again | Account and help | Back to start
 absent: Retry will not start another purchase | verification is unavailable
 then-open: /dev
@@ -245,7 +228,6 @@ then-expect: Journey verifying · paid no · admitted no | Protected route mount
 name: unavailable-proof-recovery-access
 scenario: subscription-proof-unavailable
 open: /
-tap: Sign in | Continue with Apple
 expect: Let's try that again | Account and help
 then-tap: Account and help
 then-expect: Account and help | Restore purchases | Help and feedback

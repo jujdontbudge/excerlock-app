@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient, Session as SupabaseSession } from '@supabase/supabase-js';
 import { SupabaseAuthAdapter, type AuthAdapterDeps } from './lib/SupabaseAuthAdapter';
 import { IdentityCoordinator, type IdentityCoordinatorDeps } from './lib/identityCoordinator';
 import type { AppleNativeDeps } from './lib/providerApple';
@@ -66,6 +66,16 @@ function defaultGoogleDeps(clientId: string, redirectUri: string): GoogleAuthDep
   return buildRealGoogleRequest(clientId, redirectUri);
 }
 
+function storedSessionReader(backend: AuthServiceConfig['secureBackend']) {
+  return async (): Promise<SupabaseSession | null> => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
+    const { SecureSupabaseStorage, SUPABASE_STORAGE_KEY } = require('./lib/secureStorage') as typeof import('./lib/secureStorage');
+    const raw = await new SecureSupabaseStorage(backend).getItem(SUPABASE_STORAGE_KEY);
+    const session = raw ? (JSON.parse(raw) as SupabaseSession) : null;
+    return session?.user?.id ? session : null;
+  };
+}
+
 export async function createAuthServices(config: AuthServiceConfig): Promise<AuthServices> {
   const runIdentityOperation = createIdentityBarrier();
   const sdkLifecycle = new AuthSdkLifecycle();
@@ -123,6 +133,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     bootTimeoutMs,
     runIdentityOperation,
     runSdk: (operation) => sdkLifecycle.run(operation),
+    readStoredSession: ownsSupabase ? storedSessionReader(config.secureBackend) : undefined,
   };
   let auth!: SupabaseAuthAdapter;
   let coordinator: IdentityCoordinator | undefined;

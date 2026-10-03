@@ -5,6 +5,8 @@ date: 2026-10-01
 
 # 0059: Paid admission renews in place before its five-minute lease ends
 
+Partly superseded by [ADR 0061](0061-stay-signed-in-and-admitted-across-launches.md): cold launches resume a remembered account, and the last server-verified admission is remembered on the device.
+
 ## Decision
 
 While the app is active in Setup or the main app, the Journey renews the subscription admission lease once less than a minute remains, retrying a failed attempt every 15 seconds. Every renewal and foreground refresh shares one in-flight server check. If the lease has already ended, for example after more than five minutes in the background, the current screen stays mounted under a full-window launch cover until the check settles: eligible continues where the person was, ineligible opens the Paywall, and unavailable without a live lease opens verification. A failed check still never creates or extends a lease.

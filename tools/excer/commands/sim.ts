@@ -23,6 +23,7 @@ import {
   typeText,
   tree,
   waitForLabels,
+  waitForLabelsGone,
 } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 
@@ -115,7 +116,9 @@ export async function loadScenario(scenario: string, open?: string, prompt = 'gr
   const device = await ensureApp();
   await relaunch(device.udid);
   openUrl(device.udid, `dev?scenario=${encodeURIComponent(scenario)}&prompt=${encodeURIComponent(prompt)}`);
-  await sleep(3000);
+  await waitForLabels(device.udid, ['Developer menu'], 4);
+  await waitForLabelsGone(device.udid, ['Developer menu'], 15);
+  await sleep(1000);
   if (coldAfter) {
     await sleep(3000);
     await relaunch(device.udid);

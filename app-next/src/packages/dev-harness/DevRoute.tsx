@@ -7,11 +7,12 @@ import { PreviewGallery } from './lib/PreviewGallery';
 import { DevMenu } from './lib/DevMenu';
 import { requireRuntimeControls } from '../ports/Runtime';
 export function DevRoute() {
-  const { component, gallery, stage, scenario, restore, outcome, prompt, setup, journey, notification, lab, advance } = useLocalSearchParams<{
+  const { component, gallery, stage, scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance } = useLocalSearchParams<{
       component?: string;
       stage?: string;
       gallery?: string;
       scenario?: string;
+      keep?: string;
       restore?: string;
       outcome?: string;
       prompt?: string;
@@ -26,11 +27,11 @@ export function DevRoute() {
     router = useRouter();
   useEffect(() => {
     if (scenario || restore || outcome || prompt || setup || journey || notification || lab || advance)
-      void applyDevControls(dev, { scenario, restore, outcome, prompt, setup, journey, notification, lab, advance }).then(() => {
+      void applyDevControls(dev, { scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance }).then(() => {
         if (advance && router.canGoBack()) router.back();
         else if (!notification) router.replace('/');
       });
-  }, [scenario, restore, outcome, prompt, setup, journey, notification, lab, advance, dev, router]);
+  }, [scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance, dev, router]);
   if (stage === 'shield')
     return <ShieldPreview onOpen={() => router.replace('/home')} onClose={() => router.replace('/dev')} />;
   return component || gallery ? <PreviewGallery /> : <DevMenu />;

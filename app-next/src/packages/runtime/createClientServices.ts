@@ -22,6 +22,7 @@ import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
+import { rememberAdmission } from '../subscription/rememberedAdmission';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -71,13 +72,16 @@ export async function createClientServices(options: {
     config.environment === 'prod' ? await verifiedStoreEnvironment() : config.storeEnvironment,
   );
   const subscriptionAdmission = backend
-    ? createServerSubscriptionAdmission({
-        apiBaseUrl: backend.apiBaseUrl,
-        environment: backend.environment,
-        getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
-        getIdentity: () => identity.auth.identity(),
-        storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
-      })
+    ? rememberAdmission(
+        createServerSubscriptionAdmission({
+          apiBaseUrl: backend.apiBaseUrl,
+          environment: backend.environment,
+          getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
+          getIdentity: () => identity.auth.identity(),
+          storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
+        }),
+        { environment: backend.environment, now: Date.now, identity: () => identity.auth.identity() },
+      )
     : unavailableSubscriptionAdmission();
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),

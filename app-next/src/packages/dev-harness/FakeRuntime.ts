@@ -35,7 +35,8 @@ import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
-import { approveLaunchSignIn } from '../identity/launchSignInGate';
+import { rememberSignIn } from '../identity/rememberedSignIn';
+import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
@@ -123,7 +124,11 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
   const auth = identityLab.route(AuthFake(ctx), (lab) => lab.auth);
   const subscription = identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription);
-  const subscriptionAdmission = SubscriptionAdmissionFake(ctx, auth, subscription);
+  const subscriptionAdmission = rememberAdmission(SubscriptionAdmissionFake(ctx, auth, subscription), {
+    environment: 'sandbox',
+    now: () => Date.parse(ctx.clock.now()),
+    identity: () => auth.identity(),
+  });
   async function seedAccount(account: 'A' | 'B') {
     const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
     if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
@@ -177,6 +182,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         ctx.resolve(false);
         await identityLab.stop();
         await loadScenario(scenario, keepEdits);
+        subscriptionAdmission.invalidate();
         notificationResponses.reset();
         if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
@@ -195,7 +201,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         });
         if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
           if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
-          approveLaunchSignIn(auth.identity());
+          rememberSignIn(auth.identity());
           const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
           if (await verifySelectedAccount(journeyRuntime) === 'paid') finishSetup(journeyRuntime);
         }

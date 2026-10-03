@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Runtime } from '../../ports/Runtime';
 import type { RuntimeStatusSnapshot } from '../../ports/RuntimeStatusPort';
+import type { AuthIdentity } from '../../ports/AuthPort';
 import { suspendGymVisitLogWritesAndReset } from '../../activity/AsyncStorageGymVisitLog';
 import { RuntimeSafety } from './RuntimeSafety';
 import { eraseProductionData } from './eraseProductionData';
@@ -175,6 +176,24 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       isDenied: () => permissionsStore.getState().data.screenTime === 'denied',
       remember: () => permissionsStore.getState().patch({ screenTime: 'denied' }),
     });
+    const activateAccount = async (identity: AuthIdentity) => {
+      if (!identity.userId) throw new Error('Canonical account is missing its user ID');
+      const transition = await accountData.activate(identity.userId);
+      if (transition.changedAccount) {
+        await rawScreenTime.eraseLockedSelection();
+        selectionVersion = `account:${identity.generation}:${Date.now()}`;
+        await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
+        rulesStore.getState().patch({ lockedApps: { handle: null, isEmpty: true } });
+        await rulesStore.persistBarrier();
+        await accountData.save();
+      }
+      stepsByDay = {};
+      instanceMeasurements = {};
+      lastPrunedDay = null;
+      regionsSignature = null;
+      committedWalking = walking.snapshot();
+      committedGymPresence = null;
+    };
     const client = await createClientServices({
       extra: Constants.expoConfig?.extra,
       version: Constants.expoConfig?.version ?? '1.0.0',
@@ -187,24 +206,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         await detection.service.flush();
         await accountData.deactivate();
       },
-      prepareAccount: async (identity) => {
-        if (!identity.userId) throw new Error('Canonical account is missing its user ID');
-        const transition = await accountData.activate(identity.userId);
-        if (transition.changedAccount) {
-          await rawScreenTime.eraseLockedSelection();
-          selectionVersion = `account:${identity.generation}:${Date.now()}`;
-          await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
-          rulesStore.getState().patch({ lockedApps: { handle: null, isEmpty: true } });
-          await rulesStore.persistBarrier();
-          await accountData.save();
-        }
-        stepsByDay = {};
-        instanceMeasurements = {};
-        lastPrunedDay = null;
-        regionsSignature = null;
-        committedWalking = walking.snapshot();
-        committedGymPresence = null;
-      },
+      prepareAccount: activateAccount,
       beforeDelete: async () => {
         deletionSuspended = true;
         await queue;
@@ -765,6 +767,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         }),
       );
       await client.boot();
+      const booted = client.auth.identity();
+      if (booted.kind === 'canonical' && booted.userId) await activateAccount(booted).catch(options.reportError);
       if (client.auth.identity().kind !== 'deleting') deletionSuspended = false;
       await reconcile('foreground');
       stops.push(
@@ -782,6 +786,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         void reconcile(state === 'active' ? 'foreground' : 'background', state === 'active' ? 'full' : 'tick').catch(
           options.reportError,
         );
+        const identity = client.auth.identity();
+        if (state === 'active' && identity.kind === 'canonical' && !identity.ready)
+          void client.waitForIdentityReady({ timeoutMs: 15_000 }).catch(() => undefined);
       });
       stops.push(
         () => appState.remove(),

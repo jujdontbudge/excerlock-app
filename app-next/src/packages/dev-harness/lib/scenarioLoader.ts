@@ -8,14 +8,14 @@ import { permissionsStore } from '../../permissions/permissionsStore';
 import { sessionStore } from '../../identity/sessionStore';
 import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
-import { authorizeDemoScenario } from '../../identity/launchSignInGate';
-import { beginWelcome } from '../../journey/index';
+import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
+import { beginLaunch } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
 import { createAsyncStorageOtaStorage } from '../../updates/updates';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
-  beginWelcome();
+  beginLaunch();
   authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
   const otaStorage = createAsyncStorageOtaStorage();
