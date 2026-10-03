@@ -21,9 +21,11 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const [snapshot, setSnapshot] = useState<TreadmillScanSnapshot>({ phase: 'idle', confidence: 0 });
   const verified = useRef(false),
     rule = useRulesStore((s) => s.data.rules.find((r) => r.id === ruleId));
-  const lifted = snapshot.phase === 'verified',
-    denied = snapshot.phase === 'permissionDenied';
-  const ceremony = useCeremony(snapshot.confidence, lifted, c.treadmill.detected);
+  const denied = snapshot.phase === 'permissionDenied';
+  const ceremony = useCeremony(snapshot.confidence, snapshot.phase === 'verified', c.treadmill.detected, {
+      paced: true,
+    }),
+    lifted = ceremony.lifted;
   const close = () => {
     if (verified.current) runtime.analytics.track('unlock_ceremony_done', { kind: 'treadmill', preview });
     if (!preview && !verified.current) runtime.walking.stop();
@@ -89,7 +91,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       if (!preview && !verified.current) runtime.walking.stop();
     };
   }, [runtime, provider, preview, rule, router]);
-  const scanning = snapshot.confidence > 0 && !lifted,
+  const scanning = snapshot.confidence > 0 || lifted,
     framing = snapshot.phase === 'needsFraming';
   const title = denied
     ? c.treadmill.denied
@@ -103,7 +105,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     : framing
       ? c.treadmill.framingBody
       : scanning
-        ? c.treadmill.scanningBody
+        ? undefined
         : c.treadmill.propBody;
   const walkInHand = async () => {
     if (rule && !preview) {
@@ -135,12 +137,14 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           progress={ceremony.progress}
           phase={lifted ? 'lifted' : scanning ? 'working' : 'idle'}
           surface={<Preview />}
-          overlay={
-            ceremony.showMessage ? <Detected title={c.treadmill.detected} body={c.treadmill.detectedBody} /> : undefined
-          }
+          overlay={ceremony.showMessage ? <Detected /> : undefined}
         />
       </View>
-      {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
+      {ceremony.showMessage ? (
+        <Heading key="detected" title={c.treadmill.detected} centered />
+      ) : (
+        <Heading key={title} title={title} support={body} centered />
+      )}
     </UnlockLayout>
   );
 }

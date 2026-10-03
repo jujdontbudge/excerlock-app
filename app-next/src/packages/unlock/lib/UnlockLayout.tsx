@@ -31,7 +31,7 @@ export function UnlockLayout({
     </ScreenShell>
   );
 }
-export function Detected({ title, body }: { title: string; body: string }) {
+export function Detected({ title, body }: { title?: string; body?: string }) {
   const { reduced } = useUnlockMotion();
   return (
     <Animated.View
@@ -44,14 +44,18 @@ export function Detected({ title, body }: { title: string; body: string }) {
         padding: t.space.xl,
       }}>
       <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
-        <Pictogram name="check" size="card" variant="utility" tone="onAccent" />
+        <Pictogram name="check" size={title ? 'card' : 'hero'} variant="utility" tone="onAccent" />
       </View>
-      <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
-        {title}
-      </Label>
-      <Label tone="onAccent" style={{ textAlign: 'center', marginTop: t.space.md }}>
-        {body}
-      </Label>
+      {title ? (
+        <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
+          {title}
+        </Label>
+      ) : null}
+      {body ? (
+        <Label tone="onAccent" style={{ textAlign: 'center', marginTop: t.space.md }}>
+          {body}
+        </Label>
+      ) : null}
     </Animated.View>
   );
 }

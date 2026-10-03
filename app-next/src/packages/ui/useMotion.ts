@@ -24,6 +24,7 @@ type Keyframes = Partial<CSSAnimationProperties<ViewStyle>>;
 const curves: Record<Curve, ReturnType<typeof Easing.bezier>> = {
   standard: Easing.bezier(...tokens.motion.easing.standard),
   enter: Easing.bezier(...tokens.motion.easing.enter),
+  steady: Easing.bezier(...tokens.motion.easing.steady),
 };
 const cssCurve = (curve: Curve) => {
   const [x1, y1, x2, y2] = tokens.motion.easing[curve];

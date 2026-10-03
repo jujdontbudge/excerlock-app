@@ -129,6 +129,7 @@ export const tokens = {
     easing: {
       standard: [0.2, 0, 0, 1],
       enter: [0.16, 1, 0.3, 1],
+      steady: [0, 0, 1, 1],
     },
     spring: {
       control: { mass: 0.55, stiffness: 420, damping: 30 },

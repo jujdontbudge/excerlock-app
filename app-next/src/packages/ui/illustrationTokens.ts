@@ -1,7 +1,14 @@
 import { tokens as t } from './tokens';
 export const illustrationTokens = {
   pictogram: { card: 64, hero: 112 },
-  padlock: { bodyRadius: 0.13, bodyInset: 6, homeBodyRadius: 0.16, shackleRadius: 0.31 },
+  padlock: {
+    bodyRadius: 0.13,
+    bodyInset: 6,
+    homeBodyRadius: 0.16,
+    shackleRadius: 0.31,
+    open: { lift: 0.12, pinned: 0.25, free: 0.03, preload: 0.06, swing: 24, perspective: 2.4 },
+    wave: { scale: 0.28, opacity: 0.55 },
+  },
   corner: { phone: 26, blob: 40, tile: 20, glyph: 3, info: 18, caption: 14 },
   miniature: {
     glyph: { fontSize: 20, fontFamily: t.font.regular },

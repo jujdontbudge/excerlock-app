@@ -6,16 +6,14 @@ export const unlockCopy = {
   treadmill: {
     prop: 'Prop your phone and walk',
     propBody: "Set it upright facing you. The scan starts on its own once you're walking.",
-    scanning: 'Reading your stride',
-    scanningBody: 'Keep walking. A few seconds.',
+    scanning: 'Walking detected',
     framing: "Can't see you",
     framingBody: 'Step into frame.',
     denied: 'Camera access is off',
     deniedBody: 'Keep your phone with you. Walk & Scroll will verify your steps instead.',
     handheld: 'Continue with phone in hand',
     walking: "I'm walking",
-    detected: 'Exercise detected',
-    detectedBody: 'Unlocked while you walk',
+    detected: 'Screen Time unlocked!',
   },
   gym: {
     inside: 'Location detected at the gym',
