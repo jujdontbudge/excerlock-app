@@ -6,6 +6,7 @@ import { option, out, run, UsageError } from '../lib/shell.ts';
 import { ensureApp, labels, openUrl, relaunch, screenshot, setLocation, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
+import { checkScreenCentring, describeFinding } from '../lib/centring.ts';
 
 const absentWatchSeconds = 4;
 
@@ -14,7 +15,10 @@ export const help = `excer prove <feature> [--proof <name>]
 Runs the feature's proof blocks on the simulator: loads each scenario, opens its
 route, waits until the expected labels are on screen, and saves a screenshot, the
 accessibility tree and result.json under .excer/proof/<feature>/<time>/.
-Exit 0 only when every expectation was seen. Feature files:
+Every final screen is also measured: text and icons inside buttons, rows and tiles
+must sit centred (within 1 pt) or against an edge. "centring-ignore: <label> | ..."
+in a proof block skips named elements. Exit 0 only when every expectation was seen
+and nothing is off centre. Feature files:
 .agents/skills/verify-excerlock/references/features/<feature>.md`;
 
 type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[] };
@@ -22,7 +26,7 @@ type NotificationAttempt = { destination: 'home' | 'unlock'; ok: boolean; missin
 type GestureAttempt = { gesture: 'back'; result: string };
 type ActionAttempt = { action: ProofAction['kind']; value: string; result: string };
 type RelaunchAttempt = { before: string[]; after: string[]; ok: boolean };
-type Outcome = { proof: string; ok: boolean; missing: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[]; relaunchAttempt?: RelaunchAttempt };
+type Outcome = { proof: string; ok: boolean; missing: string[]; offCentre: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[]; relaunchAttempt?: RelaunchAttempt };
 
 async function runProof(feature: string, proof: Proof, dir: string): Promise<Outcome> {
   let udid: string;
@@ -123,7 +127,10 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));
   const treePath = join(dir, `${proof.name}.labels.txt`);
   writeFileSync(treePath, labels(result.nodes).join('\n'));
-  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0, missing: result.missing, screenshot: shot, tree: treePath, ...(actionAttempts.length ? { actionAttempts } : {}), ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}), ...(relaunchAttempt ? { relaunchAttempt } : {}) };
+  const centring = await checkScreenCentring(udid, shot, proof.centringIgnore);
+  writeFileSync(join(dir, `${proof.name}.centring.json`), `${JSON.stringify(centring, null, 2)}\n`);
+  const offCentre = centring.findings.map(describeFinding);
+  return { proof: `${feature}/${proof.name}`, ok: result.missing.length === 0 && offCentre.length === 0, missing: result.missing, offCentre, screenshot: shot, tree: treePath, ...(actionAttempts.length ? { actionAttempts } : {}), ...(routeAttempts.length ? { routeAttempts } : {}), ...(notificationAttempts.length ? { notificationAttempts } : {}), ...(gestureAttempts.length ? { gestureAttempts } : {}), ...(relaunchAttempt ? { relaunchAttempt } : {}) };
 }
 
 export async function proveCommand(args: string[]): Promise<number> {
@@ -140,7 +147,8 @@ export async function proveCommand(args: string[]): Promise<number> {
     outcomes.push(outcome);
     if (outcome.ok) out.ok(`${outcome.proof}  ${rel(outcome.screenshot)}`);
     else {
-      out.fail(`${outcome.proof}  missing: ${outcome.missing.join(', ')}`);
+      if (outcome.missing.length) out.fail(`${outcome.proof}  missing: ${outcome.missing.join(', ')}`);
+      if (outcome.offCentre.length) out.fail(`${outcome.proof}  off centre:\n    ${outcome.offCentre.join('\n    ')}`);
       out.info(`screen: ${rel(outcome.screenshot)}  labels: ${rel(outcome.tree)}`);
     }
   }

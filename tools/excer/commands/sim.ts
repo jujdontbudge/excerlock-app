@@ -26,6 +26,7 @@ import {
   waitForLabelsGone,
 } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
+import { checkScreenCentring, describeFinding } from '../lib/centring.ts';
 
 export const simHelp = `excer sim <command>
 
@@ -38,6 +39,7 @@ Simulator.app stays closed. Reuses the installed build; never rebuilds.
   open <path|url>    open a deep link; /home becomes excerlock://home
   shot [file]        screenshot; prints the path
   tree [--raw]       accessibility labels on screen (--raw: full JSON)
+  centring [file]    screenshot and measure that text and icons sit centred or on an edge
   tap <label>        tap the element whose label contains <label>
   type <text>        type into the focused field
   wait <label>...    wait up to 15 s until every label is on screen
@@ -79,6 +81,14 @@ export async function simCommand(args: string[]): Promise<number> {
     case 'shot':
       console.log(screenshot(ownedDevice().udid, rest[0]));
       return 0;
+    case 'centring': {
+      const udid = ownedDevice().udid;
+      const shot = screenshot(udid, rest[0]);
+      const report = await checkScreenCentring(udid, shot);
+      for (const finding of report.findings) console.log(`off centre  ${describeFinding(finding)}`);
+      console.log(`${report.findings.length} off centre of ${report.checked} measured (${report.moving} moving, ${report.unmeasured} unmeasured)  ${shot}`);
+      return report.findings.length ? 1 : 0;
+    }
     case 'tree': {
       const nodes = tree(ownedDevice().udid);
       console.log(rest.includes('--raw') ? JSON.stringify(nodes, null, 2) : labels(nodes).join('\n'));

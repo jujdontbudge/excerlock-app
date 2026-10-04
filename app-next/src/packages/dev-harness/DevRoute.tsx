@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRuntime } from '../ports/useRuntime';
 import { PreviewGallery } from './lib/PreviewGallery';
 import { DevMenu } from './lib/DevMenu';
+import { IconSpecimen, TypeSpecimen } from './lib/TypeSpecimen';
 import { requireRuntimeControls } from '../ports/Runtime';
 export function DevRoute() {
   const { component, gallery, stage, scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance } = useLocalSearchParams<{
@@ -34,5 +35,7 @@ export function DevRoute() {
   }, [scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance, dev, router]);
   if (stage === 'shield')
     return <ShieldPreview onOpen={() => router.replace('/home')} onClose={() => router.replace('/dev')} />;
+  if (stage === 'type') return <TypeSpecimen />;
+  if (stage === 'icons') return <IconSpecimen />;
   return component || gallery ? <PreviewGallery /> : <DevMenu />;
 }

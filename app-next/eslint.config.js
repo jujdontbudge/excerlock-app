@@ -18,6 +18,12 @@ module.exports = defineConfig([
     plugins: { excerlock: require('../packages/eslint-plugin-excerlock/index.cjs') },
     rules: { 'excerlock/no-status-text': 'error' },
   },
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/packages/ui/Label.tsx'],
+    plugins: { excerlock: require('../packages/eslint-plugin-excerlock/index.cjs') },
+    rules: { 'excerlock/no-text-nudge': 'error', 'excerlock/no-raw-input-type': 'error' },
+  },
   { ignores: ['ios/**', 'build/**', 'evidence/**', 'coverage/**', 'dist/**'] },
   {
     files: ['src/**/*.{ts,tsx}'],

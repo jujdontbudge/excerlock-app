@@ -9,6 +9,7 @@ depends: [launch]
 - `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Create your account" sign-in step that follows a successful purchase, skipping only Apple's payment sheet. For a real StoreKit purchase on the simulator, launch with `app-next/scripts/storekit-sim.sh` (see `app-next/storekit/README.md`), then use the plain link and tap Start for $0.00.
 - `excerlock://treadmill-preview` (simulator dev builds only): opens the treadmill unlock with the fake walking gait, plus a Replay pill at the top. Each tap restarts the whole scan, progress ring and unlock ceremony from the start, so you can watch the loading and animation over and over.
 - `/dev`: the dev menu, scenario loading (`dev?scenario=<id>`), outcome controls (`restore`, `outcome`, `prompt`, `setup=X1..X5`), the component preview gallery, and the shield preview.
+- `dev?stage=type` and `dev?stage=icons`: centring specimens. Every type variant appears bare, inside a fixed box and inside a row; every icon appears in its own box. The proof's centring measurement fails if any of them drifts.
 - `/diagnostics/sensors`: a sensor smoke screen, available only in dev builds.
 - `/linked-trace`: the Linked Recorder research screen. It is compiled in only for research builds and is disabled in the App Store bundle.
 
@@ -23,6 +24,20 @@ name: dev-menu
 scenario: trial-active
 open: /dev
 expect: Developer menu | Local scenarios and component previews.
+```
+
+```proof
+name: type-centred
+scenario: trial-active
+open: dev?stage=type
+expect: box metric | row display | box section | row label | box support | row micro
+```
+
+```proof
+name: icons-centred
+scenario: trial-active
+open: dev?stage=icons
+expect: icon male | icon walking | icon flame | icon check | icon bell | icon search
 ```
 
 ```proof
@@ -161,5 +176,6 @@ then-expect: active | Onboarding path O01 O02 O03 O07 O04 O05 O06 O08 O22 O10 O1
 ```
 
 ## Gotchas
+- Every proof also measures its final screen: text and icons inside buttons, rows and tiles must sit centred within 1 pt (1.5 pt for stacked content) or against an edge. Results land in `<proof>.centring.json`. When a screen deliberately breaks the rule, add `centring-ignore: <accessibility label> | ...` to the proof and say why in the feature file. `./excer sim centring` measures the current screen.
 - `/dev` exists only in `__DEV__` builds. "Unmatched Route" means the app is not running a Metro dev bundle.
 - The demo fakes are dev-only and live in the `dev-harness` package; the layer rules stop any product package from importing them.
