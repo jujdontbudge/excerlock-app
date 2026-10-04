@@ -146,7 +146,6 @@ final class ExcerlockPolicyStore {
     guard let m = r.registrations[id], m.committed else { return .init(applied: false, reason: "registration_missing") }
     guard m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion else { return .init(applied: false, reason: "generation_mismatch") }
     guard now >= m.end else { return .init(applied: false, reason: "before_end") }
-    guard now < m.eligibleUntil, now < r.eligibleUntil else { return .init(applied: false, reason: "ineligible") }
     guard r.windows.isEmpty || r.windows.values.contains(where: { windowActive($0, now: now) }) else { return .init(applied: false, reason: "outside_window") }
     try apply(true, record: &r, initiator: "watchdog"); try writeLocked(r)
     return .init(applied: true, reason: "applied")

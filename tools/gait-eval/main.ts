@@ -7,6 +7,22 @@ import type { GaitKeypointSample } from "../../app-next/src/packages/ports/GaitV
 import { replay } from "./replay";
 const root = resolve(import.meta.dirname, "../..");
 const folder = resolve(process.argv[2]);
+const payloadIndex = process.argv.indexOf("--payload");
+const payload = payloadIndex < 0 ? "build17" : process.argv[payloadIndex + 1];
+if (!["build17", "build18"].includes(payload))
+  throw new Error("--payload must be build17 or build18");
+const detectorSources = [
+  "app-next/src/packages/unlock/lib/gait/WindowedGaitDetector.ts",
+  "app-next/src/packages/unlock/lib/gait/GaitCorroboration.ts",
+  "app-next/src/packages/unlock/lib/gait/TreadmillScanController.ts",
+];
+const algorithmHash = createHash("sha256")
+  .update(
+    detectorSources
+      .map((path) => readFileSync(join(root, path), "utf8"))
+      .join("\n"),
+  )
+  .digest("hex");
 const heldIndex = process.argv.indexOf("--held-out");
 const sessionNames: Record<string, string> = {
   "session-one": "s1",
@@ -30,6 +46,77 @@ const settingsHash = createHash("sha256")
 const at = new Date().toISOString();
 const dir = join(root, ".excer", "gait-eval", "v1", at.replace(/[:.]/g, "-"));
 mkdirSync(dir, { recursive: true });
+let extractor18: string | undefined;
+const extractorSources = [
+  "GaitVisionPayloads.swift",
+  "GaitCameraMotion.swift",
+  "GaitFrameAnalyzer.swift",
+].map((name) =>
+  join(root, "app-next", "modules", "excerlock-gait-vision", "ios", name),
+);
+extractorSources.push(
+  join(root, "tools", "gait-fixture-extractor", "build18", "main.swift"),
+);
+const extractorHash = createHash("sha256")
+  .update(
+    (payload === "build18"
+      ? extractorSources
+      : [join(root, "tools", "gait-fixture-extractor", "extract.swift")]
+    )
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n"),
+  )
+  .digest("hex");
+if (payload === "build18") {
+  const binDir = join(root, ".excer", "gait-eval", "bin");
+  mkdirSync(binDir, { recursive: true });
+  extractor18 = join(binDir, `extract-build18-${extractorHash}`);
+  const compiled = spawnSync(
+    "swiftc",
+    ["-O", ...extractorSources, "-o", extractor18],
+    { encoding: "utf8" },
+  );
+  if (compiled.status !== 0)
+    throw new Error(
+      `Build 18 extractor compilation failed: ${compiled.stderr}`,
+    );
+}
+function timingSummary(samples: GaitKeypointSample[]) {
+  const summarize = (values: number[]) => {
+    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+    return sorted.length
+      ? {
+          count: sorted.length,
+          meanMs: sorted.reduce((a, b) => a + b, 0) / sorted.length,
+          p95Ms: sorted[Math.floor((sorted.length - 1) * 0.95)],
+          maxMs: sorted[sorted.length - 1],
+        }
+      : null;
+  };
+  const stages = ["poseMs", "faceMs", "motionMs", "totalMs"] as const;
+  return {
+    stages: Object.fromEntries(
+      stages.map((key) => [
+        key,
+        summarize(
+          samples.flatMap((sample) =>
+            sample.timing ? [sample.timing[key]] : [],
+          ),
+        ),
+      ]),
+    ),
+    deliveryDelay: summarize(
+      samples.flatMap((sample) =>
+        sample.analysisTimestampMs === undefined
+          ? []
+          : [sample.analysisTimestampMs - sample.timestampMs],
+      ),
+    ),
+    explicitEmptyFrames: samples.filter((sample) => sample.empty).length,
+    samples: samples.length,
+    limitation: "Extracted macOS timings are not iPhone 13 live measurements.",
+  };
+}
 const files = readdirSync(folder)
   .filter((name) => /\.(mov|mp4|json)$/i.test(name))
   .sort();
@@ -53,12 +140,14 @@ for (const name of files) {
   if (extname(name).toLowerCase() !== ".json") {
     trajectory = join(dir, `${name}.json`);
     const extraction = spawnSync(
-      "swift",
-      [
-        join(root, "tools", "gait-fixture-extractor", "extract.swift"),
-        path,
-        trajectory,
-      ],
+      extractor18 ?? "swift",
+      extractor18
+        ? [path, trajectory]
+        : [
+            join(root, "tools", "gait-fixture-extractor", "extract.swift"),
+            path,
+            trajectory,
+          ],
       { encoding: "utf8" },
     );
     if (extraction.status !== 0) {
@@ -106,6 +195,7 @@ for (const name of files) {
     sourceHash,
     trajectory,
     extraction: raw.extraction ?? null,
+    timings: timingSummary(samples),
     new: current,
     old,
   });
@@ -153,6 +243,9 @@ const report = {
   schemaVersion: 1,
   at,
   algorithm: GAIT_SETTINGS.version,
+  algorithmHash,
+  payload,
+  extractorHash,
   settings: GAIT_SETTINGS,
   settingsHash,
   commit: spawnSync("git", ["rev-parse", "HEAD"], {
@@ -184,6 +277,7 @@ const text = [
   `Held-out incidental negatives: ${falsePasses.length} passes / ${incidental.length}; requirement: zero.`,
   `Deliberate bobbing: ${residual.filter((c) => c.new.passed).length}/${residual.length} passes, reported separately.`,
   `Settings: ${settingsHash}`,
+  `Payload: ${payload}; algorithm: ${algorithmHash}; extractor: ${extractorHash}`,
   "",
   "| Clip | New | Old | Reason |",
   "|---|---|---|---|",

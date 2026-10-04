@@ -5,6 +5,7 @@ import {
   GAIT_SETTINGS,
 } from "../../app-next/src/packages/unlock/lib/gait/WindowedGaitDetector";
 import { GaitPeriodicityDetector } from "./LegacyDetector";
+import type { GaitKeypointSample } from "../../app-next/src/packages/ports/GaitVisionProvider";
 const root = resolve(import.meta.dirname, "../..");
 let seed = 7;
 const rand = () => {
@@ -110,6 +111,76 @@ for (const [name, sy, sh, height, drop, extra] of cases) {
   results.push(result);
   console.log(result);
 }
+const nativeCases = [];
+for (const name of [
+  "stable-background",
+  "shaking-background",
+  "unreliable-background",
+  "alternating-knees",
+  "still-knees",
+  "late-frames",
+  "empty-frames",
+]) {
+  const detector = new WindowedGaitDetector({ startedAtMs: 0 });
+  let passAt: number | null = null,
+    reason = "warmingUp";
+  const reasons: Record<string, number> = {};
+  for (let i = 0; i <= 450; i++) {
+    const t = (i * 1000) / 15;
+    const phase = (2 * Math.PI * 1.67 * t) / 1000;
+    const wave = 0.02 * Math.sin(phase);
+    const previousWave =
+      0.02 * Math.sin((2 * Math.PI * 1.67 * (t - 1000 / 15)) / 1000);
+    const sample: GaitKeypointSample = {
+      timestampMs: t,
+      captureTimestampMs: t,
+      analysisTimestampMs: t,
+      sequence: i,
+      head: { x: 0.5, y: 0.42 + wave, height: 0.2, confidence: 0.9 },
+      landmarks: name.includes("knees")
+        ? {
+            leftHip: { x: 0.4, y: 0.6 + wave, confidence: 0.9 },
+            rightHip: { x: 0.6, y: 0.6 + wave, confidence: 0.9 },
+            leftKnee: {
+              x: 0.4,
+              y:
+                0.8 +
+                wave +
+                (name === "alternating-knees" ? 0.02 * Math.sin(phase / 2) : 0),
+              confidence: 0.9,
+            },
+            rightKnee: {
+              x: 0.6,
+              y:
+                0.8 +
+                wave -
+                (name === "alternating-knees" ? 0.02 * Math.sin(phase / 2) : 0),
+              confidence: 0.9,
+            },
+          }
+        : {},
+      cameraMotion: {
+        x: 0,
+        y: name === "shaking-background" ? wave - previousWave : 0,
+        quality: name === "unreliable-background" ? 0 : 1,
+      },
+      empty: name === "empty-frames" && i % 30 === 0,
+    };
+    const result = detector.process(
+      sample,
+      t + (name === "late-frames" ? 201 : 0),
+    );
+    reason = result.reason;
+    reasons[reason] = (reasons[reason] ?? 0) + 1;
+    if (result.complete && result.classification === "walking") {
+      passAt = t;
+      break;
+    }
+  }
+  const result = { name, passAt, reason, reasons, synthetic: true };
+  nativeCases.push(result);
+  console.log(result);
+}
 const fixtures = [];
 for (const name of [
   "real-console-head",
@@ -137,5 +208,5 @@ const dir = join(root, ".excer/gait-eval/calibration");
 mkdirSync(dir, { recursive: true });
 writeFileSync(
   join(dir, "report.json"),
-  `${JSON.stringify({ settings: GAIT_SETTINGS, seed: 7, results, fixtures }, null, 2)}\n`,
+  `${JSON.stringify({ settings: GAIT_SETTINGS, seed: 7, results, nativeCases, fixtures }, null, 2)}\n`,
 );

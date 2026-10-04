@@ -3,113 +3,70 @@ import Vision
 
 typealias GaitVisionPayload = [String: Any]
 
-private let gaitJointNames: [
-  (eventName: String, visionName: VNHumanBodyPoseObservation.JointName)
-] = [
-  ("leftShoulder", .leftShoulder),
-  ("rightShoulder", .rightShoulder),
-  ("leftHip", .leftHip),
-  ("rightHip", .rightHip)
+private let gaitJointNames: [(String, VNHumanBodyPoseObservation.JointName)] = [
+  ("leftShoulder", .leftShoulder), ("rightShoulder", .rightShoulder),
+  ("leftHip", .leftHip), ("rightHip", .rightHip), ("nose", .nose),
+  ("leftEar", .leftEar), ("rightEar", .rightEar), ("neck", .neck),
+  ("leftKnee", .leftKnee), ("rightKnee", .rightKnee),
+  ("leftAnkle", .leftAnkle), ("rightAnkle", .rightAnkle)
 ]
 
-/**
- * One sample per analysed frame. Body landmarks come from pose detection and
- * are absent whenever Vision finds no body — the normal case on a treadmill
- * console, where the phone sees head and shoulders only. The head comes from
- * face detection, which stays reliable at that framing; the gait detector
- * reads walking from head bob when hips are out of view.
- */
-func gaitVisionPayload(
-  body: VNHumanBodyPoseObservation?,
-  face: VNFaceObservation?,
-  receivedAt: Date = Date()
-) -> GaitVisionPayload {
+func gaitVisionPayload(body: VNHumanBodyPoseObservation?, face: VNFaceObservation?, receivedAt: Date = Date()) -> GaitVisionPayload {
   var landmarks: [String: GaitVisionPayload] = [:]
   if let body {
-    for joint in gaitJointNames {
-      guard let point = try? body.recognizedPoint(joint.visionName) else {
-        continue
-      }
-      landmarks[joint.eventName] = [
-        "x": Double(point.location.x),
-        "y": 1 - Double(point.location.y),
-        "confidence": Double(point.confidence)
-      ]
+    for (name, joint) in gaitJointNames {
+      guard let point = try? body.recognizedPoint(joint) else { continue }
+      landmarks[name] = ["x": Double(point.location.x), "y": 1 - Double(point.location.y), "confidence": Double(point.confidence)]
     }
   }
-  var payload: GaitVisionPayload = [
-    "timestampMs": receivedAt.timeIntervalSince1970 * 1_000,
-    "landmarks": landmarks
-  ]
+  var payload: GaitVisionPayload = ["timestampMs": receivedAt.timeIntervalSince1970 * 1_000, "landmarks": landmarks]
   if let face {
     let box = face.boundingBox
-    payload["head"] = [
-      "x": Double(box.midX),
-      "y": 1 - Double(box.midY),
-      "height": Double(box.height),
-      "confidence": Double(face.confidence)
-    ]
+    payload["head"] = ["x": Double(box.midX), "y": 1 - Double(box.midY), "height": Double(box.height), "confidence": Double(face.confidence)]
   }
   return payload
 }
 
 func largestFace(_ observations: [VNFaceObservation]) -> VNFaceObservation? {
-  observations.max { left, right in
-    left.boundingBox.height < right.boundingBox.height
-  }
+  observations.max { $0.boundingBox.height < $1.boundingBox.height }
 }
 
-func largestCentralBody(
-  _ observations: [VNHumanBodyPoseObservation]
-) -> VNHumanBodyPoseObservation? {
-  observations.compactMap { observation -> BodyCandidate? in
-    guard let metrics = bodyMetrics(observation) else { return nil }
-    return BodyCandidate(observation: observation, metrics: metrics)
-  }.max { left, right in
-    if left.metrics.area == right.metrics.area {
-      return left.metrics.centerDistanceSquared >
-        right.metrics.centerDistanceSquared
-    }
-    return left.metrics.area < right.metrics.area
-  }?.observation
-}
-
-private struct BodyCandidate {
-  let observation: VNHumanBodyPoseObservation
-  let metrics: BodyMetrics
-}
-
-private struct BodyMetrics {
-  let area: CGFloat
-  let centerDistanceSquared: CGFloat
-}
-
-private func bodyMetrics(
-  _ observation: VNHumanBodyPoseObservation
-) -> BodyMetrics? {
-  guard let recognized = try? observation.recognizedPoints(.all) else {
-    return nil
-  }
-  let points = recognized.values.filter { $0.confidence > 0 }
+func bodyBounds(_ observation: VNHumanBodyPoseObservation) -> CGRect? {
+  guard let recognized = try? observation.recognizedPoints(.all) else { return nil }
+  let points = recognized.values.filter { $0.confidence > 0.3 }
   guard let first = points.first else { return nil }
-  var minimumX = first.location.x
-  var maximumX = first.location.x
-  var minimumY = first.location.y
-  var maximumY = first.location.y
+  var minX = first.location.x, maxX = minX, minY = first.location.y, maxY = minY
   for point in points.dropFirst() {
-    minimumX = min(minimumX, point.location.x)
-    maximumX = max(maximumX, point.location.x)
-    minimumY = min(minimumY, point.location.y)
-    maximumY = max(maximumY, point.location.y)
+    minX = min(minX, point.location.x); maxX = max(maxX, point.location.x)
+    minY = min(minY, point.location.y); maxY = max(maxY, point.location.y)
   }
-  let width = maximumX - minimumX
-  let height = maximumY - minimumY
-  let centerX = (minimumX + maximumX) / 2
-  let centerY = (minimumY + maximumY) / 2
-  let offsetX = centerX - 0.5
-  let offsetY = centerY - 0.5
-  return BodyMetrics(
-    area: width * height,
-    centerDistanceSquared: offsetX * offsetX + offsetY * offsetY
-  )
+  return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+}
+
+func largestCentralBody(_ observations: [VNHumanBodyPoseObservation]) -> VNHumanBodyPoseObservation? {
+  observations.compactMap { body -> (VNHumanBodyPoseObservation, CGRect)? in
+    guard let box = bodyBounds(body) else { return nil }; return (body, box)
+  }.max { a, b in
+    let aa = a.1.width * a.1.height, ba = b.1.width * b.1.height
+    if aa == ba { return pow(a.1.midX - 0.5, 2) + pow(a.1.midY - 0.5, 2) > pow(b.1.midX - 0.5, 2) + pow(b.1.midY - 0.5, 2) }
+    return aa < ba
+  }?.0
+}
+
+func associatedBody(_ observations: [VNHumanBodyPoseObservation], face: VNFaceObservation?) -> (body: VNHumanBodyPoseObservation?, ambiguous: Bool) {
+  guard let face else { return (nil, false) }
+  let box = face.boundingBox
+  let candidates = observations.compactMap { body -> (VNHumanBodyPoseObservation, Double)? in
+    guard let nose = try? body.recognizedPoint(.nose), nose.confidence >= 0.5,
+          box.insetBy(dx: -box.width * 0.2, dy: -box.height * 0.2).contains(nose.location),
+          let neck = try? body.recognizedPoint(.neck), neck.confidence >= 0.4,
+          abs(neck.location.x - box.midX) < box.width,
+          neck.location.y < box.midY,
+          box.midY - neck.location.y < box.height * 2.5 else { return nil }
+    let distance = hypot((nose.location.x - box.midX) / box.width, (nose.location.y - box.midY) / box.height)
+    return (body, Double(distance))
+  }.sorted { $0.1 < $1.1 }
+  guard let first = candidates.first else { return (nil, false) }
+  if candidates.count > 1 && candidates[1].1 - first.1 < 0.25 { return (nil, true) }
+  return (first.0, false)
 }

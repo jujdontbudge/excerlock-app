@@ -16,8 +16,11 @@ final class GaitVisionService: NSObject,
     qos: .userInitiated
   )
   private let stateLock = NSLock()
-  private let poseRequest = VNDetectHumanBodyPoseRequest()
-  private let faceRequest = VNDetectFaceRectanglesRequest()
+  private let analyzer = GaitFrameAnalyzer()
+  private var sequence: UInt64 = 0
+  private var generation: UInt64 = 0
+  private var anchorWallMs = 0.0
+  private var anchorHostSeconds = 0.0
   private var onSample: ((GaitVisionPayload) -> Void)?
   private weak var previewView: GaitVisionPreviewView?
   private var session: AVCaptureSession?
@@ -30,14 +33,15 @@ final class GaitVisionService: NSObject,
     onSample: @escaping (GaitVisionPayload) -> Void,
     completion: @escaping (Result<Void, Exception>) -> Void
   ) {
+    let operation = reserveStart()
     switch AVCaptureDevice.authorizationStatus(for: .video) {
     case .authorized:
-      configureAndStart(onSample: onSample, completion: completion)
+      configureAndStart(onSample: onSample, generation: operation, completion: completion)
     case .notDetermined:
       AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
         guard let self else { return }
         if granted {
-          self.configureAndStart(onSample: onSample, completion: completion)
+          self.configureAndStart(onSample: onSample, generation: operation, completion: completion)
         } else {
           completion(.failure(GaitVisionDeniedException()))
         }
@@ -56,19 +60,22 @@ final class GaitVisionService: NSObject,
         completion?()
         return
       }
-      self.session?.stopRunning()
+      self.stateLock.lock()
+      let session = self.session
       self.session = nil
+      self.stateLock.unlock()
+      session?.stopRunning()
       completion?()
     }
   }
 
   func setPreview(_ view: GaitVisionPreviewView, active: Bool) {
     if active {
-      stateLock.lock()
-      let currentSession = session
-      stateLock.unlock()
       DispatchQueue.main.async { [weak self, weak view] in
         guard let self, let view else { return }
+        self.stateLock.lock()
+        let currentSession = self.started ? self.session : nil
+        self.stateLock.unlock()
         self.previewView?.attach(session: nil)
         self.previewView = view
         view.attach(session: currentSession)
@@ -182,23 +189,40 @@ final class GaitVisionService: NSObject,
     from connection: AVCaptureConnection
   ) {
     appendHarnessFrame(sampleBuffer)
-    guard shouldAnalyzeNextFrame() else { return }
-    let handler = VNImageRequestHandler(
-      cmSampleBuffer: sampleBuffer,
-      orientation: .leftMirrored,
-      options: [:]
-    )
-    do {
-      try handler.perform([poseRequest, faceRequest])
-      guard isStarted else { return }
-      let body = largestCentralBody(poseRequest.results ?? [])
-      let face = largestFace(faceRequest.results ?? [])
-      guard body != nil || face != nil else { return }
-      currentSampleHandler()?(gaitVisionPayload(body: body, face: face))
-    } catch {
-      // A dropped Vision frame is not retained or retried. The gait detector's
-      // signal-quality timeout owns user-visible failure handling.
-    }
+    guard let frame = nextFrame(sampleBuffer), let image = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+    let payload = analyzer.analyze(image, captureMs: frame.timestampMs, sequence: frame.sequence, orientation: .leftMirrored)
+    sampleHandler(for: frame.generation)?(payload)
+  }
+
+  func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    guard let frame = nextFrame(sampleBuffer), isCurrent(frame.generation) else { return }
+    analyzer.reset()
+    sampleHandler(for: frame.generation)?(["timestampMs": frame.timestampMs, "captureTimestampMs": frame.timestampMs,
+      "analysisTimestampMs": Date().timeIntervalSince1970 * 1000, "sequence": frame.sequence,
+      "empty": true, "landmarks": [String: Any]()])
+  }
+
+  private func nextFrame(_ sample: CMSampleBuffer) -> (timestampMs: Double, sequence: UInt64, generation: UInt64)? {
+    let pts = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
+    guard pts.isFinite else { return nil }
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    guard started else { return nil }
+    sequence += 1
+    return (anchorWallMs + (pts - anchorHostSeconds) * 1000, sequence, generation)
+  }
+
+  private func reserveStart() -> UInt64 {
+    stateLock.lock(); defer { stateLock.unlock() }
+    generation += 1
+    started = false
+    onSample = nil
+    return generation
+  }
+
+  private func isCurrent(_ operation: UInt64) -> Bool {
+    stateLock.lock(); defer { stateLock.unlock() }
+    return generation == operation
   }
 
   private func appendHarnessFrame(_ sampleBuffer: CMSampleBuffer) {
@@ -240,24 +264,28 @@ final class GaitVisionService: NSObject,
 
   private func configureAndStart(
     onSample: @escaping (GaitVisionPayload) -> Void,
+    generation: UInt64,
     completion: @escaping (Result<Void, Exception>) -> Void
   ) {
     sessionQueue.async { [weak self] in
       guard let self else { return }
-      if self.isStarted {
-        completion(.success(()))
-        return
-      }
+      guard self.isCurrent(generation) else { completion(.success(())); return }
+      self.stateLock.lock()
+      let previousSession = self.session
+      self.stateLock.unlock()
+      previousSession?.stopRunning()
       do {
         let session = try self.makeSession()
-        self.setStarted(session: session, onSample: onSample)
+        guard self.isCurrent(generation) else { completion(.success(())); return }
+        self.visionQueue.sync { self.analyzer.reset() }
+        guard self.setStarted(session: session, onSample: onSample, generation: generation) else { completion(.success(())); return }
         session.startRunning()
         completion(.success(()))
       } catch let exception as Exception {
-        self.setStopped()
+        self.setStopped(expected: generation)
         completion(.failure(exception))
       } catch {
-        self.setStopped()
+        self.setStopped(expected: generation)
         completion(.failure(GaitVisionConfigurationException()))
       }
     }
@@ -316,43 +344,44 @@ final class GaitVisionService: NSObject,
     return session
   }
 
-  private func shouldAnalyzeNextFrame() -> Bool {
-    isStarted
-  }
-
-  private var isStarted: Bool {
+  private func sampleHandler(for operation: UInt64) -> ((GaitVisionPayload) -> Void)? {
     stateLock.lock()
     defer { stateLock.unlock() }
-    return started
-  }
-
-  private func currentSampleHandler() -> ((GaitVisionPayload) -> Void)? {
-    stateLock.lock()
-    defer { stateLock.unlock() }
-    return onSample
+    return started && generation == operation ? onSample : nil
   }
 
   private func setStarted(
     session: AVCaptureSession,
-    onSample: @escaping (GaitVisionPayload) -> Void
-  ) {
+    onSample: @escaping (GaitVisionPayload) -> Void,
+    generation operation: UInt64
+  ) -> Bool {
     stateLock.lock()
+    guard generation == operation else { stateLock.unlock(); return false }
     self.session = session
     self.onSample = onSample
+    sequence = 0
+    anchorWallMs = Date().timeIntervalSince1970 * 1000
+    anchorHostSeconds = CMTimeGetSeconds(CMClockGetTime(CMClockGetHostTimeClock()))
     started = true
     stateLock.unlock()
     DispatchQueue.main.async { [weak self] in
-      self?.previewView?.attach(session: session)
+      guard let self, self.isCurrent(operation) else { return }
+      self.previewView?.attach(session: session)
     }
+    return true
   }
 
-  private func setStopped() {
+  @discardableResult
+  private func setStopped(expected: UInt64? = nil) -> Bool {
     stateLock.lock()
+    if let expected, generation != expected { stateLock.unlock(); return false }
     started = false
+    generation += 1
     onSample = nil
     stateLock.unlock()
     DispatchQueue.main.async { [weak self] in
       self?.previewView?.attach(session: nil)
     }
+    return true
   }
 }

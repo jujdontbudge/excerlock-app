@@ -34,3 +34,21 @@ Each simulation is 400 independent generated 30-second attempts, seed 7, 15 fram
 | Deliberate 2 Hz bob | 5% | 400 | 400 |
 
 Median deliberate-bob pass: new 8.2 s, old 2.2 s. This is the known residual. These are synthetic checks and three calibration positives; they do not establish the owner/setup go/no-go. All 60 owner clips and physical iPhone checks remain pending. Build 17's watchdog deadline callback defect (#164) blocks a JS-only suspended-expiry claim; Stage 2 corrects it in the next binary.
+
+## Optional build 18 fields
+
+The same frozen settings were replayed with synthetic capture timestamps, sequences, background flow and lower-body joints. Stable background and paired alternating knees each pass at 8.133 s. Periodic background shake rejects as `cameraMotion`; unreliable background rejects as `cameraCoverage`; non-alternating visible knees reject as `kneeAlternation`; 201 ms delivery delay rejects as `timestamp`; an explicit empty frame every two seconds rejects as `coverage`. These demonstrate JS corroboration gates and fail-closed delivery, not native measurement accuracy or physical sensitivity.
+
+The shared build 18 analyzer/extractor compiled on macOS and rejected a blank local MP4. Its report is `.excer/gait-eval/v1/2026-10-04T02-05-06-950Z/report.json`. Timings identify macOS serial Vision work and are not an iPhone benchmark. Camera-motion thresholds and geometric association remain unverified on owner clips and a live iPhone 13.
+
+## Simulator evidence
+
+Focused proofs, individually bounded to five minutes:
+
+- Still ring empty: `.excer/proof/walking/2026-10-04_02-09-05/`.
+- Walking pass: `.excer/proof/walking/2026-10-04_01-31-45/`.
+- Warning at 14½ minutes and JS re-lock at 15: `.excer/proof/walking/2026-10-04_02-03-55/`.
+- Background/resume reacquires evidence: `.excer/proof/walking/2026-10-04_01-39-35/`.
+- Cancel, remain inactive, then fresh scan: `.excer/proof/walking/2026-10-04_02-12-09/`.
+
+The still proof failed with the old detector, showing `Screen Time unlocked!`, in `.excer/proof/walking/2026-10-04_02-07-41/`. Bundle inspection confirmed the old constructor was served, then confirmed the restored windowed constructor (`.excer/gait-eval/old-behavior-proof.txt` and `fixed-behavior-proof.txt`). Native capture, real notifications/shields and suspended expiry remain device checks. The cancellation proof uses the fake walking adapter; the queued native-adapter pass/cancel race was additionally corrected by generation checks, but that exact asynchronous interleaving has not been demonstrated on-device.
