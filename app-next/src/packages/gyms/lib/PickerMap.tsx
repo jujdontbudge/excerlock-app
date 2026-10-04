@@ -33,6 +33,7 @@ export function PickerMap({
     moving = useRef(false),
     panned = useRef(false),
     m = useMotion();
+  const [ready, setReady] = useState(false);
   const [size, setSize] = useState({ width: 0, height }),
     [hint, setHint] = useState(true);
   const [initial] = useState(() => hasPin ? regionForRadius(coordinate, radius, { width: 360, height }) : { latitude: 0, longitude: 0, latitudeDelta: 120, longitudeDelta: 120 });
@@ -47,11 +48,11 @@ export function PickerMap({
     radiusValue.set(m.spring(radius, 'control'));
   }, [radius, radiusValue, m]);
   useEffect(() => {
-    if (!hasPin) return;
+    if (!ready || !hasPin || size.width <= 0) return;
     const fitted = regionForRadius(coordinate, latestRadius.current, size);
     region.set(fitted);
     map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
-  }, [coordinate, hasPin, m, region, size]);
+  }, [coordinate, hasPin, m, region, size, ready]);
   const circle = useAnimatedProps(() => ({
     r: Math.min(
       Math.hypot(width.get(), mapHeight.get()) * 2,
@@ -94,7 +95,6 @@ export function PickerMap({
         mapHeight.set(next.height);
         const fitted = hasPin ? regionForRadius(coordinate, latestRadius.current, next) : initial;
         region.set(fitted);
-        map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
       }}>
       <MapView
         ref={map}
@@ -102,6 +102,7 @@ export function PickerMap({
         accessibilityLabel={c.map}
         style={StyleSheet.absoluteFill}
         initialRegion={initial}
+        onMapReady={() => setReady(true)}
         showsUserLocation={showLocation}
         showsPointsOfInterests
         showsCompass={false}
