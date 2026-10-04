@@ -45,7 +45,7 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
       failedTaps.push(`${action.kind} "${action.value}"`);
       break;
     }
-    await sleep(action.kind === 'open' ? 3000 : 1000);
+    await sleep(action.kind === 'open' ? 3000 : action.kind === 'location' ? 5000 : 1000);
   }
   for (const label of proof.tap ?? []) {
     try {

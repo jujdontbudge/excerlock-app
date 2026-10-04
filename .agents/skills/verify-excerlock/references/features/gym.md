@@ -28,9 +28,9 @@ wait: 20
 
 ```proof
 name: picker-phone-location
-actions: location 40.1095,-88.2272
+actions: location 40.1095,-88.2272 | open /gym-picker
 scenario: trial-active
-open: /gym-picker
+open: /home
 expect: Urbana IL 61801 | Save gym
 wait: 20
 ```
