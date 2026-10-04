@@ -18,7 +18,7 @@ final class GaitFrameAnalyzer {
       let faceStart = ProcessInfo.processInfo.systemUptime
       try handler.perform([face]); faceMs = (ProcessInfo.processInfo.systemUptime - faceStart) * 1000
       let selectedFace = largestFace(face.results ?? [])
-      let associated = associatedBody(pose.results ?? [], face: selectedFace)
+      let associated = associatedBody(pose.results ?? [], faces: face.results ?? [], face: selectedFace)
       payload = gaitVisionPayload(body: associated.body, face: selectedFace)
       payload["empty"] = associated.body == nil && selectedFace == nil
       payload["bodyAssociated"] = associated.body != nil

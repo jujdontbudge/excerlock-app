@@ -4,7 +4,7 @@ import { join, resolve, extname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { GAIT_SETTINGS } from "../../app-next/src/packages/unlock/lib/gait/WindowedGaitDetector";
 import type { GaitKeypointSample } from "../../app-next/src/packages/ports/GaitVisionProvider";
-import { replay } from "./replay";
+import { replay, type ReplayOutcome } from "./replay";
 const root = resolve(import.meta.dirname, "../..");
 const folder = resolve(process.argv[2]);
 const payloadIndex = process.argv.indexOf("--payload");
@@ -120,7 +120,20 @@ function timingSummary(samples: GaitKeypointSample[]) {
 const files = readdirSync(folder)
   .filter((name) => /\.(mov|mp4|json)$/i.test(name))
   .sort();
-const clips = [];
+type ClipOutcome = Pick<ReplayOutcome, "passed" | "timeToPassMs" | "reason">;
+type Clip = {
+  name: string;
+  session: string | null;
+  label: string;
+  sourceHash: string;
+  trajectory?: string;
+  extraction?: unknown;
+  timings?: ReturnType<typeof timingSummary>;
+  error?: string;
+  new: ClipOutcome;
+  old: ClipOutcome | null;
+};
+const clips: Clip[] = [];
 for (const name of files) {
   const session =
     name.match(/-(s[123])-/)?.[1] ??
@@ -224,13 +237,29 @@ const categories = [
   "rails",
   "behind",
 ];
+const negatives = clips.filter((c) => [...categories, "bob"].includes(c.label));
+const clipIds = clips.map((c) =>
+  c.name
+    .replace(/\.(mov|mp4|json)$/i, "")
+    .replace(/\.(mov|mp4)$/i, "")
+    .toLowerCase(),
+);
 const complete =
   heldOut !== null &&
   walks.length === 18 &&
-  incidental.length >= 10 &&
+  negatives.length === 36 &&
+  incidental.length === 11 &&
   categories.every((label) => incidental.some((c) => c.label === label)) &&
   clips.length === 60 &&
   transitions.length === 6 &&
+  new Set(clipIds).size === clips.length &&
+  ["s1", "s2", "s3"].every(
+    (session) =>
+      clips.filter((c) => c.session === session).length === 20 &&
+      walks.filter((c) => c.session === session).length === 6 &&
+      negatives.filter((c) => c.session === session).length === 12 &&
+      transitions.filter((c) => c.session === session).length === 2,
+  ) &&
   !clips.some((c) => "error" in c);
 const falsePasses = incidental.filter((c) => c.new.passed);
 const verdict =

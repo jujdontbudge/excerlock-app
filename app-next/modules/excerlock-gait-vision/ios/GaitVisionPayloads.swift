@@ -53,19 +53,31 @@ func largestCentralBody(_ observations: [VNHumanBodyPoseObservation]) -> VNHuman
   }?.0
 }
 
-func associatedBody(_ observations: [VNHumanBodyPoseObservation], face: VNFaceObservation?) -> (body: VNHumanBodyPoseObservation?, ambiguous: Bool) {
+func associatedBody(_ observations: [VNHumanBodyPoseObservation], faces: [VNFaceObservation], face: VNFaceObservation?) -> (body: VNHumanBodyPoseObservation?, ambiguous: Bool) {
   guard let face else { return (nil, false) }
   let box = face.boundingBox
+  guard box.width > 0, box.height > 0 else { return (nil, false) }
+  var overlappingFaces = false
   let candidates = observations.compactMap { body -> (VNHumanBodyPoseObservation, Double)? in
     guard let nose = try? body.recognizedPoint(.nose), nose.confidence >= 0.5,
           box.insetBy(dx: -box.width * 0.2, dy: -box.height * 0.2).contains(nose.location),
           let neck = try? body.recognizedPoint(.neck), neck.confidence >= 0.4,
           abs(neck.location.x - box.midX) < box.width,
           neck.location.y < box.midY,
-          box.midY - neck.location.y < box.height * 2.5 else { return nil }
+          box.midY - neck.location.y < box.height * 2.5,
+          nose.location.y - neck.location.y >= box.height * 0.3 else { return nil }
+    if faces.contains(where: { $0.uuid != face.uuid && $0.boundingBox.insetBy(dx: -$0.boundingBox.width * 0.1, dy: -$0.boundingBox.height * 0.1).contains(nose.location) }) {
+      overlappingFaces = true
+      return nil
+    }
+    if let left = try? body.recognizedPoint(.leftEar), let right = try? body.recognizedPoint(.rightEar), left.confidence >= 0.5, right.confidence >= 0.5 {
+      let span = abs(left.location.x - right.location.x)
+      guard span >= box.width * 0.35, span <= box.width * 1.8 else { return nil }
+    }
     let distance = hypot((nose.location.x - box.midX) / box.width, (nose.location.y - box.midY) / box.height)
     return (body, Double(distance))
   }.sorted { $0.1 < $1.1 }
+  if overlappingFaces { return (nil, true) }
   guard let first = candidates.first else { return (nil, false) }
   if candidates.count > 1 && candidates[1].1 - first.1 < 0.25 { return (nil, true) }
   return (first.0, false)
