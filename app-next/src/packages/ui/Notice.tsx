@@ -1,5 +1,6 @@
+import { FullWindowOverlay } from 'react-native-screens';
 import { useEffect } from 'react';
-import { AccessibilityInfo, View } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
@@ -27,7 +28,7 @@ export function NoticeHost() {
     const timer = setTimeout(dismiss, t.motion.hold.notice);
     return () => clearTimeout(timer);
   }, [text, key]);
-  return (
+  const notice = (
     <View
       pointerEvents="none"
       style={{ position: 'absolute', top: top + t.space.sm, left: t.layout.page, right: t.layout.page, alignItems: 'center' }}>
@@ -53,4 +54,6 @@ export function NoticeHost() {
       ) : null}
     </View>
   );
+  if (!text) return null;
+  return Platform.OS === 'ios' ? <FullWindowOverlay><View pointerEvents="none" style={StyleSheet.absoluteFill}>{notice}</View></FullWindowOverlay> : notice;
 }
