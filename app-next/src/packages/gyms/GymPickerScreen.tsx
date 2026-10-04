@@ -1,8 +1,11 @@
+import { useState } from 'react';
+import { settingsStore as useSettingsStore } from '../preferences/settingsStore';
 import { View } from 'react-native';
 import { BackButton, ScreenShell, PrimaryButton, Label, OnboardingHeader } from '../ui';
 import { tokens as t } from '../ui/tokens';
 import { gymPickerCopy as c } from './lib/gymPickerCopy';
 import { useRuntime } from '../ports/useRuntime';
+import { GymBackgroundSetup } from './GymBackgroundSetup';
 import { usePicker } from './usePicker';
 import { FindStep } from './lib/FindStep';
 import { PlaceStep } from './lib/PlaceStep';
@@ -20,14 +23,16 @@ export function GymPickerScreen({
   onClose?: () => void;
 }) {
   const { gym } = useRuntime();
+  const [saved, setSaved] = useState(false);
   const p = usePicker(
     gym,
-    onSaved,
+    () => { const settings = useSettingsStore.getState().data; if (settings.gymBackgroundAsked || settings.gymAutoDetectOptOut || settings.gymAutoDetect) onSaved(); else setSaved(true); },
     gym.listPlaces().find((x) => x.id === placeId),
   );
   return (
     <ScreenShell
       scrollResetKey={p.stage}
+      overlay={saved ? <GymBackgroundSetup onAnswered={onSaved} /> : undefined}
       header={
         p.stage === 'find' ? (
           <View

@@ -1,3 +1,4 @@
+import { detectionStore } from './detectionStore';
 import type { GymPort } from '../ports/GymPort';
 import type { SavedPlace } from '../model/models';
 import type { AppLocationProvider } from './lib/location/ManualGymCheckIn';
@@ -10,7 +11,7 @@ export type NativeGymOwner = Readonly<{
   registerGyms(places: readonly SavedPlace[]): Promise<void>;
   deleteGym(id: string): Promise<void>;
 }>;
-export type NativeGymPort = GymPort & { deletePlace(id: string): Promise<void>; authorizationStatus(): ReturnType<AppLocationProvider['getAuthorizationStatus']> };
+export type NativeGymPort = GymPort & { recheckPresence(): Promise<void>; deletePlace(id: string): Promise<void>; authorizationStatus(): ReturnType<AppLocationProvider['getAuthorizationStatus']> };
 const permission = (s: ReturnType<AppLocationProvider['getAuthorizationStatus']>) => s === 'authorizedAlways' ? 'always' : s === 'authorizedWhenInUse' ? 'whenInUse' : s === 'denied' || s === 'restricted' ? 'denied' : 'notDetermined';
 
 export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
@@ -30,6 +31,10 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
       const suggestions = await nativePlaceSearch.suggest(query, near ? { latitude: near.lat, longitude: near.lon } : undefined);
       return Promise.all(suggestions.slice(0, 5).map(async s => { const p = await nativePlaceSearch.resolve(s); return { id: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, radiusMeters: 150 }; }));
     },
+    recheckPresence: async () => {
+      const open = detectionStore.getState().data.gym.regions;
+      for (const gym of places()) if (open[gym.id]?.confirmedSince != null || open[gym.id]?.pendingEnterAt != null) await location.recheck({ id: gym.id, latitude: gym.latitude, longitude: gym.longitude, radiusMeters: gym.radiusMeters });
+    },
     authorizationStatus: () => location.getAuthorizationStatus(),
     requestLocation: async () => permission(await location.requestAuthorization()),
     requestBackgroundLocation: async () => permission(await location.requestAlwaysAuthorization()),
@@ -43,10 +48,10 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
     deletePlace: id => serialize(async () => { await owner.deleteGym(id); persist(places().filter(p => p.id !== id)); }),
     listPlaces: () => [...places()],
     enableAutoDetect: () => serialize(async () => {
-      try { await owner.registerGyms(places()); const enabled = location.getAuthorizationStatus() === 'authorizedAlways'; persist(places(), enabled); return enabled; }
+      try { await owner.registerGyms(places()); const enabled = location.getAuthorizationStatus() === 'authorizedAlways'; persist(places(), enabled); settingsStore.getState().patch({ gymBackgroundAsked: true, gymAutoDetectOptOut: !enabled }); return enabled; }
       catch { persist(places(), false); return false; }
     }),
-    disableAutoDetect: () => serialize(async () => { await location.stopMonitoringRegions(); persist(places(), false); }),
+    disableAutoDetect: () => serialize(async () => { await location.stopMonitoringRegions(); persist(places(), false); settingsStore.getState().patch({ gymBackgroundAsked: true, gymAutoDetectOptOut: true }); }),
     checkIn: async (id, confirmation) => {
       const place = places().find(p => p.id === id); if (!place) throw new Error('Saved gym not found');
       const inside = await location.checkIn({ id, latitude: place.latitude, longitude: place.longitude, radiusMeters: place.radiusMeters }, confirmation);

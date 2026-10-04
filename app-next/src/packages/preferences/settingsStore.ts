@@ -5,6 +5,8 @@ import * as v from '../persistence/validation';
 import { setHapticsEnabled } from '../ui/haptics';
 export type Settings = {
   locationAlwaysAsked: boolean;
+  gymBackgroundAsked: boolean;
+  gymAutoDetectOptOut: boolean;
   gymPlaces: SavedPlace[];
   units: 'km' | 'mi';
   stopGrace: number;
@@ -15,9 +17,11 @@ export type Settings = {
 };
 export const settingsStore = createPersistedStore<Settings>(
   'settings',
-  { locationAlwaysAsked: false, gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true, analyticsEnabled: true, notificationsEnabled: true },
+  { gymBackgroundAsked: false, gymAutoDetectOptOut: false, locationAlwaysAsked: false, gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true, analyticsEnabled: true, notificationsEnabled: true },
   {
     locationAlwaysAsked: v.bool,
+    gymBackgroundAsked: v.bool,
+    gymAutoDetectOptOut: v.bool,
     gymPlaces: v.array(
       v.shape({
         id: v.text,
@@ -35,6 +39,12 @@ export const settingsStore = createPersistedStore<Settings>(
     analyticsEnabled: v.bool,
     notificationsEnabled: v.bool,
   },
+  { migrate: (value) => {
+    if (!value || typeof value !== 'object') return value;
+    const previous = value as Partial<Settings>;
+    const previouslyAsked = previous.locationAlwaysAsked === true && previous.gymAutoDetect !== true;
+    return { ...previous, gymBackgroundAsked: previous.gymBackgroundAsked ?? previouslyAsked, gymAutoDetectOptOut: previous.gymAutoDetectOptOut ?? previouslyAsked };
+  } },
 );
 setHapticsEnabled(settingsStore.getState().data.haptics);
 settingsStore.subscribe((state) => setHapticsEnabled(state.data.haptics));

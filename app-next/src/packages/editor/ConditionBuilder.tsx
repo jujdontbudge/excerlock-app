@@ -1,3 +1,4 @@
+import { GymBackgroundSetup } from '../gyms/GymBackgroundSetup';
 import { pageIn, pageOut } from '../ui/presets';
 import { useState } from 'react';
 import Animated from 'react-native-reanimated';
@@ -43,6 +44,7 @@ export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClos
       }
       overlay={
         <>
+          {f.draft.activity === 'gym' ? <GymBackgroundSetup /> : null}
           <TimeSheet
             which={wheel}
             value={wheel ? f.schedule[wheel] : f.schedule.start}

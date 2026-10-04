@@ -349,6 +349,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                   projecting = false;
                 }
               }
+              if (wakeSource === 'foreground' && !deleting) await gym.recheckPresence().catch(() => undefined);
               await detection.reconcileWake({
                 ...wakeContext(),
                 now,
@@ -392,7 +393,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const confirmedId = configured.find((id) => detected.gym.regions[id]?.confirmedSince != null);
             const since = confirmedId ? detected.gym.regions[confirmedId].confirmedSince : null;
             const gymPresence =
-              confirmedId && since != null
+              confirmedId && since != null && detection.location.isInsideRegion(confirmedId) === true
                 ? {
                     placeId: confirmedId,
                     startedAt: new Date(since).toISOString(),

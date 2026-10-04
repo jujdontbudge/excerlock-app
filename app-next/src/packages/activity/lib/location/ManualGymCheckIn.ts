@@ -5,6 +5,7 @@ import type {
 } from "./LocationProvider";
 
 export interface ManualGymCheckIn {
+  recheck(region: GeofenceRegion): Promise<void>;
   checkIn(region: GeofenceRegion, confirmation?: { milliseconds: number; signal: AbortSignal }): Promise<boolean>;
 }
 
