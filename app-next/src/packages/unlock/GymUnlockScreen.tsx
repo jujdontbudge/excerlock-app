@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heading, PrimaryButton } from '../ui';
+import { Heading, PrimaryButton, Label } from '../ui';
 import { UnlockLockFrame } from './lib/UnlockLockFrame';
 import { useRuntime } from '../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
@@ -12,6 +12,7 @@ import { gymUnlockSubline } from './entry';
 import { UnlockLayout, Detected } from './lib/UnlockLayout';
 import { GymUnlockMap } from './lib/GymUnlockMap';
 import { ruleDaysStore as useRuleDaysStore } from '../conditions/ruleDaysStore';
+import { permissionsStore as usePermissionsStore } from '../permissions/permissionsStore';
 import { dayKey } from '../schedule/calendar';
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const router = useRouter(),
@@ -38,9 +39,10 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   useEffect(() => {
     runtime.analytics.track('unlock_screen_opened', { kind: 'gym', preview });
   }, [runtime, preview]);
+  const locationPermission = usePermissionsStore((s) => s.data.location);
   const noGym = !state.nearest && !preview;
   const outside = !state.denied && !noGym && !state.working && !state.inside;
-  const title = state.denied
+  const title = state.retrying ? c.gym.betterFix : state.denied
     ? c.gym.denied
     : noGym
       ? c.gym.noGym
@@ -89,6 +91,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
           overlay={ceremony.showMessage ? <Detected title={c.gym.detected} body={subline} /> : undefined}
         />
       </View>
+      {!preview && locationPermission === 'whenInUse' && !ceremony.showMessage ? <Label variant="support" tone="secondary">{c.gym.foregroundOnly}</Label> : null}
       {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
     </UnlockLayout>
   );

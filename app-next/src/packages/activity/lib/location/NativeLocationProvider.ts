@@ -1,6 +1,9 @@
 import type { NativeLocationClient } from "./NativeLocationClient";
 import { assertGymRegionsAllowed } from "./gymRegions";
-import { isSampleInsideRegion } from "./regionPresence";
+import { AppState } from 'react-native';
+import { confirmGymCheckIn } from '../../GymCheckIn';
+import { gymFixStatus, GYM_CONFIRM_RECHECK_MS } from '../../gymFix';
+import { gymVisitLogEpoch } from '../../AsyncStorageGymVisitLog';
 import type {
   GeofenceRegion,
   LocationAuthorizationStatus,
@@ -16,6 +19,13 @@ export class NativeLocationProvider implements LocationProvider {
   private readonly locationCallbacks =
     new Set<(sample: LocationSample) => void>();
   private readonly manualCheckIns = new Set<string>();
+  private readonly manualRegions = new Map<string, { region: GeofenceRegion; epoch: number }>();
+  private foregroundTimer: ReturnType<typeof setInterval> | undefined;
+  private sampling = false;
+  private readonly appState = AppState.addEventListener('change', (state) => {
+    if (state === 'active') this.startForegroundSampling();
+    else if (this.foregroundTimer) { clearInterval(this.foregroundTimer); this.foregroundTimer = undefined; }
+  });
   private readonly monitoredRegions = new Map<string, GeofenceRegion>();
   private readonly presence = new Map<string, boolean>();
   private readonly regionCallbacks =
@@ -164,31 +174,55 @@ export class NativeLocationProvider implements LocationProvider {
     return sample;
   }
 
-  public async checkIn(region: GeofenceRegion): Promise<boolean> {
+  public async checkIn(region: GeofenceRegion, confirmation?: { milliseconds: number; signal: AbortSignal }): Promise<boolean> {
     assertGymRegionsAllowed([region]);
-    const authorization = await this.requestAuthorization();
-    if (
-      authorization !== "authorizedWhenInUse" &&
-      authorization !== "authorizedAlways"
-    ) {
-      throw new Error("Location authorization is required for manual check-in");
-    }
-
-    const sample = await this.client.getCurrentLocation();
-    this.lastLocation = sample;
-    this.locationCallbacks.forEach((callback) => callback(sample));
-    const inside = isSampleInsideRegion(sample, region);
+    const epoch = await gymVisitLogEpoch();
     this.manualCheckIns.add(region.id);
     try {
-      await this.client.confirmRegionPresence({
-        type: inside ? "enter" : "exit",
-        regionId: region.id,
-        atMs: sample.atMs,
+      await confirmGymCheckIn({ gym: region, confirmation,
+        read: async () => { const sample = await this.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }; },
+        transition: async (type, atMs) => {
+          await this.client.confirmRegionPresence({ type, regionId: region.id, atMs, manualEpoch: epoch });
+          if (type === 'enter') this.manualRegions.set(region.id, { region, epoch });
+          else this.manualRegions.delete(region.id);
+        },
       });
-    } finally {
-      this.manualCheckIns.delete(region.id);
-    }
-    return this.presence.get(region.id) === true;
+      this.startForegroundSampling();
+      return this.presence.get(region.id) === true;
+    } finally { this.manualCheckIns.delete(region.id); }
+  }
+
+  public async recheck(region: GeofenceRegion): Promise<void> {
+    const sample = await this.locateForGymSetup();
+    const status = gymFixStatus({ latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }, region);
+    if (status === 'uncertain') return;
+    const epoch = await gymVisitLogEpoch();
+    this.manualCheckIns.add(region.id);
+    try {
+      await this.client.confirmRegionPresence({ type: status === 'inside' ? 'enter' : 'exit', regionId: region.id, atMs: Date.now(), manualEpoch: epoch });
+      if (status === 'inside') this.manualRegions.set(region.id, { region, epoch });
+      else this.manualRegions.delete(region.id);
+    } finally { this.manualCheckIns.delete(region.id); }
+    this.startForegroundSampling();
+  }
+
+  private startForegroundSampling(): void {
+    if (this.foregroundTimer || AppState.currentState !== 'active' || !this.manualRegions.size) return;
+    this.foregroundTimer = setInterval(() => {
+      if (this.sampling) return;
+      this.sampling = true;
+      void this.locateForGymSetup().then(async (sample) => {
+        for (const [id, { region, epoch }] of this.manualRegions) {
+          const status = gymFixStatus({ latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }, region);
+          if (status === 'outside') {
+            this.manualCheckIns.add(id);
+            try { await this.client.confirmRegionPresence({ type: 'exit', regionId: id, atMs: Date.now(), manualEpoch: epoch }); }
+            finally { this.manualCheckIns.delete(id); this.manualRegions.delete(id); }
+          }
+        }
+        if (!this.manualRegions.size && this.foregroundTimer) { clearInterval(this.foregroundTimer); this.foregroundTimer = undefined; }
+      }).catch(() => undefined).finally(() => { this.sampling = false; });
+    }, GYM_CONFIRM_RECHECK_MS);
   }
 
   public async startWalkKeepAlive(): Promise<void> {
@@ -253,6 +287,8 @@ export class NativeLocationProvider implements LocationProvider {
   }
 
   public dispose(): void {
+    this.appState.remove();
+    if (this.foregroundTimer) clearInterval(this.foregroundTimer);
     this.unsubscribeClient.forEach((unsubscribe) => unsubscribe());
     this.authorizationCallbacks.clear();
     this.locationCallbacks.clear();

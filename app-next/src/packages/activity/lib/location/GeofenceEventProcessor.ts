@@ -18,10 +18,10 @@ export class GeofenceEventProcessor {
       atMs: transition.atMs,
       receivedAtMs,
     };
-    await this.options.log.append(record);
+    await this.options.log.append(record, transition.manualEpoch);
     this.rawPresence.set(transition.regionId, transition.type === 'enter');
     this.options.onPresence(transition);
-    if (transition.type === 'exit') this.options.onTransition(transition);
+    this.options.onTransition(transition);
   }
   isInside(regionId: string): boolean | null {
     return this.rawPresence.get(regionId) ?? null;

@@ -1,3 +1,4 @@
+import { settingsStore } from '../preferences/settingsStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GymTransitionRecord, GymVisitLog } from './lib/location/GymVisitLog';
 export const GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/gym-transitions/v2';
@@ -34,15 +35,20 @@ export function resumeGymVisitLogWrites(regionIds: readonly string[]): Promise<v
   });
 }
 
+export async function gymVisitLogEpoch(): Promise<number> {
+  await sharedWrites;
+  return parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY))?.epoch ?? 0;
+}
+
 export class AsyncStorageGymVisitLog implements GymVisitLog {
-  append(record: GymTransitionRecord): Promise<void> {
+  append(record: GymTransitionRecord, manualEpoch?: number): Promise<void> {
     const safe = coordinateFree(record);
     return serialize(async () => {
       const storedAcceptance = await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY);
-      if (storedAcceptance !== null) {
-        const acceptance = parseAcceptance(storedAcceptance);
-        if (!acceptance?.regionIds.includes(safe.regionId)) return;
-      }
+      const acceptance = parseAcceptance(storedAcceptance);
+      if (manualEpoch !== undefined) {
+        if (manualEpoch !== (acceptance?.epoch ?? 0) || !settingsStore.getState().data.gymPlaces.some((gym) => gym.id === safe.regionId)) throw new Error('Saved gym changed during check-in');
+      } else if (storedAcceptance !== null && !acceptance?.regionIds.includes(safe.regionId)) return;
       const prunedThrough = await readPrunedThrough();
       if (prunedThrough !== null && safe.atMs < prunedThrough) return;
       const records = await readRetainedStored(prunedThrough);

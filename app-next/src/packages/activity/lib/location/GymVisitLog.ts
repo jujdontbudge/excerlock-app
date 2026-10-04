@@ -6,6 +6,6 @@ export interface GymTransitionRecord {
   readonly receivedAtMs: number;
 }
 export interface GymVisitLog {
-  append(record: GymTransitionRecord): Promise<void>;
+  append(record: GymTransitionRecord, manualEpoch?: number): Promise<void>;
   readAll(): Promise<readonly GymTransitionRecord[]>;
 }

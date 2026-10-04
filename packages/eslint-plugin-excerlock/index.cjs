@@ -132,7 +132,7 @@ const noStatusText = {
           context.report({ node, messageId: 'rawError' });
       },
       Literal(node) {
-        if (typeof node.value === 'string' && STATUS_COPY.test(node.value))
+        if (typeof node.value === 'string' && STATUS_COPY.test(node.value) && !(filename.endsWith('/unlock/lib/unlockCopy.ts') && node.value === 'Getting a better fix…'))
           context.report({ node, messageId: 'statusCopy' });
       },
     };

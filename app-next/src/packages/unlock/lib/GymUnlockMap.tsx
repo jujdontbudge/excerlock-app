@@ -15,7 +15,7 @@ export function GymUnlockMap({ location, gym, inside }: { location: Coordinates 
   const map = useRef<MapView>(null), frame = useRef<MapRegion | null>(null), framedGym = useRef<string | null>(null);
   const [following, setFollowing] = useState(true), [ready, setReady] = useState(false), [size, setSize] = useState({ width: 1, height: 1 });
   const m = useMotion(), units = useSettingsStore((s) => s.data.units);
-  const fitted = useMemo(() => gym ? gymMapRegion(gym, gym.radiusMeters, location, size, t.space.xxl) : location ? regionForRadius(location, 150, size) : null, [gym, location, size]);
+  const fitted = useMemo(() => gym ? gymMapRegion(gym, gym.radiusMeters, location, size, t.control.full) : location ? regionForRadius(location, 150, size) : null, [gym, location, size]);
   const fit = (region: MapRegion) => { frame.current = region; map.current?.animateToRegion(region, m.reduced ? 0 : m.duration.emphasized); };
   useEffect(() => {
     if (!ready || !fitted || size.width <= 1 || size.height <= 1 || !following) return;

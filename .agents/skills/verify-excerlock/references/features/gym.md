@@ -20,7 +20,7 @@ Home → "I'm at the gym". Settings → Privacy & permissions → saved gyms. Se
 name: unlock-map-circle-line
 scenario: gym-uiuc-outside
 open: /unlock/gym?ruleId=gym
-expect: 350 m to UIUC gym | Center on me | Center on gym
+expect: 1130 ft to UIUC gym | Center on me | Center on gym
 wait: 20
 ```
 
