@@ -99,7 +99,7 @@ export function PickerMap({
       <MapView
         ref={map}
         testID="gym-map"
-        accessibilityLabel={hasPin ? `${c.map}, ${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}` : c.map}
+        accessibilityLabel={c.map}
         style={StyleSheet.absoluteFill}
         initialRegion={initial}
         showsUserLocation={showLocation}

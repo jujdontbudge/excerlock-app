@@ -16,6 +16,7 @@ export const unlockCopy = {
     detected: 'Screen Time unlocked!',
   },
   gym: {
+    distance: (distance: string, name: string) => `${distance} to ${name}`,
     inside: 'Location detected at the gym',
     insideBody: (name: string) => `You're at ${name}.`,
     outside: 'Not at your gym yet',
