@@ -19,7 +19,7 @@ export function SettingsPage({
     <ScreenShell
       scrollToEndOnKeyboard={scrollToEndOnKeyboard}
       header={
-        <View style={{ paddingHorizontal: t.layout.page - (t.control.inline - t.icon.md) / 2 }}>
+        <View style={{ paddingHorizontal: t.layout.page, alignItems: 'flex-start' }}>
           <BackButton onPress={onBack} />
         </View>
       }

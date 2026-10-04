@@ -10,6 +10,7 @@ import { ruleName } from '../../conditions/ruleName';
 import { scheduleLabel } from '../../schedule/scheduleLabel';
 import { Rule } from '../../model/types';
 import { useMotion } from '../../ui/useMotion';
+import { useCapShift, useInputType } from '../../ui/Label';
 import { useHapticOnChange } from '../../ui/haptics';
 import { PLAN_MOTION, PLAN_RING, planPercentLabel, taskMotion, smooth } from './planMotion';
 const Arc = Animated.createAnimatedComponent(Circle);
@@ -31,6 +32,7 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
       transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }, { translateX: m.swipeX }],
     };
   });
+  const shift = useCapShift(t.type.label.fontSize, t.type.label.lineHeight);
   const titleStyle = useAnimatedStyle(() => ({
     color: elapsed.get() >= Math.max(index * 1000, 150) + 105 ? t.text.onAccent : t.text.primary,
   }));
@@ -41,7 +43,7 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
       <Icon name="clock" size={t.icon.md} tone={checked ? 'onAccent' : 'muted'} />
     </View>
     <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
-      style={[t.type.label, { flex: 1 }, titleStyle]}>{title}</Animated.Text>
+      style={[t.type.label, { flex: 1, transform: [{ translateY: shift }] }, titleStyle]}>{title}</Animated.Text>
     <View testID={`plan-task-status-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
       {checked ? <SelectionCheck /> : <View style={{ width: 24, height: 24, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.text.secondary }} />}
     </View>
@@ -83,6 +85,7 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
     opacity: m.reduced ? 1 : 1 - smooth((elapsed.get() - (PLAN_MOTION.count + PLAN_MOTION.hold)) / PLAN_MOTION.fadeout),
   }));
   const ring = PLAN_RING.size, middle = ring / 2;
+  const metric = useInputType('metric');
   return <Animated.View style={[{ flex: 1, paddingTop: height * PLAN_RING.topFraction, alignItems: 'center', gap: 32 }, content]}>
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Preparing your plan"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(completed / tasks.length * 100) }}
@@ -93,8 +96,8 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
           strokeLinecap="round" strokeDasharray={`${LENGTH} ${LENGTH}`} rotation={-90} origin={`${middle},${middle}`} animatedProps={arc} />
       </Svg>
       <Counter editable={false} accessible={false} pointerEvents="none" defaultValue="0%" animatedProps={counter}
-        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'],
-          transform: [{ translateY: t.type.metric.fontSize * t.optical.centre + t.space.sm }] }]} />
+        maxFontSizeMultiplier={t.a11y.textScale}
+        style={[metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }]} />
     </View>
     <View style={{ width: '100%', height: m.reduced ? (rowHeight + 12) * tasks.length : (rowHeight + 12) * 3 }}>
       {tasks.map((title, index) => <Task key={title} title={title} index={index} elapsed={elapsed}

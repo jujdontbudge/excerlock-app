@@ -17,7 +17,7 @@ import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { ruleName } from '../conditions/ruleName';
 import { scheduleLabel } from '../schedule/scheduleLabel';
 import { useRuntime } from '../ports/useRuntime';
-import { LivingIcon } from '../ui/LivingIcon';
+import { Icon } from '../ui/Icon';
 import { Reveal } from '../ui/Reveal';
 import { ConfirmSheet } from '../ui/ConfirmSheet';
 import { toggleRule, deleteRule } from './lib/mutations';
@@ -79,7 +79,7 @@ export function ConditionsScreen({
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
               borderRadius: t.radius.pill, backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
-            <LivingIcon name="plus" size="md" />
+            <Icon name="plus" size={t.icon.md} variant="utility" />
             <Label variant="label">{c.add}</Label>
           </PressableScale>
         ) : null}

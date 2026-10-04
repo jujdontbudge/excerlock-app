@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../ui/tokens';
+import { capShift } from '../../../ui/Label';
 import { illustrationTokens as art } from '../../../ui/illustrationTokens';
 import { PressableScale } from '../../../ui/PressableScale';
 import { BackButton } from '../../../ui/BackButton';
@@ -32,7 +33,10 @@ import { Phone } from './Phone';
 import { demoRows, promiseCard, sceneGeometry } from './layout';
 
 function Text(props: TextProps) {
-  return <NativeText {...props} style={[{ fontFamily: t.font.regular }, props.style]} />;
+  const { fontScale } = useWindowDimensions();
+  const flat = StyleSheet.flatten(props.style);
+  const shift = capShift(flat?.fontSize ?? t.type.support.fontSize, flat?.lineHeight ?? Infinity) * Math.min(fontScale, props.maxFontSizeMultiplier ?? Infinity);
+  return <NativeText {...props} style={[{ fontFamily: t.font.regular }, props.style, { transform: [{ translateY: shift }] }]} />;
 }
 
 export function ConditionDemo({

@@ -28,7 +28,6 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.card,
     borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.field,
     paddingHorizontal: t.space.xs, paddingVertical: t.space.xs },
-  value: { width: '100%', textAlign: 'center', marginBottom: -t.space.xs,
-    transform: [{ translateY: t.type.section.fontSize * t.optical.centre }] },
+  value: { width: '100%', textAlign: 'center' },
   label: { width: '100%', textAlign: 'center' },
 });

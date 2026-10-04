@@ -63,6 +63,7 @@ export const tokens = {
     yellow: '#FFD466',
   },
   font,
+  fontMetrics: { ascent: 1.078, descent: 0.524, capHeight: 0.602 },
   type: {
     metric: { fontSize: 48, lineHeight: 58, fontFamily: font.bold },
     display: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
@@ -122,7 +123,6 @@ export const tokens = {
     titleHalo: 'rgba(255,247,241,0.95)',
   },
   a11y: { textScale: 2 },
-  optical: { centre: 0.27 },
   motion: {
     duration: { press: 100, standard: 240, emphasized: 480, breathe: 3600 },
     ratingPromptDelay: 1000,

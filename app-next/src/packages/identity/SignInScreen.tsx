@@ -152,7 +152,7 @@ export function SignInScreen({
   return (
     <Reveal key={phase} style={{ flexGrow: 1, gap: t.space.xl }}>
       {phase !== 'options' || onExit ? (
-        <View style={{ marginLeft: -(t.control.inline - t.icon.md) / 2, marginBottom: -t.space.lg }}>
+        <View style={{ alignItems: 'flex-start', marginBottom: -t.space.lg }}>
           <BackButton
             label={phase === 'options' ? undefined : c.backToOptions}
             onPress={() => {

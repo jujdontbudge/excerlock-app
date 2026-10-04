@@ -138,5 +138,5 @@ const s = StyleSheet.create({
   center: { position: 'absolute', top: STROKE, right: STROKE, bottom: STROKE, left: STROKE,
     alignItems: 'center', justifyContent: 'center' },
   dayLabel: { color: t.brand.primary },
-  value: { marginTop: t.space.xs, marginBottom: -t.space.md },
+  value: { marginVertical: -t.space.sm },
 });

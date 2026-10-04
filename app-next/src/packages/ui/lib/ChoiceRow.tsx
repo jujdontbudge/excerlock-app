@@ -8,6 +8,7 @@ import { PressableScale } from '../PressableScale';
 import { Reveal } from '../Reveal';
 import type { ChoiceEmphasis } from './ActivityCard';
 import { SelectionCheck } from '../SelectionCheck';
+import { useSetupPresentation } from '../SetupPresentation';
 import { useMotion } from '../useMotion';
 import type { HapticIntent } from '../haptics';
 export function ChoiceRow({
@@ -37,7 +38,30 @@ export function ChoiceRow({
 }) {
   const m = useMotion();
   const solid = emphasis === 'solid' && selected;
+  const centred = useSetupPresentation();
+  const lead = leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null);
+  const slot = { width: t.icon.lg, alignItems: 'center' as const };
   void compact;
+  const indicator = solid ? (
+    <SelectionCheck />
+  ) : (
+    <View
+      style={{
+        width: t.control.indicator,
+        height: t.control.indicator,
+        borderRadius: t.radius.pill,
+        borderWidth: t.stroke.selected,
+        borderColor: selected ? t.brand.primary : t.border.outline,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      {selected ? (
+        <Reveal>
+          <Icon name="check" size={t.icon.md} variant="utility" />
+        </Reveal>
+      ) : null}
+    </View>
+  );
   return (
     <PressableScale
       label={title}
@@ -59,7 +83,7 @@ export function ChoiceRow({
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
           ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
         }}>
-        {leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null)}
+        {centred ? <View style={slot}>{lead}</View> : lead}
         <View style={{ flex: 1, gap: t.space.xs }}>
           <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
             {title}
@@ -71,26 +95,7 @@ export function ChoiceRow({
             </Label>
           ) : null}
         </View>
-        {solid ? (
-          <SelectionCheck />
-        ) : (
-          <View
-            style={{
-              width: t.control.indicator,
-              height: t.control.indicator,
-              borderRadius: t.radius.pill,
-              borderWidth: t.stroke.selected,
-              borderColor: selected ? t.brand.primary : t.border.outline,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            {selected ? (
-              <Reveal>
-                <Icon name="check" size={t.icon.md} variant="utility" />
-              </Reveal>
-            ) : null}
-          </View>
-        )}
+        {centred ? <View style={slot}>{indicator}</View> : indicator}
       </Animated.View>
     </PressableScale>
   );

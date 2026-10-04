@@ -54,7 +54,7 @@ export function ProgressBadge() {
           </Svg>
         </View>
         <Label
-          style={{ color: p.deep, ...p.badge.text, alignSelf: 'auto', transform: [{ translateY: p.badge.nudge }] }}>
+          style={{ color: p.deep, ...p.badge.text, alignSelf: 'auto' }}>
           {c.progressValue}
         </Label>
       </Animated.View>

@@ -41,7 +41,7 @@ export function TickingNumber({
         <Label
           variant="metric"
           maxFontSizeMultiplier={t.a11y.textScale}
-          style={{ textAlign: 'center', fontVariant: ['tabular-nums'], marginBottom: -t.space.xl }}>
+          style={{ textAlign: 'center', fontVariant: ['tabular-nums'], marginVertical: -t.space.md }}>
           {format(shown, precision)}
         </Label>
         <Label tone="secondary" style={{ textAlign: 'center' }}>

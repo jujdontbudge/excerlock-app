@@ -33,7 +33,7 @@ export function OnboardingHeader({
         alignItems: 'center',
         gap: t.space.sm,
       }}>
-      {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: t.control.inline }} />}
+      {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: t.icon.md }} />}
       {showProgress ? <View
         accessible
         accessibilityRole="progressbar"
@@ -60,7 +60,7 @@ export function OnboardingHeader({
           ]}
         />
       </View> : <View style={{ flex: 1 }} />}
-      {onClose ? <CloseButton onPress={onClose} /> : <View style={{ width: t.control.inline }} />}
+      {onClose ? <CloseButton onPress={onClose} /> : <View style={{ width: t.icon.md }} />}
     </View>
   );
 }

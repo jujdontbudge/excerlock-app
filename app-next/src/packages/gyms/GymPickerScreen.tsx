@@ -40,7 +40,7 @@ export function GymPickerScreen({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: t.layout.page - (t.control.inline - t.icon.md) / 2,
+              paddingHorizontal: t.layout.page,
             }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.xs }}>
               <BackButton label={c.backToSearch} onPress={p.back} />

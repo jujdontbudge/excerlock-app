@@ -39,7 +39,7 @@ export function PlanTrialPreview({ rule, onBack }: { rule: Rule; onBack: () => v
         <Label accessibilityRole="header" variant="display" style={{ flex: 1, textAlign: 'center' }}>
           {c.trialTitle}
         </Label>
-        <View style={{ width: t.control.inline }} />
+        <View style={{ width: t.icon.md }} />
       </View>
       <View
         testID="trial-phone-box"

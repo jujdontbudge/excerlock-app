@@ -2,6 +2,7 @@ import { TextInput } from 'react-native';
 import { useEffect } from 'react';
 import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../../ui';
+import { useInputType } from '../../../ui/Label';
 import { tokens as t } from '../../../ui/tokens';
 import { useMotion } from '../../../ui/useMotion';
 import { onboardingLabels } from '../onboardingCopy';
@@ -10,6 +11,7 @@ import { impactTiming as timing } from './timing';
 const Count = Animated.createAnimatedComponent(TextInput);
 export function FreeTimePercentage({ hours }: { hours: number }) {
   const m = useMotion();
+  const metric = useInputType('metric');
   const percent = Math.round((hours / onboardingLabels.freeHours) * 100);
   const value = useSharedValue(m.reduced ? percent : 0);
   useEffect(() => {
@@ -45,7 +47,7 @@ export function FreeTimePercentage({ hours }: { hours: number }) {
         maxFontSizeMultiplier={t.a11y.textScale}
         defaultValue={m.reduced ? `${percent}%` : '0%'}
         animatedProps={count}
-        style={[t.type.metric, { color: t.text.primary, textAlign: 'center', padding: 0, alignSelf: 'stretch' }]}
+        style={[metric, { color: t.text.primary, textAlign: 'center', padding: 0, alignSelf: 'stretch' }]}
       />
       <Label variant="display" style={{ textAlign: 'center' }}>
         {impactCopy.percentageLabel}

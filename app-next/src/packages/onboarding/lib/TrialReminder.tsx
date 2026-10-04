@@ -49,7 +49,7 @@ export function TrialReminder() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Label allowFontScaling={false} style={[bell.count, { color: t.text.onAccent, transform: [{ translateY: bell.count.fontSize * t.optical.centre }] }]}>
+          <Label allowFontScaling={false} style={[bell.count, { color: t.text.onAccent }]}>
             1
           </Label>
         </View>
