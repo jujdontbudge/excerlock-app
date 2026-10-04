@@ -31,7 +31,7 @@ Build 17's existing watchdog incorrectly rejects callbacks at or after `eligible
 
 Stage 2 uses build 18 and runtime 5. Its capture PTS are anchored to the host clock; sequence numbers and explicit empty/dropped frames expose gaps. Serial Vision work discards late buffers rather than building a queue. Samples expose per-request and total timings locally for the offline evaluator. The largest face must match a confident nose/neck before body joints count; ambiguous matches exclude body evidence. Background optical flow outside the person supplies camera-stability quality and translation. Unreliable motion quality rejects rather than assuming a stationary console. Visible paired knees corroborate alternation but never grant on their own. These gates and timings require the owner clips and live iPhone 13 checks; the simulator has no camera.
 
-The build 18 watchdog accepts the committed callback at or after its end, including `eligibleUntil`. It retains policy/account/selection generation and active-schedule checks. The old pre-deadline guard made expiry impossible when end equalled eligibility; removing it fixes #164 in the next binary without weakening stale-monitor rejection.
+The build 18 watchdog accepts the committed callback at or after its end, including `eligibleUntil`. Native registrations store the same whole-second start/end used by DeviceActivity; flooring the end may re-lock up to one second early, rather than losing an early callback against a millisecond guard. It retains policy/account/selection generation and active-schedule checks. The old pre-deadline guard made expiry impossible when end equalled eligibility; removing it fixes #164 in the next binary without weakening stale-monitor rejection.
 
 ## References
 

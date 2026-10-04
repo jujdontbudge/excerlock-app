@@ -320,7 +320,7 @@ public final class ExcerlockEnforcementModule: Module {
   }
 
   private func stageWatchdog(plan: WatchdogInput, revision: Int) async throws -> String {
-    let start = plan.start; let end = plan.end; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
+    let start = floor(plan.start / 1000) * 1000; let end = floor(plan.end / 1000) * 1000; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
       let policyGeneration = plan.policyGeneration; let accountGeneration = plan.accountGeneration; let selectionVersion = plan.selectionVersion
       guard end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
             end <= eligibleUntil else { throw ExcerlockPolicyError.invalidSnapshot }
