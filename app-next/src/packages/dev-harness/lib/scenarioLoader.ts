@@ -39,7 +39,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
     }));
   } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
   resetStores();
-  settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [] });
+  settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [], units: scenario.profile?.units ?? settingsStore.getState().data.units, gymAutoDetect: scenario.gym?.autoDetect ?? false, gymBackgroundAsked: scenario.gym?.backgroundAsked ?? false, gymAutoDetectOptOut: scenario.gym?.optOut ?? false });
   profileStore.getState().patch(scenario.profile ?? {});
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });
   ruleDaysStore.getState().patch({ days: scenario.ruleDays, gymPresence: null });
