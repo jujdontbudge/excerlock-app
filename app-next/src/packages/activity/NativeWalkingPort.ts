@@ -52,7 +52,7 @@ export class NativeWalkingPort implements WalkingPort {
       const scan = await this.options.service.startProppedScan(this.now(), generation);
       if (operation !== this.operationGeneration) {
         if (scan !== null && detectionStore.getState().data.propped.scanGeneration === scan)
-          await this.options.service.cancelProppedScan(this.now(), generation);
+          await this.options.service.cancelProppedScan(this.now(), generation, scan);
         throw new Error('Walking scan was cancelled');
       }
       this.scanGeneration = scan;
@@ -94,17 +94,22 @@ export class NativeWalkingPort implements WalkingPort {
     this.publishLocal();
     if (scan !== null) {
       const data = detectionStore.getState().data;
-      void this.options.service.cancelProppedScan(this.now(), data.generation).catch(this.options.onError);
+      void this.options.service.cancelProppedScan(this.now(), data.generation, scan).catch(this.options.onError);
     }
   }
 
   async completeProppedScan(): Promise<boolean> {
     const scan = this.scanGeneration;
     if (scan === null) return false;
-    this.scanGeneration = null;
     const data = detectionStore.getState().data;
     const operation = this.operationGeneration;
-    await this.options.service.completeProppedScan(this.now(), scan, data.generation);
+    await this.options.service.completeProppedScan(
+      this.now(),
+      scan,
+      data.generation,
+      () => operation === this.operationGeneration,
+    );
+    if (operation === this.operationGeneration) this.scanGeneration = null;
     const state = detectionStore.getState().data.propped;
     return (
       operation === this.operationGeneration &&

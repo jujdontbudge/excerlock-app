@@ -16,16 +16,9 @@ export type ProppedEvent =
   | { kind: 'tick' }
   | { kind: 'startScan'; at: number; foreground: boolean }
   | { kind: 'scanPass'; at: number; generation: number; foreground: boolean }
+  | { kind: 'scanCancel'; at: number; generation?: number }
   | {
-      kind:
-        | 'scanCancel'
-        | 'background'
-        | 'pickup'
-        | 'putDown'
-        | 'walkingQualified'
-        | 'walkingStopped'
-        | 'coverageLost'
-        | 'reset';
+      kind: 'background' | 'pickup' | 'putDown' | 'walkingQualified' | 'walkingStopped' | 'coverageLost' | 'reset';
       at: number;
     };
 function time(value: number): void {
@@ -127,8 +120,15 @@ export function reducePropped(previous: ProppedState, event: ProppedEvent, now: 
             state.eligibleUntil = event.at + PROPPED_LIMIT_MS;
           }
           break;
-        case 'background':
         case 'scanCancel':
+        case 'background':
+          if (event.kind === 'scanCancel' && event.generation !== undefined) {
+            if (event.generation !== state.generation) break;
+            if (state.phase === 'propped') {
+              clear(state);
+              break;
+            }
+          }
           if (state.phase === 'scanning') {
             state.scanGeneration = null;
             state.generation++;

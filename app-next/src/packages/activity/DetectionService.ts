@@ -303,15 +303,22 @@ export class DetectionService {
     });
     return scanGeneration;
   }
-  completeProppedScan(now: number, scanGeneration: number, generation: number): Promise<void> {
+  completeProppedScan(
+    now: number,
+    scanGeneration: number,
+    generation: number,
+    isCurrent?: () => boolean,
+  ): Promise<void> {
     return this.applyPropped(
       { kind: 'scanPass', at: now, generation: scanGeneration, foreground: true },
       now,
       generation,
+      undefined,
+      isCurrent,
     );
   }
-  cancelProppedScan(now: number, generation: number): Promise<void> {
-    return this.applyPropped({ kind: 'scanCancel', at: now }, now, generation);
+  cancelProppedScan(now: number, generation: number, scanGeneration?: number): Promise<void> {
+    return this.applyPropped({ kind: 'scanCancel', at: now, generation: scanGeneration }, now, generation);
   }
   reconcileMotion(now: number, graceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
@@ -372,9 +379,11 @@ export class DetectionService {
     now: number,
     generation: number,
     after?: (state: ProppedState) => void,
+    isCurrent?: () => boolean,
   ): Promise<void> {
     return this.enqueue(async () => {
       this.assertGeneration(generation);
+      if (isCurrent && !isCurrent()) return;
       const next = reducePropped(detectionStore.getState().data.propped, event, now);
       detectionStore.getState().patch({ propped: next, observedAt: now });
       await this.commitObserved(now, generation, undefined, 'propped');

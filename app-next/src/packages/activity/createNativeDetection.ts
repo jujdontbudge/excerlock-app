@@ -44,10 +44,13 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   });
   const awake = new AwakeSession(location);
   const steps = new StepsDetectionAdapter(rawMotion);
-  const unregisterHeadless = options.registerHeadless === false ? () => {} : registerHeadlessDetectionHandler(async () => {
-    const context = options.getWakeContext();
-    await service.reconcileWake({ ...context, now: Date.now(), source: 'geofence' });
-  });
+  const unregisterHeadless =
+    options.registerHeadless === false
+      ? () => {}
+      : registerHeadlessDetectionHandler(async () => {
+          const context = options.getWakeContext();
+          await service.reconcileWake({ ...context, now: Date.now(), source: 'geofence' });
+        });
   const gyms = new GymRegionAdapter(location, (regionId) =>
     service.invalidateGymRegion(regionId, Date.now(), detectionStore.getState().data.generation),
   );
@@ -73,9 +76,10 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     reconcileWake: (wake: DetectionWake) => service.reconcileWake(wake),
     snapshot: () => detectionStore.getState().data,
     startProppedScan: (now: number, generation: number) => service.startProppedScan(now, generation),
-    completeProppedScan: (now: number, scanGeneration: number, generation: number) =>
-      service.completeProppedScan(now, scanGeneration, generation),
-    cancelProppedScan: (now: number, generation: number) => service.cancelProppedScan(now, generation),
+    completeProppedScan: (now: number, scanGeneration: number, generation: number, isCurrent?: () => boolean) =>
+      service.completeProppedScan(now, scanGeneration, generation, isCurrent),
+    cancelProppedScan: (now: number, generation: number, scanGeneration?: number) =>
+      service.cancelProppedScan(now, generation, scanGeneration),
   };
 }
 
