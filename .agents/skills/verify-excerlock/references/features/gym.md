@@ -80,7 +80,9 @@ open: /unlock/gym?ruleId=gym
 actions: location 40.1095,-88.2272 | tap I'm at the gym | expect Done | open /dev?advance=60000 | open /dev
 expect: Gym visits 1 · confirmed · background off | Gym progress 1 min
 relaunch-after-expect: true
-after-relaunch-expect: Gym visits 1 · confirmed · background off | Gym progress 1 min
+after-relaunch-expect: Spend 20 minutes at the gym | You're at the gym
+then-open: /dev
+then-expect: Gym visits 1 · confirmed · background off | Gym progress 1 min
 wait: 60
 ```
 
