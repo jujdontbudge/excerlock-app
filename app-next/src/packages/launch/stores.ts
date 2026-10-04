@@ -9,6 +9,7 @@ import { settingsStore } from '../preferences/settingsStore';
 import { onboardingStore } from '../onboarding/onboardingStore';
 import { rememberedSignInStore } from '../identity/rememberedSignIn';
 import { rememberedAdmissionStore } from '../subscription/rememberedAdmission';
+import { filmingModeStore } from '../activity/filmingModeStore';
 export const stores = [
   historyStore,
   profileStore,
@@ -21,6 +22,7 @@ export const stores = [
   onboardingStore,
   rememberedSignInStore,
   rememberedAdmissionStore,
+  filmingModeStore,
 ];
 export async function hydrateStores() {
   await Promise.all(stores.map((store) => store.persist.rehydrate()));

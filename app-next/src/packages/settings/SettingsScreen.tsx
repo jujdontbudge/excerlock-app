@@ -13,6 +13,7 @@ import { incidentCopy as i } from '../support/incidentCopy';
 import { openSupportEmail } from '../support/SupportDelivery';
 import { useRuntime } from '../ports/useRuntime';
 import { haptic } from '../ui/haptics';
+import { toggleFilmingMode, useFilmingModeActive } from '../activity/filmingModeStore';
 
 export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev?: () => void }) {
   const name = useProfileStore((s) => s.data.name),
@@ -20,6 +21,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     entitlement = useEntitlementStore((s) => s.data.entitlement),
     notificationsEnabled = useSettingsStore((s) => s.data.notificationsEnabled),
     notificationStatus = usePermissionsStore((s) => s.data.notifications),
+    filming = useFilmingModeActive(),
     taps = useRef(0);
   const notificationsOn = notificationsEnabled && notificationStatus === 'granted';
   const toggleNotifications = async (on: boolean) => {
@@ -28,6 +30,11 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     const status = notificationStatus === 'notDetermined' ? await runtime.notifications.request() : notificationStatus;
     if (status === 'granted') haptic('success');
     else void Linking.openSettings();
+  };
+  const toggleFilming = () => {
+    const on = toggleFilmingMode(Date.now());
+    haptic(on ? 'success' : 'tap');
+    notify(on ? c.filmingOn : c.filmingOff);
   };
   const version = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (
@@ -70,13 +77,19 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         onPress={() => {
           if (taps.current === 6) {
             taps.current = 0;
-            onDev?.();
+            if (onDev) onDev();
+            else toggleFilming();
           } else taps.current += 1;
         }}>
         <Label tone="secondary" style={{ textAlign: 'center' }}>
           {version}
         </Label>
       </PressableScale>
+      {filming ? (
+        <Label tone="secondary" style={{ textAlign: 'center' }}>
+          {c.filmingActive}
+        </Label>
+      ) : null}
     </ScreenShell>
   );
 }

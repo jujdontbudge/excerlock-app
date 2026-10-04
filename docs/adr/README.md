@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0064: Owner filming mode makes walking unlock and lock in about a second](0064-owner-filming-mode.md) — **accepted**.
 - [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **accepted**.
 - [0059: Paid admission renews in place before its five-minute lease ends](0059-admission-renews-in-place.md) — **accepted**.
 - [0058: Research and rating after the imported plan](0058-onboarding-research-rating.md) — **accepted**.

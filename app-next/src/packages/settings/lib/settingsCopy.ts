@@ -86,4 +86,7 @@ export const settingsCopy = {
   close: 'Close',
   done: 'Done',
   version: (version: string, build: string) => `ExcerLock ${version} (${build})`,
+  filmingOn: 'Filming mode on for 2 hours',
+  filmingOff: 'Filming mode off',
+  filmingActive: 'Filming mode on',
 } as const;

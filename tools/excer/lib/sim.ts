@@ -264,16 +264,18 @@ export async function tap(udid: string, label: string): Promise<string> {
   if (missing.length > 0) throw new Error(`No accessible element labelled "${label}"`);
   const matches = nodes.filter((node) => labels([node])[0]?.includes(normalise(label)));
   const exact = (node: AxNode) => Number(labels([node])[0] !== normalise(label));
-  const interactionRank = (node: AxNode) => node.type === 'Button' ? 0 : node.type === 'TextField' ? 1 : 2;
+  const interactionRank = (node: AxNode) => node.type === 'Button' || node.type === 'CheckBox' ? 0 : node.type === 'TextField' ? 1 : 2;
   matches.sort((a, b) => interactionRank(a) - interactionRank(b) || exact(a) - exact(b));
-  const frame = matches[0]?.frame;
+  const target = matches[0];
+  const frame = target?.frame;
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);
   const y = Math.round(frame.y + frame.height / 2);
   const screen = nodes.find((node) => node.type === 'Application')?.frame;
   if (screen && (x < screen.x || y < screen.y || x >= screen.x + screen.width || y >= screen.y + screen.height))
     throw new Error(`"${label}" is off screen; scroll it into view before tapping`);
-  must('idb', idbArgs(udid, ['ui', 'tap', '--udid', udid, String(x), String(y)]));
+  const press = target.type === 'CheckBox' ? ['--duration', '0.15'] : [];
+  must('idb', idbArgs(udid, ['ui', 'tap', '--udid', udid, String(x), String(y), ...press]));
   return `tapped "${label}" at ${x},${y}`;
 }
 

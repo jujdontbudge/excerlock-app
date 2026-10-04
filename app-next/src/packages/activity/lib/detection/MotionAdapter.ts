@@ -20,12 +20,15 @@ import {
   sameStrideGateParams,
   type StrideGateReport,
 } from './strideGateConfig';
+import { FilmingSteps, type FilmingVerdict } from './FilmingSteps';
+import { WALK_QUALIFY_MS } from '../../walkingMachine';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
 export const MOTION_CLOCK_SKEW_MS = 250;
 export const MIN_CADENCE_STEP_RATE_PER_MINUTE = 40;
 export const CADENCE_STEP_RATE_WINDOW_MS = 10_000;
+export const FILMING_HEARTBEAT_MS = 1_000;
 
 export type MotionEvidence = {
   qualifying: boolean | 'unknown';
@@ -48,6 +51,9 @@ export class MotionAdapter {
   private strideVerdict: StrideVerdict = 'unknown';
   private strideStopped = false;
   private strideUnsubscribe: Unsubscribe | null = null;
+  private filmingSteps: FilmingSteps | null = null;
+  private filmingVerdict: FilmingVerdict = 'unknown';
+  private filmingPublishedAt = -Infinity;
   private started = false;
   private unsubscribes: Unsubscribe[] = [];
   private listeners = new Set<(evidence: MotionEvidence) => void>();
@@ -57,6 +63,7 @@ export class MotionAdapter {
     private readonly now: () => number = Date.now,
     private readonly strideSource: StrideMotionSource | null = null,
     gate: StrideGateReport = SHIPPED_STRIDE_GATE_REPORT,
+    private readonly filming: (at: number) => boolean = () => false,
   ) {
     this.gate = gate;
     this.analyzer = gate.killSwitch.applied ? null : new StrideRhythmAnalyzer(gate.effective);
@@ -92,6 +99,7 @@ export class MotionAdapter {
     this.cadenceSteps = [];
     this.started = true;
     this.resetStride();
+    this.resetFilming();
     this.attachStride();
     this.unsubscribes = [
       this.provider.on('activity', (sample) => {
@@ -110,6 +118,7 @@ export class MotionAdapter {
     this.strideUnsubscribe = null;
     this.started = false;
     this.resetStride();
+    this.resetFilming();
     await runCleanups(
       [
         ...(strideUnsubscribe ? [() => strideUnsubscribe()] : []),
@@ -151,6 +160,19 @@ export class MotionAdapter {
     const activityAt = activityFresh ? this.activity!.receivedAt : null;
     const cadenceAt = cadenceFresh ? this.cadence!.asOf : null;
     const strideAt = stride.verdict === 'unknown' ? null : stride.at;
+    const filming = this.filmingAt(at);
+    if (filming !== null)
+      return {
+        qualifying: filming.verdict === 'walking',
+        observedAt: Math.max(activityAt ?? -Infinity, cadenceAt ?? -Infinity, strideAt ?? -Infinity, filming.at),
+        activityAt,
+        cadenceAt,
+        cadencePerMinute,
+        stride: stride.verdict,
+        strideAt,
+        verifiedMs: filming.verdict === 'walking' ? WALK_QUALIFY_MS : 0,
+        stopped: filming.verdict === 'stopped',
+      };
     return {
       qualifying: !supported ? 'unknown' : activityQualifies || cadenceQualifies || strideWalking,
       observedAt: supported ? Math.max(activityAt ?? -Infinity, cadenceAt ?? -Infinity, strideAt ?? -Infinity) : at,
@@ -250,12 +272,45 @@ export class MotionAdapter {
   private acceptStride(sample: StrideMotionSample): void {
     if (this.analyzer === null) return;
     const assessment = this.analyzer.push(sample);
-    if (assessment === null) return;
+    const filmingChanged = this.acceptFilming(sample);
+    if (assessment === null) {
+      if (filmingChanged) this.publish(sample.t);
+      return;
+    }
     const stopped = this.confirmedStop(assessment);
-    if (assessment.verdict === this.strideVerdict && stopped === this.strideStopped) return;
+    if (assessment.verdict === this.strideVerdict && stopped === this.strideStopped && !filmingChanged) return;
     this.strideVerdict = assessment.verdict;
     this.strideStopped = stopped;
     this.publish(sample.t);
+  }
+
+  private acceptFilming(sample: StrideMotionSample): boolean {
+    if (!this.filming(sample.t)) {
+      if (this.filmingSteps === null) return false;
+      this.resetFilming();
+      return true;
+    }
+    this.filmingSteps ??= new FilmingSteps();
+    const verdict = this.filmingSteps.push(sample);
+    const heartbeat = verdict !== 'unknown' && sample.t - this.filmingPublishedAt >= FILMING_HEARTBEAT_MS;
+    if (verdict === this.filmingVerdict && !heartbeat) return false;
+    this.filmingVerdict = verdict;
+    this.filmingPublishedAt = sample.t;
+    return true;
+  }
+
+  private filmingAt(at: number): { verdict: Exclude<FilmingVerdict, 'unknown'>; at: number } | null {
+    if (this.filmingSteps === null || !this.filming(at)) return null;
+    const verdict = this.filmingSteps.verdictAt(at);
+    const sampledAt = this.filmingSteps.sampledAt();
+    if (verdict === 'unknown' || sampledAt === null) return null;
+    return { verdict, at: Math.min(at, sampledAt) };
+  }
+
+  private resetFilming(): void {
+    this.filmingSteps = null;
+    this.filmingVerdict = 'unknown';
+    this.filmingPublishedAt = -Infinity;
   }
 
   private strideAssessment(at: number): StrideAssessment {

@@ -9,6 +9,7 @@ import { devCopy as c } from './devCopy';
 import { LivingIcon } from '../../ui/LivingIcon';
 import { useJourney } from '../../journey/index';
 import { recentHaptics, subscribeHaptics } from '../../ui/haptics';
+import { toggleFilmingMode, useFilmingModeActive } from '../../activity/filmingModeStore';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -16,6 +17,7 @@ export function DevMenu() {
     view = useDevSnapshot(),
     journey = useJourney(runtime),
     haptics = useSyncExternalStore(subscribeHaptics, recentHaptics, recentHaptics),
+    filming = useFilmingModeActive(),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
@@ -37,6 +39,13 @@ export function DevMenu() {
         ) : (
           <Label>{c.emptyHaptics}</Label>
         )}
+      </SettingsGroup>
+      <SettingsGroup>
+        <SettingsRow
+          title={c.filming}
+          toggle={filming}
+          onToggle={() => toggleFilmingMode(Date.now())}
+        />
       </SettingsGroup>
       <DevControls />
       <SettingsGroup>
