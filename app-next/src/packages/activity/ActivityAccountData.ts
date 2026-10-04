@@ -6,7 +6,7 @@ import { suspendGymVisitLogWritesAndReset } from './AsyncStorageGymVisitLog';
 import { detectionStore, persistDetectionState, type DetectionData } from './detectionStore';
 import { createWalkingState } from './walkingMachine';
 import { createProppedState } from './proppedMachine';
-import { createGymState, reduceGym } from './gymMachine';
+import { createGymState } from './gymMachine';
 
 export type ActivityAccountData = {
   detection: DetectionData;
@@ -64,7 +64,7 @@ export function createActivityAccountData(deps: ActivityAccountDataDeps) {
         observedAt: now,
         walking: createWalkingState(now),
         propped: createProppedState(now),
-        gym: reduceGym(snapshot.detection.gym, { kind: 'coverageLost' }, now),
+        gym: snapshot.detection.gym,
       });
       await Promise.all([
         persistDetectionState(),

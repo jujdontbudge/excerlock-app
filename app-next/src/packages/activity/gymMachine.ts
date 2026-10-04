@@ -42,7 +42,10 @@ export function reduceGym(previous: GymDetectionState, event: GymEvent, now: num
     const ids = event.regionId
       ? [event.regionId]
       : new Set([...Object.keys(previous.regions), ...records.map((record) => record.regionId)]);
-    for (const id of ids) coverageLostAt[id] = current;
+    for (const id of ids) {
+      if (!event.regionId && previous.regions[id]?.confirmedSince !== null && previous.regions[id]?.confirmedSince !== undefined) continue;
+      coverageLostAt[id] = current;
+    }
   }
   const derived = derive(records, current, coverageLostAt, previous.intervals);
   return { version: 1, watermark: current, records, coverageLostAt, ...derived };

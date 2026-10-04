@@ -103,11 +103,11 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           onToggle={async (v) => {
             if (!v) {
               runtime.gym.disableAutoDetect();
-              useSettingsStore.getState().patch({ gymAutoDetect: false });
+              useSettingsStore.getState().patch({ gymAutoDetect: false, gymBackgroundAsked: true, gymAutoDetectOptOut: true });
               return;
             }
             const enabled = await runtime.gym.enableAutoDetect().catch(() => false);
-            useSettingsStore.getState().patch({ gymAutoDetect: enabled });
+            useSettingsStore.getState().patch({ gymAutoDetect: enabled, gymBackgroundAsked: true, gymAutoDetectOptOut: !enabled, locationAlwaysAsked: true });
             if (!enabled) notify(c.autoDenied);
           }}
         />

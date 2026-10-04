@@ -1,3 +1,4 @@
+import { GymBackgroundSetup } from '../gyms/GymBackgroundSetup';
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { HomeLockStatus } from './HomeLockStatus';
 import { HomeConditionCard } from './HomeConditionCard';
@@ -110,7 +111,7 @@ export function HomeScreen() {
   });
   return (
     <ScreenShell dock
-      overlay={<ScreenTimePickerHost />}
+      overlay={<><ScreenTimePickerHost /><GymBackgroundSetup /></>}
       onLayout={markHomeLayout}
       orangeBackground
       safeBottom={false}

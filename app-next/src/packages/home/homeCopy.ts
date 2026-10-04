@@ -4,7 +4,7 @@ export const homeCopy = {
   scheduleRecoveryAction: 'Review conditions',
   treadmillEntry: "I'm using a treadmill",
   gymEntry: "I'm at the gym",
-  gymReady: "Your apps open while you're at the gym and lock again when you leave.",
+  gymReady: "Your apps unlock soon after you arrive and lock again when you leave.",
   walkingEntry: 'Check walking',
   walkDetected: 'Detected',
   walkNotDetected: 'Not detected — hold your phone and walk',
