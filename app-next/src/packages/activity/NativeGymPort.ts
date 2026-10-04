@@ -22,6 +22,7 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
   const presence = () => places().some(p => location.isInsideRegion(p.id) === true) ? 'inside' as const : 'outside' as const;
   return {
     ...nativePlaceSearch,
+    lastKnownLocation: () => { const sample = location.getLastLocation(); return sample ? { latitude: sample.lat, longitude: sample.lon } : null; },
     searchPlaces: async query => {
       const near = location.getLastLocation();
       const suggestions = await nativePlaceSearch.suggest(query, near ? { latitude: near.lat, longitude: near.lon } : undefined);

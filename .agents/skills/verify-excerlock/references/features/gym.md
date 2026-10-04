@@ -15,6 +15,15 @@ depends: [conditions, home]
 Home → "I'm at the gym". Settings → Privacy & permissions → saved gyms. Setup's gym step.
 
 ## Driving it with excer
+
+```proof
+name: picker-phone-location
+scenario: trial-active
+open: /gym-picker
+expect: Gym location map, 40.10950, -88.22720 | Save gym
+wait: 20
+```
+
 Gym presence uses the simulator's real location on iOS. To stand inside the demo gym, run `xcrun simctl location <udid> set 41.884,-87.652` (West Loop Fitness, 100 m radius).
 
 ```proof

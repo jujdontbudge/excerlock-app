@@ -7,7 +7,7 @@ import { gymPickerCopy as c } from './lib/gymPickerCopy';
 import { tokens as t } from '../ui/tokens';
 import { notify } from '../ui/Notice';
 import { haptic } from '../ui/haptics';
-export const defaultCentre: Coordinates = { latitude: 41.884, longitude: -87.652 };
+export const LOCATION_SEARCH_TIMEOUT_MS = 10_000;
 export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPlace) {
   const [stage, setStage] = useState<'find' | 'place'>('place');
   const [query, setQuery] = useState(''),
@@ -15,7 +15,9 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
   const [nearby, setNearby] = useState<PlaceCandidate[]>([]),
     [location, setLocation] = useState<Coordinates | null>(null);
   const [candidate, setCandidate] = useState<PlaceCandidate | null>(existing ?? null);
-  const [pin, setPin] = useState<Coordinates>(existing ?? defaultCentre);
+  const [pin, setPin] = useState<Coordinates>(existing ?? { latitude: 0, longitude: 0 });
+  const [hasPin, setHasPin] = useState(!!existing);
+  const pinMoved = useRef(!!existing);
   const [name, setName] = useState(existing?.name ?? c.newName),
     [address, setAddress] = useState(existing?.address ?? '');
   const [radius, setRadius] = useState(clampRadius(existing?.radiusMeters ?? 100));
@@ -33,27 +35,34 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
   }, []);
   useEffect(() => {
     let active = true;
-    void port
-      .currentLocation()
-      .then(async (coord) => {
-        if (!active) return;
-        setLocation(coord);
-        setLocating(false);
-        if (coord) {
-          try {
-            const rows = await port.nearbyGyms(coord);
-            if (active) setNearby(rows);
-          } catch {
-            return;
-          }
-        }
-      })
-      .catch(() => {
-        if (active) setLocating(false);
-      });
-    return () => {
-      active = false;
+    const accept = async (coord: Coordinates | null) => {
+      if (!active) return;
+      setLocation(coord);
+      setLocating(false);
+      if (!coord) return;
+      if (!pinMoved.current) {
+        setPin(coord);
+        setHasPin(true);
+      }
+      try {
+        const rows = await port.nearbyGyms(coord);
+        if (active) setNearby(rows);
+      } catch {
+        return;
+      }
     };
+    const fallback = port.lastKnownLocation?.() ?? null;
+    if (fallback) void accept(fallback);
+    const timer = setTimeout(() => {
+      if (!active) return;
+      setLocating(false);
+      if (!pinMoved.current && !fallback) setStage('find');
+    }, LOCATION_SEARCH_TIMEOUT_MS);
+    void port.currentLocation().then((coord) => {
+      if (coord || fallback) clearTimeout(timer);
+      return coord || fallback ? accept(coord ?? fallback) : undefined;
+    }).catch(() => { if (fallback) { clearTimeout(timer); void accept(fallback); } });
+    return () => { active = false; clearTimeout(timer); };
   }, [port]);
   useEffect(() => {
     let active = true;
@@ -77,7 +86,7 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     };
   }, [query, location, port, stage]);
   useEffect(() => {
-    if (stage !== 'place') return;
+    if (stage !== 'place' || !hasPin) return;
     let active = true;
     if (candidate && distanceMetres(pin, candidate) < 5) return;
     const timer = setTimeout(() => {
@@ -98,9 +107,11 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       active = false;
       clearTimeout(timer);
     };
-  }, [pin, candidate, stage, port]);
+  }, [pin, candidate, stage, port, hasPin]);
   const choose = (place: PlaceCandidate) => {
     generation.current++;
+    pinMoved.current = true;
+    setHasPin(true);
     setCandidate(place);
     setPin({ latitude: place.latitude, longitude: place.longitude });
     setRadius(clampRadius(port.listPlaces().find((p) => p.id === place.id)?.radiusMeters ?? 100));
@@ -120,8 +131,10 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       if (alive.current) setBusy(false);
     }
   };
-  const drop = (coordinate = location ?? defaultCentre) => {
+  const drop = (coordinate = location ?? pin) => {
     generation.current++;
+    pinMoved.current = true;
+    setHasPin(true);
     setCandidate(null);
     setPin(coordinate);
     setName(c.newName);
@@ -138,6 +151,7 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
       if (!alive.current) return;
       setLocation(coordinate);
       if (coordinate) {
+        if (!pinMoved.current) { setPin(coordinate); setHasPin(true); }
         const rows = await port.nearbyGyms(coordinate);
         if (alive.current) setNearby(rows);
       } else notify(c.locationUnavailable);
@@ -148,7 +162,7 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     }
   };
   const save = async () => {
-    if (busy || !name.trim()) return;
+    if (busy || !name.trim() || !hasPin) return;
     if (limit) return notify(c.limit);
     setBusy(true);
     try {
@@ -186,7 +200,10 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
     locating,
     candidate,
     pin,
+    hasPin,
     setPin: (value: Coordinates) => {
+      pinMoved.current = true;
+      setHasPin(true);
       setPin(value);
       setAddress(candidate && distanceMetres(value, candidate) < 5 ? candidate.address : '');
     },

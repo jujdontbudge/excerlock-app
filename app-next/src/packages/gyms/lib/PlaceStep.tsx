@@ -12,6 +12,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
       <Heading title={c.pickTitle} />
       <PickerMap
         coordinate={p.pin}
+        hasPin={p.hasPin}
         radius={p.radius}
         name={p.name}
         height={Math.min(420, Math.max(340, height * 0.44))}
@@ -43,7 +44,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
         }}>
         <Label variant="label">{c.address}</Label>
         <Label variant="support" tone="secondary">
-          {p.address || `${p.pin.latitude.toFixed(5)}, ${p.pin.longitude.toFixed(5)}`}
+          {p.hasPin ? p.address || `${p.pin.latitude.toFixed(5)}, ${p.pin.longitude.toFixed(5)}` : c.findingLocation}
         </Label>
         <View
           style={{

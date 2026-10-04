@@ -5,7 +5,6 @@ import { Icon } from '../../ui/Icon';
 import { tokens as t } from '../../ui/tokens';
 import { Coordinates } from '../../ports/PlaceSearch';
 import { SavedPlace } from '../../model/models';
-import { defaultCentre } from '../../gyms/usePicker';
 import { regionForRadius } from '../../gyms/geometry';
 import { unlockCopy as c } from './unlockCopy';
 export function GymUnlockMap({
@@ -30,7 +29,7 @@ export function GymUnlockMap({
         ref={map}
         accessibilityLabel="Map of your location"
         style={StyleSheet.absoluteFill}
-        initialRegion={region(location ?? gym ?? defaultCentre)}
+        initialRegion={location || gym ? region((location ?? gym)!) : { latitude: 0, longitude: 0, latitudeDelta: 120, longitudeDelta: 120 }}
         showsUserLocation
         showsMyLocationButton={false}
         mapPadding={{ top: 0, right: 0, bottom: t.space.lg, left: t.space.sm }}
