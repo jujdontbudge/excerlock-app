@@ -165,7 +165,13 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     let deletionSuspended = false;
     let host!: EnforcementHost;
     const rawScreenTime = createNativeScreenTimePort({
-      applyLock: async () => ({ applied: (await host.reconcile()) === 'applied' }),
+      applyLock: async (decision) => {
+        const before = source.read();
+        const result = await host.reconcile();
+        const after = source.read();
+        const matches = decision.state === 'unlockedAtGym' ? after.state === 'conditional' && after.relief === 'unlockedAtGym' : decision.state === 'unlockedMet' ? after.state === 'open' && after.openReason === 'earned' : true;
+        return { applied: result === 'applied' && before.revision === after.revision && matches };
+      },
       registerWatchdog: async () => {
         throw new Error('Watchdog registration is owned by the runtime policy host');
       },
