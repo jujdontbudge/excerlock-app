@@ -1,8 +1,9 @@
-import { GymPort } from '../ports/GymPort';
+import { GymPort, GymLocationFix } from '../ports/GymPort';
 import { Coordinates } from '../ports/PlaceSearch';
 import { nativePlaceSearch, requestNativeLocation } from './NativePlaceSearch';
 import { distanceMetres } from './geometry';
-export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' | 'outside') => void): GymPort {
+export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' | 'outside') => void, readFix?: () => Promise<GymLocationFix | null>): GymPort {
+  let fix: GymLocationFix | null = null;
   let last: Coordinates | null = null,
     presence: 'inside' | 'outside' = 'outside';
   let timer: ReturnType<typeof setInterval> | undefined,
@@ -23,7 +24,8 @@ export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' |
     }
   };
   const sample = async (request = false) => {
-    const point = await nativePlaceSearch.currentLocation(request);
+    fix = readFix ? await readFix() : await base.currentFix(request);
+    const point = fix;
     publish(point);
     return point;
   };
@@ -52,6 +54,8 @@ export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' |
     ...nativePlaceSearch,
     requestLocation: requestNativeLocation,
     currentLocation: sample,
+    currentFix: async () => { await sample(); return fix; },
+    lastKnownLocation: () => last,
     distanceTo: (id) => {
       const place = base.listPlaces().find((p) => p.id === id);
       return last && place ? distanceMetres(last, place) : null;

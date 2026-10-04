@@ -15,8 +15,8 @@ export class GymRegionAdapter {
       radiusMeters: place.radiusMeters,
     }));
     assertGymRegionsAllowed(regions);
-    await this.location.startMonitoringRegions(regions);
     await resumeGymVisitLogWrites(regions.map(({ id }) => id));
+    await this.location.startMonitoringRegions(regions);
   }
   async deleteSavedGym(regionId: string): Promise<void> {
     await this.location.stopMonitoringRegions([regionId]);

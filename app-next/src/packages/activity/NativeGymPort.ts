@@ -22,6 +22,8 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
   const presence = () => places().some(p => location.isInsideRegion(p.id) === true) ? 'inside' as const : 'outside' as const;
   return {
     ...nativePlaceSearch,
+    currentFix: async () => { const sample = await location.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }; },
+    currentLocation: async () => { try { const sample = await location.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon }; } catch { return null; } },
     lastKnownLocation: () => { const sample = location.getLastLocation(); return sample ? { latitude: sample.lat, longitude: sample.lon } : null; },
     searchPlaces: async query => {
       const near = location.getLastLocation();
@@ -45,9 +47,9 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
       catch { persist(places(), false); return false; }
     }),
     disableAutoDetect: () => serialize(async () => { await location.stopMonitoringRegions(); persist(places(), false); }),
-    checkIn: async id => {
+    checkIn: async (id, confirmation) => {
       const place = places().find(p => p.id === id); if (!place) throw new Error('Saved gym not found');
-      const inside = await location.checkIn({ id, latitude: place.latitude, longitude: place.longitude, radiusMeters: place.radiusMeters });
+      const inside = await location.checkIn({ id, latitude: place.latitude, longitude: place.longitude, radiusMeters: place.radiusMeters }, confirmation);
       if (!inside) throw new Error('Outside saved gym');
     },
     observePresence: callback => { callback(presence()); return location.on('region', () => callback(presence())); },

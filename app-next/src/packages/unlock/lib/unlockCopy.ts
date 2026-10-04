@@ -16,6 +16,12 @@ export const unlockCopy = {
     detected: 'Screen Time unlocked!',
   },
   gym: {
+
+    betterFix: 'Getting a better fix…',
+    uncertain: "Location isn't precise enough yet. Try again near the gym.",
+    outsideDistance: (distance: string, name: string) => `You're ${distance} from ${name}`,
+    checkedInLocked: "You're checked in. Your other Conditions still need to be met.",
+    foregroundOnly: 'Check in here to unlock. Arrival with ExcerLock closed needs Always location.',
     distance: (distance: string, name: string) => `${distance} to ${name}`,
     inside: 'Location detected at the gym',
     insideBody: (name: string) => `You're at ${name}.`,

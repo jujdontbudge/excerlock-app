@@ -1,7 +1,9 @@
 import { Permissions } from '../model/types';
 import { Unsubscribe, SavedPlace } from '../model/models';
 import { PlaceSearch, Coordinates } from './PlaceSearch';
+export type GymLocationFix = Coordinates & { accuracy: number; atMs: number };
 export interface GymPort extends PlaceSearch {
+  currentFix(request?: boolean): Promise<GymLocationFix | null>;
   lastKnownLocation?(): Coordinates | null;
   requestLocation(): Promise<Permissions['location']>;
   requestBackgroundLocation(): Promise<Permissions['location']>;

@@ -1,3 +1,4 @@
+import { createNativeLocationProvider } from '../../activity/NativeGymLocation';
 import * as StoreReview from 'expo-store-review';
 import { createStoreReviewPort } from './createStoreReviewPort';
 import type { FakeRuntimeInstance } from '../../dev-harness/FakeRuntime';
@@ -92,7 +93,10 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
       const { foregroundGym } = require('../../gyms/ForegroundGym') as typeof import('../../gyms/ForegroundGym');
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { supportDelivery } = require('../../support/SupportDelivery') as typeof import('../../support/SupportDelivery');
-      runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence);
+      const gymLocation = createNativeLocationProvider();
+      runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence, async () => { const sample = await gymLocation.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }; });
+      const dispose = runtime.dispose;
+      runtime.dispose = () => { gymLocation.dispose(); dispose(); };
       runtime.support = supportDelivery(runtime.support);
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const Constants = (require('expo-constants') as typeof import('expo-constants')).default;

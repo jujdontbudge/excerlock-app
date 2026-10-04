@@ -22,6 +22,7 @@ export interface LocationSample {
 }
 
 export interface RegionTransition {
+  readonly manualEpoch?: number;
   readonly type: "enter" | "exit";
   readonly regionId: string;
   readonly atMs: number;
