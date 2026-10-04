@@ -1,4 +1,4 @@
-import { gymUiucOutside, gymUiucManual } from './gym-uiuc';
+import { gymUiucOutside, gymUiucManual, gymUiucUncertain, gymUiucProgress, gymUiucBackground } from './gym-uiuc';
 import { permissionJourney, permissionConditionEntry, permissionGymSetup } from './permission-journey';
 import { scenario0 } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
@@ -44,6 +44,9 @@ import { scenario26 } from './trial-lapses-in-session';
 export const scenarios = [
   gymUiucOutside,
   gymUiucManual,
+  gymUiucUncertain,
+  gymUiucProgress,
+  gymUiucBackground,
   permissionJourney,
   permissionConditionEntry,
   permissionGymSetup,

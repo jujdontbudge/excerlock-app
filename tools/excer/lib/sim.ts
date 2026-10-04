@@ -353,3 +353,10 @@ function appReady(udid: string): boolean {
   const text = labels(tree(udid)).join(' ');
   return text.length > 'ExcerLock'.length && !/Starting ExcerLock|Bundling|Development servers|Fetch development servers|Loading from/i.test(text);
 }
+
+export function setLocation(udid: string, point: string): string {
+  const parts = point.split(',').map(Number);
+  if (parts.length !== 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1]) || Math.abs(parts[0]!) > 90 || Math.abs(parts[1]!) > 180) throw new Error('Expected location latitude,longitude');
+  must('xcrun', simctlArgs(udid, ['location', udid, 'set', point]));
+  return 'set simulator location';
+}

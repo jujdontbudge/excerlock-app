@@ -33,6 +33,8 @@ export function DevMenu() {
       <Heading title={c.title} support={c.support} />
       <Label>{view.scenarioId}</Label>
       <Label>Journey {journey.phase} · paid {journey.paid ? 'yes' : 'no'} · admitted {journey.canEnterApp ? 'yes' : 'no'}</Label>
+      <Label>{`Gym visits ${view.gymVisits?.visits ?? 0} · ${view.gymVisits?.confirmed ? 'confirmed' : 'unconfirmed'} · background ${view.gymVisits?.autoDetect ? 'on' : 'off'}`}</Label>
+      <Label>{`Gym progress ${view.gymVisits?.progressMinutes ?? 0} min`}</Label>
       <SettingsGroup title={c.haptics}>
         {haptics.length ? (
           haptics.map((entry, i) => <Label key={`${entry.at}-${i}`}>{c.hapticEntry(entry.kind)}</Label>)
