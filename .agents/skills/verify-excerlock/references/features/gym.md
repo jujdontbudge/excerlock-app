@@ -37,6 +37,8 @@ wait: 20
 
 Gym proofs use the owned simulator's real Expo Location fix at UIUC. Their location actions keep each proof independent. The map proof's frame must show the whole circle, its pin, the user point and the orange dashed line. Distances use Settings units (the UIUC scenarios use miles).
 
+Inspect the picker frame over UIUC as well as its address label. An address can update before the native map is ready to accept its camera fit; a world-view frame is a failed picker proof even when the address assertion passes.
+
 ```proof
 name: manual-inside-auto-off
 scenario: gym-uiuc-manual
