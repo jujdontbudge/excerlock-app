@@ -2,7 +2,7 @@
 id: gym
 title: Gym conditions, picker and check-in
 routes: [unlock/gym, gym-picker, settings/gyms]
-scenarios: [gym-arrival-user, gym-time-user, unlock-gym-inside, unlock-gym-outside, unlock-gym-lost, unlock-gym-reduced]
+scenarios: [gym-uiuc-outside, gym-uiuc-manual, gym-arrival-user, gym-time-user, unlock-gym-inside, unlock-gym-outside, unlock-gym-lost, unlock-gym-reduced]
 events: [gym_unlock_tapped, gym_unlock_checked, gym_unlock_confirmed, gym_unlock_lost]
 depends: [conditions, home]
 ---
@@ -17,10 +17,19 @@ Home → "I'm at the gym". Settings → Privacy & permissions → saved gyms. Se
 ## Driving it with excer
 
 ```proof
+name: unlock-map-circle-line
+scenario: gym-uiuc-outside
+open: /unlock/gym?ruleId=gym
+expect: 350 m to UIUC gym | Center on me | Center on gym
+wait: 20
+```
+
+
+```proof
 name: picker-phone-location
 scenario: trial-active
 open: /gym-picker
-expect: Gym location map, 40.10950, -88.22720 | Save gym
+expect: Urbana IL 61801 | Save gym
 wait: 20
 ```
 
