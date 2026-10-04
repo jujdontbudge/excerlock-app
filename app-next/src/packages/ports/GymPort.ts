@@ -2,6 +2,7 @@ import { Permissions } from '../model/types';
 import { Unsubscribe, SavedPlace } from '../model/models';
 import { PlaceSearch, Coordinates } from './PlaceSearch';
 export interface GymPort extends PlaceSearch {
+  lastKnownLocation?(): Coordinates | null;
   requestLocation(): Promise<Permissions['location']>;
   requestBackgroundLocation(): Promise<Permissions['location']>;
   searchPlaces(query: string): Promise<SavedPlace[]>;

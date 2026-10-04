@@ -50,7 +50,7 @@ export function GymPickerScreen({
         p.stage === 'place' ? (
           <PrimaryButton
             label={c.save}
-            disabled={!p.name.trim()}
+            disabled={!p.name.trim() || !p.hasPin}
             loading={p.busy}
             onPress={() => void p.save()}
           />

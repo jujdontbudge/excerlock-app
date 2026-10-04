@@ -4,7 +4,6 @@ import { useRuntime } from '../../ports/useRuntime';
 import { Coordinates } from '../../ports/PlaceSearch';
 import { settingsStore as useSettingsStore } from '../../preferences/settingsStore';
 import { distanceMetres } from '../../gyms/geometry';
-import { defaultCentre } from '../../gyms/usePicker';
 import { PRESENCE_CONFIRM_MS } from '../../activity/presence';
 import { ruleDaysStore as useRuleDaysStore } from '../../conditions/ruleDaysStore';
 import { useClock } from '../../lock/selectors';
@@ -15,7 +14,7 @@ export { PRESENCE_CONFIRM_MS };
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(),
     places = useSettingsStore((s) => s.data.gymPlaces);
-  const [location, setLocation] = useState<Coordinates | null>(preview ? (places.at(-1) ?? defaultCentre) : null);
+  const [location, setLocation] = useState<Coordinates | null>(preview ? (places.at(-1) ?? null) : null);
   const [presence, setPresence] = useState(false),
     [denied, setDenied] = useState(false);
   const [checking, setChecking] = useState(false),

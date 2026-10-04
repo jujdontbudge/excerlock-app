@@ -1,4 +1,5 @@
 export const gymPickerCopy = {
+  findingLocation: 'Finding your location',
   pickTitle: 'Pick your gym',
   title: 'Find your gym',
   support: 'Search any place or address worldwide.',

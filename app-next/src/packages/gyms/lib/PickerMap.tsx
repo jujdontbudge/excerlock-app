@@ -14,6 +14,7 @@ const Ring = Animated.createAnimatedComponent(Circle);
 const Mask = Animated.createAnimatedComponent(Path);
 export function PickerMap({
   coordinate,
+  hasPin,
   radius,
   name,
   height,
@@ -21,6 +22,7 @@ export function PickerMap({
   onSettle,
 }: {
   coordinate: Coordinates;
+  hasPin: boolean;
   radius: number;
   name: string;
   height: number;
@@ -29,10 +31,11 @@ export function PickerMap({
 }) {
   const map = useRef<MapView>(null),
     moving = useRef(false),
+    panned = useRef(false),
     m = useMotion();
   const [size, setSize] = useState({ width: 0, height }),
     [hint, setHint] = useState(true);
-  const [initial] = useState(() => regionForRadius(coordinate, radius, { width: 360, height }));
+  const [initial] = useState(() => hasPin ? regionForRadius(coordinate, radius, { width: 360, height }) : { latitude: 0, longitude: 0, latitudeDelta: 120, longitudeDelta: 120 });
   const region = useSharedValue(initial),
     radiusValue = useSharedValue(radius),
     width = useSharedValue(0),
@@ -43,6 +46,12 @@ export function PickerMap({
     latestRadius.current = radius;
     radiusValue.set(m.spring(radius, 'control'));
   }, [radius, radiusValue, m]);
+  useEffect(() => {
+    if (!hasPin) return;
+    const fitted = regionForRadius(coordinate, latestRadius.current, size);
+    region.set(fitted);
+    map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
+  }, [coordinate, hasPin, m, region, size]);
   const circle = useAnimatedProps(() => ({
     r: Math.min(
       Math.hypot(width.get(), mapHeight.get()) * 2,
@@ -83,14 +92,14 @@ export function PickerMap({
         setSize(next);
         width.set(next.width);
         mapHeight.set(next.height);
-        const fitted = regionForRadius(coordinate, latestRadius.current, next);
+        const fitted = hasPin ? regionForRadius(coordinate, latestRadius.current, next) : initial;
         region.set(fitted);
         map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
       }}>
       <MapView
         ref={map}
         testID="gym-map"
-        accessibilityLabel={c.map}
+        accessibilityLabel={hasPin ? `${c.map}, ${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}` : c.map}
         style={StyleSheet.absoluteFill}
         initialRegion={initial}
         showsUserLocation={showLocation}
@@ -99,17 +108,18 @@ export function PickerMap({
         rotateEnabled={false}
         pitchEnabled={false}
         onRegionChange={change}
-        onPanDrag={() => setHint(false)}
+        onPanDrag={() => { panned.current = true; setHint(false); }}
         onRegionChangeComplete={(next) => {
           region.set(next);
-          onSettle({ latitude: next.latitude, longitude: next.longitude });
+          if (panned.current) onSettle({ latitude: next.latitude, longitude: next.longitude });
+          panned.current = false;
           if (moving.current) haptic('tap');
           moving.current = false;
           lift.set(m.spring(0, 'control'));
         }}
       />
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <Svg width="100%" height="100%">
+        {hasPin ? <Svg width="100%" height="100%">
           <Mask animatedProps={mask} fill={t.map.ring.dim} fillRule="evenodd" />
           <Ring
             cx={size.width / 2}
@@ -119,8 +129,8 @@ export function PickerMap({
             strokeWidth={t.map.ring.stroke}
             fill={t.map.ring.fill}
           />
-        </Svg>
-        <View
+        </Svg> : null}
+        {hasPin ? <View
           style={{
             position: 'absolute',
             top: '50%',
@@ -159,6 +169,7 @@ export function PickerMap({
             </Label>
           </View>
         </View>
+        : null}
         {hint ? (
           <View
             style={{
