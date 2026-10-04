@@ -44,7 +44,7 @@ export type Scenario = {
   history: HistoryDay[];
   steps: { today: number; autoIncrementPerSecond?: number };
   walking?: { script: ('walking' | 'still' | 'unknown')[]; stepMs: number };
-  gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
+  gym?: { places: SavedPlace[]; presence: 'inside' | 'outside'; accuracy?: number; autoDetect?: boolean; backgroundAsked?: boolean; optOut?: boolean };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;

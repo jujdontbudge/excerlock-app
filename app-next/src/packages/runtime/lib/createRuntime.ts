@@ -20,7 +20,9 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
     const { FakeRuntime } = require('../../dev-harness/FakeRuntime') as typeof import('../../dev-harness/FakeRuntime');
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
     const { Platform } = require('react-native') as typeof import('react-native');
+    const gymLocation = Platform.OS === 'ios' ? createNativeLocationProvider() : null;
     const runtime = FakeRuntime({
+      gymFixSource: gymLocation ? async () => { const sample = await gymLocation.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }; } : undefined,
       nativeReview: createStoreReviewPort(StoreReview),
       createAccountData: () => {
         const emptyActivity = (): ActivityAccountData => ({
@@ -93,10 +95,9 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
       const { foregroundGym } = require('../../gyms/ForegroundGym') as typeof import('../../gyms/ForegroundGym');
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const { supportDelivery } = require('../../support/SupportDelivery') as typeof import('../../support/SupportDelivery');
-      const gymLocation = createNativeLocationProvider();
-      runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence, async () => { const sample = await gymLocation.locateForGymSetup(); return { latitude: sample.lat, longitude: sample.lon, accuracy: sample.accuracy, atMs: sample.atMs }; });
+      runtime.gym = foregroundGym(runtime.gym);
       const dispose = runtime.dispose;
-      runtime.dispose = () => { gymLocation.dispose(); dispose(); };
+      runtime.dispose = () => { gymLocation?.dispose(); dispose(); };
       runtime.support = supportDelivery(runtime.support);
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const Constants = (require('expo-constants') as typeof import('expo-constants')).default;

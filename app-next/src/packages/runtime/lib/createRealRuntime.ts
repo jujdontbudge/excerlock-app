@@ -752,6 +752,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     };
     try {
       stops.push(
+        detection.location.on('region', (transition) => {
+          if (!settingsStore.getState().data.gymAutoDetect) return;
+          if (transition.type === 'enter') client.analytics.track('gym_presence_auto_started');
+          else client.analytics.track('gym_presence_ended');
+        }),
         detection.service.observeCommitted(() => {
           committedWalking = walking.snapshot();
           const data = detection.snapshot();
@@ -760,8 +765,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             .data.gymPlaces.map((place) => place.id)
             .find((id) => data.gym.regions[id]?.confirmedSince != null);
           const at = id ? data.gym.regions[id].confirmedSince : null;
+          if (!committedGymPresence?.confirmedAt && id && at != null && settingsStore.getState().data.gymAutoDetect) client.analytics.track('gym_presence_auto_confirmed');
           committedGymPresence =
-            id && at != null
+            id && at != null && detection.location.isInsideRegion(id) === true
               ? { placeId: id, startedAt: new Date(at).toISOString(), confirmedAt: new Date(at).toISOString() }
               : null;
           if (!disposed && !insideReconcile) void reconcile('manual', 'committed').catch(options.reportError);

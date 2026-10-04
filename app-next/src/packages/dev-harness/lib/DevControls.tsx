@@ -37,6 +37,11 @@ export function DevControls() {
   };
   return (
     <>
+      <SettingsGroup title="Gym visits">
+        <SettingsRow title={`Gym visits ${view.gymVisits?.visits ?? 0}`} />
+        <SettingsRow title={`Gym visit ${view.gymVisits?.confirmed ? 'confirmed' : 'unconfirmed'}`} />
+        <SettingsRow title={`Gym background detection ${view.gymVisits?.autoDetect ? 'on' : 'off'}`} />
+      </SettingsGroup>
       <SettingsGroup title="Account data">
         <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
         <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />

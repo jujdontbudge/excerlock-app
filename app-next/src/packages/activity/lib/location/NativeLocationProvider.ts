@@ -118,7 +118,7 @@ export class NativeLocationProvider implements LocationProvider {
       throw new Error("Always location authorization is required for auto-detect");
     }
 
-    await this.client.startGeofencing(regions);
+    const previous = new Map(this.monitoredRegions);
     this.monitoredRegions.clear();
     regions.forEach((region) => {
       this.monitoredRegions.set(region.id, region);
@@ -127,6 +127,8 @@ export class NativeLocationProvider implements LocationProvider {
         this.presence.set(region.id, cachedPresence);
       }
     });
+    try { await this.client.startGeofencing(regions); }
+    catch (error) { this.monitoredRegions.clear(); previous.forEach((region, id) => this.monitoredRegions.set(id, region)); throw error; }
   }
 
   public async stopMonitoringRegions(

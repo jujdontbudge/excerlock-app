@@ -1,3 +1,4 @@
+import type { GymLocationFix } from '../ports/GymPort';
 import { FakePickerHost } from './FakePickerHost';
 import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
@@ -40,6 +41,7 @@ import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { pathFor } from '../onboarding/onboardingPath';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
+  gymFixSource?: () => Promise<GymLocationFix | null>;
   nativeReview?: Runtime['review'];
   createAccountData(): {
     prepare(): Promise<void>;
@@ -59,7 +61,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     walking = WalkingFake(ctx),
     gait = GaitFake(false, () => ctx.request('camera')),
     persistence = contextPersistence(ctx),
-    gym = GymFake(ctx),
+    gym = GymFake(ctx, options.gymFixSource),
     activity = activityHistory(ctx),
     accountLabel = (userId: string | null) =>
       userId === 'lab-user-a' ? 'A' as const : userId === 'lab-user-b' ? 'B' as const : userId ? 'Checkout' as const : 'None' as const,
@@ -113,6 +115,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
               }),
           ),
       );
+      await gym.ready();
       walking.resume();
       gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
@@ -189,6 +192,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         identityLab.start();
         gait.set(scenario.gait ?? 'none');
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
+        if (!keepEdits) await gym.reset();
         ctx.update({
           stepsOverride: undefined, placement: 'propped', loading: false, scenarioId: id, outcome: 'success',
           restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
@@ -647,7 +651,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         });
       },
     },
-    status: { ready: () => ready, flush: persistence.flush, snapshot: ctx.snapshot, subscribe: ctx.subscribe },
+    status: { ready: () => ready, flush: async () => { await gym.flush(); await persistence.flush(); }, snapshot: ctx.snapshot, subscribe: ctx.subscribe },
     dev,
     dispose: () => {
       void identityLab.stop();

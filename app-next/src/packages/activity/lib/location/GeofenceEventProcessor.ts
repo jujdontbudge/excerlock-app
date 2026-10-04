@@ -23,6 +23,7 @@ export class GeofenceEventProcessor {
     this.options.onPresence(transition);
     this.options.onTransition(transition);
   }
+  resetPresence(): void { this.rawPresence.clear(); }
   isInside(regionId: string): boolean | null {
     return this.rawPresence.get(regionId) ?? null;
   }
