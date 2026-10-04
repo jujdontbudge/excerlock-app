@@ -59,7 +59,7 @@ scenario: unlock-treadmill-scan
 open: /unlock/treadmill?ruleId=walk
 expect: Done
 wait: 18
-then-actions: tap Done | open /dev?advance=870000 | wait 3 | open /dev?lab=treadmill | expect Propped access active | expect Warning fired 30 seconds before expiry | open /dev?advance=30000
+then-actions: tap Done | open /dev?advance=870000 | wait 3 | open /dev?lab=treadmill | expect Propped access active | expect Warning fired 30 seconds before expiry | open /dev?advance=30000 | wait 2 | open /dev?lab=treadmill
 then-expect: Propped access inactive | Apps locked | Warning fired 30 seconds before expiry
 ```
 
@@ -79,7 +79,7 @@ then-expect: Propped access active
 name: treadmill-cancel-rescan
 scenario: unlock-treadmill-scan
 open: /unlock/treadmill?ruleId=walk
-open-wait: 0.5
+open-wait: 1.5
 actions: wait 3 | tap Close unlock screen | open /dev?lab=treadmill | expect Propped access inactive | wait 8 | expect Propped access inactive | open /unlock/treadmill?ruleId=walk | expect Scan progress 0 percent
 expect: Screen Time unlocked! | Done
 wait: 18

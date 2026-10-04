@@ -422,7 +422,11 @@ export async function watchForLabels(
   return [...shown];
 }
 
-export async function tap(udid: string, label: string): Promise<string> {
+export async function tap(
+  udid: string,
+  label: string,
+  movedOverlay = false,
+): Promise<string> {
   const { missing, nodes } = await waitForLabels(udid, [label], 8);
   if (missing.length > 0)
     throw new Error(`No accessible element labelled "${label}"`);
@@ -441,6 +445,36 @@ export async function tap(udid: string, label: string): Promise<string> {
   const x = Math.round(frame.x + frame.width / 2);
   const y = Math.round(frame.y + frame.height / 2);
   const screen = nodes.find((node) => node.type === "Application")?.frame;
+  const overlay = nodes.find(
+    (node) =>
+      node.AXLabel === "gearshape.fill" &&
+      node !== matches[0] &&
+      Math.abs(node.frame.x + node.frame.width / 2 - x) < 46 &&
+      Math.abs(node.frame.y + node.frame.height / 2 - y) < 80,
+  );
+  if (overlay && screen) {
+    if (movedOverlay)
+      throw new Error(`Expo Tools button still covers "${label}"`);
+    const ox = Math.round(overlay.frame.x + overlay.frame.width / 2);
+    const oy = Math.round(overlay.frame.y + overlay.frame.height / 2);
+    must(
+      "idb",
+      idbArgs(udid, [
+        "ui",
+        "swipe",
+        "--udid",
+        udid,
+        String(ox),
+        String(oy),
+        String(Math.round(screen.width - ox)),
+        String(Math.round(screen.height / 2)),
+        "--duration",
+        "0.5",
+      ]),
+    );
+    await sleep(800);
+    return `moved Expo Tools button; ${await tap(udid, label, true)}`;
+  }
   if (
     screen &&
     (x < screen.x ||
