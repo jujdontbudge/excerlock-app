@@ -49,6 +49,14 @@ export function TreadmillEvidence() {
     deadline !== null &&
     plan.register.end <= deadline &&
     deadline - Date.parse(walking.proppedSince!) === 15 * 60_000;
+  const warningScheduled =
+    deadline !== null &&
+    view.events.some(
+      (event) =>
+        event.event === 'propped_warning_scheduled' &&
+        typeof event.props.at === 'string' &&
+        Date.parse(event.props.at) === deadline - 30_000,
+    );
   const fired = view.events.some((event) => event.event === 'propped_warning_fired');
   return (
     <ScreenShell>
@@ -56,7 +64,8 @@ export function TreadmillEvidence() {
       <Label>{walking.proppedVerified ? 'Propped access active' : 'Propped access inactive'}</Label>
       <Label>{snapshot.state === 'shield' ? 'Apps locked' : 'Apps open'}</Label>
       <Label>{bounded ? 'Watchdog ends within 15 minutes of pass' : 'No propped watchdog'}</Label>
-      <Label>{fired ? 'Warning fired 30 seconds before expiry' : 'Warning has not fired'}</Label>
+      <Label>{warningScheduled ? 'Warning scheduled 30 seconds before expiry' : 'No scheduled propped warning'}</Label>
+      <Label>{fired ? 'Warning fired' : 'Warning has not fired'}</Label>
     </ScreenShell>
   );
 }

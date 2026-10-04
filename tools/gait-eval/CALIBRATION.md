@@ -46,9 +46,13 @@ The shared build 18 analyzer/extractor compiled on macOS and rejected a blank lo
 Focused proofs, individually bounded to five minutes:
 
 - Still ring empty: `.excer/proof/walking/2026-10-04_02-09-05/`.
-- Walking pass: `.excer/proof/walking/2026-10-04_01-31-45/`.
-- Warning at 14½ minutes and JS re-lock at 15: `.excer/proof/walking/2026-10-04_02-03-55/`.
+- Walking pass: `.excer/proof/walking/2026-10-04_02-34-15/`.
+- Warning at 14½ minutes and JS re-lock at 15: `.excer/proof/walking/2026-10-04_02-27-10/`.
 - Background/resume reacquires evidence: `.excer/proof/walking/2026-10-04_01-39-35/`.
 - Cancel, remain inactive, then fresh scan: `.excer/proof/walking/2026-10-04_02-12-09/`.
 
 The still proof failed with the old detector, showing `Screen Time unlocked!`, in `.excer/proof/walking/2026-10-04_02-07-41/`. Bundle inspection confirmed the old constructor was served, then confirmed the restored windowed constructor (`.excer/gait-eval/old-behavior-proof.txt` and `fixed-behavior-proof.txt`). Native capture, real notifications/shields and suspended expiry remain device checks. The cancellation proof uses the fake walking adapter; the queued native-adapter pass/cancel race was additionally corrected by generation checks, but that exact asynchronous interleaving has not been demonstrated on-device.
+
+The strengthened warning proof checks that the scheduled instant is exactly 30 seconds before the active lease deadline, then observes delivery and expiry re-lock. Native iOS simulator compilation passed with warnings: `r:49954:1791080721`, result bundle `/Users/johansardar/.bb/plugins/xcode/bundles/run-mut77t81-88293-4.xcresult`. The built Info/Expo plists confirm build 18, runtime 5 and the camera usage description. `.excer/build18/build-verdict.txt` records it. Earlier full builds timed out while populating this worktree's retained cache; the final verdict is from Xcode's result artifact.
+
+Build 18 was installed only on `ExcerLock-treadmill` in the hidden worker set (UDID `884C1345-CA88-4B9B-B932-9834D8029D96`). The walking proof above passed on that rebuilt binary with Metro 8092; its fake payload has no optional native fields, so it also exercises the Stage 1 fallback. This is an app startup and fake-scan proof, not live Vision or DeviceActivity enforcement. Nothing was pushed, merged, published or uploaded. The branch remains local.

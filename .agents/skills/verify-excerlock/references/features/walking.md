@@ -59,8 +59,8 @@ scenario: unlock-treadmill-scan
 open: /unlock/treadmill?ruleId=walk
 expect: Done
 wait: 18
-then-actions: tap Done | open /dev?advance=870000 | wait 3 | open /dev?lab=treadmill | expect Propped access active | expect Warning fired 30 seconds before expiry | open /dev?advance=30000 | wait 2 | open /dev?lab=treadmill
-then-expect: Propped access inactive | Apps locked | Warning fired 30 seconds before expiry
+then-actions: tap Done | open /dev?advance=870000 | wait 3 | open /dev?lab=treadmill | expect Propped access active | expect Warning scheduled 30 seconds before expiry | expect Warning fired | open /dev?advance=30000 | wait 2 | open /dev?lab=treadmill
+then-expect: Propped access inactive | Apps locked | Warning fired
 ```
 
 ```proof
