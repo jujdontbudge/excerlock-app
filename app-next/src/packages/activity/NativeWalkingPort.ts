@@ -49,8 +49,13 @@ export class NativeWalkingPort implements WalkingPort {
     if (operation !== this.operationGeneration) throw new Error('Walking start was cancelled');
     if (options?.placement === 'propped') {
       const generation = detectionStore.getState().data.generation;
-      this.scanGeneration = await this.options.service.startProppedScan(this.now(), generation);
-      if (operation !== this.operationGeneration) throw new Error('Walking scan was cancelled');
+      const scan = await this.options.service.startProppedScan(this.now(), generation);
+      if (operation !== this.operationGeneration) {
+        if (scan !== null && detectionStore.getState().data.propped.scanGeneration === scan)
+          await this.options.service.cancelProppedScan(this.now(), generation);
+        throw new Error('Walking scan was cancelled');
+      }
+      this.scanGeneration = scan;
     }
     return this.snapshot();
   }
@@ -66,7 +71,11 @@ export class NativeWalkingPort implements WalkingPort {
       const evidence = this.options.motion.reconcile(now);
       if (evidence.qualifying === true) qualifyingSince ??= now;
       else qualifyingSince = null;
-      await this.options.service.reconcileMotion(now, this.options.walkingGraceMs(), detectionStore.getState().data.generation);
+      await this.options.service.reconcileMotion(
+        now,
+        this.options.walkingGraceMs(),
+        detectionStore.getState().data.generation,
+      );
       if (operation !== this.operationGeneration) return false;
       if (qualifyingSince !== null && now - qualifyingSince >= WALK_QUALIFY_MS)
         return detectionStore.getState().data.walking.phase === 'active';
@@ -89,19 +98,26 @@ export class NativeWalkingPort implements WalkingPort {
     }
   }
 
-  completeProppedScan(): boolean {
+  async completeProppedScan(): Promise<boolean> {
     const scan = this.scanGeneration;
     if (scan === null) return false;
     this.scanGeneration = null;
     const data = detectionStore.getState().data;
-    void this.options.service.completeProppedScan(this.now(), scan, data.generation).catch(this.options.onError);
-    return true;
+    const operation = this.operationGeneration;
+    await this.options.service.completeProppedScan(this.now(), scan, data.generation);
+    const state = detectionStore.getState().data.propped;
+    return (
+      operation === this.operationGeneration &&
+      state.phase === 'propped' &&
+      state.generation === scan &&
+      proppedRelief(state)
+    );
   }
 
   snapshot(): WalkingStatus {
     const data = detectionStore.getState().data;
     const physical = this.options.placement.reconcile(this.now()).placement;
-    const propped = proppedRelief(data.propped);
+    const propped = proppedRelief(data.propped, this.now());
     const phase = propped ? 'active' : data.walking.phase;
     const since = data.walking.activeSince ?? data.walking.qualifyingSince;
     const next: WalkingStatus = {
@@ -111,10 +127,14 @@ export class NativeWalkingPort implements WalkingPort {
       since: since === null ? null : new Date(since).toISOString(),
       placement: physical,
       proppedVerified: propped,
+      proppedEligibleUntil: propped ? (data.propped.eligibleUntil ?? null) : null,
       proppedSince: data.propped.verifiedSince == null ? null : new Date(data.propped.verifiedSince).toISOString(),
     };
     const previous = this.lastSnapshot;
-    if (previous && Object.keys(next).every((key) => previous[key as keyof WalkingStatus] === next[key as keyof WalkingStatus]))
+    if (
+      previous &&
+      Object.keys(next).every((key) => previous[key as keyof WalkingStatus] === next[key as keyof WalkingStatus])
+    )
       return previous;
     this.lastSnapshot = next;
     return next;
@@ -149,7 +169,8 @@ export class NativeWalkingPort implements WalkingPort {
     const cumulative = this.options.motion.cumulativeSteps();
     const steps = cumulative === null || this.stepBaseline === null ? 0 : Math.max(0, cumulative - this.stepBaseline);
     const end = walking.phase === 'active' ? this.now() : walking.lastEvidenceAt;
-    const walkingSeconds = walking.activeSince === null || end === null ? 0 : Math.max(0, end - walking.activeSince) / 1000;
+    const walkingSeconds =
+      walking.activeSince === null || end === null ? 0 : Math.max(0, end - walking.activeSince) / 1000;
     return { steps, walkingSeconds };
   }
 

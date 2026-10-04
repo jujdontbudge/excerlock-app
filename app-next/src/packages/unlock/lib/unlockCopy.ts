@@ -5,7 +5,7 @@ export const unlockCopy = {
   preview: 'Unlock preview',
   treadmill: {
     prop: 'Prop your phone and walk',
-    propBody: "Set it upright facing you. The scan starts on its own once you're walking.",
+    propBody: "Set it upright facing you. The scan checks that you're walking and grants up to 15 minutes.",
     scanning: 'Walking detected',
     framing: "Can't see you",
     framingBody: 'Step into frame.',

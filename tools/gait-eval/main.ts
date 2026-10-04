@@ -1,0 +1,200 @@
+import { createHash } from "node:crypto";
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { join, resolve, extname } from "node:path";
+import { spawnSync } from "node:child_process";
+import { GAIT_SETTINGS } from "../../app-next/src/packages/unlock/lib/gait/WindowedGaitDetector";
+import type { GaitKeypointSample } from "../../app-next/src/packages/ports/GaitVisionProvider";
+import { replay } from "./replay";
+const root = resolve(import.meta.dirname, "../..");
+const folder = resolve(process.argv[2]);
+const heldIndex = process.argv.indexOf("--held-out");
+const sessionNames: Record<string, string> = {
+  "session-one": "s1",
+  "session-two": "s2",
+  "session-three": "s3",
+};
+const requested = heldIndex >= 0 ? process.argv[heldIndex + 1] : null;
+const heldOut = requested ? (sessionNames[requested] ?? requested) : null;
+if (heldOut && !["s1", "s2", "s3"].includes(heldOut))
+  throw new Error("--held-out must be s1, s2 or s3");
+const freeze = JSON.parse(
+  readFileSync(join(import.meta.dirname, "frozen-settings.json"), "utf8"),
+);
+if (JSON.stringify(freeze) !== JSON.stringify(GAIT_SETTINGS))
+  throw new Error(
+    "Detector settings differ from the frozen settings. Freeze calibration before opening held-out clips.",
+  );
+const settingsHash = createHash("sha256")
+  .update(JSON.stringify(GAIT_SETTINGS))
+  .digest("hex");
+const at = new Date().toISOString();
+const dir = join(root, ".excer", "gait-eval", "v1", at.replace(/[:.]/g, "-"));
+mkdirSync(dir, { recursive: true });
+const files = readdirSync(folder)
+  .filter((name) => /\.(mov|mp4|json)$/i.test(name))
+  .sort();
+const clips = [];
+for (const name of files) {
+  const session =
+    name.match(/-(s[123])-/)?.[1] ??
+    Object.entries(sessionNames).find(([namePart]) =>
+      name.includes(`-${namePart}-`),
+    )?.[1] ??
+    null;
+  if (!heldOut && session === "s3") {
+    console.log(`${name}: reserved, unopened`);
+    continue;
+  }
+  const path = join(folder, name);
+  const sourceHash = createHash("sha256")
+    .update(readFileSync(path))
+    .digest("hex");
+  let trajectory = path;
+  if (extname(name).toLowerCase() !== ".json") {
+    trajectory = join(dir, `${name}.json`);
+    const extraction = spawnSync(
+      "swift",
+      [
+        join(root, "tools", "gait-fixture-extractor", "extract.swift"),
+        path,
+        trajectory,
+      ],
+      { encoding: "utf8" },
+    );
+    if (extraction.status !== 0) {
+      clips.push({
+        name,
+        session,
+        label: name.split("-")[0],
+        sourceHash,
+        error: extraction.stderr.trim(),
+        new: { passed: false, timeToPassMs: null, reason: "extractionFailed" },
+        old: null,
+      });
+      console.log(`${name}: extraction failed`);
+      continue;
+    }
+  }
+  const raw = JSON.parse(readFileSync(trajectory, "utf8"));
+  const input = Array.isArray(raw) ? raw : raw.samples;
+  if (!Array.isArray(input))
+    throw new Error(`${name}: expected an array or { samples: [...] }`);
+  const first =
+    input.find((s: GaitKeypointSample) => Number.isFinite(s.timestampMs))
+      ?.timestampMs ?? 0;
+  const origin = raw.startedAtMs ?? (first > 10_000_000_000 ? first : 0);
+  const samples = input.map((s: GaitKeypointSample) => ({
+    ...s,
+    landmarks: s.landmarks ?? {},
+    timestampMs: s.timestampMs - origin,
+    analysisTimestampMs:
+      s.analysisTimestampMs === undefined
+        ? undefined
+        : s.analysisTimestampMs - origin,
+    captureTimestampMs:
+      s.captureTimestampMs === undefined
+        ? undefined
+        : s.captureTimestampMs - origin,
+  }));
+  const current = await replay(samples),
+    old = await replay(samples, true);
+  const label = name.split("-")[0];
+  clips.push({
+    name,
+    session,
+    label,
+    sourceHash,
+    trajectory,
+    extraction: raw.extraction ?? null,
+    new: current,
+    old,
+  });
+  console.log(
+    `${name}: new ${current.passed ? `PASS ${(current.timeToPassMs! / 1000).toFixed(2)} s` : `REJECT ${current.reason}`} | old ${old.passed ? `PASS ${(old.timeToPassMs! / 1000).toFixed(2)} s` : `REJECT ${old.reason}`}`,
+  );
+}
+const walks = clips.filter((c) => c.label === "walk");
+const timely = walks.filter(
+  (c) => c.new.passed && c.new.timeToPassMs! <= 10_000,
+);
+const incidental = clips.filter(
+  (c) =>
+    ["still", "talk", "look", "shift", "adjust", "rails", "behind"].includes(
+      c.label,
+    ) && c.session === heldOut,
+);
+const residual = clips.filter((c) => c.label === "bob");
+const transitions = clips.filter((c) => c.label === "startstop");
+const categories = [
+  "still",
+  "talk",
+  "look",
+  "shift",
+  "adjust",
+  "rails",
+  "behind",
+];
+const complete =
+  heldOut !== null &&
+  walks.length === 18 &&
+  incidental.length >= 10 &&
+  categories.every((label) => incidental.some((c) => c.label === label)) &&
+  clips.length === 60 &&
+  transitions.length === 6 &&
+  !clips.some((c) => "error" in c);
+const falsePasses = incidental.filter((c) => c.new.passed);
+const verdict =
+  falsePasses.length || (walks.length === 18 && timely.length < 17)
+    ? "NO-GO"
+    : complete
+      ? "GO"
+      : "PENDING";
+const report = {
+  schemaVersion: 1,
+  at,
+  algorithm: GAIT_SETTINGS.version,
+  settings: GAIT_SETTINGS,
+  settingsHash,
+  commit: spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).stdout.trim(),
+  heldOut,
+  verdict,
+  goNoGo: {
+    timelyWalks: timely.length,
+    required: "17 of 18 within 10 s",
+    incidentalHeldOutFalsePasses: falsePasses.map((c) => c.name),
+    incidentalHeldOutCount: incidental.length,
+    complete,
+  },
+  deliberateBobbing: residual.map((c) => ({ name: c.name, ...c.new })),
+  transitions: transitions.map((c) => ({ name: c.name, ...c.new })),
+  clips,
+  limits: [
+    "Owner/setup evaluation only.",
+    "Camera-app video replay does not prove live iPhone timing, lag or suspended Screen Time enforcement.",
+    "Deliberate rhythmic imitation is a known residual.",
+  ],
+};
+writeFileSync(join(dir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+const text = [
+  `# Treadmill evaluation — ${verdict}`,
+  `${timely.length}/${walks.length} walks pass within 10 s; requirement: at least 17/18.`,
+  `Held-out incidental negatives: ${falsePasses.length} passes / ${incidental.length}; requirement: zero.`,
+  `Deliberate bobbing: ${residual.filter((c) => c.new.passed).length}/${residual.length} passes, reported separately.`,
+  `Settings: ${settingsHash}`,
+  "",
+  "| Clip | New | Old | Reason |",
+  "|---|---|---|---|",
+  ...clips.map(
+    (c) =>
+      `| ${c.name} | ${c.new.passed ? `${c.new.timeToPassMs! / 1000} s` : "reject"} | ${c.old?.passed ? `${c.old.timeToPassMs! / 1000} s` : "reject"} | ${c.new.reason} |`,
+  ),
+  "",
+  ...report.limits,
+];
+writeFileSync(join(dir, "report.md"), `${text.join("\n")}\n`);
+console.log(
+  `\n${verdict}: ${timely.length}/18 walks within 10 s; ${falsePasses.length} held-out incidental passes.\nReport: ${join(dir, "report.md")}`,
+);

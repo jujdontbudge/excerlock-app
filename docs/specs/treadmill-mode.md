@@ -1,6 +1,6 @@
 # Treadmill mode — propped-phone walking verification
 
-Status: **spec, not built**. Parent tracking issue: #111.
+Status: implemented in app-next; issue #163 changes the scan and completes the deadline. Physical-device release checks remain. See ADR 0062. Parent tracking issue: #111.
 
 ## Problem
 
@@ -64,8 +64,7 @@ the user.
 
 - Front camera runs Vision body-pose detection, looking for vertical oscillation of the shoulder
   and hip landmarks in the 1.2–3 Hz band.
-- **Adaptive duration, 5 second cap**: release as soon as 4–5 clean strides are observed, typically
-  3–4 seconds. Live progress ring, auto-dismiss on success, no tap required.
+- **Six-second window plus two-second hold**, evaluated every half second in a single scan of up to 30 seconds. Earliest pass is about eight seconds. Live progress ring, auto-dismiss on success, no tap required.
 - Camera session is torn down the instant confidence is reached.
 - On success → `PROPPED`.
 - On failure → see *Failure handling*.
@@ -107,7 +106,7 @@ the user.
 
 | Timer | Value | Configurable |
 |---|---|---|
-| Camera scan | adaptive, 5s cap | no |
+| Camera scan | 6s window + 2s hold; 30s cap | no |
 | Propped lease | 15 min | tunable constant |
 | Pre-expiry warning | 30s before | no |
 | Pickup → cadence grace | 20s | no |
@@ -122,7 +121,7 @@ the user.
   shoulder and hip landmarks, look for periodicity in the walking band, require consecutive
   qualifying strides before declaring confidence.
 - **Efficiency budget**: front camera at 640×480, 15 fps, pose run on every other frame, session
-  never outliving the check. Target under 4 seconds wall clock. If Vision cannot hit that on device,
+  never outliving the check. Target sustained 15 samples per second across the scan, measured on iPhone 13. If Vision cannot hit that on device,
   drop to 320×240 before extending the duration.
 - Multiple people in frame → track the largest, most central body only.
 
@@ -140,7 +139,7 @@ Never shield silently on a failed scan.
 
 - Frames are processed in memory only. Nothing is written to disk, and nothing is transmitted.
 - No recording, no frame retention, no face recognition — body-pose landmarks only.
-- Stated plainly on the scan screen.
+- The promise on the scan screen: checks that you're walking and grants up to 15 minutes. Deliberate rhythmic imitation remains possible (ADR 0062).
 
 ## Architecture
 

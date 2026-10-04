@@ -16,12 +16,12 @@ depends: [conditions, enforcement]
 Home → "Check walking" or "I'm using a treadmill" on a walking-state condition.
 
 ## Driving it with excer
-Run `./excer demo unlock-treadmill-scan --open /unlock/treadmill`. The simulator has no camera, so it replays recorded gait fixtures.
+Run `./excer demo unlock-treadmill-scan --open /unlock/treadmill?ruleId=walk`. The simulator has no camera, so the focused proofs use a steady walking bob or incident-sized standing face jitter.
 
 ```proof
 name: treadmill-screen
 scenario: unlock-treadmill-scan
-open: /unlock/treadmill
+open: /unlock/treadmill?ruleId=walk
 expect: Prop your phone and walk | I'm walking
 ```
 
@@ -32,7 +32,60 @@ open: /home
 expect: Unlock while walking | Check walking | I'm using a treadmill
 ```
 
+```proof
+name: treadmill-still-empty
+scenario: unlock-treadmill-framing
+open: /unlock/treadmill?ruleId=walk
+expect: Scan progress 0 percent | Prop your phone and walk
+absent: Walking detected | Screen Time unlocked! | Done
+absent-wait: 31
+then-open: /dev?lab=treadmill
+then-expect: Propped access inactive | Apps locked
+```
+
+```proof
+name: treadmill-walking-pass
+scenario: unlock-treadmill-scan
+open: /unlock/treadmill?ruleId=walk
+expect: Screen Time unlocked! | Done
+wait: 18
+then-open: /dev?lab=treadmill
+then-expect: Propped access active | Watchdog ends within 15 minutes of pass
+```
+
+```proof
+name: treadmill-limit-warning
+scenario: unlock-treadmill-scan
+open: /unlock/treadmill?ruleId=walk
+expect: Done
+wait: 18
+then-actions: tap Done | open /dev?advance=870000 | wait 3 | open /dev?lab=treadmill | expect Propped access active | expect Warning fired 30 seconds before expiry | open /dev?advance=30000
+then-expect: Propped access inactive | Apps locked | Warning fired 30 seconds before expiry
+```
+
+```proof
+name: treadmill-background-resume
+scenario: unlock-treadmill-scan
+open: /unlock/treadmill?ruleId=walk
+open-wait: 0.5
+actions: wait 3 | background app | wait 8 | resume app | expect Scan progress 0 percent
+expect: Screen Time unlocked! | Done
+wait: 18
+then-open: /dev?lab=treadmill
+then-expect: Propped access active
+```
+
+```proof
+name: treadmill-cancel-rescan
+scenario: unlock-treadmill-scan
+open: /unlock/treadmill?ruleId=walk
+open-wait: 0.5
+actions: wait 3 | tap Close unlock screen | open /dev?lab=treadmill | expect Propped access inactive | wait 8 | expect Propped access inactive | open /unlock/treadmill?ruleId=walk | expect Scan progress 0 percent
+expect: Screen Time unlocked! | Done
+wait: 18
+```
+
 ## Gotchas
 - The simulator cannot prove real motion, camera framing or background keep-alive. Those need a physical iPhone (ticket #113), so say so in reports.
-- `unlock-treadmill-scan` currently shows "Choose a treadmill walking condition first." That is an open question about the scenario's condition.
+- Pass `?ruleId=walk` when opening the scenario's treadmill Condition. A scan needs an enabled Walking state Condition.
 - The research recorders (`tools/phone-*-recorder`, Linked Recorder) share detection code but never ship (ADRs 0026–0028, `excer check` `research-isolation`).

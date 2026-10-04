@@ -38,12 +38,13 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     const controller = new TreadmillScanController({
       provider,
       now: Date.now,
-      onVerified: () => {
+      onVerified: async () => {
+        if (!active || AppState.currentState !== 'active') return false;
+        const accepted = preview || (await runtime.walking.completeProppedScan());
+        if (!accepted || !active || AppState.currentState !== 'active') return false;
         verified.current = true;
-        if (!preview) {
-          runtime.walking.completeProppedScan();
-        }
         runtime.analytics.track('treadmill_scan_verified', { ms: Date.now() - start, preview });
+        return true;
       },
       onPermissionDenied: () => {
         if (!preview) runtime.walking.stop();
@@ -59,13 +60,15 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     const stop = controller.subscribe(() => {
       if (active) setSnapshot(controller.getSnapshot());
     });
+    let startGeneration = 0;
     const startScan = async () => {
+      const generation = ++startGeneration;
       try {
         if (!preview) {
           if (!rule || rule.mode.kind !== 'state') throw new Error('Choose a treadmill walking condition first.');
           await runtime.walking.start(rule, { placement: 'propped' });
         }
-        if (active) {
+        if (active && generation === startGeneration && AppState.currentState === 'active') {
           runtime.analytics.track('treadmill_scan_started', { preview });
           await controller.start();
         }
@@ -80,11 +83,16 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     void startScan();
     const app = AppState.addEventListener('change', (state) => {
       if (verified.current) return;
-      if (state === 'active') void controller.start();
-      else void controller.stop();
+      if (state === 'active') void startScan();
+      else {
+        ++startGeneration;
+        void controller.stop();
+        if (!preview) runtime.walking.stop();
+      }
     });
     return () => {
       active = false;
+      ++startGeneration;
       app.remove();
       stop();
       void controller.stop();
@@ -130,8 +138,9 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         )
       }>
       <View
+        accessible
         accessibilityRole="progressbar"
-        accessibilityLabel="Scan progress"
+        accessibilityLabel={`Scan progress ${Math.round(snapshot.confidence * 100)} percent`}
         accessibilityValue={{ min: 0, max: 100, now: Math.round(snapshot.confidence * 100) }}>
         <UnlockLockFrame
           progress={ceremony.progress}

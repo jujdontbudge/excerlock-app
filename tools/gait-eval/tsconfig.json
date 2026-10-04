@@ -1,0 +1,10 @@
+{
+  "extends": "../excer/tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noUncheckedIndexedAccess": false,
+    "erasableSyntaxOnly": false
+  },
+  "include": ["*.ts"]
+}

@@ -8,6 +8,7 @@ import { Label } from '../../ui/Label';
 import { PrimaryButton } from '../../ui/PrimaryButton';
 import { tokens } from '../../ui/tokens';
 import { RuntimeContext } from '../../ports/useRuntime';
+import { ProppedWarningHost } from '../../notifications/ProppedWarningHost';
 import { NotificationLandingHost } from './NotificationLandingHost';
 import { OtaResumeHost } from './OtaResumeHost';
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
@@ -27,8 +28,10 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       },
       (error) => {
         reportRuntimeError(error);
-        if (current && attempt === 0 && !(error && typeof error === 'object' && error.retryUnsafe === true)) setAttempt(1);
-        else if (current) setFailed(error && typeof error === 'object' && error.retryUnsafe === true ? 'restart' : 'retry');
+        if (current && attempt === 0 && !(error && typeof error === 'object' && error.retryUnsafe === true))
+          setAttempt(1);
+        else if (current)
+          setFailed(error && typeof error === 'object' && error.retryUnsafe === true ? 'restart' : 'retry');
       },
     );
     return () => {
@@ -64,6 +67,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
     <RuntimeContext.Provider value={runtime}>
       {children}
       <NotificationLandingHost />
+      <ProppedWarningHost />
       <OtaResumeHost />
       {runtime.kind === 'real' ? <NativeEffects /> : null}
     </RuntimeContext.Provider>

@@ -1,9 +1,15 @@
 import { createPersistedStore } from '../persistence/createPersistedStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createWalkingState, reduceWalking, type WalkingState } from './walkingMachine';
-import { createProppedState, reducePropped, type ProppedState } from './proppedMachine';
+import { createProppedState, reducePropped, migrateProppedState, type ProppedState } from './proppedMachine';
 import { createGymState, reduceGym, type GymDetectionState } from './gymMachine';
-export type PendingHistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number; timezone?: string };
+export type PendingHistoryCredit = {
+  idempotencyKey: string;
+  from: number;
+  to: number;
+  steps: number;
+  timezone?: string;
+};
 export type DetectionData = {
   version: 1;
   generation: number;
@@ -33,40 +39,54 @@ const validReducerState = (value: unknown, reducer: (value: never) => unknown) =
     return false;
   }
 };
-export const detectionStore = createPersistedStore('detection', initial, {
-  version: (value) => value === 1,
-  generation: (value) => Number.isSafeInteger(value) && Number(value) >= 0,
-  observedAt: (value) => typeof value === 'number' && Number.isFinite(value),
-  walking: (value) =>
-    validReducerState(value, (state: WalkingState) => reduceWalking(state, { kind: 'tick' }, state.watermark, 30_000)),
-  propped: (value) =>
-    validReducerState(value, (state: ProppedState) => reducePropped(state, { kind: 'tick' }, state.watermark)),
-  gym: (value) =>
-    validReducerState(value, (state: GymDetectionState) => reduceGym(state, { kind: 'tick' }, state.watermark)),
-  creditedThrough: (value) =>
-    typeof value === 'object' &&
-    value !== null &&
-    Object.values(value).every((cursor) => typeof cursor === 'number' && Number.isFinite(cursor) && cursor >= 0),
-  pendingHistory: (value) =>
-    value === null ||
-    (typeof value === 'object' &&
+export const detectionStore = createPersistedStore(
+  'detection',
+  initial,
+  {
+    version: (value) => value === 1,
+    generation: (value) => Number.isSafeInteger(value) && Number(value) >= 0,
+    observedAt: (value) => typeof value === 'number' && Number.isFinite(value),
+    walking: (value) =>
+      validReducerState(value, (state: WalkingState) =>
+        reduceWalking(state, { kind: 'tick' }, state.watermark, 30_000),
+      ),
+    propped: (value) =>
+      validReducerState(value, (state: ProppedState) => reducePropped(state, { kind: 'tick' }, state.watermark)),
+    gym: (value) =>
+      validReducerState(value, (state: GymDetectionState) => reduceGym(state, { kind: 'tick' }, state.watermark)),
+    creditedThrough: (value) =>
+      typeof value === 'object' &&
       value !== null &&
-      typeof (value as PendingHistoryCredit).idempotencyKey === 'string' &&
-      Number.isFinite((value as PendingHistoryCredit).from) &&
-      Number.isFinite((value as PendingHistoryCredit).to) &&
-      Number.isFinite((value as PendingHistoryCredit).steps) &&
-      (value as PendingHistoryCredit).steps >= 0 &&
-      ((value as PendingHistoryCredit).timezone === undefined ||
-        (typeof (value as PendingHistoryCredit).timezone === 'string' && (value as PendingHistoryCredit).timezone!.length > 0)) &&
-      (value as PendingHistoryCredit).to > (value as PendingHistoryCredit).from),
-}, { manualPersistence: true });
+      Object.values(value).every((cursor) => typeof cursor === 'number' && Number.isFinite(cursor) && cursor >= 0),
+    pendingHistory: (value) =>
+      value === null ||
+      (typeof value === 'object' &&
+        value !== null &&
+        typeof (value as PendingHistoryCredit).idempotencyKey === 'string' &&
+        Number.isFinite((value as PendingHistoryCredit).from) &&
+        Number.isFinite((value as PendingHistoryCredit).to) &&
+        Number.isFinite((value as PendingHistoryCredit).steps) &&
+        (value as PendingHistoryCredit).steps >= 0 &&
+        ((value as PendingHistoryCredit).timezone === undefined ||
+          (typeof (value as PendingHistoryCredit).timezone === 'string' &&
+            (value as PendingHistoryCredit).timezone!.length > 0)) &&
+        (value as PendingHistoryCredit).to > (value as PendingHistoryCredit).from),
+  },
+  {
+    manualPersistence: true,
+    migrate: (value) => {
+      if (typeof value !== 'object' || value === null) return value;
+      const data = value as Partial<DetectionData>;
+      return { ...data, propped: migrateProppedState(data.propped) };
+    },
+  },
+);
 let durableWrites: Promise<void> = Promise.resolve();
 export function persistDetectionState(): Promise<void> {
   const serialized = JSON.stringify({ state: { data: detectionStore.getState().data }, version: 0 });
-  const write = durableWrites.catch(() => undefined).then(() => AsyncStorage.setItem(
-    'excerlock-next.detection.v1',
-    serialized,
-  ));
+  const write = durableWrites
+    .catch(() => undefined)
+    .then(() => AsyncStorage.setItem('excerlock-next.detection.v1', serialized));
   durableWrites = write.catch(() => undefined);
   return write;
 }

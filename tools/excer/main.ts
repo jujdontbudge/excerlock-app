@@ -1,13 +1,22 @@
-import { checkCommand, help as checkHelp } from './commands/check.ts';
-import { featureCommand, help as featureHelp } from './commands/feature.ts';
-import { doctorCommand, doctorHelp, newCommand, newHelp, serverCommand, serverHelp } from './commands/misc.ts';
-import { moveCommand, moveHelp } from './commands/move.ts';
-import { help as proveHelp, proveCommand } from './commands/prove.ts';
-import { demoCommand, demoHelp, simCommand, simHelp } from './commands/sim.ts';
-import { UsageError } from './lib/shell.ts';
+import { gaitCommand, gaitHelp } from "./commands/gait.ts";
+import { checkCommand, help as checkHelp } from "./commands/check.ts";
+import { featureCommand, help as featureHelp } from "./commands/feature.ts";
+import {
+  doctorCommand,
+  doctorHelp,
+  newCommand,
+  newHelp,
+  serverCommand,
+  serverHelp,
+} from "./commands/misc.ts";
+import { moveCommand, moveHelp } from "./commands/move.ts";
+import { help as proveHelp, proveCommand } from "./commands/prove.ts";
+import { demoCommand, demoHelp, simCommand, simHelp } from "./commands/sim.ts";
+import { UsageError } from "./lib/shell.ts";
 
 const usage = `excer: control and verification for ExcerLock
 
+  excer gait eval <folder>         compare treadmill scans on local recordings
   excer doctor                      is this machine ready?
   excer check [--full]              static verification (typecheck, lint, invariants, ratchets)
   excer feature list|show|graph|check|routes
@@ -24,6 +33,7 @@ const usage = `excer: control and verification for ExcerLock
 Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.md.`;
 
 const helps: Record<string, string> = {
+  gait: gaitHelp,
   check: checkHelp,
   feature: featureHelp,
   demo: demoHelp,
@@ -37,32 +47,39 @@ const helps: Record<string, string> = {
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...args] = argv;
-  if (!command || command === 'help' || command === '--help' || command === '-h') {
+  if (
+    !command ||
+    command === "help" ||
+    command === "--help" ||
+    command === "-h"
+  ) {
     console.log(usage);
     return 0;
   }
-  if (args.includes('--help') || args.includes('-h')) {
+  if (args.includes("--help") || args.includes("-h")) {
     console.log(helps[command] ?? usage);
     return 0;
   }
   switch (command) {
-    case 'check':
+    case "gait":
+      return gaitCommand(args);
+    case "check":
       return checkCommand(args);
-    case 'feature':
+    case "feature":
       return featureCommand(args);
-    case 'demo':
+    case "demo":
       return demoCommand(args);
-    case 'sim':
+    case "sim":
       return simCommand(args);
-    case 'prove':
+    case "prove":
       return proveCommand(args);
-    case 'server':
+    case "server":
       return serverCommand(args);
-    case 'doctor':
+    case "doctor":
       return doctorCommand();
-    case 'new':
+    case "new":
       return newCommand(args);
-    case 'move':
+    case "move":
       return moveCommand(args);
     default:
       throw new UsageError(`unknown command "${command}"\n\n${usage}`);
@@ -76,7 +93,9 @@ main(process.argv.slice(2)).then(
       console.error(error.message);
       process.exit(2);
     }
-    console.error(`excer: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `excer: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   },
 );

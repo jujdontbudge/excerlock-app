@@ -6,7 +6,12 @@ import { reduceGym, pruneGymHistoryBefore } from './gymMachine';
 import type { GymVisitLog } from './lib/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './lib/detection/MotionAdapter';
 import type { PlacementAdapter } from './lib/detection/PlacementAdapter';
-import type { HistoryCredit, HistoryCreditLedger, HistoryLedger, InstanceStepMeasurement } from './lib/detection/HistoryCreditLedger';
+import type {
+  HistoryCredit,
+  HistoryCreditLedger,
+  HistoryLedger,
+  InstanceStepMeasurement,
+} from './lib/detection/HistoryCreditLedger';
 import { addDays, dayKey, localDayStart } from '../schedule/calendar';
 import type { DetectionData, PendingHistoryCredit } from './detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
@@ -62,11 +67,7 @@ export class DetectionService {
             const kind = result.transition!.kind === 'pickedUp' ? 'pickup' : 'putDown';
             const at = result.transition!.timestampMs;
             detectionStore.getState().patch({
-              propped: reducePropped(
-                data.propped,
-                { kind, at },
-                at,
-              ),
+              propped: reducePropped(data.propped, { kind, at }, at),
               ...(kind === 'putDown' ? { walking: createWalkingState(at) } : {}),
               observedAt: at,
             });
@@ -110,7 +111,13 @@ export class DetectionService {
       this.assertGeneration(wake.generation);
       let walking = reduceWalking(
         before.walking,
-        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs, stopped: motion.stopped },
+        {
+          kind: 'evidence',
+          at: motion.observedAt,
+          qualifying: motion.qualifying,
+          verifiedMs: motion.verifiedMs,
+          stopped: motion.stopped,
+        },
         wake.now,
         wake.walkingGraceMs,
       );
@@ -174,8 +181,14 @@ export class DetectionService {
       if (!read || !record) throw new Error('Instance step measurement storage is unavailable');
       const result: Record<string, InstanceStepMeasurement> = {};
       for (const range of ranges) {
-        if (!range.key || !Number.isFinite(range.from) || !Number.isFinite(range.to) || range.to <= range.from ||
-          !range.timezone) throw new Error('Invalid instance step measurement range');
+        if (
+          !range.key ||
+          !Number.isFinite(range.from) ||
+          !Number.isFinite(range.to) ||
+          range.to <= range.from ||
+          !range.timezone
+        )
+          throw new Error('Invalid instance step measurement range');
         dayKey(new Date(range.from).toISOString(), range.timezone);
         this.assertGeneration(generation);
         const cached = await read.call(this.deps.historyLedger, range.key);
@@ -203,7 +216,13 @@ export class DetectionService {
       this.assertGeneration(generation);
       let walking = reduceWalking(
         before.walking,
-        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs, stopped: motion.stopped },
+        {
+          kind: 'evidence',
+          at: motion.observedAt,
+          qualifying: motion.qualifying,
+          verifiedMs: motion.verifiedMs,
+          stopped: motion.stopped,
+        },
         now,
         walkingGraceMs,
       );
@@ -230,8 +249,14 @@ export class DetectionService {
     this.committedListeners.add(callback);
     return () => this.committedListeners.delete(callback);
   }
-  async flush(): Promise<void> { await this.lastWork; }
-  private async commitHistory(pending: PendingHistoryCredit, wake: DetectionWake, previous: HistoryLedger): Promise<HistoryLedger> {
+  async flush(): Promise<void> {
+    await this.lastWork;
+  }
+  private async commitHistory(
+    pending: PendingHistoryCredit,
+    wake: DetectionWake,
+    previous: HistoryLedger,
+  ): Promise<HistoryLedger> {
     const ledger = await this.deps.historyLedger.apply(pending, pending.timezone ?? wake.timezone);
     this.assertGeneration(wake.generation);
     detectionStore.getState().patch({
@@ -295,13 +320,19 @@ export class DetectionService {
       const data = detectionStore.getState().data;
       let walking = reduceWalking(
         data.walking,
-        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped },
+        {
+          kind: 'evidence',
+          at: evidence.observedAt,
+          qualifying: evidence.qualifying,
+          verifiedMs: evidence.verifiedMs,
+          stopped: evidence.stopped,
+        },
         now,
         graceMs,
       );
       walking = reduceWalking(walking, { kind: 'tick' }, now, graceMs);
       let propped = data.propped;
-      if (walking.phase === 'active' && propped.phase === 'handheld')
+      if (walking.phase === 'active' && ['handheld', 'active'].includes(propped.phase))
         propped = reducePropped(propped, { kind: 'walkingQualified', at: now }, now);
       else if (walking.phase === 'inactive' && propped.phase === 'active')
         propped = reducePropped(propped, { kind: 'walkingStopped', at: now }, now);
@@ -313,13 +344,19 @@ export class DetectionService {
     this.assertGeneration(generation);
     const data = detectionStore.getState().data;
     const walking = reduceWalking(
-        data.walking,
-        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped },
-        evidence.observedAt,
-        graceMs,
-      );
+      data.walking,
+      {
+        kind: 'evidence',
+        at: evidence.observedAt,
+        qualifying: evidence.qualifying,
+        verifiedMs: evidence.verifiedMs,
+        stopped: evidence.stopped,
+      },
+      evidence.observedAt,
+      graceMs,
+    );
     let propped = data.propped;
-    if (walking.phase === 'active' && propped.phase === 'handheld')
+    if (walking.phase === 'active' && ['handheld', 'active'].includes(propped.phase))
       propped = reducePropped(propped, { kind: 'walkingQualified', at: evidence.observedAt }, evidence.observedAt);
     else if (walking.phase === 'inactive' && propped.phase === 'active')
       propped = reducePropped(propped, { kind: 'walkingStopped', at: evidence.observedAt }, evidence.observedAt);
@@ -379,7 +416,7 @@ export class DetectionService {
     timezone = this.deps.walkingTimezone?.(),
     trigger = 'commit',
   ): Promise<void> {
-    const before = __LINKED_RECORDER_TRACE__ ? this.lastDurableTraceData ?? detectionStore.getState().data : null;
+    const before = __LINKED_RECORDER_TRACE__ ? (this.lastDurableTraceData ?? detectionStore.getState().data) : null;
     const candidate = __LINKED_RECORDER_TRACE__ ? detectionStore.getState().data : null;
     try {
       await this.persist();
@@ -396,7 +433,12 @@ export class DetectionService {
       if (!timezone) throw new Error('Walking duration timezone unavailable');
       const data = detectionStore.getState().data;
       const verified = isMeasuredWalkingState(data);
-      await this.deps.walkingDurationLedger.observe({ generation, at: Math.max(at, data.walking.watermark, data.propped.watermark, data.gym.watermark), verified, timezone });
+      await this.deps.walkingDurationLedger.observe({
+        generation,
+        at: Math.max(at, data.walking.watermark, data.propped.watermark, data.gym.watermark),
+        verified,
+        timezone,
+      });
       this.assertGeneration(generation);
     }
     this.notifyCommitted();
@@ -404,10 +446,21 @@ export class DetectionService {
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const next = this.queue.catch(() => undefined).then(operation);
     this.lastWork = next;
-    this.queue = next.then(() => undefined, () => undefined);
+    this.queue = next.then(
+      () => undefined,
+      () => undefined,
+    );
     return next;
   }
-  private notifyCommitted(): void { this.committedListeners.forEach((listener) => { try { listener(); } catch (error) { this.deps.onError?.(error); } }); }
+  private notifyCommitted(): void {
+    this.committedListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        this.deps.onError?.(error);
+      }
+    });
+  }
   private runLifecycle(operation: () => Promise<void>): Promise<void> {
     const next = this.lifecycle.catch(() => undefined).then(operation);
     this.lifecycle = next.catch(() => undefined);
