@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { findFeature, protectedAppRoutes, type Proof, type ProofAction } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, relaunch, screenshot, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, relaunch, screenshot, setLocation, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
 
@@ -36,7 +36,10 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
   const actionAttempts: ActionAttempt[] = [];
   for (const action of proof.actions ?? []) {
     try {
-      const result = action.kind === 'tap' ? await tap(udid, action.value) : action.kind === 'open' ? (openUrl(udid, action.value), 'opened') : typeText(udid, action.value);
+      const expected = action.kind === 'expect' ? await waitForLabels(udid, [action.value], proof.wait) : null;
+      if (expected && expected.missing.length) throw new Error('Expected transition was not shown');
+      if (expected) screenshot(udid, join(dir, `${proof.name}.action-${actionAttempts.length}.png`));
+      const result = action.kind === 'expect' ? 'expected label shown' : action.kind === 'location' ? setLocation(udid, action.value) : action.kind === 'tap' ? await tap(udid, action.value) : action.kind === 'open' ? (openUrl(udid, action.value), 'opened') : typeText(udid, action.value);
       actionAttempts.push({ action: action.kind, value: action.kind === 'type' ? `${action.value.length} characters` : action.value, result });
     } catch {
       failedTaps.push(`${action.kind} "${action.value}"`);
@@ -98,7 +101,7 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
       if (denied.missing.length > 0) break;
     }
   }
-  if ((proof.thenTap?.length || proof.thenOpen) && result.missing.length === 0) {
+  if ((proof.thenTap?.length || proof.thenOpen || proof.thenExpect?.length) && result.missing.length === 0) {
     screenshot(udid, join(dir, `${proof.name}.before.png`));
     for (const label of proof.thenTap ?? []) {
       try {

@@ -6,7 +6,7 @@ export type FakePrompt =
   { kind: 'permission'; name: keyof Permissions; scope?: 'always' } | { kind: 'picker'; initial: LockedApps };
 export type RuntimeEvent = { at: string; event: string; props: Record<string, unknown> };
 export type DevSnapshot = RuntimeStatusSnapshot & {
-  gymVisits?: { transitions: number; visits: number; confirmed: boolean; autoDetect: boolean };
+  gymVisits?: { transitions: number; visits: number; confirmed: boolean; autoDetect: boolean; progressMinutes: number };
   stepsOverride?: { value: number; day: string; at: string };
   scenarioId: string;
   promptMode: 'grant' | 'deny' | 'ask';

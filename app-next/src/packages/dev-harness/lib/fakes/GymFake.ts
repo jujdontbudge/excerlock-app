@@ -2,6 +2,7 @@ import { projectGymProgress } from '../gymProgress';
 import type { GymPort, GymLocationFix } from '../../../ports/GymPort';
 import { permissionsStore } from '../../../permissions/permissionsStore';
 import { settingsStore } from '../../../preferences/settingsStore';
+import { rulesStore } from '../../../conditions/rulesStore';
 import { ruleDaysStore } from '../../../conditions/ruleDaysStore';
 import { GeofenceEventProcessor } from '../../../activity/GymVisitProcessor';
 import { AsyncStorageGymVisitLog, gymVisitLogEpoch, resumeGymVisitLogWrites, suspendGymVisitLogWritesAndReset } from '../../../activity/AsyncStorageGymVisitLog';
@@ -29,7 +30,7 @@ export function GymFake(ctx: FakeContext, readFix?: () => Promise<GymLocationFix
     if (disposed || ctx.snapshot().loading) return;
     projectGymProgress(ctx, state, (id) => processor.isInside(id) === true);
     await ruleDaysStore.persistBarrier();
-    const snapshot = { transitions: state.records.length, visits: state.intervals.length, confirmed: state.intervals.some((visit) => visit.exitedAt === null), autoDetect: settingsStore.getState().data.gymAutoDetect };
+    const snapshot = { transitions: state.records.length, visits: state.intervals.length, confirmed: state.intervals.some((visit) => visit.exitedAt === null), autoDetect: settingsStore.getState().data.gymAutoDetect, progressMinutes: Math.floor(ruleDaysStore.getState().data.days.filter((row) => rulesStore.getState().data.rules.some((condition) => condition.id === row.ruleId && condition.activity === 'gym' && condition.mode.kind === 'target')).reduce((sum, row) => sum + row.progress, 0)) };
     if (JSON.stringify(ctx.snapshot().gymVisits) !== JSON.stringify(snapshot)) ctx.update({ gymVisits: snapshot });
   };
   const flush = () => { const next = writes.catch(() => undefined).then(project); writes = next; return next; };
