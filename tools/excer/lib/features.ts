@@ -6,7 +6,7 @@ import { read, walk } from './files.ts';
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
 export type ProofAction = { kind: 'tap' | 'type' | 'open' | 'location' | 'expect'; value: string };
-export type Proof = { name: string; scenario?: string; open?: string; openWait?: number; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; expect: string[]; absent?: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[]; centringIgnore?: string[] };
+export type Proof = { name: string; scenario?: string; open?: string; openWait?: number; prompt?: string; relaunch?: boolean; relaunchAfterExpect?: boolean; afterRelaunchExpect?: string[]; actions?: ProofAction[]; tap?: string[]; gesture?: 'back'; swipe?: string; expect: string[]; absent?: string[]; wait: number; thenTap?: string[]; thenOpen?: string; thenExpect?: string[]; denyRoutes?: 'protected'; denyExpect?: string[]; notifications?: ('home' | 'unlock')[]; notificationExpect?: string[]; centringIgnore?: string[] };
 
 export type Feature = {
   id: string;
@@ -82,6 +82,7 @@ function parseProofs(body: string): Proof[] {
       return { kind: pair[1] as ProofAction['kind'], value: pair[2] };
     });
     if (fields.tap) proof.tap = fields.tap.split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.swipe) proof.swipe = fields.swipe;
     if (fields.gesture === 'back') proof.gesture = 'back';
     if (fields['centring-ignore']) proof.centringIgnore = fields['centring-ignore'].split('|').map((item) => item.trim()).filter(Boolean);
     return proof;

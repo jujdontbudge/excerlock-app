@@ -2,7 +2,9 @@ import { Activity } from '../../model/types';
 const date = (day: string, options: Intl.DateTimeFormatOptions) =>
   new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', ...options });
 export const analyticsCopy = {
-  title: 'Analytics',
+  metricTitles: { walking: 'Steps', gym: 'Time in gym' },
+  chooseMetric: 'Show activity',
+  changeMetric: (title: string) => `${title}, change activity`,
   periods: ['D', 'W', 'M'],
   periodIds: { D: 'Day', W: 'Week', M: 'Month' } as const,
   previous: 'Previous period',

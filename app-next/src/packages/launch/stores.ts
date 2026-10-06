@@ -1,3 +1,4 @@
+import { analyticsPreferencesStore } from '../insights/analyticsPreferencesStore';
 import { historyStore } from '../progress/historyStore';
 import { profileStore } from '../preferences/profileStore';
 import { rulesStore } from '../conditions/rulesStore';
@@ -11,6 +12,7 @@ import { rememberedSignInStore } from '../identity/rememberedSignIn';
 import { rememberedAdmissionStore } from '../subscription/rememberedAdmission';
 import { filmingModeStore } from '../activity/filmingModeStore';
 export const stores = [
+  analyticsPreferencesStore,
   historyStore,
   profileStore,
   rulesStore,
