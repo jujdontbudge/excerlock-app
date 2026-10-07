@@ -1,13 +1,13 @@
 import { View } from 'react-native';
-import { Heading, Label, PressableScale } from '../ui';
+import { Heading, Label, PressableScale, SecondaryButton } from '../ui';
 import { tokens as t } from '../ui/tokens';
 import { planCopy as c } from '../conditions/planCopy';
 import { ruleName } from '../conditions/ruleName';
 import { scheduleLabel } from '../schedule/scheduleLabel';
-import { Schedule } from '../model/types';
+import { Rule, Schedule } from '../model/types';
 import { LivingIcon } from '../ui/LivingIcon';
 import { Reveal } from '../ui/Reveal';
-import { RuleDraft, toRule } from '../conditions/draft';
+import { RuleDraft, fromRule, toRule } from '../conditions/draft';
 import { goalStep } from './lib/plan';
 import { Answers } from '../model/answers';
 import { planGoals } from './lib/planGoals';
@@ -21,19 +21,30 @@ export function PlanSummary({
   onEdit,
   answers,
   editing = false,
+  extras = [],
+  onAdd,
+  onRemove,
 }: {
   draft: RuleDraft;
   answers?: Answers;
   schedule: Schedule;
   onEdit: (step: string) => void;
   editing?: boolean;
+  extras?: Rule[];
+  onAdd?: () => void;
+  onRemove?: (id: string) => void;
 }) {
   const rule = toRule(draft, schedule);
   if (answers) {
-    const goals = planGoals(answers);
+    const goals = planGoals(answers, [draft.activity, ...extras.map((extra) => extra.activity)]);
     return <>
-      <Heading title={c.projected} />
       <ConditionPreview icon={draft.activity} schedule={schedule} sentence={conditionSentence(answers, draft, { schedule, goalChosen: true })} />
+      {extras.map((extra) => {
+        const sentence = conditionSentence({}, fromRule(extra), { schedule: extra.schedule, goalChosen: true });
+        return <ConditionPreview key={extra.id} caption={false} icon={extra.activity} schedule={extra.schedule} sentence={sentence}
+          onRemove={onRemove ? () => onRemove(extra.id) : undefined} removeLabel={c.removeCondition(sentence ?? '')} />;
+      })}
+      <Heading title={c.projected} centered />
       <View style={{ gap: t.space.md }}>
         {goals.map((goal, index) => <Reveal key={goal.id} index={index}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg, padding: t.space.lg,
@@ -43,6 +54,10 @@ export function PlanSummary({
           </View>
         </Reveal>)}
       </View>
+      {onAdd ? <Reveal index={goals.length}>
+        <SecondaryButton label={c.addCondition} onPress={onAdd}
+          leading={<Icon name="plus" variant="utility" tone="accent" size={t.icon.md} />} />
+      </Reveal> : null}
     </>;
   }
   const rows = [

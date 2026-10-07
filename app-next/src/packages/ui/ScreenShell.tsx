@@ -11,6 +11,7 @@ export function ScreenShell({
   background,
   safeBottom = true,
   dock = false,
+  bounce = true,
   scrollUnderStatusBar = true,
   tinted = true,
   orangeBackground = true,
@@ -26,6 +27,7 @@ export function ScreenShell({
   background?: ReactNode;
   safeBottom?: boolean;
   dock?: boolean;
+  bounce?: boolean;
   scrollUnderStatusBar?: boolean;
   tinted?: boolean;
   orangeBackground?: boolean;
@@ -76,7 +78,7 @@ export function ScreenShell({
           <ScrollView
             testID="screen-scroll"
             ref={scroll}
-            alwaysBounceVertical
+            alwaysBounceVertical={bounce}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={[

@@ -11,7 +11,7 @@ depends: [launch]
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
 - A tilted field of locked TikTok, Instagram, YouTube, Snapchat, X, Facebook, Reddit, Threads, Netflix and Pinterest App Store icons, mixed with orange SF Symbol exercise and health marks, fills the top of the orange screen. Tiles touching the headline go faint and tiles behind the frosted Benefits card show through at reduced strength. Below sit the free trial switch, the white Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and the orange Start for $0.00 button. With the trial on, each row reads "FREE" on top and "<days> day trial then <price>/wk" underneath, with no yearly amount. With the trial off, each row shows the plan name and billed price (Yearly $49.99/year) over the per-week price. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link.
 - The Benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
-- The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The dev fake serves both kinds; production serves trial-only plans until no-trial twins are attached in Adapty.
+- The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The regular dev fake serves both kinds. As checked on 2026-10-06, the live onboarding placement includes annual and monthly trial and no-trial products. The bundled fallback and identity-lab payment scenarios still serve trial-only products, which hide the switch; use fresh-install for the switch proof.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -31,6 +31,7 @@ expect: Become ADDICTED to exercise | Benefits | Lose 15.0 pounds of fat | Walk 
 
 ```proof
 name: trial-switch
+scenario: fresh-install
 open: /sample-paywall
 tap: Free trial enabled
 expect: Enable free trial | Yearly $49.99/year · $0.96/wk | Monthly $9.99/month · $2.31/wk | Continue
@@ -42,7 +43,7 @@ then-expect: Free trial enabled | Yearly FREE · 7 day trial then $0.96/wk | Mon
 name: personalized-fat-goal
 scenario: fresh-install
 open: /onboarding/O08
-tap: Less screen time | Continue | Lose fat | Continue | Continue
+tap: Less screen time | Continue | Lose fat | Continue | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
 then-open: /sample-paywall?answers=keep
 then-expect: Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
@@ -52,7 +53,7 @@ then-expect: Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hour
 name: personalized-muscle-goal
 scenario: fresh-install
 open: /onboarding/O08
-tap: More exercise | Continue | Gain muscle | Continue | Continue
+tap: More exercise | Continue | Gain muscle | Continue | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
 then-open: /sample-paywall?answers=keep
 then-expect: Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
@@ -62,7 +63,7 @@ then-expect: Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 h
 name: personalized-both-goals
 scenario: fresh-install
 open: /onboarding/O08
-tap: More exercise | Continue | Gain muscle | Lose fat | Continue | Continue | Continue
+tap: More exercise | Continue | Gain muscle | Lose fat | Continue | Continue | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
 then-open: /sample-paywall?answers=keep
 then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
@@ -72,7 +73,7 @@ then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Walk 10,000 
 name: personalized-maintain-goal
 scenario: fresh-install
 open: /onboarding/O08
-tap: Overall wellness | Continue | Maintain | Continue
+tap: Overall wellness | Continue | Maintain | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
 then-open: /sample-paywall?answers=keep
 then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
@@ -82,7 +83,7 @@ then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock
 name: personalized-other-goal
 scenario: fresh-install
 open: /onboarding/O08
-tap: Something else | Continue | Maintain | Continue
+tap: Something else | Continue | Maintain | Continue | Continue
 expect: How many hours do you currently spend scrolling each day?
 then-open: /sample-paywall?answers=keep
 then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
@@ -214,11 +215,10 @@ absent: Choose a plan | Starting your plan | Please retry
 name: identity-purchase-error-retries-original-checkout
 scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
-tap: Start for $0.00
+actions: tap Start for $0.00 | open /dev | expect purchase_failed {"reason_class":"unknown"} | expect paywall_error {"operation":"purchase"} | open /paywall | tap Start for $0.00 | tap Continue with Apple
 wait: 25
-expect: That didn't go through. Please try again. | Start for $0.00
+expect: Allow Screen Time
 absent: could not finish | Starting your plan
-then-tap: Start for $0.00 | Continue with Apple
 then-open: /dev
 then-expect: Journey setup · paid yes · admitted no | Active account Checkout | Purchase recovery none | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":0,"recovery":"none"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"} | Protected route mounts | None
 ```
@@ -323,6 +323,7 @@ then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_r
 ```
 
 ## Gotchas
+- The purchase-error retry proof checks the recorded error before retrying, because the floating error notice can disappear while the simulator accessibility query runs.
 - The app uses Adapty, not RevenueCat.
 - In a dev build the paywall is a local stand-in with dash prices. Seeing real prices means the real runtime is running (see the launch Gotchas).
 - A new PostHog flag, or a new consumer of `paywall_variant`, is App Store submission material, never an OTA (`docs/ota.md`, `excer check` `flag-registry`).

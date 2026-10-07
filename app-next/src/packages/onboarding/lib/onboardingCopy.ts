@@ -1,13 +1,14 @@
 export const onboardingCopy = {
-  O01: { title: 'Block apps. Move more.', body: 'Less scrolling. More moving.' },
-  O02: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More moving.' },
-  O03: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More moving.' },
+  O01: { title: 'HACK your brain to hit your fitness goals', body: '' },
+  O02: { title: 'Block apps. Move more.', body: 'Less scrolling. More moving.' },
+  O03: { title: 'Cut your screen\ntime in half', body: 'Less screens. More happiness.' },
   O04: { title: 'What should we call you?', body: 'Let’s make this personal.' },
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
   O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
   O07: { title: 'What is your gender?', body: '' },
   O22: { title: 'What are your body goals?', body: '' },
+  O25: { title: 'What are you struggling with?', body: '' },
   O10: {
     title: 'How many hours do you currently spend scrolling each day?',
     body: 'Don’t worry about the exact number. Just give your best guess.',
@@ -41,6 +42,7 @@ export const loopSubheads = {
 export const onboardingLabels = {
   start: 'Get started',
   continue: 'Continue',
+  selectAll: 'Select all that apply',
   name: 'First name',
   nameError: 'Keep your name to 30 characters or fewer.',
   hours: 'Hours scrolling per day',

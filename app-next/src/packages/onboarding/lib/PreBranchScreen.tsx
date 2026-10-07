@@ -20,7 +20,7 @@ import { ChoiceQuestion } from './scenes/ChoiceQuestion';
 import { BodyTarget } from './screens/BodyTarget';
 const screens = { O01, O02, O03, O04, O05, O06, O08, O10, O11, O15, O20 };
 export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string; back?: () => void }) {
-  if (['O07', 'O22'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
+  if (['O07', 'O22', 'O25'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
   if (step === 'O23' || step === 'O24') return <BodyTarget step={step} {...props} />;
   if (step in activityBaseline) {
     const question = activityBaseline[step as BaselineStep];

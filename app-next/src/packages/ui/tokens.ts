@@ -51,6 +51,7 @@ export const tokens = {
     error: '#BD3038',
   },
   chart: {
+    barWidth: 22, barPlot: 168, barMinimum: 14, barHeadroom: 22,
     exercise: '#C94710', comparison: '#92929C', grid: '#ECECEF',
     ringBase: '#D9531B', ringMid: '#E45E25', ringOverflow: '#EF6B32', ringEndpoint: '#FF7A3D',
     ringEndpointShadow: 'rgba(116,53,16,0.34)',

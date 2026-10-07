@@ -1,9 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
+import { BottomSheet, ChoiceRow, Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
 import { Icon } from '../ui/Icon';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { useMotion } from '../ui/useMotion';
+import { analyticsPreferencesStore as useAnalyticsPreferencesStore } from './analyticsPreferencesStore';
 import { fadeIn } from '../ui/presets';
 import { tokens as t } from '../ui/tokens';
 import { useClock, useHistory } from '../lock/selectors';
@@ -41,6 +44,13 @@ export function AnalyticsScreen() {
   const [period, setPeriod] = useState<Period>('Week');
   const [offset, setOffset] = useState(0);
   const [monthTrendOffset, setMonthTrendOffset] = useState(0);
+  const [metricPickerOpen, setMetricPickerOpen] = useState(false);
+  const selectedActivity = useAnalyticsPreferencesStore((state) => state.data.activity);
+  const motion = useMotion();
+  const { timing, spring, reduced } = motion;
+  const chartX = useSharedValue(0);
+  const chartWidth = useSharedValue(0);
+  const transitioning = useSharedValue(false);
   const runtime = useRuntime();
   const now = useClock();
   const history = useHistory();
@@ -57,7 +67,11 @@ export function AnalyticsScreen() {
     [rules],
   );
   const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
-  const primaryActivity = gymRules.length ? 'gym' : 'walking';
+  const canSwitchActivity = rules.some((condition) => condition.activity === 'walking')
+    && rules.some((condition) => condition.activity === 'gym');
+  const availableChoice = selectedActivity && rules.some((condition) => condition.activity === selectedActivity);
+  const primaryActivity = availableChoice ? selectedActivity : gymRules.length ? 'gym' : 'walking';
+  const metricTitle = c.metricTitles[primaryActivity];
   const walkingRule = enabledRules.find(
     (rule) => rule.activity === 'walking' && rule.mode.kind === 'target' && rule.mode.metric === 'steps',
   );
@@ -112,23 +126,70 @@ export function AnalyticsScreen() {
     ? previousValues.reduce((total, value) => total + value, 0) / previousValues.length
     : 0;
   const metricUnit = primaryActivity === 'walking' ? 'steps' : 'minutes';
+  const commitPeriod = useCallback((next: number, direction: number) => {
+    chartX.set(reduced ? 0 : -direction * chartWidth.get());
+    setOffset(next);
+    haptic('select');
+  }, [chartX, chartWidth, reduced]);
+  useEffect(() => {
+    chartX.set(spring(0, 'control', () => {
+      'worklet';
+      transitioning.set(false);
+    }));
+  }, [offset, period, chartX, spring, transitioning]);
   const movePeriod = useCallback((translationX: number) => {
     const next = offsetAfterPeriodSwipe(offset, translationX);
-    if (next === offset) return;
-    haptic('select');
-    setOffset(next);
-  }, [offset]);
+    if (next === offset) {
+      chartX.set(spring(0, 'control'));
+      return;
+    }
+    if (period !== 'Week' || reduced) {
+      setOffset(next);
+      haptic('select');
+      return;
+    }
+    transitioning.set(true);
+    const direction = next < offset ? 1 : -1;
+    chartX.set(timing(direction * chartWidth.get(), 'standard', {
+      done: (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(commitPeriod, next, direction);
+      },
+    }));
+  }, [offset, period, reduced, chartX, chartWidth, transitioning, spring, timing, commitPeriod]);
   const periodSwipe = useMemo(
     () => Gesture.Pan()
-      .activeOffsetX([-24, 24])
-      .failOffsetY([-18, 18])
-      .onEnd((event) => { runOnJS(movePeriod)(event.translationX); }),
-    [movePeriod],
+      .activeOffsetX([-t.space.xl, t.space.xl])
+      .failOffsetY([-t.space.lg, t.space.lg])
+      .onUpdate((event) => {
+        if (period === 'Week' && !reduced && !transitioning.get()) {
+          chartX.set(offset === 0 ? Math.max(0, event.translationX) : event.translationX);
+        }
+      })
+      .onEnd((event) => {
+        if (!transitioning.get()) scheduleOnRN(movePeriod, event.translationX);
+      })
+      .onFinalize((_event, success) => {
+        if (!success && !transitioning.get()) chartX.set(spring(0, 'control'));
+      }),
+    [movePeriod, period, offset, reduced, transitioning, chartX, spring],
   );
+  const chartPosition = useAnimatedStyle(() => ({ transform: [{ translateX: chartX.get() }] }));
+  const title = <Label accessibilityRole="header" variant="display" style={{ flexShrink: 1 }}>{metricTitle}</Label>;
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
-        <Label accessibilityRole="header" variant="display" style={{ flex: 1 }}>{c.title}</Label>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          {canSwitchActivity ? (
+            <PressableScale label={c.changeMetric(metricTitle)} accessibilityHint={c.chooseMetric}
+              onPress={() => setMetricPickerOpen(true)} style={s.metricTitle}>
+              {title}
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <Icon name="chevron" size={t.icon.sm} tone="muted" variant="utility" />
+              </View>
+            </PressableScale>
+          ) : title}
+        </View>
         <View style={s.periodControl}>
           <SegmentedControl
             options={['D', 'W', 'M']}
@@ -153,21 +214,25 @@ export function AnalyticsScreen() {
                 key={period}
                 entering={fadeIn}
                 style={s.chart}>
-              {period === 'Day' ? (
-                <View style={s.dayStage}>
-                  <PeriodStep direction="back" onPress={() => setOffset(offset - 1)} />
-                  <DailyActivityRing value={movementTotal} goal={goal} unit={metricUnit} dayLabel={dayLabel} />
-                  <PeriodStep direction="next" onPress={() => setOffset(offset + 1)} disabled={offset >= 0} />
-                </View>
-              ) : period === 'Month' ? (
-                <MonthGrid
-                  data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
-                  goal={goal}
-                  unit={metricUnit}
-                />
-              ) : (
-                <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
-              )}
+                <Animated.View
+                  onLayout={(event) => chartWidth.set(event.nativeEvent.layout.width)}
+                  style={[s.chart, period === 'Week' ? chartPosition : undefined]}>
+                  {period === 'Day' ? (
+                    <View style={s.dayStage}>
+                      <PeriodStep direction="back" onPress={() => setOffset(offset - 1)} />
+                      <DailyActivityRing value={movementTotal} goal={goal} unit={metricUnit} dayLabel={dayLabel} />
+                      <PeriodStep direction="next" onPress={() => setOffset(offset + 1)} disabled={offset >= 0} />
+                    </View>
+                  ) : period === 'Month' ? (
+                    <MonthGrid
+                      data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
+                      goal={goal}
+                      unit={metricUnit}
+                    />
+                  ) : (
+                    <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
+                  )}
+                </Animated.View>
               </Animated.View>
             </View>
           </GestureDetector>
@@ -180,6 +245,15 @@ export function AnalyticsScreen() {
             onSelect={period === 'Month' ? setMonthTrendOffset : setOffset}
           />
       </View>
+      <BottomSheet open={metricPickerOpen && canSwitchActivity} title={c.chooseMetric} onDismiss={() => setMetricPickerOpen(false)}>
+        {(['walking', 'gym'] as const).map((activity) => (
+          <ChoiceRow key={activity} title={c.metricTitles[activity]} selected={primaryActivity === activity}
+            onPress={() => {
+              useAnalyticsPreferencesStore.getState().patch({ activity });
+              setMetricPickerOpen(false);
+            }} />
+        ))}
+      </BottomSheet>
     </ScreenShell>
   );
 }
@@ -249,9 +323,10 @@ function streakStat(streak: number): ActivityStat {
 const s = StyleSheet.create({
   content: { gap: t.space.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
-  periodControl: { width: 200 },
+  metricTitle: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
+  periodControl: { width: t.control.inline * 3 },
   periodContent: { gap: t.space.lg },
-  swipeArea: { gap: t.space.lg },
+  swipeArea: { gap: t.space.lg, overflow: 'hidden' },
   chart: { width: '100%' },
   dayStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   step: { width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' },

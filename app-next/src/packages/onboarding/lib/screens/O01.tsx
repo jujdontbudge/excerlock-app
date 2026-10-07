@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Heading, Label } from '../../../ui';
+import { Heading } from '../../../ui';
 import { tokens as t } from '../../../ui/tokens';
 import { Reveal } from '../../../ui/Reveal';
 import { onboardingCopy } from '../onboardingCopy';
@@ -13,11 +13,6 @@ export function O01() {
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.hero }}>
         <WelcomeArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: t.space.xl }}>
-        <Label style={{ ...t.type.section, color: t.text.primary, textAlign: 'center' }}>
-          {onboardingCopy.O01.body}
-        </Label>
-      </Reveal>
       <Reveal index={4} style={{ marginTop: art.welcome.gap.dots, alignItems: 'center' }}>
         <View accessible accessibilityLabel={welcomeCopy.pagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
           {[0, 1, 2].map((i) => (

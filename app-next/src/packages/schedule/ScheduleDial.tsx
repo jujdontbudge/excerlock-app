@@ -1,5 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, ViewProps, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { View, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg';
 import { Label } from '../ui/Label';
 import { PressableScale } from '../ui/PressableScale';
@@ -13,6 +16,7 @@ const SIZE = 360;
 const CENTER = SIZE / 2;
 const RADIUS = 154;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const SMALLEST = SIZE * 0.8;
 
 export function ScheduleDial({
   startMinute, endMinute, allDay, onChange, onChoose,
@@ -23,65 +27,60 @@ export function ScheduleDial({
   onChange: (which: ScheduleHandle, minute: number) => void;
   onChoose: (which: ScheduleHandle) => void;
 }) {
-  const { width } = useWindowDimensions();
-  const size = Math.min(width - t.layout.page * 2, 420);
-  const [preview, setPreview] = useState({ start: startMinute, end: endMinute });
-  const [dragging, setDragging] = useState(false);
-  const active = useRef<ScheduleHandle | null>(null);
-  const origin = useRef({ x: 0, y: 0 });
-  const live = useRef({ preview, size, onChange });
-  useLayoutEffect(() => {
-    live.current = { preview, size, onChange };
-  });
-  useEffect(() => {
-    if (!active.current) setPreview({ start: startMinute, end: endMinute });
-  }, [startMinute, endMinute]);
+  const { width, fontScale } = useWindowDimensions();
+  const widest = Math.min(width - t.layout.page * 2, 420);
+  const caption = t.type.section.lineHeight * Math.min(fontScale, t.a11y.textScale);
+  const [room, setRoom] = useState<number>();
+  const size = Math.max(SMALLEST, Math.min(widest, (room ?? 0) - caption - t.space.lg));
+  const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
+  const preview = draft ?? { start: startMinute, end: endMinute };
+  const dragging = draft !== null;
+  const active = useSharedValue<ScheduleHandle | null>(null);
+  const shown = useSharedValue({ start: startMinute, end: endMinute });
 
-  const responders: ViewProps = {
-    onStartShouldSetResponder: (event) => {
-      const scale = SIZE / live.current.size;
-      const x = event.nativeEvent.locationX * scale;
-      const y = event.nativeEvent.locationY * scale;
-      return Math.abs(Math.hypot(x - CENTER, y - CENTER) - RADIUS) <= 28;
-    },
-    onResponderGrant: (event) => {
-      const e = event.nativeEvent;
-      const scale = SIZE / live.current.size;
-      origin.current = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
-      const minute = dialMinute(e.locationX * scale, e.locationY * scale, CENTER);
-      active.current = nearestHandle(minute, live.current.preview.start, live.current.preview.end);
-      setDragging(true);
-      haptic('select');
-      return true;
-    },
-    onResponderMove: (event) => {
-      const which = active.current;
-      if (!which) return;
-      const scale = SIZE / live.current.size;
-      const minute = dialMinute((event.nativeEvent.pageX - origin.current.x) * scale,
-        (event.nativeEvent.pageY - origin.current.y) * scale, CENTER);
-      const p = live.current.preview;
-      const value = boundedMinute(which, minute, p.start, p.end);
-      if (p[which] === value) return;
-      if (Math.floor(p[which] / 60) !== Math.floor(value / 60)) haptic('detent');
-      const next = { ...p, [which]: value };
-      live.current.preview = next;
-      setPreview(next);
-    },
-    onResponderRelease: () => {
-      const which = active.current;
-      active.current = null;
-      setDragging(false);
-      if (which) { live.current.onChange(which, live.current.preview[which]); haptic('select'); }
-    },
-    onResponderTerminationRequest: () => false,
-    onResponderTerminate: () => {
-      const which = active.current;
-      active.current = null;
-      setDragging(false);
-      if (which) live.current.onChange(which, live.current.preview[which]);
-    },
-  };
+  const grab = useCallback((current: { start: number; end: number }) => {
+    setDraft(current);
+    haptic('select');
+  }, []);
+  const drop = useCallback((which: ScheduleHandle, minute: number, success: boolean) => {
+    onChange(which, minute);
+    setDraft(null);
+    if (success) haptic('select');
+  }, [onChange]);
+  const drag = useMemo(() => {
+    const scale = SIZE / size;
+    return Gesture.Pan()
+      .manualActivation(true)
+      .onTouchesDown((event, manager) => {
+        if (event.numberOfTouches !== 1) return;
+        const touch = event.allTouches[0];
+        if (Math.abs(Math.hypot(touch.x * scale - CENTER, touch.y * scale - CENTER) - RADIUS) <= 28) manager.activate();
+        else manager.fail();
+      })
+      .onStart((event) => {
+        const current = { start: startMinute, end: endMinute };
+        shown.set(current);
+        active.set(nearestHandle(dialMinute(event.x * scale, event.y * scale, CENTER), current.start, current.end));
+        scheduleOnRN(grab, current);
+      })
+      .onUpdate((event) => {
+        const which = active.get();
+        if (which === null) return;
+        const p = shown.get();
+        const value = boundedMinute(which, dialMinute(event.x * scale, event.y * scale, CENTER), p.start, p.end);
+        if (p[which] === value) return;
+        if (Math.floor(p[which] / 60) !== Math.floor(value / 60)) scheduleOnRN(haptic, 'detent');
+        const next = { ...p, [which]: value };
+        shown.set(next);
+        scheduleOnRN(setDraft, next);
+      })
+      .onFinalize((_event, success) => {
+        const which = active.get();
+        if (which === null) return;
+        active.set(null);
+        scheduleOnRN(drop, which, shown.get()[which], success);
+      });
+  }, [size, startMinute, endMinute, active, shown, grab, drop]);
 
   const start = minuteLabel(preview.start);
   const end = minuteLabel(preview.end);
@@ -90,7 +89,7 @@ export function ScheduleDial({
   const durationText = `${Math.floor(duration / 60)} hr${duration % 60 ? ` ${duration % 60} min` : ''}`;
 
   return (
-    <View style={{ gap: t.space.lg }}>
+    <View style={{ flexGrow: 1, gap: t.space.lg }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: t.space.lg }}>
         {(['start', 'end'] as const).map(which => (
           <View key={which} style={{ flex: 1 }}>
@@ -103,7 +102,13 @@ export function ScheduleDial({
           </View>
         ))}
       </View>
-      <View testID="schedule-dial" {...responders} style={{ width: size, height: size, alignSelf: 'center' }}>
+      <View
+        onLayout={(event) => setRoom(event.nativeEvent.layout.height)}
+        style={{ flexGrow: 1, minHeight: SMALLEST + t.space.lg + caption }}>
+      {room === undefined ? null : (
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', gap: t.space.lg }}>
+      <GestureDetector gesture={drag}>
+      <View testID="schedule-dial" style={{ width: size, height: size }}>
         <View pointerEvents="none" accessible accessibilityRole="image"
           accessibilityLabel={allDay ? 'Blocking window all day' : `Blocking window from ${start} to ${end}`}>
           <Svg width={size} height={size} viewBox={`0 0 ${SIZE} ${SIZE}`} accessible={false}>
@@ -145,13 +150,16 @@ export function ScheduleDial({
               const action = event.nativeEvent.actionName;
               if (action !== 'increment' && action !== 'decrement') return;
               const minute = boundedMinute(which, preview[which] + (action === 'increment' ? 1 : -1), preview.start, preview.end);
-              setPreview({ ...preview, [which]: minute });
               onChange(which, minute);
             }}
             style={{ position: 'absolute', left: points[which].x / SIZE * size - 22, top: points[which].y / SIZE * size - 22, width: 44, height: 44 }} />
         ))}
       </View>
+      </GestureDetector>
       <Label variant="section" style={{ textAlign: 'center' }}>{durationText}</Label>
+      </View>
+      )}
+      </View>
     </View>
   );
 }

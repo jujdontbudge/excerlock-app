@@ -180,8 +180,11 @@ function content(raster: Raster, scale: number, frame: Frame): Measured | null {
     const sides = [piece.left === 0, piece.right === w, piece.top === 0, piece.bottom === h];
     if (sides.filter(Boolean).length !== 1) continue;
     const reach = borderInset * scale;
-    if (sides[0] || sides[1]) clipped.x ||= height(piece) < h / 2 && piece.right - piece.left >= reach;
-    else clipped.y ||= piece.right - piece.left < w / 2 && height(piece) >= reach;
+    if (sides[0] || sides[1]) {
+      const glyph = height(piece) < h / 2 && piece.right - piece.left >= reach;
+      clipped.x ||= glyph;
+      if (glyph) parts.push({ left: (piece.left + x0) / scale, right: (piece.right + x0) / scale, top: (piece.top + y0) / scale, bottom: (piece.bottom + y0) / scale, pixels: piece.pixels });
+    } else clipped.y ||= piece.right - piece.left < w / 2 && height(piece) >= reach;
   }
   let backdrop = 0;
   for (let p = 0; p < w * h; p += 1) backdrop += outside[p] && ink[p] ? 1 : 0;

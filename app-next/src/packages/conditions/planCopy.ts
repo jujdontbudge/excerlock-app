@@ -7,6 +7,8 @@ export const planCopy = {
   S3: 'Your plan is ready',
   summaryBody: 'A little movement. More room for your life.',
   projected: 'Projected results',
+  addCondition: 'Add another Condition',
+  removeCondition: (sentence: string) => `Remove Condition: ${sentence}`,
   activity: 'Activity & goal',
   schedule: 'Days & times',
   edit: 'Edit',

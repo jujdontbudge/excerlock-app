@@ -12,13 +12,18 @@ import { ScheduleScreen } from '../conditions/ScheduleScreen';
 import { TimeSheet } from '../conditions/TimeSheet';
 import { PlanSummary } from '../onboarding/PlanSummary';
 import { toSchedule } from '../conditions/scheduleDraft';
-import { Activity } from '../model/types';
+import { Activity, Rule } from '../model/types';
 import { SetupPresentation } from '../ui/SetupPresentation';
 import { ConfirmSheet } from '../ui/ConfirmSheet';
 import { useBuilder } from './lib/useBuilder';
 import { BuilderGymStep } from '../gyms/BuilderGymStep';
-export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClose: () => void; onNeeds?: () => void }) {
-  const f = useBuilder(id, onClose, onNeeds),
+export function ConditionBuilder({ id, onClose, onNeeds, onStage }: {
+  id?: string;
+  onClose: () => void;
+  onNeeds?: () => void;
+  onStage?: (rule: Rule) => void;
+}) {
+  const f = useBuilder(id, onClose, onNeeds, onStage),
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);
@@ -29,6 +34,7 @@ export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClos
     <SetupPresentation>
     <ScreenShell
       scrollResetKey={f.step}
+      bounce={f.step !== 'S1'}
       header={
         <OnboardingHeader
           progress={0}
@@ -44,7 +50,7 @@ export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClos
       }
       overlay={
         <>
-          {f.draft.activity === 'gym' ? <GymBackgroundSetup /> : null}
+          {f.draft.activity === 'gym' && !onStage ? <GymBackgroundSetup /> : null}
           <TimeSheet
             which={wheel}
             value={wheel ? f.schedule[wheel] : f.schedule.start}
@@ -64,7 +70,7 @@ export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClos
           />
         </>
       }>
-      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl }}>
+      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
         {f.step === 'O20' ? (
           <O20
             answers={f.chosen ? { activity: f.draft.activity } : {}}

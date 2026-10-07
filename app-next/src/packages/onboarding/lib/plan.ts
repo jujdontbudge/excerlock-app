@@ -1,5 +1,5 @@
 import { draftFromAnswers } from '../../conditions/answersDraft';
-import { Profile } from '../../model/types';
+import { Profile, Rule } from '../../model/types';
 import { Answers } from '../../model/answers';
 import { RuleDraft, toRule } from '../../conditions/draft';
 import { scheduleDraft, toSchedule } from '../../conditions/scheduleDraft';
@@ -8,12 +8,21 @@ import { profileStore } from '../../preferences/profileStore';
 import { onboardingStore } from '../onboardingStore';
 import { assertScheduleRepresentable, type SchedulePlanContext } from '../../schedule/scheduleRepresentability';
 export { draftFromAnswers } from '../../conditions/answersDraft';
-const proposedPlan = (a: Answers, base?: RuleDraft) => {
+const proposedPlan = (a: Answers, base?: RuleDraft, extras = onboardingStore.getState().data.extraRules) => {
   const draft = draftFromAnswers(a, base),
     rule = toRule(draft, toSchedule(scheduleDraft(a))),
+    staged = [rule, ...extras],
     existing = rulesStore.getState().data.rules;
-  return { rule, rules: [...existing.filter((candidate) => candidate.id !== rule.id), rule] };
+  return { rule, rules: [...existing.filter((candidate) => !staged.some((item) => item.id === candidate.id)), ...staged] };
 };
+export function stageExtraRule(a: Answers, base: RuleDraft, extra: Rule, context?: SchedulePlanContext) {
+  const extras = [...onboardingStore.getState().data.extraRules, extra];
+  assertScheduleRepresentable(proposedPlan(a, base, extras).rules, context);
+  onboardingStore.getState().patch({ extraRules: extras });
+}
+export function removeExtraRule(id: string) {
+  onboardingStore.getState().patch({ extraRules: onboardingStore.getState().data.extraRules.filter((rule) => rule.id !== id) });
+}
 export function stagePlan(a: Answers, base?: RuleDraft, context?: SchedulePlanContext) {
   const { rule, rules } = proposedPlan(a, base);
   assertScheduleRepresentable(rules, context);

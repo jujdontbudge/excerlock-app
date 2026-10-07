@@ -285,6 +285,18 @@ export function typeText(udid: string, value: string): string {
   return `typed ${value.length} characters`;
 }
 
+export function swipe(udid: string, coordinates: string): string {
+  const points = coordinates.split(',').map(Number);
+  if (points.length !== 4 || points.some((point) => !Number.isFinite(point) || point < 0 || point > 1)) {
+    throw new Error('swipe needs xStart,yStart,xEnd,yEnd as screen fractions from 0 to 1');
+  }
+  const screen = tree(udid).find((node) => node.type === 'Application')?.frame;
+  if (!screen) throw new Error('Simulator accessibility tree has no screen frame');
+  const [xStart, yStart, xEnd, yEnd] = points.map((point, index) => Math.round(point * (index % 2 === 0 ? screen.width : screen.height)));
+  must('idb', idbArgs(udid, ['ui', 'swipe', '--udid', udid, String(xStart), String(yStart), String(xEnd), String(yEnd), '--duration', '0.5']));
+  return `swiped from ${xStart},${yStart} to ${xEnd},${yEnd}`;
+}
+
 export function swipeBack(udid: string): string {
   const nodes = tree(udid);
   const screen = nodes

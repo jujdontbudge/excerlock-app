@@ -3,7 +3,7 @@ import { notify } from '../../ui/Notice';
 import { conditionsCopy } from '../../conditions/conditionsCopy';
 import { useStore } from 'zustand';
 import { Keyboard } from 'react-native';
-import { Activity } from '../../model/types';
+import { Activity, Rule } from '../../model/types';
 import { rulesStore } from '../../conditions/rulesStore';
 import { settingsStore as useSettingsStore } from '../../preferences/settingsStore';
 import { createDraft, fromRule, toRule } from '../../conditions/draft';
@@ -15,7 +15,7 @@ import { useRuntime } from '../../ports/useRuntime';
 import { SchedulePlanError } from '../../schedule/scheduleRepresentability';
 import { ruleNeedsSetup } from '../../permissions/useSetupNeeds';
 import { haptic } from '../../ui/haptics';
-export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?: () => void) {
+export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?: () => void, stage?: (rule: Rule) => void) {
   const runtime = useRuntime();
   const gymCount = useSettingsStore((s) => s.data.gymPlaces.length);
   const [initial] = useState(() => {
@@ -77,12 +77,21 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
         setBackup(null);
         move('S3', true);
       } else {
-        const path = builderPath(draft);
+        const path = builderPath(draft, !!stage);
         move(path[Math.max(0, path.indexOf(step) - 1)], true);
       }
     },
     next: () => {
-      if (step === 'S3') {
+      if (stage && step === 'S1') {
+        try {
+          stage(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)));
+          haptic('commit');
+        } catch (error) {
+          if (!(error instanceof SchedulePlanError)) throw error;
+          notify(conditionsCopy.scheduleLimit);
+          haptic('error');
+        }
+      } else if (step === 'S3') {
         try {
           const rule = toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule));
           const saved = saveRule(rule, {
@@ -102,7 +111,7 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
         setBackup(null);
         move('S3');
       } else {
-        const path = builderPath(draft);
+        const path = builderPath(draft, !!stage);
         move(path[path.indexOf(step) + 1]);
       }
     },

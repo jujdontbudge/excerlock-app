@@ -7,6 +7,7 @@ import { Icon, IconName } from '../ui/Icon';
 import { tokens as t } from '../ui/tokens';
 import { BlockingTimeline } from './lib/BlockingTimeline';
 import { LockShackle } from '../ui/LockShackle';
+import { PressableScale } from '../ui/PressableScale';
 export function BlockingScheduleCard({
   message,
   start,
@@ -16,6 +17,8 @@ export function BlockingScheduleCard({
   children,
   window,
   action,
+  onRemove,
+  removeLabel,
 }: {
   message: string;
   start: string;
@@ -25,6 +28,8 @@ export function BlockingScheduleCard({
   children?: ReactNode;
   window?: Schedule['window'];
   action?: ReactNode;
+  onRemove?: () => void;
+  removeLabel?: string;
 }) {
   const [bodyWidth, setBodyWidth] = useState(0);
   const bodyRadius = lock ? bodyWidth * 0.13 : t.radius.card;
@@ -64,6 +69,12 @@ export function BlockingScheduleCard({
                 style={{ ...t.type.label, color: t.text.onAccent, flex: lock ? undefined : 1, flexShrink: 1 }}>
                 {message}
               </Label>
+              {onRemove && removeLabel ? (
+                <PressableScale label={removeLabel} onPress={onRemove} haptic="select"
+                  style={{ width: t.icon.md, alignItems: 'center' }}>
+                  <Icon name="close" variant="utility" tone="onAccent" size={t.icon.md} />
+                </PressableScale>
+              ) : null}
             </View>
             {!lock ? <BlockingTimeline start={start} end={end} window={window} /> : null}
           </View>

@@ -37,6 +37,7 @@ function branchFor(answers: Answers): string[] {
 }
 
 function applies(step: string, answers: Answers): boolean {
+  if (step === 'O25') return bodyGoals(answers).length > 0;
   if (step === 'O23') return bodyGoals(answers).includes('gain');
   if (step === 'O24') return bodyGoals(answers).includes('lose');
   return true;
@@ -44,8 +45,8 @@ function applies(step: string, answers: Answers): boolean {
 
 export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
   const pre = (order?.preBranch ?? preBranch)
-    .filter((step) => step !== 'O23' && step !== 'O24')
-    .flatMap((step) => step === 'O22' ? [step, ...(['O23', 'O24'].filter((target) => applies(target, answers)))] : [step]);
+    .filter((step) => !['O25', 'O23', 'O24'].includes(step))
+    .flatMap((step) => step === 'O22' ? [step, ...(['O25', 'O23', 'O24'].filter((target) => applies(target, answers)))] : [step]);
   const orderedTail = (order?.tail ?? tail).filter((step) => step !== 'S4' && step !== 'S5')
     .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : [step]);
   return [...pre, ...branchFor(answers), ...orderedTail];

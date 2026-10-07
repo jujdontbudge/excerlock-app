@@ -25,7 +25,7 @@ Use `./excer demo fresh-install --open /`, then `./excer sim tap "Get started"`.
 name: welcome
 scenario: fresh-install
 open: /
-expect: Block apps. Move more. | Less scrolling. More moving. | Get started
+expect: HACK your brain to hit your fitness goals | Get started
 ```
 
 ```proof
@@ -36,10 +36,37 @@ expect: Set your walking goal | Daily step goal | Continue
 ```
 
 ```proof
+name: body-goals-select-all
+scenario: fresh-install
+open: /onboarding/O22
+expect: What are your body goals? | Select all that apply | Gain muscle | Lose fat | Maintain
+```
+
+- S1 fits on one screen and does not scroll. The dial shrinks to the space left, down to 80% of its full size; below that (small phones, large text) the page scrolls. A drag that starts on the dial's ring never scrolls the page.
+
+```proof
+name: schedule-dial
+scenario: fresh-install
+open: /onboarding/S1
+expect: When should blocking be active? | Start at: 9 AM | End at: 9 PM | 12 hr | Continue
+```
+
+- After body goals, "What are you struggling with?" lists only the goals picked, as select all that apply, and continues with none selected. The answer (`struggles`) is not used elsewhere.
+
+```proof
+name: struggles-picked-goals
+scenario: fresh-install
+open: /onboarding/O22
+tap: Gain muscle | Lose fat | Continue
+expect: What are you struggling with? | Select all that apply | Gaining muscle | Losing fat | Continue
+absent: Maintaining my weight
+```
+
+```proof
 name: muscle-target-ruler
 scenario: fresh-install
 open: /onboarding/O22
-tap: Gain muscle | Continue
+tap: Gain muscle | Continue | Continue
 expect: How many pounds of muscle do you want to gain? | 10.0 lb | Continue
 ```
 
@@ -47,7 +74,7 @@ expect: How many pounds of muscle do you want to gain? | 10.0 lb | Continue
 name: fat-target-ruler
 scenario: fresh-install
 open: /onboarding/O22
-tap: Lose fat | Continue
+tap: Lose fat | Continue | Continue
 expect: How many pounds of fat do you want to lose? | 15.0 lb | Continue
 ```
 
@@ -55,10 +82,8 @@ expect: How many pounds of fat do you want to lose? | 15.0 lb | Continue
 name: both-body-targets
 scenario: fresh-install
 open: /onboarding/O22
-tap: Gain muscle | Lose fat | Continue | Continue
-expect: How many pounds of fat do you want to lose? | 15.0 lb | Continue
-then-open: /onboarding/S3
-then-expect: Projected results | Gain 10.0 lb of muscle | Lose 15.0 lb of fat
+actions: tap Gain muscle | tap Lose fat | tap Continue | tap Continue | tap Continue | expect How many pounds of fat do you want to lose? | open /onboarding/S3 | tap Add another Condition | tap Gym | tap Continue | tap Continue | tap Continue
+expect: Projected results | Gain 10.0 lb of muscle | Lose 15.0 lb of fat | 150% more steps | 150% more time at the gym
 ```
 
 ```proof
@@ -68,12 +93,31 @@ open: /onboarding/S3
 expect: Projected results | 150% more steps | 50% less screen time
 ```
 
+- Projected results can add more Conditions. "How it will look" introduces the Condition cards, then the centred "Projected results" heading introduces selected muscle-gain and fat-loss targets in pounds before the activity and screen-time results. "Add another Condition" runs the Condition builder without its gym-location and review steps; its close button returns to Projected results. Each added Condition shows as another card with a remove button, the stats cover every activity, and Import saves all of them after admission. The Condition demo shows only the first.
+
+```proof
+name: add-another-condition
+scenario: fresh-install
+open: /onboarding/S3
+tap: Add another Condition | Gym | Continue | Continue | Continue
+expect: Projected results | Your apps are blocked unless you are at the gym from 9 AM to 9 PM on weekdays | 150% more steps | 150% more time at the gym | 50% less screen time | Add another Condition
+```
+
+```proof
+name: add-condition-close
+scenario: fresh-install
+open: /onboarding/S3
+tap: Add another Condition | Close
+expect: Projected results | Add another Condition | Import
+absent: Remove Condition
+```
+
 ```proof
 name: plan-staged-before-admission
 scenario: fresh-install
 open: /onboarding/S3
 tap: Import
-expect: Once you hit 10,000 steps | Continue
+expect: ExcerLock is built on research to HACK your brain | Continue
 then-open: /dev
 then-expect: Conditions | 0 | Onboarding plan | Staged
 ```

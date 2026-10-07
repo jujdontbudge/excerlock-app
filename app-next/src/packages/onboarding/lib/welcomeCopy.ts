@@ -1,8 +1,8 @@
 export const welcomeCopy = {
-  progressPagination: 'Introduction, page 2 of 3',
+  progressPagination: 'Introduction, page 3 of 3',
   progressValue: '-3h 12m',
   progressDescription: 'Illustrative screen-time reduction of 3 hours and 12 minutes',
-  controlPagination: 'Introduction, page 3 of 3',
+  controlPagination: 'Introduction, page 2 of 3',
   activities: ['Walking', 'Gym'],
   lockedApps: 'Instagram, YouTube, WhatsApp and TikTok, locked',
   unlockArrow: 'unlock by',

@@ -58,9 +58,9 @@ name: sign-out-relaunch-stays-welcome
 scenario: returning-signed-in
 open: /settings/account
 tap: Sign out
-expect: Block apps. Move more. | Get started | Sign in
+expect: HACK your brain to hit your fitness goals | Get started | Sign in
 relaunch-after-expect: true
-after-relaunch-expect: Block apps. Move more. | Get started | Sign in
+after-relaunch-expect: HACK your brain to hit your fitness goals | Get started | Sign in
 ```
 
 ```proof

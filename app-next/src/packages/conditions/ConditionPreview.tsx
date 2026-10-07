@@ -13,18 +13,26 @@ export function ConditionPreview({
   sentence,
   icon,
   schedule,
+  caption = true,
+  onRemove,
+  removeLabel,
 }: {
   sentence: string | null;
   icon: IconName;
   schedule?: Schedule;
+  caption?: boolean;
+  onRemove?: () => void;
+  removeLabel?: string;
 }) {
   if (!sentence) return null;
   const range = schedule?.window.kind === 'range' ? schedule.window : undefined;
   return (
     <View style={{ gap: t.space.md }}>
-      <Label variant="label" style={{ textAlign: 'center' }}>
-        {c.caption}
-      </Label>
+      {caption ? (
+        <Label variant="label" style={{ textAlign: 'center' }}>
+          {c.caption}
+        </Label>
+      ) : null}
       <Reveal key={sentence}>
         <View testID="condition-preview">
           <BlockingScheduleCard
@@ -33,6 +41,8 @@ export function ConditionPreview({
             window={schedule?.window}
             start={range ? minuteLabel(range.startMinute) : schedule ? rulePreviewCopy.dayStart : rulePreviewCopy.start}
             end={range ? minuteLabel(range.endMinute) : schedule ? rulePreviewCopy.dayEnd : rulePreviewCopy.end}
+            onRemove={onRemove}
+            removeLabel={removeLabel}
           />
         </View>
       </Reveal>

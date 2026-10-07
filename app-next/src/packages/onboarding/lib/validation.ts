@@ -12,6 +12,7 @@ export function canContinue(step: string, answers: Answers): boolean {
   }
   if (step === 'O04')
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
+  if (step === 'O25') return true;
   if (choiceQuestions[step]) {
     const question = choiceQuestions[step];
     const value = answers[question.key];

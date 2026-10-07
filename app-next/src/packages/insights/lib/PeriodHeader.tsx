@@ -12,9 +12,9 @@ export function PeriodHeader({ range, total, average, rising, unit }: {
 }) {
   return (
     <View style={s.header}>
-      <View style={s.totals} accessible accessibilityLabel={`${range}: ${total} ${unit}`}>
-        <Label variant="support" numberOfLines={1}>{range}</Label>
-        <Label variant="metricSmall" numberOfLines={1}>{total}</Label>
+      <View style={s.totals}>
+        <Label accessibilityLabel={`${range}:`} variant="support" numberOfLines={1}>{range}</Label>
+        <Label accessibilityLabel={`${total} ${unit}`} variant="metricSmall" numberOfLines={1}>{total}</Label>
       </View>
       <View
         testID="Analytics average"

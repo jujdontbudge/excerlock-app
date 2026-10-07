@@ -43,4 +43,13 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
       { id: 'maintain', title: 'Maintain', icon: 'heart' },
     ],
   },
+  O25: {
+    key: 'struggles',
+    multiple: true,
+    options: [
+      { id: 'gain', title: 'Gaining muscle', icon: 'gym' },
+      { id: 'lose', title: 'Losing fat', icon: 'flame' },
+      { id: 'maintain', title: 'Maintaining my weight', icon: 'heart' },
+    ],
+  },
 };

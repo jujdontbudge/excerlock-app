@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { findFeature, protectedAppRoutes, type Proof, type ProofAction } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, relaunch, screenshot, setLocation, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, relaunch, screenshot, setLocation, swipe, swipeBack, tap, typeText, waitForLabels, watchForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
 import { checkScreenCentring, describeFinding } from '../lib/centring.ts';
@@ -23,7 +23,7 @@ and nothing is off centre. Feature files:
 
 type RouteAttempt = { route: string; href: string; ok: boolean; missing: string[] };
 type NotificationAttempt = { destination: 'home' | 'unlock'; ok: boolean; missing: string[] };
-type GestureAttempt = { gesture: 'back'; result: string };
+type GestureAttempt = { gesture: 'back' | 'swipe'; result: string };
 type ActionAttempt = { action: ProofAction['kind']; value: string; result: string };
 type RelaunchAttempt = { before: string[]; after: string[]; ok: boolean };
 type Outcome = { proof: string; ok: boolean; missing: string[]; offCentre: string[]; screenshot: string; tree: string; actionAttempts?: ActionAttempt[]; routeAttempts?: RouteAttempt[]; notificationAttempts?: NotificationAttempt[]; gestureAttempts?: GestureAttempt[]; relaunchAttempt?: RelaunchAttempt };
@@ -61,6 +61,10 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
     await sleep(1000);
   }
   const gestureAttempts: GestureAttempt[] = [];
+  if (proof.swipe && failedTaps.length === 0) {
+    gestureAttempts.push({ gesture: 'swipe', result: swipe(udid, proof.swipe) });
+    await sleep(1000);
+  }
   if (proof.gesture === 'back' && failedTaps.length === 0) {
     gestureAttempts.push({ gesture: 'back', result: swipeBack(udid) });
     await sleep(1000);

@@ -21,7 +21,7 @@ Open the app. A subscriber who signed in on this phone lands on Home, even after
 name: first-launch-welcome
 scenario: fresh-install
 open: /
-expect: Block apps. Move more. | Get started | Sign in
+expect: HACK your brain to hit your fitness goals | Get started | Sign in
 ```
 
 ```proof
@@ -51,7 +51,7 @@ then-expect: Journey app · paid yes · admitted yes
 name: reinstall-keychain-stays-welcome
 scenario: reinstall-keychain
 open: /
-expect: Block apps. Move more. | Get started | Sign in
+expect: HACK your brain to hit your fitness goals | Get started | Sign in
 ```
 
 ```proof
@@ -166,7 +166,7 @@ name: unpaid-paywall-close-returns-welcome
 scenario: returning-unpaid
 open: /
 tap: Close
-expect: Block apps. Move more. | Get started | Sign in
+expect: HACK your brain to hit your fitness goals | Get started | Sign in
 then-open: /dev
 then-expect: Journey welcome | Protected route mounts | None
 ```

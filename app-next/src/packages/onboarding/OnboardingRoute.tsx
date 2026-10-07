@@ -1,6 +1,7 @@
 import { useIsFocused } from 'expo-router';
 import { notify } from '../ui/Notice';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { Rule } from '../model/types';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
 import { useOnboarding } from './lib/useOnboarding';
@@ -9,7 +10,8 @@ import { PreBranchScreen } from './lib/PreBranchScreen';
 import { ScheduleScreen } from '../conditions/ScheduleScreen';
 import { TimeSheet } from '../conditions/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../conditions/scheduleDraft';
-import { draftFromAnswers, stagePlan } from './lib/plan';
+import { draftFromAnswers, removeExtraRule, stageExtraRule, stagePlan } from './lib/plan';
+import { onboardingStore as useOnboardingStore } from './onboardingStore';
 import { createDraft, toRule } from '../conditions/draft';
 import { PlanBuild } from './lib/PlanBuild';
 import { PlanCelebration } from './lib/PlanCelebration';
@@ -25,7 +27,8 @@ import { useRuntime } from '../ports/useRuntime';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
 import { haptic } from '../ui/haptics';
 import { tokens as t } from '../ui/tokens';
-export function OnboardingRoute() {
+export type StagingBuilder = (props: { onClose: () => void; onStage: (rule: Rule) => void }) => ReactNode;
+export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBuilder }) {
   const focused = useIsFocused();
   const runtime = useRuntime();
   const flow = useOnboarding(),
@@ -33,7 +36,9 @@ export function OnboardingRoute() {
     [celebrating, setCelebrating] = useState(false),
     [asking, setAsking] = useState(false),
     [demoReady, setDemoReady] = useState(false),
-    [ratingReady, setRatingReady] = useState(false);
+    [ratingReady, setRatingReady] = useState(false),
+    [adding, setAdding] = useState(false),
+    extras = useOnboardingStore((state) => state.data.extraRules);
   const promptBusy = useRef(false);
   const onDemoReady = useCallback(() => setDemoReady(true), []);
   const onRatingPrompted = useCallback(() => setRatingReady(true), []);
@@ -85,6 +90,14 @@ export function OnboardingRoute() {
     flow.advance();
   };
   if (!focused) return null;
+  if (adding && stagingBuilder)
+    return stagingBuilder({
+      onClose: () => setAdding(false),
+      onStage: (rule) => {
+        stageExtraRule(flow.answers, base, rule, { now: runtime.clock.now(), timezone: runtime.clock.timezone() });
+        setAdding(false);
+      },
+    });
   let body = <PreBranchScreen {...flow} />;
   if (flow.step === 'S1')
     body = (
@@ -99,7 +112,8 @@ export function OnboardingRoute() {
   if (flow.step === 'S3')
     body = (
       <View style={{ gap: t.space.lg }}>
-        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers} />
+        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers}
+          extras={extras} onAdd={stagingBuilder ? () => setAdding(true) : undefined} onRemove={removeExtraRule} />
       </View>
     );
   if (flow.step === 'S4') body = <ResearchScreen />;

@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0066: Onboarding can stage several Conditions](0066-onboarding-stages-several-conditions.md) — **accepted**.
 - [0065: Text and icons are centred by construction and every proof measures it](0065-centring-by-construction.md) — **accepted**.
 - [0064: Owner filming mode makes walking unlock and lock in about a second](0064-owner-filming-mode.md) — **accepted**.
 - [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **accepted**.

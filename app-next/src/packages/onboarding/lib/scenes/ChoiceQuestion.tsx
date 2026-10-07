@@ -1,16 +1,19 @@
 import { View } from 'react-native';
 import { Heading, ChoiceRow } from '../../../ui';
+import { Label } from '../../../ui/Label';
 import { tokens as t } from '../../../ui/tokens';
 import { Reveal } from '../../../ui/Reveal';
-import { onboardingCopy } from '../onboardingCopy';
+import { onboardingCopy, onboardingLabels } from '../onboardingCopy';
 import { choiceQuestions } from '../onboardingChoicesCopy';
 import { AnswerProps } from '../types';
+import { bodyGoals } from '../../../model/answers';
 import { ProfileQuestion } from '../profile/ProfileQuestion';
 import { GoalIcon } from './GoalIcon';
 export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { step: string }) {
   if (step === 'O05' || step === 'O06') return <ProfileQuestion step={step} answers={answers} setAnswer={setAnswer} />;
   const copy = onboardingCopy[step as keyof typeof onboardingCopy],
     question = choiceQuestions[step],
+    options = step === 'O25' ? question.options.filter((option) => bodyGoals(answers).some((goal) => goal === option.id)) : question.options,
     current = answers[question.key],
     picked: string[] = Array.isArray(current) ? current.map(String) : typeof current === 'string' ? [current] : [],
     isSelected = (id: string) => (question.multiple ? picked.includes(id) : current === id),
@@ -22,10 +25,13 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
   return (
     <>
       <Reveal>
-        <Heading title={copy.title} centered />
+        <View style={{ gap: t.space.xs }}>
+          <Heading title={copy.title} centered />
+          {question.multiple ? <Label style={{ textAlign: 'center' }}>{onboardingLabels.selectAll}</Label> : null}
+        </View>
       </Reveal>
       <View style={{ gap: t.space.md }}>
-        {question.options.map((option, index) => (
+        {options.map((option, index) => (
           <Reveal key={option.id} index={index + 1}>
             <ChoiceRow
               emphasis="solid"
