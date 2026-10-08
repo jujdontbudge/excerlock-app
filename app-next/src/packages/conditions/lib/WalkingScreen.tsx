@@ -32,7 +32,7 @@ export function WalkingScreen({
     <>
       {!contentOnly ? (
         <>
-          <Heading title={c[step].title} support={step === 'W1' ? c.W1.support : undefined} centered={step !== 'W3'} />
+          <Heading title={c[step].title} centered={step !== 'W3'} />
           <LivingIcon name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'} />
         </>
       ) : null}

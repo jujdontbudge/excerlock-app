@@ -2,7 +2,7 @@ import { WalkingScreen } from './lib/WalkingScreen';
 import { WorkoutModeScreen } from './lib/WorkoutModeScreen';
 import { WorkoutGoalScreen } from './lib/WorkoutGoalScreen';
 import { RuleDraft, DraftAction } from './draft';
-import { Heading } from '../ui';
+import { Heading, Label } from '../ui';
 import { Reveal } from '../ui/Reveal';
 import { tokens as t } from '../ui/tokens';
 import { walkingCopy } from './lib/rulesCopy';
@@ -33,8 +33,13 @@ export function RuleScreen({
   return (
     <>
       <View style={{ gap: t.space.md }}>
-        <Reveal key={copy.title}>
+        <Reveal key={copy.title} style={{ gap: t.space.xs }}>
           <Heading title={copy.title} centered />
+          {'hint' in copy ? (
+            <Label tone="secondary" style={{ textAlign: 'center' }}>
+              {copy.hint}
+            </Label>
+          ) : null}
         </Reveal>
         <Reveal key={step} style={{ gap: t.space.md }}>
           {body}

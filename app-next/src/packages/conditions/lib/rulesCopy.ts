@@ -1,5 +1,5 @@
 export const walkingCopy = {
-  W1: { title: 'Where do you walk?', support: '(Select all that apply)', body: 'Choose every place that fits your routine.' },
+  W1: { title: 'Where do you walk?', hint: '(Select all that apply)', body: 'Choose every place that fits your routine.' },
   W2: { title: 'How should walking unlock your apps?', body: 'Choose the kind of nudge you need.' },
   W3: { title: 'Set your walking goal', body: 'Build a little movement into every day.' },
   places: [
