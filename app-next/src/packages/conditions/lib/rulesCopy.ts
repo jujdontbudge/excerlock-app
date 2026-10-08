@@ -1,11 +1,11 @@
 export const walkingCopy = {
-  W1: { title: 'Where do you walk?', body: 'Choose every place that fits your routine.' },
+  W1: { title: 'Where do you walk?', support: '(Select all that apply)', body: 'Choose every place that fits your routine.' },
   W2: { title: 'How should walking unlock your apps?', body: 'Choose the kind of nudge you need.' },
   W3: { title: 'Set your walking goal', body: 'Build a little movement into every day.' },
   places: [
     { id: 'outside', title: 'Outside', support: 'Get some fresh air with your steps.' },
+    { id: 'inside', title: 'Inside', support: 'Steps around your home, office or mall.' },
     { id: 'treadmill', title: 'Treadmill', support: 'Keep moving, whatever the weather.' },
-    { id: 'both', title: 'Both', support: 'Outside or on a treadmill.' },
   ],
   modes: [
     { id: 'state', title: 'Unlock while walking (Recommended)', support: 'Apps open while you walk, close when you stop' },

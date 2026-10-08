@@ -1,5 +1,6 @@
 export type OpaqueSelectionHandle = { readonly token: string };
 export type Activity = 'walking' | 'gym';
+export type WalkPlace = 'outside' | 'inside' | 'treadmill';
 
 export type Rule = {
   id: string;
@@ -57,7 +58,7 @@ export type Profile = {
   mainReason: string;
   estimatedDailyMinutes: number;
   units: 'km' | 'mi';
-  walkPlaces: ('treadmill' | 'outside')[];
+  walkPlaces: WalkPlace[];
 };
 
 export type Entitlement = {

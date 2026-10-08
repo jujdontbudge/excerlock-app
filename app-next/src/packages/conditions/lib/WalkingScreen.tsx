@@ -32,16 +32,13 @@ export function WalkingScreen({
     <>
       {!contentOnly ? (
         <>
-          <Heading title={c[step].title} centered={step !== 'W3'} />
+          <Heading title={c[step].title} support={step === 'W1' ? c.W1.support : undefined} centered={step !== 'W3'} />
           <LivingIcon name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'} />
         </>
       ) : null}
       {step === 'W1'
         ? c.places.map((p, index) => {
-            const both = p.id === 'both';
-            const selected = both
-              ? walkPlaces.includes('outside') && walkPlaces.includes('treadmill')
-              : walkPlaces.includes(p.id as 'outside' | 'treadmill');
+            const selected = walkPlaces.includes(p.id);
             return (
               <Reveal key={p.id} index={index + 1}>
                 <ChoiceRow
@@ -49,12 +46,10 @@ export function WalkingScreen({
                   title={p.title}
                   multiple
                   selected={selected}
-                  haptic={selected ? 'none' : 'select'}
+                  haptic={selected && walkPlaces.length === 1 ? 'none' : 'select'}
                   compact
                   onPress={() => {
-                    const next: ('outside' | 'treadmill')[] = both
-                      ? ['outside', 'treadmill']
-                      : [p.id as 'outside' | 'treadmill'];
+                    const next = selected ? walkPlaces.filter((place) => place !== p.id) : [...walkPlaces, p.id];
                     if (next.length === 0) return;
                     useProfileStore.getState().patch({ walkPlaces: next });
                     runtime?.analytics.track('walk_places_updated', { walk_places: next });

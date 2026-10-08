@@ -1,6 +1,11 @@
 import type { EmptyProps, EventSpecMap } from '../types'
 import type { EnforcementAppState, EnforcementSource } from './shield'
 
+export type WalkPlaces =
+  | 'outside' | 'inside' | 'treadmill'
+  | 'outside_and_inside' | 'outside_and_treadmill' | 'inside_and_treadmill'
+  | 'outside_and_inside_and_treadmill' | 'none'
+
 export type UnlockKind = 'gym' | 'treadmill'
 
 export type TreadmillScanFailure = 'denied' | 'timeout'
@@ -28,7 +33,7 @@ export interface RuntimeEventProps {
   permission_resolved: { permission: 'motion' | 'screen_time' | 'notifications' | 'camera' | 'location'; outcome: 'granted' | 'denied' }
   unlock_completed: { method: 'walking' | 'propped' | 'gym'; app_state: EnforcementAppState; source: EnforcementSource }
   review_preset_selected: { preset: 'keep' | 'adjust' | 'disable' }
-  walk_places_updated: { walk_places: 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none' }
+  walk_places_updated: { walk_places: WalkPlaces }
   gym_presence_auto_started: EmptyProps
   gym_presence_auto_confirmed: EmptyProps
   gym_presence_ended: EmptyProps

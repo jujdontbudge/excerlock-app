@@ -7,6 +7,7 @@ export const settingsCopy = {
   preferences: 'Preferences',
   walkPlaces: 'Where do you walk?',
   walkOutside: 'Outside',
+  walkInside: 'Inside',
   walkTreadmill: 'Treadmill',
   privacyPermissions: 'Privacy & permissions',
   account: 'Account',

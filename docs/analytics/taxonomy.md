@@ -10,7 +10,7 @@ Source of truth: `app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts`. Ev
 
 | Event | Properties |
 |---|---|
-| `walk_places_updated` | `walk_places`: `outside`, `treadmill`, `outside_and_treadmill`, or `none` (also the only person property) |
+| `walk_places_updated` | `walk_places`: the selected places in the order `outside`, `inside`, `treadmill`, joined with `_and_` (for example `outside_and_treadmill`), or `none` (also the only person property) |
 | `gym_presence_ended`, `gym_presence_auto_started`, `gym_presence_auto_confirmed`, `walk_auto_started`, `gym_unlock_lost` | context only |
 | `unlock_ceremony_done`, `unlock_screen_opened` | `kind` (`gym`/`treadmill`), optional `preview` boolean |
 | `treadmill_scan_started`, `treadmill_scan_verified` | optional `preview`; verified also has numeric `ms` |

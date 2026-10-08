@@ -71,6 +71,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
         {(
           [
             ['outside', c.walkOutside],
+            ['inside', c.walkInside],
             ['treadmill', c.walkTreadmill],
           ] as const
         ).map(([place, title]) => (

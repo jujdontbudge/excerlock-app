@@ -24,6 +24,6 @@ export const profileStore = createPersistedStore<Profile>(
     mainReason: v.text,
     estimatedDailyMinutes: v.number(0, 1440),
     units: v.units,
-    walkPlaces: v.array(v.oneOf(['treadmill', 'outside'])),
+    walkPlaces: v.array(v.oneOf(['treadmill', 'outside', 'inside'])),
   },
 );

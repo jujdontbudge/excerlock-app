@@ -4,14 +4,21 @@ import type { AnalyticsPort } from '../ports/AnalyticsPort';
 export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort };
 
 export type CanonicalIdentity = { userId: string | null; generation: number; ready: boolean };
-export type WalkPlaces = 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none';
+const walkPlaceOrder = ['outside', 'inside', 'treadmill'] as const;
+export type WalkPlaces =
+  | 'outside' | 'inside' | 'treadmill'
+  | 'outside_and_inside' | 'outside_and_treadmill' | 'inside_and_treadmill'
+  | 'outside_and_inside_and_treadmill' | 'none';
 export type AnalyticsContext = { environment: string; runtime_version: string; update_id: string; walk_places: WalkPlaces };
-const walkPlacesValues = new Set<WalkPlaces>(['outside', 'treadmill', 'outside_and_treadmill', 'none']);
+const walkPlacesValues = new Set<WalkPlaces>([
+  'outside', 'inside', 'treadmill', 'outside_and_inside', 'outside_and_treadmill', 'inside_and_treadmill',
+  'outside_and_inside_and_treadmill', 'none',
+]);
 export function normalizeWalkPlaces(value: unknown): WalkPlaces | null {
   if (typeof value === 'string' && walkPlacesValues.has(value as WalkPlaces)) return value as WalkPlaces;
-  if (!Array.isArray(value) || value.some((item) => item !== 'outside' && item !== 'treadmill')) return null;
-  return value.includes('outside') && value.includes('treadmill') ? 'outside_and_treadmill'
-    : value.includes('outside') ? 'outside' : value.includes('treadmill') ? 'treadmill' : 'none';
+  if (!Array.isArray(value) || value.some((item) => !walkPlaceOrder.includes(item))) return null;
+  const joined = walkPlaceOrder.filter((place) => value.includes(place)).join('_and_');
+  return (joined || 'none') as WalkPlaces;
 }
 export interface PostHogClientBoundary {
   ready(): Promise<void>; getDeviceId(): string; getDistinctId(): string;

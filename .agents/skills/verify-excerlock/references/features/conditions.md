@@ -33,6 +33,14 @@ expect: What exercise do you want to do more of? | Walking | Gym
 ```
 
 ```proof
+name: builder-walk-places
+scenario: trial-active
+open: /builder
+tap: Walking | Continue | Inside | Treadmill
+expect: Where do you walk? | (Select all that apply) | Outside | Inside | Treadmill
+```
+
+```proof
 name: builder-walking-goal-field
 scenario: trial-active
 open: /builder
