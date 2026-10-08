@@ -55,7 +55,7 @@ export function GymUnlockMap({ location, gym, inside }: { location: Coordinates 
   );
 }
 const s = StyleSheet.create({
-  disc: { width: t.control.inline, height: t.control.inline, borderRadius: t.radius.pill, backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline, alignItems: 'center', justifyContent: 'center', boxShadow: t.shadow.control },
+  disc: { width: t.control.inline, height: t.control.inline, borderRadius: t.radius.pill, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, alignItems: 'center', justifyContent: 'center', boxShadow: t.shadow.control },
   user: { width: t.space.lg, height: t.space.lg, borderRadius: t.radius.pill, backgroundColor: t.swatch.sky, borderWidth: t.stroke.selected, borderColor: t.surface.card },
-  distance: { position: 'absolute', top: t.space.sm, left: t.space.sm, right: t.space.sm, padding: t.space.sm, backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.pill, alignItems: 'center' },
+  distance: { position: 'absolute', top: t.space.sm, left: t.space.sm, right: t.space.sm, padding: t.space.sm, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.pill, alignItems: 'center' },
 });

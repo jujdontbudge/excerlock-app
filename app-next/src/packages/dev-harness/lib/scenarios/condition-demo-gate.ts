@@ -22,6 +22,10 @@ export const conditionDemoScenarios = [
     ...setup, onboardingAnswers: { activity: 'walking', walkingMode: 'state' },
     profile: { walkPlaces: ['treadmill'] },
   }),
+  base('condition-demo-girl-treadmill', 'Condition demo · girl, walking state treadmill', {
+    ...setup, onboardingAnswers: { gender: 'female', activity: 'walking', walkingMode: 'state' },
+    profile: { walkPlaces: ['treadmill'] },
+  }),
   base('condition-demo-gym-arrival', 'Condition demo · gym arrival', {
     ...setup, onboardingAnswers: { activity: 'gym', gymMode: 'arrival' },
   }),

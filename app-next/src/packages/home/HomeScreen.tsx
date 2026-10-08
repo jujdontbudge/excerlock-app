@@ -128,8 +128,8 @@ export function HomeScreen() {
       <SetupReminder />
       {scheduleIssue ? (
         <View style={{ padding: t.space.md, gap: t.space.md,
-          backgroundColor: t.surface.card, borderRadius: t.radius.card,
-          borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
+          backgroundColor: t.surface.softChoice, borderRadius: t.radius.card,
+          borderWidth: t.stroke.hairline, borderColor: t.surface.transparent }}>
           <Label variant="section">{c.scheduleRecoveryTitle}</Label>
           <Label variant="support">{c.scheduleRecoveryBody}</Label>
           <SecondaryButton label={c.scheduleRecoveryAction} onPress={() => router.navigate('/conditions')} />
@@ -150,10 +150,10 @@ export function HomeScreen() {
       <Reveal>
         <View
           style={{
-            backgroundColor: t.surface.card,
+            backgroundColor: t.surface.softChoice,
             borderRadius: t.radius.pill,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
+            borderColor: t.surface.transparent,
           }}>
           <SettingsRow
             title={c.lockedApps}
@@ -165,10 +165,10 @@ export function HomeScreen() {
       <View style={{ gap: t.space.lg }}>
         <View
           style={{
-            backgroundColor: t.surface.card,
+            backgroundColor: t.surface.softChoice,
             borderRadius: t.radius.pill,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
+            borderColor: t.surface.transparent,
           }}>
           <SettingsRow
             title={c.analytics}

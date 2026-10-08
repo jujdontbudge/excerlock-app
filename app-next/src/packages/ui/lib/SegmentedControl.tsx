@@ -39,9 +39,9 @@ export function SegmentedControl({
       style={{
         flexDirection: 'row',
         borderRadius: pill ? t.radius.pill : t.radius.field,
-        backgroundColor: outline ? t.surface.transparent : t.surface.subtle,
+        backgroundColor: outline ? t.surface.softChoice : t.surface.subtle,
         borderWidth: outline ? t.stroke.hairline : 0,
-        borderColor: t.border.outline,
+        borderColor: t.surface.transparent,
       }}>
       <Animated.View
         key={m.reduced ? value : 'indicator'}

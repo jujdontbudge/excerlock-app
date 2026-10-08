@@ -154,7 +154,7 @@ function smoothPath(points: readonly { x: number; y: number }[]) {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline,
+  card: { backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent,
     borderRadius: t.radius.card, paddingHorizontal: t.space.lg, paddingTop: t.space.sm,
     paddingBottom: t.space.sm, gap: t.space.xs, overflow: 'hidden' },
   context: { height: t.type.support.lineHeight + t.space.xs, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },

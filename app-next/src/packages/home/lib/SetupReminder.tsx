@@ -22,10 +22,10 @@ export function SetupReminder() {
         style={{
           padding: t.space.md,
           gap: t.space.md,
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderRadius: t.radius.card,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
         }}>
         <View style={{ gap: t.space.xs }}>
           <Label variant="section" style={{ textAlign: 'center' }}>

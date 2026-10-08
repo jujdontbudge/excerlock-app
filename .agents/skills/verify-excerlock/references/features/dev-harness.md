@@ -172,7 +172,7 @@ scenario: reinstall-keychain
 open: dev?lab=onboarding-path
 expect: HACK your brain to hit your fitness goals | Get started | Sign in
 then-open: /dev
-then-expect: active | Onboarding path O01 O02 O03 O07 O04 O05 O06 O08 O22 O10 O11 O12 O13 O14 O15 O16 O17 O18 O20 W0 W1 W2 W3 S1 S2 S3 S4 S5 S3b S3c S3d P | Protected route mounts | None
+then-expect: active | Onboarding path O01 O02 O03 O07 O04 O05 O06 O08 O22 O25 O10 O11 O12 O13 O14 O15 O16 O17 O18 O20 W0 W1 W2 W3 S1 S2 S3 S4 S5 S3b S3e S3c S3d P | Protected route mounts | None
 ```
 
 ## Gotchas

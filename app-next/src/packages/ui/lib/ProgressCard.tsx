@@ -33,8 +33,8 @@ export function ProgressCard({
           borderRadius: inLock ? undefined : t.radius.card,
           borderWidth: inLock ? 0 : t.stroke.hairline,
           borderTopWidth: inLock ? 0 : t.stroke.hairline,
-          borderColor: inLock ? t.border.onAccent : t.border.outline,
-          backgroundColor: inLock ? t.surface.transparent : t.surface.card,
+          borderColor: inLock ? t.border.onAccent : t.surface.transparent,
+          backgroundColor: inLock ? t.surface.transparent : t.surface.softChoice,
           gap: t.space.lg,
         }}>
         {inLock ? (

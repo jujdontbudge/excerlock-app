@@ -36,8 +36,8 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: t.space.md },
   totals: { flex: 1 },
   average: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.pill,
-    backgroundColor: t.surface.card, paddingLeft: t.space.md, paddingRight: t.space.sm, height: 38 },
+    borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.pill,
+    backgroundColor: t.surface.softChoice, paddingLeft: t.space.md, paddingRight: t.space.sm, height: 38 },
   disc: { width: 26, height: 26, borderRadius: t.radius.pill, backgroundColor: t.brand.primary,
     alignItems: 'center', justifyContent: 'center' },
 });

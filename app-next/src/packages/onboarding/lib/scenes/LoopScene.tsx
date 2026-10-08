@@ -13,6 +13,7 @@ import { illustrationTokens as art } from '../../../ui/illustrationTokens';
 import { useMotion } from '../../../ui/useMotion';
 import { loopSceneCopy } from '../onboardingCopy';
 import { ClayLock } from '../condition-demo/Phone';
+import { Cast } from '../condition-demo/Character';
 import { stride } from '../condition-demo/model';
 
 export const LOOP_SCENE = { width: 360, height: 350 } as const;
@@ -27,24 +28,43 @@ const tendrils = [
 ];
 const tendrilLength = 200;
 const walkShift = 55;
-const scrollFrames = [
-  require('../../../../../assets/condition-demo/frames/scroll-1.png'),
-  require('../../../../../assets/condition-demo/frames/scroll-2.png'),
-];
-const lookUp = require('../../../../../assets/condition-demo/frames/stand-ahead.png');
-const walkFrames = [
-  require('../../../../../assets/condition-demo/frames-free/walk-1.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-2.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-3.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-4.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-5.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-6.png'),
-];
+const figures: Record<Cast, { scroll: ImageSourcePropType[]; lookUp: ImageSourcePropType; walk: ImageSourcePropType[] }> = {
+  boy: {
+    scroll: [
+      require('../../../../../assets/condition-demo/frames/scroll-1.png'),
+      require('../../../../../assets/condition-demo/frames/scroll-2.png'),
+    ],
+    lookUp: require('../../../../../assets/condition-demo/frames/stand-ahead.png'),
+    walk: [
+      require('../../../../../assets/condition-demo/frames-free/walk-1.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-2.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-3.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-4.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-5.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-6.png'),
+    ],
+  },
+  girl: {
+    scroll: [
+      require('../../../../../assets/condition-demo/frames/girl-scroll-1.png'),
+      require('../../../../../assets/condition-demo/frames/girl-scroll-2.png'),
+    ],
+    lookUp: require('../../../../../assets/condition-demo/frames/girl-stand-ahead.png'),
+    walk: [
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-1.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-2.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-3.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-4.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-5.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-6.png'),
+    ],
+  },
+};
 const Tendril = Animated.createAnimatedComponent(Path);
 
 type Weights = readonly [SharedValue<number>, SharedValue<number>, SharedValue<number>];
 
-export function LoopScene({ phase, width }: { phase: number; width: number }) {
+export function LoopScene({ phase, width, cast }: { phase: number; width: number; cast: Cast }) {
   const m = useMotion(),
     time = useSharedValue(0),
     w0 = useSharedValue(phase === 0 ? 1 : 0),
@@ -75,7 +95,7 @@ export function LoopScene({ phase, width }: { phase: number; width: number }) {
           transform: [{ scale }],
         }}>
         <Ground time={time} weights={weights} />
-        <Figure time={time} weights={weights} />
+        <Figure time={time} weights={weights} cast={cast} />
         <Tendrils time={time} weights={weights} reduced={m.reduced} />
         <MiniPhone time={time} weights={weights} />
       </View>
@@ -117,12 +137,13 @@ function Ground({ time, weights: [, , w2] }: { time: SharedValue<number>; weight
   );
 }
 
-function Figure({ time, weights: [w0, w1, w2] }: { time: SharedValue<number>; weights: Weights }) {
+function Figure({ time, weights: [w0, w1, w2], cast }: { time: SharedValue<number>; weights: Weights; cast: Cast }) {
+  const { scroll, lookUp, walk } = figures[cast];
   const move = useAnimatedStyle(() => ({ transform: [{ translateX: w2.get() * walkShift }] }));
   return (
     <Animated.View
       style={[{ position: 'absolute', left: figure.left, top: figure.top, width: figure.width, height: figure.height }, move]}>
-      {scrollFrames.map((source, i) => (
+      {scroll.map((source, i) => (
         <FigureFrame
           key={`scroll-${i}`}
           source={source}
@@ -135,7 +156,7 @@ function Figure({ time, weights: [w0, w1, w2] }: { time: SharedValue<number>; we
         />
       ))}
       <FigureFrame source={lookUp} time={time} opacity={() => { 'worklet'; return w1.get(); }} />
-      {walkFrames.map((source, i) => (
+      {walk.map((source, i) => (
         <FigureFrame
           key={`walk-${i}`}
           source={source}

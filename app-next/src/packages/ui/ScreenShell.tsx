@@ -15,6 +15,7 @@ export function ScreenShell({
   scrollUnderStatusBar = true,
   tinted = true,
   orangeBackground = true,
+  warm = true,
   scrollToEndOnKeyboard = false,
   scrollResetKey,
   fullBleed = false,
@@ -31,6 +32,7 @@ export function ScreenShell({
   scrollUnderStatusBar?: boolean;
   tinted?: boolean;
   orangeBackground?: boolean;
+  warm?: boolean;
   scrollToEndOnKeyboard?: boolean;
   scrollResetKey?: string;
   fullBleed?: boolean;
@@ -57,8 +59,8 @@ export function ScreenShell({
     return () => listener.remove();
   }, [scrollToEndOnKeyboard]);
   return (
-    <View style={s.root} onLayout={onLayout}>
-      {tinted ? (
+    <View style={[s.root, warm && s.warm]} onLayout={onLayout}>
+      {tinted && !warm ? (
         <LinearGradient
           pointerEvents="none"
           colors={
@@ -116,6 +118,7 @@ export function ScreenShell({
 }
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: t.surface.card },
+  warm: { backgroundColor: t.surface.warmCanvas },
   rootClear: { flex: 1 },
   wash: {
     position: 'absolute',

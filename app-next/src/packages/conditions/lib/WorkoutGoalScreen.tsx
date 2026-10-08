@@ -74,10 +74,10 @@ function MinutesWheel({
             left: 0,
             right: 0,
             height: ITEM,
-            backgroundColor: t.surface.card,
+            backgroundColor: t.surface.softChoice,
             borderRadius: t.radius.field,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
+            borderColor: t.surface.transparent,
           }}
         />
         <FlatList

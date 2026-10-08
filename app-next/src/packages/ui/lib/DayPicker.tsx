@@ -29,9 +29,9 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange: (days:
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: t.radius.pill,
-                  backgroundColor: selected ? t.brand.primary : t.surface.card,
+                  backgroundColor: selected ? t.brand.primary : t.surface.softChoice,
                   borderWidth: selected ? 0 : t.stroke.hairline,
-                  borderColor: t.border.outline,
+                  borderColor: t.surface.transparent,
                   ...m.transition('backgroundColor', 'standard'),
                 }}>
                 <Label

@@ -31,10 +31,10 @@ export function TimeRangeRow({
       </Label>
       <View
         style={{
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
           overflow: 'hidden',
         }}>
         <View

@@ -118,8 +118,8 @@ function HomePreview({ rule, scale, onConditionsEnd }: {
                 ) : null}
               </HomeConditionCard>
             </View>
-            <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill,
-              borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
+            <View style={{ backgroundColor: t.surface.softChoice, borderRadius: t.radius.pill,
+              borderWidth: t.stroke.hairline, borderColor: t.surface.transparent }}>
               <SettingsRow title={homeCopy.lockedApps} icon="lock" onPress={() => undefined} />
             </View>
           </View>

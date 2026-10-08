@@ -37,8 +37,8 @@ function ReplayButton({ run, onPress }: { run: number; onPress: () => void }) {
           justifyContent: 'center',
           borderRadius: t.radius.pill,
           borderWidth: t.stroke.selected,
-          borderColor: t.border.outline,
-          backgroundColor: t.surface.card,
+          borderColor: t.surface.transparent,
+          backgroundColor: t.surface.softChoice,
         }}>
         <Label variant="support" style={{ color: t.text.primary }}>{run === 0 ? 'Replay' : `Replay · ${run}`}</Label>
       </PressableScale>

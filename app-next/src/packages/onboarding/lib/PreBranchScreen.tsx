@@ -42,7 +42,7 @@ export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string
   if (step === 'O02') return <O02 />;
   if (step === 'O03') return <O03 />;
   if (step === 'O12' || step === 'O13' || step === 'O14') return <DotGridReveal step={step} {...props} />;
-  if (step === 'O16' || step === 'O17' || step === 'O18') return <LoopStory step={step} />;
+  if (step === 'O16' || step === 'O17' || step === 'O18') return <LoopStory step={step} cast={props.answers.gender === 'female' ? 'girl' : 'boy'} />;
   if (['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step))
     return <OnboardingRuleScreen step={step as BranchStep} {...props} />;
   const Screen = screens[step as keyof typeof screens];

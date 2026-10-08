@@ -5,7 +5,6 @@ import { tokens as t } from '../tokens';
 import { Reveal } from '../Reveal';
 export function SettingsGroup({
   title,
-  outline = false,
   children,
 }: PropsWithChildren<{ title?: string; outline?: boolean }>) {
   return (
@@ -18,9 +17,9 @@ export function SettingsGroup({
       <View
         testID="settings-group-card"
         style={{
-          backgroundColor: outline ? t.surface.glass : t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
           borderRadius: t.radius.card,
           overflow: 'hidden',
         }}>

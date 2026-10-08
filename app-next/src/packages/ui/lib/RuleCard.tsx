@@ -40,8 +40,8 @@ export function RuleCard({
   return (
     <>
       <View style={{
-        backgroundColor: t.surface.card,
-        borderColor: t.border.divider,
+        backgroundColor: t.surface.softChoice,
+        borderColor: t.surface.transparent,
         borderWidth: t.stroke.hairline,
         borderRadius: t.radius.sheet,
         padding: t.space.lg,

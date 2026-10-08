@@ -96,8 +96,8 @@ export function TrialSwitch({ on, locked, onToggle }: { on: boolean; locked: boo
             paddingHorizontal: t.space.lg,
             borderRadius: t.radius.card,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-            backgroundColor: t.surface.card,
+            borderColor: t.surface.transparent,
+            backgroundColor: t.surface.softChoice,
           }}>
           <Label variant="label" style={{ flex: 1, textAlign: 'left' }}>
             {on ? subscriptionCopy.trialOn : subscriptionCopy.trialOff}

@@ -5,7 +5,7 @@ import UIKit
 /// Mirrors app-next/src/design-system/tokens.ts: brand.primary, surface.topTint, text.primary/secondary.
 private enum ShieldPalette {
   static let tintedWhite = UIColor(hex: 0xFFF0E5, alpha: 0.96)
-  static let orange = UIColor(hex: 0xC94710)
+  static let orange = UIColor(hex: 0xEA6A12)
   static let text = UIColor(hex: 0x1D1D22)
   static let secondaryText = UIColor(hex: 0x6E6871)
 }

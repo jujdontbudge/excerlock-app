@@ -77,3 +77,18 @@ product bezels were not used: their licence forbids embedding them in software.
 | Keying | chroma key as v1; display cut at (196,76)–(828,1459), radius 112 (chosen side-by-side against Apple's render), island (411,96)–(613,153) kept; crop 703×1442, hole (35,29) 632×1383 |
 | Status bar | live: clock plus SF Symbols `cellularbars`, `wifi`, `battery.100percent` (expo-symbols, already linked natively) |
 | Verdict | ACCEPTED pending captain review |
+
+## v4 — girl variant (gender answer Female)
+
+| Item | Value |
+|---|---|
+| Generator | fal.ai `fal-ai/nano-banana-pro/edit`, `resolution` 2K, `aspect_ratio` 1:1, key `FAL_KEY` from the Env Catalog, queue API |
+| Edit targets | three 1625×1625 magenta sheets of the shipped boy frames, 3×2 grid, cells at their native canvas size with 80 px gaps: `walk` (`frames/walk-1..6`), `free` (`frames-free/walk-1..6`), `still` (`stand-phone`, `stand-ahead`, `scroll-1`, `scroll-2`, `frames-free/stand-a`, `stand-b`) |
+| Girl reference | image 2: `onboarding/before-after/girl-after-walk.png` on magenta for `free` and `still`; a crop of the generated `free` sheet for `walk`, so all three sheets draw the same girl |
+| Prompts | `girl-sheet-walk-edit.txt`, `girl-sheet-free-edit.txt`, `girl-sheet-still-edit.txt` (verbatim) |
+| Raw output | three 2048×2048 sheets on magenta, not kept |
+| Keying | as the Before and After figures: alpha from magenta excess `min(R,B) − G` (opaque below 25, clear above 130), colour unmixed against #FF00FF, spill above 20 pulled back, alpha averaged with a 3×3 min filter; specks under 400 px dropped |
+| Slicing | each cell cut at its grid position scaled back to 1625, on the boy frame's canvas (435×648 or 434×648) with feet on y 644; stills scaled 0.989 so the ponytail clears the top. The girl's front edge and feet land within 2 px of the boy's in every frame, so the walk cycle timing and crossfades are unchanged. Residual magenta 0, corners alpha 0, `zopflipng` lossless |
+| Frames | `frames/girl-walk-1..6.png`, `girl-stand-phone.png`, `girl-stand-ahead.png`, `girl-scroll-1.png`, `girl-scroll-2.png`; `frames-free/girl-walk-1..6.png`, `girl-stand-a.png`, `girl-stand-b.png` |
+| Use | the Condition demo and the loop story show these when the onboarding gender answer is Female; every other answer shows the boy |
+| Verdict | PENDING Johan's approval — the same girl, ponytail and outfit as the Before and After screen, every pose matching the boy |

@@ -24,8 +24,8 @@ export function HomeConditionCard({
 }) {
   return (
     <View testID={testID} style={{
-      backgroundColor: t.surface.card, borderRadius: t.radius.card,
-      borderWidth: t.stroke.hairline, borderColor: t.border.outline,
+      backgroundColor: t.surface.softChoice, borderRadius: t.radius.card,
+      borderWidth: t.stroke.hairline, borderColor: t.surface.transparent,
       padding: t.space.lg, gap: t.space.md,
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>

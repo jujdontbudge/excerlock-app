@@ -30,7 +30,7 @@ export function O02() {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
-      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="display" />
+      <Heading title={c.O02.title.replace('. ', '.\n')} accent="MOVE" centered variant="display" />
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.control, gap: t.space.md }}>
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>

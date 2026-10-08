@@ -86,8 +86,8 @@ function BarValue({ value, max, delay }: { value: number | null; max: number; de
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: t.surface.card, borderRadius: t.radius.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, padding: t.space.lg, gap: t.space.sm },
+  card: { backgroundColor: t.surface.softChoice, borderRadius: t.radius.card,
+    borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, padding: t.space.lg, gap: t.space.sm },
   plot: { height: PLOT + t.chart.barHeadroom, justifyContent: 'flex-end' },
   average: { position: 'absolute', left: 0, right: 0, height: t.stroke.hairline,
     borderTopWidth: t.stroke.hairline, borderColor: t.chart.grid, borderStyle: 'dashed' },

@@ -41,9 +41,9 @@ export function SecondaryButton({
           borderRadius: t.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: variant === 'tertiary' ? t.surface.transparent : disabled ? t.state.disabledFill : t.surface.card,
+          backgroundColor: variant === 'tertiary' ? t.surface.transparent : disabled ? t.state.disabledFill : t.surface.softChoice,
           borderWidth: variant === 'tertiary' ? 0 : t.stroke.hairline,
-          borderColor: disabled ? t.state.disabledFill : t.border.outline,
+          borderColor: disabled ? t.state.disabledFill : t.surface.transparent,
           transform: [{ scale: pressed ? m.scale.pressed : 1 }],
           ...m.transition(['transform', 'backgroundColor', 'borderColor'], 'press'),
         }}>

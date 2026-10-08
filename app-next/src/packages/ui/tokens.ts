@@ -4,10 +4,13 @@ const font = {
   bold: 'Baloo2_700Bold',
   extraBold: 'Baloo2_800ExtraBold',
 } as const;
+const accent = '#EA6A12';
 export const tokens = {
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
-    tabBarGradient: ['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1'],
+    warmCanvas: '#FFFCF1',
+    softChoice: '#F4F2EC',
+    tabBarGradient: ['rgba(255,252,241,0)', 'rgba(255,252,241,0.92)', '#FFFCF1'],
     topTint: '#FFF0E5',
     topTintMid: '#FFF8F3',
     card: '#FFFFFF',
@@ -16,8 +19,8 @@ export const tokens = {
     well: '#F2F2F7',
     selected: '#FFF1E8',
     scrim: 'rgba(29,29,34,0.32)',
-    statusGradient: ['#F24A00', '#DC3700'],
-    detected: 'rgba(239,76,0,0.88)',
+    statusGradient: [accent, accent],
+    detected: 'rgba(234,106,18,0.88)',
     onAccentTrack: 'rgba(255,255,255,0.3)',
     transparent: 'transparent',
   },
@@ -27,18 +30,18 @@ export const tokens = {
     onAccent: '#FFFFFF',
   },
   brand: {
-    lockHighlight: '#FF6414',
-    lockShade: '#E84000',
+    lockHighlight: accent,
+    lockShade: accent,
     lockShadow: '#743510',
-    primary: '#C94710',
-    pressed: '#AE380A',
-    decorative: '#F47735',
+    primary: accent,
+    pressed: '#CF580B',
+    decorative: accent,
     light: '#FFD6BD',
     track: '#FCE5DA',
   },
   border: {
     divider: '#E5E5EA',
-    selected: '#C94710',
+    selected: accent,
     outline: '#1D1D22',
     mutedStroke: '#767680',
     onAccent: 'rgba(255,255,255,0.4)',
@@ -52,8 +55,8 @@ export const tokens = {
   },
   chart: {
     barWidth: 22, barPlot: 168, barMinimum: 14, barHeadroom: 22,
-    exercise: '#C94710', comparison: '#92929C', grid: '#ECECEF',
-    ringBase: '#D9531B', ringMid: '#E45E25', ringOverflow: '#EF6B32', ringEndpoint: '#FF7A3D',
+    exercise: accent, comparison: '#92929C', grid: '#ECECEF',
+    ringBase: accent, ringMid: accent, ringOverflow: '#EF6B32', ringEndpoint: '#FF7A3D',
     ringEndpointShadow: 'rgba(116,53,16,0.34)',
   },
   swatch: {
@@ -68,6 +71,7 @@ export const tokens = {
   type: {
     metric: { fontSize: 48, lineHeight: 58, fontFamily: font.bold },
     display: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
+    hero: { fontSize: 50, lineHeight: 60, fontFamily: font.extraBold },
     metricSmall: { fontSize: 30, lineHeight: 36, fontFamily: font.bold },
     section: { fontSize: 22, lineHeight: 31, fontFamily: font.bold },
     body: { fontSize: 18, lineHeight: 26, fontFamily: font.regular },
@@ -83,8 +87,8 @@ export const tokens = {
     xl: 24,
     xxl: 32,
   },
-  radius: { card: 20, field: 16, sheet: 28, pill: 999 },
-  control: { full: 56, inline: 44, indicator: 32, row: 68 },
+  radius: { card: 20, field: 16, choice: 12, sheet: 28, pill: 999 },
+  control: { full: 56, inline: 44, indicator: 32, row: 68, softRow: 61 },
   icon: { sm: 16, md: 24, lg: 36 },
   stroke: { hairline: 1, selected: 1.5, chart: 3, glyph: 3 },
   layout: {
@@ -116,12 +120,18 @@ export const tokens = {
   },
   map: {
     pin: { size: 22, border: 4, lift: 6, scale: 1.05 },
-    ring: { stroke: 2, dim: 'rgba(29,29,34,0.16)', fill: 'rgba(244,119,53,0.08)' },
-    geofence: 'rgba(239,76,0,0.18)',
+    ring: { stroke: 2, dim: 'rgba(29,29,34,0.16)', fill: 'rgba(234,106,18,0.08)' },
+    geofence: 'rgba(234,106,18,0.18)',
   },
   paywall: {
     frost: 'rgba(255,255,255,0.3)',
     titleHalo: 'rgba(255,247,241,0.95)',
+    hot: {
+      fill: [accent, accent],
+      shine: ['rgba(255,255,255,0)', 'rgba(255,250,235,0.95)', 'rgba(255,255,255,0)'],
+      glow: 'rgba(234,106,18,0.4)',
+      base: accent,
+    },
   },
   a11y: { textScale: 2 },
   motion: {

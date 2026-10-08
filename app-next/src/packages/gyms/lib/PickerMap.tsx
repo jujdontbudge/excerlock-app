@@ -85,7 +85,7 @@ export function PickerMap({
         overflow: 'hidden',
         backgroundColor: t.surface.subtle,
         borderWidth: t.stroke.hairline,
-        borderColor: t.border.outline,
+        borderColor: t.surface.transparent,
       }}
       onLayout={(e) => {
         const next = e.nativeEvent.layout;
@@ -161,9 +161,9 @@ export function PickerMap({
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.xs,
               borderRadius: t.radius.pill,
-              backgroundColor: t.surface.card,
+              backgroundColor: t.surface.softChoice,
               borderWidth: t.stroke.hairline,
-              borderColor: t.border.outline,
+              borderColor: t.surface.transparent,
             }}>
             <Label numberOfLines={1} variant="support">
               {name || c.newName}
@@ -177,12 +177,12 @@ export function PickerMap({
               position: 'absolute',
               bottom: t.space.lg,
               alignSelf: 'center',
-              backgroundColor: t.surface.card,
+              backgroundColor: t.surface.softChoice,
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.sm,
               borderRadius: t.radius.pill,
               borderWidth: t.stroke.hairline,
-              borderColor: t.border.outline,
+              borderColor: t.surface.transparent,
             }}>
             <Label variant="support">{c.hint}</Label>
           </View>

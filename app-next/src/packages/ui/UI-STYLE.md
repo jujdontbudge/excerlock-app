@@ -5,7 +5,7 @@ Read this before touching any screen. `app-next/src/packages/ui/tokens.ts` is th
 ## Look
 Orange, guided by black outlines. Some grey, little white. Light, never dark mode.
 
-- Canvas: `surface.orangeGradient` via `ScreenShell` (orange top fading to warm white). Never a flat white or black screen.
+- Canvas: the flat warm off-white `surface.warmCanvas` via `ScreenShell` on every screen. Cards, pills and fields are borderless `surface.softChoice` fills; no black outlines. A picked choice turns solid orange, with no tick or radio circle. Never a flat pure white or black screen.
 - Every card, tile, pill, field and segmented track: 1px `border.outline` (black) + `surface.card` (white) + `radius.card` (20), `radius.field` (16) or `radius.pill`. `SettingsGroup` sits on `surface.glass`. No shadows on cards, except the orange status card (`shadow.status`); controls that float (primary buttons, the slider thumb, map pins and map buttons) take `shadow.cta` or `shadow.control`.
 - Fills: primary buttons, selected segment, glyph discs, bars, checks, rings = `brand.primary`. Progress track / dividers / switch-off / dots = `border.divider` (light grey).
 - Icons: one tone rule. `accent` (orange) glyphs on light surfaces, `onAccent` (white) inside orange fills, `muted` for chevrons and disabled glyphs, `success`/`danger` for status. Sizes `icon.sm` 16, `icon.md` 24, `icon.lg` 36; anything larger is a `Pictogram` (illustration). Utility variant only.

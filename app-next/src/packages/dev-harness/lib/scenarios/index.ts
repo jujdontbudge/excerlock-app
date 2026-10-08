@@ -2,6 +2,7 @@ import { gymUiucOutside, gymUiucManual, gymUiucUncertain, gymUiucProgress, gymUi
 import { permissionJourney, permissionConditionEntry, permissionGymSetup } from './permission-journey';
 import { scenario0 } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
+import { beforeAfterScenarios } from './before-after';
 import { unlockScenarios } from './unlock';
 import { identityLabScenarios } from './identity-lab';
 import { scenario1 } from './onboarding-walking-resume';
@@ -89,5 +90,6 @@ export const scenarios = [
   scenario26,
   ...unlockScenarios,
   ...conditionDemoScenarios,
+  ...beforeAfterScenarios,
   ...identityLabScenarios,
 ];

@@ -2,26 +2,53 @@ import { ImageSourcePropType, StyleSheet } from 'react-native';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { DemoState, Scenario, snapshot, stride } from './model';
 
-const phoneFrames = [
-  require('../../../../../assets/condition-demo/frames/walk-1.png'),
-  require('../../../../../assets/condition-demo/frames/walk-2.png'),
-  require('../../../../../assets/condition-demo/frames/walk-3.png'),
-  require('../../../../../assets/condition-demo/frames/walk-4.png'),
-  require('../../../../../assets/condition-demo/frames/walk-5.png'),
-  require('../../../../../assets/condition-demo/frames/walk-6.png'),
-  require('../../../../../assets/condition-demo/frames/stand-phone.png'),
-  require('../../../../../assets/condition-demo/frames/stand-ahead.png'),
-];
-const freeFrames = [
-  require('../../../../../assets/condition-demo/frames-free/walk-1.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-2.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-3.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-4.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-5.png'),
-  require('../../../../../assets/condition-demo/frames-free/walk-6.png'),
-  require('../../../../../assets/condition-demo/frames-free/stand-a.png'),
-  require('../../../../../assets/condition-demo/frames-free/stand-b.png'),
-];
+export type Cast = 'boy' | 'girl';
+const frames: Record<Cast, Record<'phone' | 'free', ImageSourcePropType[]>> = {
+  boy: {
+    phone: [
+      require('../../../../../assets/condition-demo/frames/walk-1.png'),
+      require('../../../../../assets/condition-demo/frames/walk-2.png'),
+      require('../../../../../assets/condition-demo/frames/walk-3.png'),
+      require('../../../../../assets/condition-demo/frames/walk-4.png'),
+      require('../../../../../assets/condition-demo/frames/walk-5.png'),
+      require('../../../../../assets/condition-demo/frames/walk-6.png'),
+      require('../../../../../assets/condition-demo/frames/stand-phone.png'),
+      require('../../../../../assets/condition-demo/frames/stand-ahead.png'),
+    ],
+    free: [
+      require('../../../../../assets/condition-demo/frames-free/walk-1.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-2.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-3.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-4.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-5.png'),
+      require('../../../../../assets/condition-demo/frames-free/walk-6.png'),
+      require('../../../../../assets/condition-demo/frames-free/stand-a.png'),
+      require('../../../../../assets/condition-demo/frames-free/stand-b.png'),
+    ],
+  },
+  girl: {
+    phone: [
+      require('../../../../../assets/condition-demo/frames/girl-walk-1.png'),
+      require('../../../../../assets/condition-demo/frames/girl-walk-2.png'),
+      require('../../../../../assets/condition-demo/frames/girl-walk-3.png'),
+      require('../../../../../assets/condition-demo/frames/girl-walk-4.png'),
+      require('../../../../../assets/condition-demo/frames/girl-walk-5.png'),
+      require('../../../../../assets/condition-demo/frames/girl-walk-6.png'),
+      require('../../../../../assets/condition-demo/frames/girl-stand-phone.png'),
+      require('../../../../../assets/condition-demo/frames/girl-stand-ahead.png'),
+    ],
+    free: [
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-1.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-2.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-3.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-4.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-5.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-walk-6.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-stand-a.png'),
+      require('../../../../../assets/condition-demo/frames-free/girl-stand-b.png'),
+    ],
+  },
+};
 function Frame({
   source,
   index,
@@ -58,10 +85,12 @@ export function Character({
   clock,
   scenario,
   reduced,
+  cast,
 }: {
   clock: SharedValue<DemoState>;
   scenario: Scenario;
   reduced: boolean;
+  cast: Cast;
 }) {
   const bob = useAnimatedStyle(() => ({
     transform: [
@@ -74,7 +103,7 @@ export function Character({
       },
     ],
   }));
-  const frames = scenario.place === 'treadmill' ? freeFrames : phoneFrames;
+  const sources = frames[cast][scenario.place === 'treadmill' ? 'free' : 'phone'];
   const compact = scenario.kind !== 'walk-state';
   return (
     <Animated.View
@@ -88,7 +117,7 @@ export function Character({
         },
         bob,
       ]}>
-      {frames.map((source, index) => (
+      {sources.map((source, index) => (
         <Frame key={index} {...{ source, index, clock, scenario, reduced }} />
       ))}
     </Animated.View>

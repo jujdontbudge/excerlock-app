@@ -26,7 +26,7 @@ import { Answers } from '../../../model/answers';
 import { profileStore as useProfileStore } from '../../../preferences/profileStore';
 import { settingsStore as useSettingsStore } from '../../../preferences/settingsStore';
 import { advanceDemo, beginHold, endHold, initialDemo, phasesFor, readyAfter, scenarioFor, snapshot } from './model';
-import { Character } from './Character';
+import { Cast, Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
@@ -64,6 +64,7 @@ export function ConditionDemo({
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
       {...{ scenario, control, onBack, onReady }}
+      cast={answers.gender === 'female' ? 'girl' : 'boy'}
     />
   );
 }
@@ -72,11 +73,13 @@ function DemoScene({
   control,
   onBack,
   onReady,
+  cast,
 }: {
   scenario: ReturnType<typeof scenarioFor>;
   control: ReturnType<typeof demoTestControl>;
   onBack: () => void;
   onReady: () => void;
+  cast: Cast;
 }) {
   const { reduced: initialReduced } = useMotion();
   const [reduced, setReduced] = useState(initialReduced);
@@ -219,7 +222,7 @@ function DemoScene({
               transform: [{ scale }],
             }}>
             {scenario.place === 'treadmill' ? <Treadmill clock={clock} /> : null}
-            {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced }} />}
+            {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, cast }} />}
             <Phone {...{ clock, scenario, frame }} />
             {goalCard ? (
               <View style={[styles.info, isGym ? { top: demoRows.below, right: 14 } : { top: demoRows.column, left: 14 }]}>
@@ -261,7 +264,7 @@ function DemoScene({
 }
 const styles = StyleSheet.create({
   hold: { position: 'absolute', bottom: t.space.xl, alignSelf: 'center' },
-  holdButton: { paddingHorizontal: t.space.xl, backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.pill },
+  holdButton: { paddingHorizontal: t.space.xl, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.pill },
   holdLabel: { ...t.type.label, color: t.text.primary },
   root: { flexGrow: 1 },
   stage: { flex: 1, minHeight: 650, overflow: 'hidden' },

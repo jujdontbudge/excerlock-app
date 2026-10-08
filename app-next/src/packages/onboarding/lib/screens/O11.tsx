@@ -22,8 +22,8 @@ export function O11({ answers }: AnswerProps) {
         style={{
           borderRadius: t.radius.card,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
-          backgroundColor: t.surface.card,
+          borderColor: t.surface.transparent,
+          backgroundColor: t.surface.softChoice,
           padding: t.space.xl,
           gap: t.space.md,
           alignItems: 'center',

@@ -23,9 +23,9 @@ export function ScheduleWidget({
           borderRadius: t.radius.card,
           padding: t.space.xl,
           gap: t.space.xl,
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
         }}>
         <View
           style={{

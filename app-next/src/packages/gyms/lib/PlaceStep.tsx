@@ -26,9 +26,9 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
         style={{
           minHeight: t.control.full,
           borderRadius: t.radius.field,
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
           paddingHorizontal: t.space.lg,
           flexDirection: 'row',
           alignItems: 'center',

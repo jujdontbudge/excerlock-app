@@ -9,9 +9,7 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- A tilted field of locked TikTok, Instagram, YouTube, Snapchat, X, Facebook, Reddit, Threads, Netflix and Pinterest App Store icons, mixed with orange SF Symbol exercise and health marks, fills the top of the orange screen. Tiles touching the headline go faint and tiles behind the frosted Benefits card show through at reduced strength. Below sit the free trial switch, the white Yearly and Monthly rows (Best offer pill on the recommended plan), "No payment due now", and the orange Start for $0.00 button. With the trial on, each row reads "FREE" on top and "<days> day trial then <price>/wk" underneath, with no yearly amount. With the trial off, each row shows the plan name and billed price (Yearly $49.99/year) over the per-week price. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link.
-- The Benefits card lists the selected fat and/or muscle targets (or the maintain/fallback line), the chosen Condition ("Walk 10,000 steps to unlock apps"; the O08 goal line when no Condition is staged yet), and the O10 estimate as hours less screen time a day.
-- The free trial switch appears only when the paywall serves a trial and a no-trial product for the same period. On selects the trial products and Start for $0.00; off selects the no-trial products, hides "No payment due now" and shows Continue. Tapping a plan keeps the switch state. Turning it on plays a spark burst, glow ring and layered haptics. The regular dev fake serves both kinds. As checked on 2026-10-06, the live onboarding placement includes annual and monthly trial and no-trial products. The bundled fallback and identity-lab payment scenarios still serve trial-only products, which hide the switch; use fresh-install for the switch proof.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), the free trial switch (shown only when the paywall serves a trial and a no-trial product for the same period; on gives Start for $0.00, off gives Continue), then one-line Yearly and Monthly plan pills (plan length left, price right: the yearly plan as its weekly price, other plans per their own period), with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "7 day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -26,7 +24,7 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /sample-paywall
-expect: Become ADDICTED to exercise | Benefits | Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day | Free trial enabled | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly · $0.96 / week | Monthly · $9.99 / month | 7 day free trial, then $49.99/year | Start for $0.00
 ```
 
 ```proof
@@ -34,69 +32,9 @@ name: trial-switch
 scenario: fresh-install
 open: /sample-paywall
 tap: Free trial enabled
-expect: Enable free trial | Yearly $49.99/year · $0.96/wk | Monthly $9.99/month · $2.31/wk | Continue
+expect: Enable free trial | Billed as $49.99/year | Continue
 then-tap: Enable free trial
-then-expect: Free trial enabled | Yearly FREE · 7 day trial then $0.96/wk | Monthly FREE · 7 day trial then $2.31/wk | Start for $0.00
-```
-
-```proof
-name: personalized-fat-goal
-scenario: fresh-install
-open: /onboarding/O08
-tap: Less screen time | Continue | Lose fat | Continue | Continue | Continue
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: Lose 15.0 pounds of fat | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
-```
-
-```proof
-name: personalized-muscle-goal
-scenario: fresh-install
-open: /onboarding/O08
-tap: More exercise | Continue | Gain muscle | Continue | Continue | Continue
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
-```
-
-```proof
-name: personalized-both-goals
-scenario: fresh-install
-open: /onboarding/O08
-tap: More exercise | Continue | Gain muscle | Lose fat | Continue | Continue | Continue | Continue
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: Lose 15.0 pounds of fat | Gain 10.0 pounds of muscle | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
-```
-
-```proof
-name: personalized-maintain-goal
-scenario: fresh-install
-open: /onboarding/O08
-tap: Overall wellness | Continue | Maintain | Continue | Continue
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
-```
-
-```proof
-name: personalized-other-goal
-scenario: fresh-install
-open: /onboarding/O08
-tap: Something else | Continue | Maintain | Continue | Continue
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: Stay fit, strong and healthy for life | Walk 10,000 steps to unlock apps | 3 hours less screen time a day
-```
-
-```proof
-name: personalized-screen-time-estimate
-scenario: fresh-install
-open: /onboarding/O10
-tap: 4 to 6 hours
-expect: How many hours do you currently spend scrolling each day?
-then-open: /sample-paywall?answers=keep
-then-expect: 5 hours less screen time a day
+then-expect: Free trial enabled | 7 day free trial, then $49.99/year | Start for $0.00
 ```
 
 ```proof
@@ -111,7 +49,7 @@ name: winback-after-trial
 scenario: trial-lapsed-while-closed
 relaunch: true
 tap: Sign in | Continue with Apple
-expect: Become ADDICTED to exercise | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | Start for $0.00
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"
@@ -121,7 +59,7 @@ then-expect: "placement":"winback"
 name: lapse-in-session
 scenario: trial-lapses-in-session
 open: /home
-expect: Close | Become ADDICTED to exercise | Start for $0.00
+expect: Close | Get your DREAM BODY with ExcerLock | Start for $0.00
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"

@@ -1,7 +1,7 @@
 export const onboardingCopy = {
   O01: { title: 'HACK your brain to hit your fitness goals', body: '' },
-  O02: { title: 'Block apps. Move more.', body: 'Less scrolling. More moving.' },
-  O03: { title: 'Cut your screen\ntime in half', body: 'Less screens. More happiness.' },
+  O02: { title: 'Block apps. MOVE more.', body: 'Less scrolling. More moving.' },
+  O03: { title: 'CUT your screen\ntime in half', body: 'Less screens. More happiness.' },
   O04: { title: 'What should we call you?', body: 'Let’s make this personal.' },
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },

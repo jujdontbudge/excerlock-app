@@ -77,8 +77,8 @@ export function ConditionsScreen({
           <PressableScale label={c.add} onPress={onAdd}
             style={{ minHeight: t.control.inline, paddingHorizontal: t.space.lg,
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
-              borderRadius: t.radius.pill, backgroundColor: t.surface.card,
-              borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
+              borderRadius: t.radius.pill, backgroundColor: t.surface.softChoice,
+              borderWidth: t.stroke.hairline, borderColor: t.surface.transparent }}>
             <Icon name="plus" size={t.icon.md} variant="utility" />
             <Label variant="label">{c.add}</Label>
           </PressableScale>
@@ -89,9 +89,9 @@ export function ConditionsScreen({
           style={{
             padding: t.space.lg,
             borderRadius: t.radius.card,
-            backgroundColor: t.surface.card,
+            backgroundColor: t.surface.softChoice,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
+            borderColor: t.surface.transparent,
           }}>
           <Label style={{ color: t.text.secondary }}>{c.scheduleRecovery}</Label>
         </View>
@@ -101,9 +101,9 @@ export function ConditionsScreen({
           style={{
             padding: t.space.lg,
             borderRadius: t.radius.card,
-            backgroundColor: t.surface.card,
+            backgroundColor: t.surface.softChoice,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
+            borderColor: t.surface.transparent,
             gap: t.space.sm,
           }}>
           <Label>{migrationNote}</Label>
@@ -149,7 +149,7 @@ export function ConditionsScreen({
       ) : (
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
-      <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
+      <View style={{ backgroundColor: t.surface.softChoice, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent }}>
         <SettingsRow title="Lock list" icon="lock" onPress={() => void openLockList()} />
       </View>
     </ScreenShell>

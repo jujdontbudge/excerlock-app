@@ -2,7 +2,7 @@
 id: onboarding
 title: Onboarding questions and plan preview
 routes: [onboarding/[step]]
-scenarios: [fresh-install, onboarding-walking-resume, condition-demo-walk-steps, condition-demo-walk-minutes, condition-demo-walk-state-outside, condition-demo-walk-state-treadmill, condition-demo-gym-arrival, condition-demo-gym-presence, condition-demo-gym-minutes]
+scenarios: [fresh-install, onboarding-walking-resume, condition-demo-walk-steps, condition-demo-walk-minutes, condition-demo-walk-state-outside, condition-demo-walk-state-treadmill, condition-demo-gym-arrival, condition-demo-gym-presence, condition-demo-gym-minutes, condition-demo-girl-treadmill]
 events: [onboarding_screen_viewed]
 depends: [conditions]
 ---
@@ -11,7 +11,8 @@ depends: [conditions]
 - Profile questions `O01`–`O24`, in the order given by `app-next/src/packages/onboarding/lib/flow.ts` `preBranch`. `O23` and `O24` ask for a target in pounds only when the corresponding body goal was chosen.
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
 - Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks for the review prompt one second into every visit and keeps Continue locked until that request finishes; demo `--prompt ask` forwards to the real StoreKit prompt.
-- Tail steps `S1`–`S3d`: summary, plan build, trial preview and the reminder (which asks for notifications), then `P`, the paywall.
+- Tail steps `S1`–`S3d`: summary, plan build, the Condition demo `S3b`, Before and After `S3e`, the trial preview `S3c` and the reminder (which asks for notifications), then `P`, the paywall.
+- Before and After `S3e` sits right before the trial preview and always moves with it: a remote order that drops `S3c` drops `S3e` too. Two overlapping cards: a grey Before card under a rain cloud (the character slumped on a sofa, scrolling; a girl with a ponytail when the gender answer is Female, otherwise the boy) and a peach After card under a sun with sparkles (flexing with a dumbbell for gym, walking with a thumbs up for walking). The first Before line follows the body goal: lose weight, build muscle, get in shape (both) or hit fitness goals (maintain or none); the second After line follows the activity. The Before card and its lines slide in, the arrow and After card pop in about a second later, then its lines follow with a light tick each. Reduce Motion fades everything in and keeps the cloud, sun and sparkles still. The art is generated, see `app-next/assets/onboarding/before-after/provenance/PROVENANCE.md`.
 - The PostHog `onboarding_variant` payload may reorder or drop steps within `preBranch` and `tail`. It never changes the branch.
 - Answers persist as they change, and a relaunch resumes on the same step.
 
@@ -26,6 +27,24 @@ name: welcome
 scenario: fresh-install
 open: /
 expect: HACK your brain to hit your fitness goals | Get started
+```
+
+- The intro headlines emphasize HACK on O01, MOVE on O02 and CUT on O03 with the brand orange; all other headline words stay in the primary text color.
+
+```proof
+name: intro-word-emphasis
+scenario: fresh-install
+open: /onboarding/O01
+expect: HACK your brain to hit your fitness goals | Get started
+then-open: /onboarding/O02
+then-expect: Block apps. MOVE more. | Less scrolling. More moving. | Get started
+```
+
+```proof
+name: intro-cut-emphasis
+scenario: fresh-install
+open: /onboarding/O03
+expect: CUT your screen time in half | Less screens. More happiness. | Get started
 ```
 
 ```proof
@@ -134,6 +153,75 @@ name: trial-preview-back-action
 scenario: fresh-install
 open: /onboarding/S3c
 tap: Back
+expect: Become the best version of yourself | Before | After
+```
+
+```proof
+name: before-after
+scenario: fresh-install
+open: /onboarding/S3e
+open-wait: 2.5
+expect: Back | Become the best version of yourself | Before: Struggling to hit fitness goals, Procrastinating exercise, High screen time, Worse mental health | After: Addicted to exercise, Walking every single day, Screen time under control, A brand new life | Continue
+```
+
+```proof
+name: before-after-gym
+scenario: condition-demo-gym-arrival
+open: /onboarding/S3e
+open-wait: 2.5
+expect: After: Addicted to exercise, Consistent at the gym, Screen time under control, A brand new life | Continue
+then-tap: Continue
+then-expect: We want you to try ExcerLock Premium for free
+```
+
+```proof
+name: before-after-girl-gym
+scenario: before-after-girl-gym
+open: /onboarding/S3e
+open-wait: 2.5
+expect: Before: Struggling to lose weight, Procrastinating exercise, High screen time, Worse mental health | After: Addicted to exercise, Consistent at the gym, Screen time under control, A brand new life
+```
+
+```proof
+name: before-after-girl-walk
+scenario: before-after-girl-walk
+open: /onboarding/S3e
+open-wait: 2.5
+expect: Before: Struggling to build muscle, Procrastinating exercise, High screen time, Worse mental health | After: Addicted to exercise, Walking every single day, Screen time under control, A brand new life
+```
+
+The girl scenarios resume at `S3e` with gender Female; their screenshots show the girl figures, and the lines prove the body-goal and activity wording.
+
+The character follows the gender answer everywhere it appears: the loop story (O16 to O18) and the Condition demo `S3b` show the girl with a ponytail when the answer is Female, otherwise the boy. She uses the boy's poses, positions and timing, with the phone in hand outdoors and hands free on the treadmill. The art is generated, see `app-next/assets/condition-demo/provenance/PROVENANCE.md`. These proofs set gender Female; their screenshots show the girl.
+
+```proof
+name: loop-story-girl
+scenario: before-after-girl-walk
+open: /onboarding/O16
+expect: You’re stuck in a loop | Scrolling is the habit | Continue
+then-open: /onboarding/O18
+then-expect: You become ADDICTED to exercise | Continue
+```
+
+```proof
+name: demo-girl-walk
+scenario: before-after-girl-walk
+open: /onboarding/S3b
+expect: Once you hit 10,000 steps, your apps will unlock. | Continue
+```
+
+```proof
+name: demo-girl-treadmill
+scenario: condition-demo-girl-treadmill
+open: /onboarding/S3b
+expect: Once you start walking, your apps will unlock. | Hold to walk | Continue
+```
+
+```proof
+name: before-after-back
+scenario: fresh-install
+open: /onboarding/S3e
+tap: Back
 expect: Once you hit 10,000 steps, your apps will unlock. | Continue
 ```
 
@@ -201,7 +289,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you hit 10,000 steps | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -212,7 +300,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you walk for 20 minutes | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -223,7 +311,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you start walking | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -234,7 +322,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you start walking | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -245,7 +333,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you arrive at the gym | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -256,7 +344,7 @@ open-wait: 0.5
 tap: Continue
 expect: While you're at the gym | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof
@@ -267,7 +355,7 @@ open-wait: 0.5
 tap: Continue
 expect: Once you spend 30 minutes | Continue
 then-tap: Continue
-then-expect: We want you to try ExcerLock Premium for free
+then-expect: Become the best version of yourself
 ```
 
 ```proof

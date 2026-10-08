@@ -42,8 +42,8 @@ export function NoticeHost() {
               paddingVertical: t.space.md,
               borderRadius: t.radius.pill,
               borderWidth: t.stroke.hairline,
-              borderColor: t.border.outline,
-              backgroundColor: t.surface.card,
+              borderColor: t.surface.transparent,
+              backgroundColor: t.surface.softChoice,
               boxShadow: t.shadow.control,
             }}>
             <Label variant="label" style={{ textAlign: 'center' }}>

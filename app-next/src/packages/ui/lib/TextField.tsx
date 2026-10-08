@@ -30,10 +30,10 @@ export function TextField({
       ) : null}
       <Animated.View
         style={{
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.selected,
-          borderColor: focused ? t.brand.primary : t.border.outline,
+          borderColor: focused ? t.brand.primary : t.surface.transparent,
           ...m.transition('borderColor', 'standard'),
         }}>
         <TextInput

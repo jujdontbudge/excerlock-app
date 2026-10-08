@@ -25,7 +25,7 @@ export function O03() {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
-      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="display" />
+      <Heading title={c.O03.title.replace('. ', '.\n')} accent="CUT" centered variant="display" />
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.progress }}>
         <ProgressArtwork />
       </View>

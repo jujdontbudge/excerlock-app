@@ -8,10 +8,11 @@ import { useMotion } from '../../../ui/useMotion';
 import { useHapticCue } from '../../../ui/haptics';
 import { finalLoopTitle, loopSubheads, onboardingCopy } from '../onboardingCopy';
 import { LOOP_SCENE, LoopScene } from './LoopScene';
+import { Cast } from '../condition-demo/Character';
 
 const steps = ['O16', 'O17', 'O18'] as const;
 const minHeadingHeight = 76;
-export function LoopStory({ step }: { step: (typeof steps)[number] }) {
+export function LoopStory({ step, cast }: { step: (typeof steps)[number]; cast: Cast }) {
   const phase = steps.indexOf(step),
     m = useMotion(),
     [box, setBox] = useState({ width: 0, height: 0 }),
@@ -58,7 +59,7 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
           const { width, height } = e.nativeEvent.layout;
           setBox((current) => (current.width === width && current.height === height ? current : { width, height }));
         }}>
-        {canvasWidth > 0 ? <LoopScene phase={phase} width={canvasWidth} /> : null}
+        {canvasWidth > 0 ? <LoopScene phase={phase} width={canvasWidth} cast={cast} /> : null}
       </View>
     </>
   );

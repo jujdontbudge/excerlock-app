@@ -18,6 +18,7 @@ import { PlanCelebration } from './lib/PlanCelebration';
 import { PlanSummary } from './PlanSummary';
 import { ConditionDemo } from './lib/condition-demo/ConditionDemo';
 import { PlanTrialPreview } from './PlanTrialPreview';
+import { BeforeAfter } from './lib/BeforeAfter';
 import { ResearchScreen } from './lib/ResearchScreen';
 import { RatingScreen } from './lib/RatingScreen';
 import { TrialReminder } from './lib/TrialReminder';
@@ -119,6 +120,7 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
   if (flow.step === 'S4') body = <ResearchScreen />;
   if (flow.step === 'S5') body = <RatingScreen onPrompted={onRatingPrompted} />;
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
+  if (flow.step === 'S3e') body = <BeforeAfter answers={flow.answers} onBack={flow.back} />;
   if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} />;
   if (flow.step === 'S3d') body = <TrialReminder />;
   return (

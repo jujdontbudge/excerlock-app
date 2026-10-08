@@ -24,7 +24,7 @@ export const preBranch = [
   'O18',
   'O20',
 ] as const;
-export const tail = ['S1', 'S2', 'S3', 'S4', 'S5', 'S3b', 'S3c', 'S3d', 'P'] as const;
+export const tail = ['S1', 'S2', 'S3', 'S4', 'S5', 'S3b', 'S3e', 'S3c', 'S3d', 'P'] as const;
 export type { FlowOrder };
 
 function branchFor(answers: Answers): string[] {
@@ -47,8 +47,8 @@ export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
   const pre = (order?.preBranch ?? preBranch)
     .filter((step) => !['O25', 'O23', 'O24'].includes(step))
     .flatMap((step) => step === 'O22' ? [step, ...(['O25', 'O23', 'O24'].filter((target) => applies(target, answers)))] : [step]);
-  const orderedTail = (order?.tail ?? tail).filter((step) => step !== 'S4' && step !== 'S5')
-    .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : [step]);
+  const orderedTail = (order?.tail ?? tail).filter((step) => !['S4', 'S5', 'S3e'].includes(step))
+    .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : step === 'S3c' ? ['S3e', step] : [step]);
   return [...pre, ...branchFor(answers), ...orderedTail];
 }
 

@@ -26,8 +26,8 @@ function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
     const exit = m.exit;
     const fill = Math.max(0, Math.min(1, (elapsed.get() - Math.max(index * 1000, 150)) / 140));
     return {
-      backgroundColor: interpolateColor(fill, [0, 1], [t.surface.card, t.brand.primary]),
-      borderColor: interpolateColor(fill, [0, 1], [t.border.outline, t.brand.primary]),
+      backgroundColor: interpolateColor(fill, [0, 1], [t.surface.softChoice, t.brand.primary]),
+      borderColor: interpolateColor(fill, [0, 1], [t.surface.softChoice, t.brand.primary]),
       opacity: reduced ? 1 : (1 - exit) * Math.max(0, Math.min(1, 3 - m.slot)) * (1 - Math.min(2, m.slot) * 0.24),
       transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }, { translateX: m.swipeX }],
     };

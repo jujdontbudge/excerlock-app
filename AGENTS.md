@@ -47,7 +47,7 @@ A worker commits only to its own worktree branch. It never pushes, merges or tou
 
 ## UI
 
-Read `app-next/src/packages/ui/UI-STYLE.md` before touching a screen. Take every value from `app-next/src/packages/ui/tokens.ts`, and reuse the `ui` components. Screens are light orange-to-ivory gradients with black-outlined white cards. Motion goes through the `ui` motion hooks (`useMotion`, `Reveal`, `presets`).
+Read `app-next/src/packages/ui/UI-STYLE.md` before touching a screen. Take every value from `app-next/src/packages/ui/tokens.ts`, and reuse the `ui` components. Screens are a flat warm off-white with borderless soft grey cards and pills. Motion goes through the `ui` motion hooks (`useMotion`, `Reveal`, `presets`).
 
 ## Authority
 

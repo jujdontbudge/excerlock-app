@@ -10,7 +10,7 @@ export function StatTile({ label, value, support }: { label: string; value: stri
           padding: t.space.lg,
           borderRadius: t.radius.card,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
           gap: t.space.sm,
         }}>
         <Label variant="support" tone="secondary">

@@ -65,7 +65,7 @@ export function RatingScreen({ onPrompted }: { onPrompted: () => void }) {
 }
 const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: t.space.md },
-  card: { paddingHorizontal: t.space.lg, paddingVertical: t.space.md, backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card },
+  card: { paddingHorizontal: t.space.lg, paddingVertical: t.space.md, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.card },
   summary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm },
   crowd: { width: t.control.full, height: t.control.full, borderRadius: t.radius.pill, borderWidth: t.stroke.selected, borderColor: t.surface.card },
   face: { width: t.control.inline, height: t.control.inline, borderRadius: t.radius.pill },

@@ -47,7 +47,7 @@ export const illustrationTokens = {
     gym: '#F0B98C',
     location: '#2F7CF6',
     locationHalo: 'rgba(47,124,246,.18)',
-    radius: 'rgba(201,71,16,.12)',
+    radius: 'rgba(234,106,18,.12)',
     treadmill: '#2B2E3A',
     belt: '#3E4252',
     beltTick: '#5A5F72',

@@ -1,11 +1,9 @@
 import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
-import { Icon } from '../../ui/Icon';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { haptic } from '../../ui/haptics';
@@ -17,21 +15,16 @@ import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
-import { subscriptionCopy, planRowTitle, planName, perPeriod } from '../../subscription/subscriptionCopy';
-import { onboardingStore as useOnboardingStore } from '../../onboarding/onboardingStore';
-import { rulesStore as useRulesStore } from '../../conditions/rulesStore';
-import { draftFromAnswers } from '../../conditions/answersDraft';
-import { toRule } from '../../conditions/draft';
-import { scheduleDraft, toSchedule } from '../../conditions/scheduleDraft';
+import { subscriptionCopy, planName, perPeriod } from '../../subscription/subscriptionCopy';
 import { defaultPlanHandle } from './paywallVariant';
-import { paywallPromises } from './paywallPromises';
-import { fieldMinimum, PaywallField } from './PaywallField';
+import { PaywallHeadline } from './PaywallHeadline';
+import { PaywallReview } from './PaywallReview';
+import { PaywallTagline } from './PaywallTagline';
 import { TrialSwitch } from './TrialSwitch';
 import { pairOf, planFor, planPairs, trialLength, trialSwitchable, withTrial, zeroPrice } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
-const glass = isLiquidGlassAvailable(),
-  paywallLoadRetries = 2,
-  planRowHeight = t.space.md * 2 + t.type.body.lineHeight * 2 + t.stroke.selected * 2;
+const paywallLoadRetries = 2,
+  planRowHeight = t.control.full;
 export function PaywallScreen({
   placement,
   reportError,
@@ -55,27 +48,12 @@ export function PaywallScreen({
   const runtime = useRuntime(),
     insets = useSafeAreaInsets(),
     linksSpace = insets.bottom + t.space.xs - t.type.micro.lineHeight,
-    answers = useOnboardingStore((state) => state.data.answers),
-    committedRule = useRulesStore((state) => state.data.rules[0]),
     [paywall, setPaywall] = useState<SubscriptionPaywall | null>(null),
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
     chosen = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
-    shown = useRef<number | null>(null),
-    card = useRef<View>(null),
-    heading = useRef<View>(null),
-    [fieldBottom, setFieldBottom] = useState(0),
-    [titleBand, setTitleBand] = useState({ top: 0, bottom: 0 });
-  const stagedRule = useMemo(() => {
-    if (committedRule || !answers.ruleId) return undefined;
-    try {
-      return toRule(draftFromAnswers(answers), toSchedule(scheduleDraft(answers)));
-    } catch {
-      return undefined;
-    }
-  }, [committedRule, answers]);
-  const rule = committedRule ?? stagedRule;
+    shown = useRef<number | null>(null);
   useEffect(() => {
     latest.current = { variantKey, onLoaded };
   }, [variantKey, onLoaded]);
@@ -175,32 +153,15 @@ export function PaywallScreen({
   };
   const pairs = useMemo(() => planPairs(paywall?.products ?? []), [paywall]),
     switchable = trialSwitchable(pairs),
-    trialOn = !product || product.offerLabel !== null,
-    promises = paywallPromises(answers, rule);
+    trialOn = !product || product.offerLabel !== null;
   const flip = (next: boolean) => {
     const pair = pairOf(pairs, selected);
     if (pair) choose(planFor(pair, next).handle);
   };
-  const measureCard = () =>
-    card.current?.measureInWindow((_, y, __, height) => {
-      const bottom = y + height;
-      setFieldBottom((current) => (Math.abs(current - bottom) > 1 ? bottom : current));
-    });
-  const measureTitle = () =>
-    heading.current?.measureInWindow((_, y, __, height) =>
-      setTitleBand((current) =>
-        Math.abs(current.top - y) > 1 || Math.abs(current.bottom - y - height) > 1
-          ? { top: y, bottom: y + height }
-          : current,
-      ),
-    );
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      contentStyle={{ gap: t.space.md, paddingTop: onClose ? 0 : insets.top }}
-      background={
-        fieldBottom > 0 && titleBand.bottom > 0 ? <PaywallField bottom={fieldBottom} title={titleBand} /> : null
-      }
+      contentStyle={{ gap: t.space.xl, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
       header={
         onClose ? (
           <View
@@ -224,19 +185,19 @@ export function PaywallScreen({
       }
       footer={
         <>
+          <View style={{ gap: t.space.md, paddingBottom: t.space.sm }}>
           {switchable ? (
-            <Reveal index={4}>
+            <Reveal index={2}>
               <TrialSwitch on={trialOn} locked={busy === 'purchase' || busy === 'restore'} onToggle={flip} />
             </Reveal>
           ) : null}
-          <View style={{ gap: t.space.md, paddingTop: t.space.md, minHeight: planRowHeight * 2 + t.space.md * 2 }}>
+          <View style={{ gap: t.space.md, minHeight: planRowHeight * 2 + t.space.md }}>
             {pairs.map((pair, index) => {
               const item = planFor(pair, trialOn);
               return (
-                <Reveal key={pair.period} index={index + 5}>
+                <Reveal key={pair.period} index={index + 3}>
                   <PlanRow
                     product={item}
-                    best={pair.recommended}
                     selected={selected === item.handle}
                     locked={busy !== null}
                     onPress={() => choose(item.handle)}
@@ -245,16 +206,13 @@ export function PaywallScreen({
               );
             })}
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: t.space.sm,
-              opacity: trialOn ? 1 : 0,
-            }}>
-            <Icon name="check" size={t.icon.md} variant="utility" />
-            <Label variant="label">{subscriptionCopy.noPayment}</Label>
+          {product ? (
+            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+              {product.offerLabel
+                ? copy.trialThenBilled(trialLength(product.offerLabel), perPeriod(product))
+                : copy.billedAs(perPeriod(product))}
+            </Label>
+          ) : null}
           </View>
           <PrimaryButton
             label={
@@ -301,52 +259,9 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <View style={{ flex: 1, minHeight: fieldMinimum }} />
-      <View ref={heading} onLayout={measureTitle} collapsable={false} style={{ marginBottom: -t.space.md }}>
-        <Label
-          accessibilityRole="header"
-          accessibilityLabel={copy.title}
-          variant="display"
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          style={{ textAlign: 'center', textShadowColor: t.paywall.titleHalo, textShadowRadius: t.space.md }}>
-          {copy.before}
-          <Label variant="display" style={{ color: t.brand.primary }}>
-            {copy.emphasis}
-          </Label>
-          {copy.after}
-        </Label>
-      </View>
-      <View ref={card} onLayout={measureCard} collapsable={false} style={{ alignSelf: 'center' }}>
-        <Reveal index={1}>
-          <GlassView
-            glassEffectStyle="regular"
-            colorScheme="light"
-            tintColor={t.paywall.frost}
-            style={{
-              gap: t.space.md,
-              paddingHorizontal: t.space.xl,
-              paddingVertical: t.space.lg,
-              borderRadius: t.radius.sheet,
-              overflow: 'hidden',
-              backgroundColor: glass ? undefined : t.surface.glass,
-            }}>
-            <Label variant="section" style={{ textAlign: 'left' }}>
-              {subscriptionCopy.benefitsTitle}
-            </Label>
-            {promises.map((promise) => (
-              <View key={promise.text} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
-                <Label variant="section" accessible={false} style={{ width: t.icon.lg, textAlign: 'center' }}>
-                  {promise.mark}
-                </Label>
-                <Label variant="body" style={{ flexShrink: 1, textAlign: 'left' }}>
-                  {promise.text}
-                </Label>
-              </View>
-            ))}
-          </GlassView>
-        </Reveal>
-      </View>
+      <PaywallHeadline />
+      <PaywallReview />
+      <PaywallTagline />
     </ScreenShell>
   );
 }
@@ -357,13 +272,11 @@ function openLink(url: string) {
 
 function PlanRow({
   product,
-  best,
   selected,
   locked,
   onPress,
 }: {
   product: PaywallProduct;
-  best: boolean;
   selected: boolean;
   locked: boolean;
   onPress: () => void;
@@ -371,9 +284,9 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    weekly = `${product.localizedWeeklyPrice ?? product.localizedPrice}${subscriptionCopy.perWeekShort}`,
-    lead = product.offerLabel ? subscriptionCopy.trialThen(trialLength(product.offerLabel)) : '',
-    top = lead ? subscriptionCopy.free : perPeriod(product);
+    price = product.periodUnit === 'year' && product.localizedWeeklyPrice
+      ? `${product.localizedWeeklyPrice}${copy.perWeek}`
+      : `${product.localizedPrice} / ${product.periodUnit ?? product.localizedPeriod}`;
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -382,87 +295,35 @@ function PlanRow({
     if (selected) pop.value = m.sequence(m.timing(m.scale.selected, 'press'), m.spring(1, 'pop'));
   }, [selected, m, pop]);
   const scale = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
-  const strong = { color: t.text.primary, fontFamily: t.font.bold };
+  const tint = { color: selected ? t.text.onAccent : t.text.primary };
   return (
     <PressableScale
-      label={`${planRowTitle(product)} · ${planName(product)} ${top} · ${lead}${weekly}`}
+      label={`${planName(product)} · ${price}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
       onPress={onPress}>
-      <Animated.View style={scale}>
-        <Animated.View
-          style={{
+      <Animated.View
+        style={[
+          scale,
+          {
+            minHeight: t.control.full,
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: t.space.md,
-            paddingVertical: t.space.md,
-            paddingHorizontal: t.space.lg,
-            borderRadius: t.radius.card,
-            borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-            borderColor: selected ? t.brand.primary : t.border.outline,
-            backgroundColor: t.surface.card,
-            ...m.transition(['borderColor'], 'standard'),
-          }}>
-          <View style={{ flex: 1 }}>
-            <Label
-              variant="body"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              style={{ textAlign: 'left', color: t.text.secondary }}>
-              {`${planName(product)} `}
-              <Label variant="body" style={strong}>
-                {top}
-              </Label>
-            </Label>
-            <Label
-              variant="body"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              style={{ textAlign: 'left', color: t.text.secondary }}>
-              {lead}
-              <Label variant="body" style={strong}>
-                {weekly}
-              </Label>
-            </Label>
-          </View>
-          <View
-            style={{
-              width: t.icon.lg - t.space.sm,
-              height: t.icon.lg - t.space.sm,
-              borderRadius: t.radius.pill,
-              borderWidth: t.stroke.selected,
-              borderColor: selected ? t.brand.primary : t.border.mutedStroke,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            {selected ? (
-              <View
-                style={{
-                  width: t.icon.sm,
-                  height: t.icon.sm,
-                  borderRadius: t.radius.pill,
-                  backgroundColor: t.brand.primary,
-                }}
-              />
-            ) : null}
-          </View>
-        </Animated.View>
-        {best ? (
-          <View style={{ position: 'absolute', top: -t.space.md, right: t.space.xxl * 2 }}>
-            <View
-              style={{
-                paddingHorizontal: t.space.md,
-                paddingVertical: t.space.xs / 2,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.brand.primary,
-              }}>
-              <Label variant="micro" style={{ color: t.text.onAccent }}>
-                {subscriptionCopy.bestOffer.toUpperCase()}
-              </Label>
-            </View>
-          </View>
-        ) : null}
+            paddingHorizontal: t.space.xl,
+            borderRadius: t.radius.pill,
+            backgroundColor: selected ? t.brand.primary : t.surface.softChoice,
+            ...m.transition(['backgroundColor'], 'standard'),
+          },
+        ]}>
+        <Label variant="label" style={[tint, { textAlign: 'left' }]}>
+          {planName(product)}
+        </Label>
+        <Label variant="label" style={[tint, { textAlign: 'right' }]}>
+          {price}
+        </Label>
       </Animated.View>
     </PressableScale>
   );

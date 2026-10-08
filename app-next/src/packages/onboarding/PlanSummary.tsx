@@ -48,7 +48,7 @@ export function PlanSummary({
       <View style={{ gap: t.space.md }}>
         {goals.map((goal, index) => <Reveal key={goal.id} index={index}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg, padding: t.space.lg,
-            borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card, backgroundColor: t.surface.card }}>
+            borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.card, backgroundColor: t.surface.softChoice }}>
             <View testID={`plan-goal-icon-${goal.id}`}><Icon name={goal.icon} size={t.icon.md} /></View>
             <Label variant="label" style={{ flex: 1 }}>{goal.text}</Label>
           </View>
@@ -77,9 +77,9 @@ export function PlanSummary({
             style={{
               padding: t.space.lg,
               borderRadius: t.radius.card,
-              backgroundColor: t.surface.card,
+              backgroundColor: t.surface.softChoice,
               borderWidth: t.stroke.hairline,
-              borderColor: t.border.outline,
+              borderColor: t.surface.transparent,
               gap: t.space.sm,
             }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>

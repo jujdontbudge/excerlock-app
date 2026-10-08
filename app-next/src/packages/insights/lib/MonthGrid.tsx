@@ -55,8 +55,8 @@ export function MonthGrid({ data, goal, unit }: {
   );
 }
 const s = StyleSheet.create({
-  card: { backgroundColor: t.surface.card, borderRadius: t.radius.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, padding: t.space.md, gap: t.space.sm },
+  card: { backgroundColor: t.surface.softChoice, borderRadius: t.radius.card,
+    borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, padding: t.space.md, gap: t.space.sm },
   row: { flexDirection: 'row' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: t.space.xs },
   cell: { width: `${100 / 7}%`, alignItems: 'center', justifyContent: 'center' },

@@ -85,9 +85,9 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
       />
       <View
         style={{
-          backgroundColor: t.surface.card,
+          backgroundColor: t.surface.softChoice,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.outline,
+          borderColor: t.surface.transparent,
           borderRadius: t.radius.card,
           padding: t.space.lg,
           gap: t.space.sm,

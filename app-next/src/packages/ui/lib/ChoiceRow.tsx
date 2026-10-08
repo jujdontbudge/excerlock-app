@@ -22,6 +22,7 @@ export function ChoiceRow({
   multiple = false,
   compact = false,
   emphasis = 'outline',
+  soft = true,
   haptic = multiple || !selected ? 'select' : 'none',
 }: {
   title: string;
@@ -34,11 +35,12 @@ export function ChoiceRow({
   multiple?: boolean;
   compact?: boolean;
   emphasis?: ChoiceEmphasis;
+  soft?: boolean;
   haptic?: HapticIntent;
 }) {
   const m = useMotion();
-  const solid = emphasis === 'solid' && selected;
   const centred = useSetupPresentation();
+  const solid = (emphasis === 'solid' || centred || soft) && selected;
   const lead = leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null);
   const slot = { width: t.icon.lg, alignItems: 'center' as const };
   void compact;
@@ -71,21 +73,21 @@ export function ChoiceRow({
       onPress={onPress}>
       <Animated.View
         style={{
-          minHeight: t.control.row,
+          minHeight: soft ? t.control.softRow : t.control.row,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: t.space.lg,
+          gap: soft ? t.space.sm : t.space.lg,
           paddingHorizontal: t.space.lg,
-          paddingVertical: t.space.lg,
-          borderRadius: t.radius.card,
-          borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
+          paddingVertical: soft ? t.space.md : t.space.lg,
+          borderRadius: soft ? t.radius.choice : t.radius.card,
+          borderWidth: soft ? 0 : selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
-          backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
+          backgroundColor: solid ? t.brand.primary : soft ? t.surface.softChoice : selected ? t.surface.selected : t.surface.card,
           ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
         }}>
-        {centred ? <View style={slot}>{lead}</View> : lead}
+        {centred && !soft ? <View style={slot}>{lead}</View> : lead}
         <View style={{ flex: 1, gap: t.space.xs }}>
-          <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
+          <Label variant="label" style={[{ color: solid ? t.text.onAccent : t.text.primary }, soft && { textAlign: 'left' }]}>
             {title}
           </Label>
 
@@ -95,7 +97,7 @@ export function ChoiceRow({
             </Label>
           ) : null}
         </View>
-        {centred ? <View style={slot}>{indicator}</View> : indicator}
+        {soft ? null : centred ? <View style={slot} /> : indicator}
       </Animated.View>
     </PressableScale>
   );
