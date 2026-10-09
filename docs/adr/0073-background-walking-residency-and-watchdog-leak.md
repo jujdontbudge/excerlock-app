@@ -8,7 +8,7 @@ date: 2026-10-09
 ## Decision
 
 - **Watchdog.** Before a lock or open state is published, `EnforcementHost` cancels the walking watchdog against the revision the native record holds (`policyRevision()`, then `cancelWatchdogs`). Native `publish` drops a committed watchdog from the record without stopping its DeviceActivity monitor, so each unlock followed by a relock left one monitor registered for its 15 minutes. With ADR 0072's instant timing, a walk with a few stops filled iOS's 20-activity limit; then `startMonitoring` failed with "excessive activities", the walking unlock failed closed, and the apps stayed locked while walking. The JS fix ships by OTA; the native leak in `publish` should also be fixed in the next binary.
-- **Keep-alive.** The walk keep-alive asks for `Accuracy.Balanced` (100 m) with no distance filter, instead of 1 km and 500 m (ADR 0036). The blue indicator stays off and auto-pause stays off.
+- **Keep-alive.** The walk keep-alive asks for `Accuracy.Balanced` (100 m) with no distance filter, instead of 1 km and 500 m (ADR 0036). The blue indicator stays off and auto-pause stays off. Expo restores a running task with the options it was started with, so `hydrateState` (launch and each foreground) re-applies the options to a running keep-alive. That also restarts it from the foreground, which is the reliable case on iOS 16.4+.
 
 ## Context
 

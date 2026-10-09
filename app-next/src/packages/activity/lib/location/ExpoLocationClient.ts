@@ -91,6 +91,7 @@ export class ExpoLocationClient implements NativeLocationClient {
         ? backgroundStatus
         : mapPermission(foreground, "foreground");
     this.locationUpdatesActive = walkActive;
+    if (walkActive) await this.startLocationUpdates().catch(() => undefined);
   }
 
   public getAuthorizationStatus(): LocationAuthorizationStatus {
