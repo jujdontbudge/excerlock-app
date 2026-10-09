@@ -3,6 +3,7 @@ import { createPersistedStore } from '../persistence/createPersistedStore';
 import * as v from '../persistence/validation';
 
 export const FILMING_MODE_MS = 2 * 60 * 60_000;
+export const FAST_WALKING_DETECTION = true;
 
 export const filmingModeStore = createPersistedStore<{ until: number | null }>(
   'filming-mode',
@@ -11,6 +12,10 @@ export const filmingModeStore = createPersistedStore<{ until: number | null }>(
 );
 
 const useFilmingModeStore = filmingModeStore;
+
+export function fastWalkingDetection(at: number): boolean {
+  return FAST_WALKING_DETECTION || filmingModeActive(at);
+}
 
 export function filmingModeActive(at: number): boolean {
   const until = filmingModeStore.getState().data.until;

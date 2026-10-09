@@ -8,7 +8,7 @@ import { AsyncStorageGymVisitLog } from './AsyncStorageGymVisitLog';
 import { detectionStore } from './detectionStore';
 import { MotionAdapter } from './lib/detection/MotionAdapter';
 import { SHIPPED_STRIDE_GATE_REPORT } from './lib/detection/strideGateConfig';
-import { filmingModeActive } from './filmingModeStore';
+import { fastWalkingDetection } from './filmingModeStore';
 import { PlacementAdapter } from './lib/detection/PlacementAdapter';
 import { decimateDeviceMotion, strideSourceFrom } from './lib/detection/deviceMotionStreams';
 import { DetectionService, type DetectionWake } from './DetectionService';
@@ -31,7 +31,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const sensors = createSensorStreamModuleClient();
   const location = createNativeLocationProvider();
   const gymLog = new AsyncStorageGymVisitLog();
-  const motion = new MotionAdapter(rawMotion, Date.now, strideSourceFrom(rawPlacement), SHIPPED_STRIDE_GATE_REPORT, filmingModeActive);
+  const motion = new MotionAdapter(rawMotion, Date.now, strideSourceFrom(rawPlacement), SHIPPED_STRIDE_GATE_REPORT, fastWalkingDetection);
   const placement = new PlacementAdapter(decimateDeviceMotion(rawPlacement));
   const historyLedger = new HistoryCreditLedger(AsyncStorage);
   const walkingDurationLedger = new WalkingDurationLedger(AsyncStorage);

@@ -8,7 +8,7 @@ date: 2026-10-08
 ## Decision
 
 - **Gym.** `PRESENCE_CONFIRM_MS` is 3 seconds, down from 30. It sets both the "I'm at the gym" check-in and automatic arrival confirmation, so a check-in unlocks about 3 seconds after the tap. The lock outline fills in one continuous linear animation over that time (`useCeremony` `fillMs`), not in one-second steps.
-- **Walking in filming mode.** `FILMING_STEPS.stopMs` is 1.5 seconds, up from 1 (ADR 0064). Normal walking detection is unchanged: its stop grace stays 30 seconds to 5 minutes, because shorter values lock mid-walk between motion updates.
+- **Walking in filming mode.** `FILMING_STEPS.stopMs` is 1.5 seconds, up from 1 (ADR 0064). Superseded by ADR 0072: 1 second, and the fast detector is on for everyone. Normal walking detection is unchanged: its stop grace stays 30 seconds to 5 minutes, because shorter values lock mid-walk between motion updates.
 - **Gym picker.** While a finger is on the picker map, the page does not scroll, so every drag on the map moves the pin.
 
 ## Context

@@ -287,6 +287,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     const incidentLog = createIncidentLog();
     let lastEnforcement: ReturnType<typeof source.read> | null = null;
     let insideReconcile = false;
+    let committedDuringReconcile = false;
     let projecting = false;
     let stepsByDay: Record<string, number> = {};
     let regionsSignature: string | null = null;
@@ -554,6 +555,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             if (__LINKED_RECORDER_TRACE__)
               linkedTrace.record('execution_opportunity', { source: opportunitySource, status: opportunityStatus });
             insideReconcile = false;
+            if (committedDuringReconcile && !disposed) {
+              committedDuringReconcile = false;
+              void reconcile('manual', 'committed').catch((error: unknown) => options.reportError(error));
+            }
           }
         });
       lastOperation = work;
@@ -776,7 +781,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             id && at != null && detection.location.isInsideRegion(id) === true
               ? { placeId: id, startedAt: new Date(at).toISOString(), confirmedAt: new Date(at).toISOString() }
               : null;
-          if (!disposed && !insideReconcile) void reconcile('manual', 'committed').catch(options.reportError);
+          if (disposed) return;
+          if (insideReconcile) committedDuringReconcile = true;
+          else void reconcile('manual', 'committed').catch(options.reportError);
         }),
       );
       await client.boot();
