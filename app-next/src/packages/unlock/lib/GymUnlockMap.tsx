@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import { Icon } from '../../ui/Icon';
@@ -11,7 +11,7 @@ import { circleEdge, distanceMetres, gymMapRegion, pointInMap, regionForRadius, 
 import { gymDistance } from '../../gyms/gymDistance';
 import { settingsStore as useSettingsStore } from '../../preferences/settingsStore';
 import { unlockCopy as c } from './unlockCopy';
-export function GymUnlockMap({ location, gym, inside }: { location: Coordinates | null; gym?: SavedPlace; inside: boolean }) {
+export const GymUnlockMap = memo(function GymUnlockMap({ location, gym, inside }: { location: Coordinates | null; gym?: SavedPlace; inside: boolean }) {
   const map = useRef<MapView>(null), frame = useRef<MapRegion | null>(null), framedGym = useRef<string | null>(null);
   const [following, setFollowing] = useState(true), [ready, setReady] = useState(false), [size, setSize] = useState({ width: 1, height: 1 });
   const m = useMotion(), units = useSettingsStore((s) => s.data.units);
@@ -53,7 +53,8 @@ export function GymUnlockMap({ location, gym, inside }: { location: Coordinates 
       </View>
     </View>
   );
-}
+});
+
 const s = StyleSheet.create({
   disc: { width: t.control.inline, height: t.control.inline, borderRadius: t.radius.pill, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, alignItems: 'center', justifyContent: 'center', boxShadow: t.shadow.control },
   user: { width: t.space.lg, height: t.space.lg, borderRadius: t.radius.pill, backgroundColor: t.swatch.sky, borderWidth: t.stroke.selected, borderColor: t.surface.card },

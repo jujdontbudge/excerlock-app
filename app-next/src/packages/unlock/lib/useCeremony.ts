@@ -29,6 +29,11 @@ export function useCeremony(value: number, verified: boolean, message: string, {
     progress.set(m.timing(1, 'press', { curve: 'steady', stretch: ((1 - progress.get()) * fillMs) / m.duration.press }));
   }, [filling, fillMs, progress, m]);
   useEffect(() => {
+    if (!filling || fillMs === undefined || reduced) return;
+    const detents = [1, 2, 3].map((quarter) => setTimeout(() => haptic('detent'), (fillMs * quarter) / 4));
+    return () => detents.forEach(clearTimeout);
+  }, [filling, fillMs, reduced]);
+  useEffect(() => {
     if (!steady) return;
     const stall = setTimeout(() => setStalledAt(value === 0 ? -1 : value), value === 0 ? 0 : STRIDE_STALL_MS);
     return () => clearTimeout(stall);

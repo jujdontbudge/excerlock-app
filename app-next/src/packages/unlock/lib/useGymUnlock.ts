@@ -15,6 +15,7 @@ import { notify } from '../../ui/Notice';
 import { unlockCopy as c } from './unlockCopy';
 import { haptic } from '../../ui/haptics';
 export { PRESENCE_CONFIRM_MS };
+const GYM_OPEN_WAIT_MS = 5_000, GYM_OPEN_POLL_MS = 250, FILL_STARTED = 0.01;
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(), places = useSettingsStore((s) => s.data.gymPlaces), units = useSettingsStore((s) => s.data.units);
   const permission = usePermissionsStore((s) => s.data.location);
@@ -41,6 +42,14 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     const after = decision();
     return result.applied && (after.state === 'unlockedAtGym' || after.state === 'unlockedMet');
   }, [runtime, decision]);
+  const openedWithin = useCallback(async (signal: AbortSignal) => {
+    const deadline = Date.now() + GYM_OPEN_WAIT_MS;
+    for (;;) {
+      if (await apply()) return true;
+      if (signal.aborted || Date.now() >= deadline) return false;
+      await gymWait(GYM_OPEN_POLL_MS, signal);
+    }
+  }, [apply]);
   const wasInside = useRef(false);
   useEffect(() => {
     if (wasInside.current && !inside && !preview) runtime.analytics.track('gym_unlock_lost', { preview });
@@ -64,12 +73,6 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     const stopPresence = runtime.gym.observePresence(() => void sample());
     return () => { mounted.current = false; request.current?.abort(); clearInterval(timer); app.remove(); stopLocation(); stopPresence(); };
   }, [preview, runtime]);
-  useEffect(() => {
-    if (!working) return;
-    const start = Date.now(), duration = PRESENCE_CONFIRM_MS;
-    const timer = setInterval(() => setValue(Math.min(1, (Date.now() - start) / duration)), GYM_FIX_SAMPLE_MS);
-    return () => clearInterval(timer);
-  }, [working, preview]);
   useEffect(() => {
     if (preview || lifted || working || !session?.confirmedAt || !inside) return;
     let active = true;
@@ -104,12 +107,12 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
         if (status === 'outside' && fix) { notify(outsideMessage(fix, nearest)); haptic('warning'); return; }
         if (status !== 'inside') { notify(c.gym.uncertain); haptic('warning'); return; }
       }
-      setChecking(false); setWorking(true); setValue(0);
+      setChecking(false); setWorking(true); setValue(FILL_STARTED);
       runtime.analytics.track('gym_unlock_tapped', { preview });
       if (preview) await gymWait(PRESENCE_CONFIRM_MS, controller.signal);
       else if (nearest) await runtime.gym.checkIn(nearest.id, { milliseconds: PRESENCE_CONFIRM_MS, signal: controller.signal });
       if (controller.signal.aborted) return;
-      const opened = preview || await apply();
+      const opened = preview || await openedWithin(controller.signal);
       if (controller.signal.aborted || !mounted.current) return;
       if (opened) { setValue(1); setLifted(true); runtime.analytics.track('gym_unlock_confirmed', { preview }); }
       else { setValue(0); notify(c.gym.checkedInLocked); haptic('warning'); }
