@@ -42,6 +42,7 @@ import { scenario23 } from './reduce-motion';
 import { scenario24 } from './walk-state-ready';
 import { scenario25 } from './trial-lapsed-while-closed';
 import { scenario26 } from './trial-lapses-in-session';
+import { screenshotsFull } from './screenshots-full';
 export const scenarios = [
   gymUiucOutside,
   gymUiucManual,
@@ -88,6 +89,7 @@ export const scenarios = [
   scenario24,
   scenario25,
   scenario26,
+  screenshotsFull,
   ...unlockScenarios,
   ...conditionDemoScenarios,
   ...beforeAfterScenarios,

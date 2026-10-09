@@ -1,4 +1,6 @@
 import { todayHistory } from '../progress/todayHistory';
+import { useShowcaseMode } from '../progress/showcaseModeStore';
+import { showcaseHistory } from '../progress/showcaseHistory';
 import { useMemo, useSyncExternalStore } from 'react';
 import { useRuntime } from '../ports/useRuntime';
 import { resolveLock } from './resolveLock';
@@ -83,10 +85,11 @@ export function useHistory(suppliedNow?: string) {
     timezone = runtime.clock.timezone(),
     { history } = useRuntimeStatus(),
     rules = useRulesStore((s) => s.data.rules),
-    days = useRuleDaysStore((s) => s.data.days);
+    days = useRuleDaysStore((s) => s.data.days),
+    showcase = useShowcaseMode();
   return useMemo(
-    () => todayHistory(history, rules, days, now, timezone),
-    [history, rules, days, now, timezone],
+    () => showcase ? showcaseHistory(dayKey(now, timezone)) : todayHistory(history, rules, days, now, timezone),
+    [showcase, history, rules, days, now, timezone],
   );
 }
 export function useStreak(suppliedNow?: string) {

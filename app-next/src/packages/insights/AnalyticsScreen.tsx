@@ -20,6 +20,7 @@ import { analyticsModel } from './lib/analyticsModel';
 import { Period } from './lib/period';
 import { MetricBars, MetricPoint } from './lib/MetricBars';
 import { useAppleSteps } from './lib/useAppleSteps';
+import { useShowcaseMode } from '../progress/showcaseModeStore';
 import { DailyActivityRing } from './lib/DailyActivityRing';
 import { MonthGrid } from './lib/MonthGrid';
 import { ActivityStats, ActivityStat } from './lib/ActivityStats';
@@ -67,9 +68,10 @@ export function AnalyticsScreen() {
     [rules],
   );
   const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
-  const canSwitchActivity = rules.some((condition) => condition.activity === 'walking')
-    && rules.some((condition) => condition.activity === 'gym');
-  const availableChoice = selectedActivity && rules.some((condition) => condition.activity === selectedActivity);
+  const showcase = useShowcaseMode();
+  const canSwitchActivity = showcase || (rules.some((condition) => condition.activity === 'walking')
+    && rules.some((condition) => condition.activity === 'gym'));
+  const availableChoice = selectedActivity && (showcase || rules.some((condition) => condition.activity === selectedActivity));
   const primaryActivity = availableChoice ? selectedActivity : gymRules.length ? 'gym' : 'walking';
   const metricTitle = c.metricTitles[primaryActivity];
   const walkingRule = enabledRules.find(

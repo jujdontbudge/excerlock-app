@@ -24,6 +24,7 @@ export const devCopy = {
   previews: 'Component gallery',
   shield: 'Shield preview',
   filming: 'Filming mode',
+  showcase: 'Showcase data',
   record: 'Record flow',
   open: 'Open app',
   loadPrefix: (title: string) => `Load ${title}`,

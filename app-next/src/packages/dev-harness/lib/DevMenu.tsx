@@ -10,6 +10,7 @@ import { LivingIcon } from '../../ui/LivingIcon';
 import { useJourney } from '../../journey/index';
 import { recentHaptics, subscribeHaptics } from '../../ui/haptics';
 import { toggleFilmingMode, useFilmingModeActive } from '../../activity/filmingModeStore';
+import { toggleShowcaseMode, useShowcaseMode } from '../../progress/showcaseModeStore';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -18,6 +19,7 @@ export function DevMenu() {
     journey = useJourney(runtime),
     haptics = useSyncExternalStore(subscribeHaptics, recentHaptics, recentHaptics),
     filming = useFilmingModeActive(),
+    showcase = useShowcaseMode(),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
@@ -48,6 +50,7 @@ export function DevMenu() {
           toggle={filming}
           onToggle={() => toggleFilmingMode(Date.now())}
         />
+        <SettingsRow title={c.showcase} toggle={showcase} onToggle={() => toggleShowcaseMode(runtime.auth)} />
       </SettingsGroup>
       <DevControls />
       <SettingsGroup>

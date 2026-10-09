@@ -2,8 +2,14 @@ import { StepsPort } from '../../../ports/StepsPort';
 import { permissionsStore } from '../../../permissions/permissionsStore';
 import { FakeContext } from '../FakeContext';
 import { stepCount } from '../stepCount';
+import { dayKey } from '../../../schedule/calendar';
 export function StepsFake(ctx: FakeContext): StepsPort {
   const count = () => stepCount(ctx);
+  const pastSteps = (from: string, to: string) => {
+    if (!ctx.scenario.steps.pastFromHistory || Date.parse(from) > Date.parse(ctx.clock.now())) return 0;
+    const day = dayKey(from, ctx.clock.timezone());
+    return Date.parse(to) - Date.parse(from) > 0 ? (ctx.snapshot().history.find((d) => d.day === day)?.activity.walking ?? 0) : 0;
+  };
   return {
     authorizationStatus: () => permissionsStore.getState().data.motion,
     request: () => ctx.request('motion'),
@@ -14,7 +20,7 @@ export function StepsFake(ctx: FakeContext): StepsPort {
     },
     metricsBetween: async (from, to) => {
       const now = Date.parse(ctx.clock.now());
-      const steps = Date.parse(from) <= now && now < Date.parse(to) ? count() : 0;
+      const steps = Date.parse(from) <= now && now < Date.parse(to) ? count() : pastSteps(from, to);
       return {
         steps,
         distanceMeters: steps * 0.76,

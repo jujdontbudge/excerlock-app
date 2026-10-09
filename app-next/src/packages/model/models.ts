@@ -42,7 +42,7 @@ export type Scenario = {
   entitlementTimeline?: { status: Entitlement['status']; afterMs: number }[];
   usageMinutesToday: number | null;
   history: HistoryDay[];
-  steps: { today: number; autoIncrementPerSecond?: number };
+  steps: { today: number; autoIncrementPerSecond?: number; pastFromHistory?: boolean };
   walking?: { script: ('walking' | 'still' | 'unknown')[]; stepMs: number };
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside'; accuracy?: number; autoDetect?: boolean; backgroundAsked?: boolean; optOut?: boolean };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';

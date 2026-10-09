@@ -90,4 +90,7 @@ export const settingsCopy = {
   filmingOn: 'Filming mode on for 2 hours',
   filmingOff: 'Filming mode off',
   filmingActive: 'Filming mode on',
+  showcaseOn: 'Showcase data on',
+  showcaseOff: 'Showcase data off',
+  showcaseActive: 'Showcase data on',
 } as const;
