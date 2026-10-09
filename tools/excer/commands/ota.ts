@@ -21,12 +21,14 @@ Without --publish it stops after the gate. With --publish it publishes under the
 release lock and tags ota-runtime<version>-<date>-<sha>. Publishing still needs
 the owner's go-ahead in the conversation.`;
 
+const bundleInputs = ['app', 'src', 'modules', 'plugins', 'assets', 'config', 'patches', 'app.config.ts', 'app.json', 'index.js', 'babel.config.js', 'metro.config.js', 'package.json', 'eas.json'].map((path) => `app-next/${path}`);
+
 const bundleInputDirt = () =>
-  must('git', ['status', '--porcelain', '--', 'app-next', 'packages'])
+  must('git', ['status', '--porcelain', '--', ...bundleInputs, 'packages', 'package-lock.json'])
     .split('\n')
     .filter(Boolean)
     .map((line) => line.slice(3))
-    .filter((path) => !path.endsWith('.md') && !path.startsWith('app-next/evidence/'));
+    .filter((path) => !path.endsWith('.md'));
 
 const step = (command: string, args: string[], cwd = repoRoot) => spawnSync(command, args, { cwd, stdio: 'inherit' }).status === 0;
 
