@@ -2,10 +2,10 @@ import { inspectCorroboration, type CorroborationRejection } from './GaitCorrobo
 import type { GaitKeypointSample, GaitLandmark } from '../../../ports/GaitVisionProvider';
 
 export const GAIT_SETTINGS = Object.freeze({
-  version: 'windowed-2',
-  windowMs: 6_000,
-  evaluateMs: 500,
-  holdMs: 2_000,
+  version: 'windowed-3',
+  windowMs: 4_000,
+  evaluateMs: 250,
+  holdMs: 500,
   timeoutMs: 30_000,
   maxGapMs: 200,
   binMs: 100,
@@ -13,12 +13,10 @@ export const GAIT_SETTINGS = Object.freeze({
   sampleHz: 30,
   minHz: 1.2,
   maxHz: 2.5,
-  minR: 0.5,
-  minR2: 0.25,
-  minRms: 0.03,
-  minRange: 0.08,
-  varianceFloor: 0.0001,
-  halfCadenceTolerance: 0.2,
+  minRepeatCorrelation: 0.5,
+  minRms: 0.015,
+  minRange: 0.04,
+  varianceFloor: 0.000025,
   cycleVariation: 0.65,
   minCameraQuality: 0.7,
   maxCameraRms: 0.015,
@@ -34,7 +32,6 @@ export type GaitRejection =
   | 'recentStillness'
   | 'smallBob'
   | 'rhythm'
-  | 'cadence'
   | 'cycles'
   | 'holding'
   | 'walking';
@@ -124,13 +121,24 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
     ...details,
   });
   if (p.length < 2) return fail('coverage');
-  const bins = new Set(p.map((v) => Math.min(59, Math.floor((v.timestampMs - start) / GAIT_SETTINGS.binMs))));
+  const bins = new Set(
+    p.map((v) =>
+      Math.min(
+        GAIT_SETTINGS.windowMs / GAIT_SETTINGS.binMs - 1,
+        Math.floor((v.timestampMs - start) / GAIT_SETTINGS.binMs),
+      ),
+    ),
+  );
   const gaps = [
     p[0].timestampMs - start,
     now - p[p.length - 1].timestampMs,
     ...p.slice(1).map((v, i) => v.timestampMs - p[i].timestampMs),
   ];
-  if (bins.size / 60 < GAIT_SETTINGS.coverage || Math.max(...gaps) > GAIT_SETTINGS.maxGapMs) return fail('coverage');
+  if (
+    bins.size / (GAIT_SETTINGS.windowMs / GAIT_SETTINGS.binMs) < GAIT_SETTINGS.coverage ||
+    Math.max(...gaps) > GAIT_SETTINGS.maxGapMs
+  )
+    return fail('coverage');
   const scale = quantile(
     p.map((v) => v.scale),
     0.5,
@@ -170,16 +178,9 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
     details = { rms, r: result.r, r2: result.r2, hz: result.hz };
   if (rms < GAIT_SETTINGS.minRms || quantile(signal, 0.9) - quantile(signal, 0.1) < GAIT_SETTINGS.minRange)
     return fail('smallBob', details);
-  if (result.r < GAIT_SETTINGS.minR || result.r2 < GAIT_SETTINGS.minR2) return fail('rhythm', details);
-  const half = Math.floor(signal.length / 2),
-    a = rhythm(signal.slice(0, half)),
-    b = rhythm(signal.slice(half));
-  if (
-    a.r < GAIT_SETTINGS.minR ||
-    b.r < GAIT_SETTINGS.minR ||
-    Math.abs(a.hz - b.hz) / result.hz > GAIT_SETTINGS.halfCadenceTolerance
-  )
-    return fail('cadence', details);
+  if (result.r < GAIT_SETTINGS.minRepeatCorrelation || result.r2 < GAIT_SETTINGS.minRepeatCorrelation)
+    return fail('rhythm', details);
+
   const amplitudes: number[] = [];
   for (let i = 0; i + result.lag <= signal.length; i += result.lag) {
     const cycle = signal.slice(i, i + result.lag);
@@ -187,7 +188,7 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
   }
   const avg = mean(amplitudes),
     variation = Math.sqrt(mean(amplitudes.map((v) => (v - avg) ** 2))) / avg;
-  if (amplitudes.length < 5 || variation > GAIT_SETTINGS.cycleVariation || Math.min(...amplitudes) < avg * 0.25)
+  if (amplitudes.length < 3 || variation > GAIT_SETTINGS.cycleVariation || Math.min(...amplitudes) < avg * 0.25)
     return fail('cycles', details);
   return { ...fail('holding', details), classification: 'walking' };
 }
@@ -213,7 +214,6 @@ export class WindowedGaitDetector {
     };
   }
   process(sample: GaitKeypointSample, receivedAtMs = sample.timestampMs): WindowedGaitResult {
-    if (this.result.complete) return this.result;
     const now = sample.timestampMs;
     if (
       !Number.isFinite(now) ||
@@ -318,7 +318,6 @@ export class WindowedGaitDetector {
     return this.getResult(receivedAtMs);
   }
   getResult(now: number): WindowedGaitResult {
-    if (this.result.complete) return this.result;
     if (now - this.lastTimestamp > GAIT_SETTINGS.maxGapMs) {
       this.evidenceSince = undefined;
       this.source = undefined;

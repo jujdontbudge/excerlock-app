@@ -39,7 +39,7 @@ name: treadmill-windowed-pass
 scenario: unlock-treadmill-scan
 open: /unlock/treadmill?ruleId=walk
 expect: Screen Time unlocked!
-wait: 25
+wait: 15
 ```
 
 ```proof
@@ -50,6 +50,7 @@ expect: Unlock while walking | Check walking | I'm using a treadmill
 ```
 
 ## Gotchas
+- The windowed scan requires four seconds of coverage, three complete cycles and another half-second of qualifying windows. Detector results can fall back to not-walking on later samples; the screen still performs a one-shot scan and stops the camera on success. Continuous replay release is not an app relock proof.
 - The simulator cannot prove real motion, camera framing or background keep-alive. Those need a physical iPhone (ticket #113), so say so in reports.
 - Supply `?ruleId=walk` to reach the scenario’s walking Condition. The stationary-face proof combines a constant synthetic face with the historical moving torso fixture: it proves that an unassociated background body cannot qualify. The positive fixture explicitly models associated shoulders; it does not prove build 17 face sensitivity.
 - The research recorders (`tools/phone-*-recorder`, Linked Recorder) share detection code but never ship (ADRs 0026–0028, `excer check` `research-isolation`).

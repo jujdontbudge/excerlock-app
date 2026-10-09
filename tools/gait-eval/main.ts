@@ -277,7 +277,7 @@ const complete =
   !clips.some((c) => "error" in c || (c.observedMs ?? 0) < 25_000 || c.labelVerified === false);
 const falsePasses = incidental.filter((c) => c.new.passed);
 const verdict =
-  clips.some((c) => c.transitionViolation) || residual.some((c) => c.new.passed) || falsePasses.length || (walks.length === 18 && timely.length < 17)
+  clips.some((c) => c.transitionViolation) || negatives.some((c) => c.new.passed) || walks.some((c) => !c.new.passed) || (walks.length === 18 && timely.length < 17)
     ? "NO-GO"
     : complete
       ? "GO"

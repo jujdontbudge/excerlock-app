@@ -1,48 +1,47 @@
-# Session-one evaluation, 2026-10-09
+# Session-one round 2, 2026-10-09
 
-Release recommendation: **NO-GO**. This is a conservative OTA candidate for review, not ready to publish under an only-real-walking guarantee. See ADR 0074.
+**NO-GO for the complete owner goal.** Five of six walking takes pass, zero of ten negatives pass, and both transitions have appropriate first-pass timing. The slow take is shorter than the 4.5-second minimum. Continuous detector replay releases after the stop, but the production one-shot camera scan cannot stop subsequent Progress. Generalisation and sustained deliberate-bob rejection are not established. See ADR 0074.
+
+All 18 uploaded clips are retained as recorded. Confirmed strict order is takes 1–13, 15–17, 19–20; takes 14 and 18 are missing. No departures from order. Round-1's 15/16 swap was withdrawn; the owner-guaranteed start/stop labels were corrected. Copies are byte-identical, originals untouched. No footage or trajectories are committed or uploaded.
 
 ## Local evidence
 
-All paths below are on the owner's machine. No recordings or derived trajectories are committed or uploaded.
+- Original footage: `~/Movies/treadmill-clips/raw-session-one/`.
+- Corrected copies: `~/Movies/treadmill-clips/session-one/`.
+- Confirmed mapping and original SHA-256 hashes: `~/Movies/treadmill-clips/review-session-one/mapping.md` and `mapping.json`.
+- Per-clip truth, shipped, round-1 and final timing/reason: `~/Movies/treadmill-clips/review-session-one/comparison.md`; also `.excer/gait-round-two/comparison.md`.
+- Complete production-detector stream, production-controller first pass, nine candidate settings, 18 leave-one-take-out folds, eight start offsets and scale-invariance replay: `.excer/gait-round-two/audit.json`.
+- Audit console summary: `.excer/round-two-audit.txt`.
+- Exploratory window/hold/correlation sweep: `.excer/sweep.json`; expanded correlation neighborhood: `.excer/margins.json`; original timing-grid sensitivity: `.excer/stability.json`. These are exploration, not independent validation.
+- Production-controller CLI replay: `.excer/round-two-eval.txt`, which records the timestamped report path.
 
-- Original footage: `~/Movies/treadmill-clips/raw-session-one/` (untouched).
-- Byte-identical renamed copies: `~/Movies/treadmill-clips/session-one/`.
-- Per-clip mapping, confidence, conflicting observations and SHA-256: `~/Movies/treadmill-clips/review-session-one/mapping.md` and `mapping.json`.
-- Chronological 2 fps frame sheets of every clip: `~/Movies/treadmill-clips/review-session-one/IMG_*.jpg`.
-- Baseline (shipped peak detector vs imported windowed-1): `.excer/gait-eval/v1/2026-10-09T16-42-22-384Z/report.json`.
-- Final production-controller replay on the same extracted trajectories: `.excer/gait-eval/v1/2026-10-09T16-47-16-073Z/report.md` and `report.json`.
-- Nine-setting leave-one-take-out audit: `.excer/cross-validation.json`; reproduction script `.excer/cross-validation.mts`.
-- Per-window diagnostics: `.excer/windows.json`.
+Final first passes in original order: none, 13.41 s, 4.55 s, 4.55 s, 4.58 s, 4.58 s; none for all ten negatives; 15.22 s for start (~12 s), 4.55 s for stop (~13 s). Continuous detector release in the stop clip is 13.34 s, without reacquisition. No app-level stop/enforcement claim follows from that replay.
 
-The strongest missing-take hypothesis is the two background-person takes. No second person is visible in any supplied frame sheet. That is not enough to establish the exact missing protocol identities. First-three labels use the owner's sequence anchor; middle labels are provisional. The two transition labels retain the owner's explicit statement despite contrary motion evidence.
+The deliberate-bob take is only about four seconds and never reaches the minimum pass time. It is a censored no-pass, not demonstrated rejection of a sustained imitation. Do not remove, loop or pad it. Low-bob normal walking passes late, and talking/looking can lose continuous qualification while still walking. The selected settings improve scan acceptance, not continuous gait sensitivity for everyone.
 
-## Iteration log
-
-1. Imported the prior branch's JS classifier/controller and evaluation tools selectively. The LegacyDetector differs from the current shipped detector only in formatting/type-import location; LegacyController adds a virtual timer seam. Native files and enforcement changes were not integrated.
-2. Baseline: nominal walking 4/6 within 10 seconds; nominal negatives 5/10 passes. Imported windowed-1: walking 2/6, negatives 0/10. Both transition clips pass at unsafe times under supplied labels.
-3. Candidate: require explicit shoulder association, upper cadence 2.5 Hz, fresh last-second amplitude, retain prior amplitude/correlation floors. Same aggregate outcomes: walking 2/6, negatives 0/10, both transition violations remain. These safeguards address observable failure mechanisms without fitting to identity or appearance.
-4. Exploratory leave-one-take-out: r 0.4/0.5/0.6 × RMS 0.02/0.03/0.04, unsafe-pass penalty 100 vs missed-walk penalty 1. All nine settings produce the same four passes (two nominal walks, two transitions). All 18 folds select the center on ties. This is sensitivity analysis on provisional labels, not population validation. No learned threshold is shipped.
-5. Evaluation now blocks GO on durations below 25 seconds, unverified labels, bobbing passes and transition violations. This corrects the imported tool's misleading PENDING classification for unsafe transition passes. Incomplete sessions remain a separate blocker.
-
-Five negatives last less than eight seconds; their no-pass outcomes are censored. Slow and brisk positive takes last 3.30 and 6.33 seconds, shorter than the intended evidence span. Do not loop, pad or duplicate these to manufacture successful detections. Mac Vision extraction uses measured processing delay and can differ from live iPhone sampling and Camera-app stabilization.
+All 18 leave-one-take-out folds select correlation 0.5 and RMS 0.015. At every one of eight start offsets, held-out outcomes are five of six walks accepted, zero of ten negatives accepted and both detector transition criteria met. Short slow walking fails at every offset. Stop criteria allow one second after the approximate transition. Feature exploration already used this session, so these folds do not validate unseen people. Scale transforms 0.8/0.9/1 preserve every pass time exactly; these are mathematical invariance checks, not more subjects.
 
 ## Reproduce
 
 ```sh
+npx tsx tools/gait-eval/audit.ts ~/Movies/treadmill-clips/review-session-one
 EXCER_SIM=ExcerLock-treadmill EXCER_METRO_PORT=8092 ./excer gait eval ~/Movies/treadmill-clips/review-session-one/trajectories --labels ~/Movies/treadmill-clips/review-session-one/labels.json
+npx tsc --noEmit -p tools/gait-eval/tsconfig.json
 ```
 
-Use `session-one/` instead to re-extract video; expect different macOS processing timing. Do not open session three until settings are actually frozen after valid sessions one and two. `frozen-settings.json` currently pins this candidate for reproducibility; it does not certify calibration complete.
+The audit writes local candidate modules into its output directory and evaluates original-length trajectories. It never reads or uploads movie bytes. The CLI evaluator now vetoes GO for a missed supplied walking take or any observed negative pass, including calibration clips; an absent held-out session no longer hides those failures. `frozen-settings.json` pins this candidate for reproducibility, not publication approval. Use the existing trajectories to preserve extraction timing; re-extracting with macOS Vision may change timing relative to an iPhone.
 
-## Shipping boundary
+## Verification and shipping boundary
 
-App edits are TypeScript only. The optional build18 extractor compiles an archived analyzer under tools, not shipping native modules. Build 17 cannot gain lower-body joints, background flow, reliable face/body association, capture-time timestamps or the reported suspended-expiry fix through this OTA. Continuous walking after a completed one-shot scan is also unproven. Do not advertise or release as rejecting everything else for everyone.
+- `EXCER_SIM=ExcerLock-treadmill EXCER_METRO_PORT=8092 ./excer check`: 22 checks passed, `.excer/round-two-check.txt`.
+- Evaluator typecheck: `.excer/round-two-eval-typecheck.txt`.
+- `walking/treadmill-screen`: **blocked** by native startup, `.excer/proof/walking/2026-10-09_17-47-14/` and `.excer/round-two-treadmill-screen.txt`.
+- Updated `walking/treadmill-windowed-pass`: **blocked** by the same native startup error, `.excer/proof/walking/2026-10-09_17-48-39/` and `.excer/round-two-treadmill-windowed-pass.txt`.
+- Both proofs were individually bounded to 300 seconds and exited with missing labels before the deadline. Screenshots/labels show `[runtime not ready]: Error: Cannot find native module 'ExpoUpdates'`. The first Open prompt was dismissed; no Continue/Close menu was available before this startup failure. No red/green proof claim is made.
+- T3 Device tools did not find the hidden worker-set simulator. The existing `ExcerLock-treadmill` simulator and Metro 8092 were used headlessly through `./excer`; no default-set simulator was used or opened. No native rebuild was performed.
 
-## Verification
+Application changes are TypeScript only and OTA-compatible with the existing payload. Additional native subject association, lower-body/background motion and reliable capture timing require a binary. Continuous Progress/enforcement integration and build-17 suspended expiry are unresolved separately. Nothing was pushed, merged or published.
 
-- `EXCER_SIM=ExcerLock-treadmill EXCER_METRO_PORT=8092 ./excer check`: all 22 checks passed; `.excer/treadmill-check-final.txt`.
-- `npx tsc --noEmit -p tools/gait-eval/tsconfig.json`: passed; `.excer/eval-typecheck.txt`.
-- Focused `walking/treadmill-screen`: **blocked**. First attempt stopped at the fresh-install Open prompt; after dismissing it and the dev menu, the installed binary fails with `Cannot find native module 'ExpoUpdates'`. Final attempt: `.excer/proof/walking/2026-10-09_16-52-48/` plus `.excer/metro.log`. Each attempt had a 300-second outer timeout.
-- `treadmill-stationary-face` and `treadmill-windowed-pass` proof blocks were added but cannot run through the app until the compatible installed binary is supplied. No red/green simulator claim is made. No rebuild was performed.
-- Replay evaluates the production controller, but is not a physical-camera or Screen Time proof.
+## Round-1 history
+
+Commit `9fe6baff` and its ADR version retain the original reasoning. Baseline report: `.excer/gait-eval/v1/2026-10-09T16-42-22-384Z/report.json`; round-1 report: `.excer/gait-eval/v1/2026-10-09T16-47-16-073Z/report.json`. Historical filenames reflect the superseded mapping: the 15/16 copies and the transition copies have since exchanged names. Compare by original IMG identifier and SHA-256, not the old trajectory path alone. The round-1 local comparison is preserved as `comparison-round-one.md`.
