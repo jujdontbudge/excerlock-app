@@ -22,6 +22,7 @@ export interface EnforcementTransport {
   commitWatchdog(id: string, revision: number): Promise<boolean>;
   cancelWatchdogs(revision: number): Promise<void>;
   replaceWindows(windows: { id: string; start: number; end: number }[], snapshotRevision: number): Promise<void>;
+  policyRevision?(): number;
 }
 export type EnforcementResult = 'applied' | 'preserved' | 'superseded';
 
@@ -30,6 +31,7 @@ export class EnforcementHost {
   private requested = 0;
   private disposed = false;
   private previous: WatchdogRegistration | null = null;
+  private watchdogMayBeLive = true;
   private windowsSignature: string | null = null;
   private traceSequence = 0;
   constructor(private deps: {
@@ -55,6 +57,7 @@ export class EnforcementHost {
     const native = this.deps.transport;
     let policyPublishPending = __LINKED_RECORDER_TRACE__;
     try {
+      if (snapshot.state !== 'conditional') await this.stopWatchdogBeforePublishDropsIt(native);
       if (__LINKED_RECORDER_TRACE__) this.tracePolicy(snapshot, 'attempt');
       await native.publish(snapshot);
       policyPublishPending = false;
@@ -86,6 +89,7 @@ export class EnforcementHost {
         await this.cancelWatchdogs(native, snapshot.revision);
         this.previous = null;
       } else {
+        this.watchdogMayBeLive = true;
         const plan = planWatchdog({
           now: snapshot.now, decision: snapshot.relief, entitlement: 'active', canEnforce: true,
           deleting: false, context: snapshot.context, eligibleUntil: snapshot.eligibleUntil,
@@ -132,6 +136,18 @@ export class EnforcementHost {
       }
       this.deps.report(error);
       throw error;
+    }
+  }
+
+  private async stopWatchdogBeforePublishDropsIt(native: EnforcementTransport): Promise<void> {
+    if (!this.watchdogMayBeLive) return;
+    this.previous = null;
+    this.watchdogMayBeLive = false;
+    try {
+      const revision = native.policyRevision?.() ?? -1;
+      if (revision >= 0) await native.cancelWatchdogs(revision);
+    } catch {
+      return;
     }
   }
 

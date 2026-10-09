@@ -8,7 +8,7 @@ depends: [conditions, enforcement]
 ---
 ## Sub-features
 - Walking state ("Unlock while walking"): apps open only while motion evidence says the user is walking. That evidence is three seconds of qualification plus a one-shot stop grace, and Placement (handheld or propped) is part of it.
-- The walk keep-alive uses Always location with no blue indicator (ADR 0036), and the raw motion stream corroborates Apple's walking legs (ADR 0041).
+- The walk keep-alive uses Always location at 100 m with no distance filter and no blue indicator (ADR 0036, 0073), and the raw motion stream corroborates Apple's walking legs (ADR 0041).
 - Treadmill scan: the phone is propped facing the user, and the camera gait detector verifies walking, followed by the square lock ceremony.
 - Walking target: steps or minutes from Motion & Fitness accrue Progress on Home.
 

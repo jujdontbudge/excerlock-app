@@ -5,6 +5,8 @@ date: 2026-09-17
 
 # 0036: Walk keep-alive stays Always location, without the blue indicator
 
+Accuracy and distance filter superseded by ADR 0073 (100 m, no filter).
+
 ## Decision
 
 The lock-window residency keep-alive keeps Always background location but stops advertising itself as a background location user and stops paying for a GPS stream:

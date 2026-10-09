@@ -34,7 +34,7 @@ const knownOrNull = (value: number | null | undefined): number | null =>
   typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 
 export interface ExpoLocationModule {
-  readonly Accuracy: { readonly High: unknown; readonly Low: unknown };
+  readonly Accuracy: { readonly High: unknown; readonly Balanced: unknown };
   readonly ActivityType: { readonly Other: unknown };
   getForegroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
   getBackgroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
@@ -62,7 +62,6 @@ export interface ExpoLocationModule {
     options: {
       readonly accuracy: unknown;
       readonly activityType: unknown;
-      readonly distanceInterval: number;
       readonly pausesUpdatesAutomatically: boolean;
       readonly showsBackgroundLocationIndicator: boolean;
     },
@@ -176,9 +175,8 @@ export class ExpoLocationClient implements NativeLocationClient {
 
   public async startLocationUpdates(): Promise<void> {
     await this.expo.startLocationUpdatesAsync(WALK_LOCATION_TASK_NAME, {
-      accuracy: this.expo.Accuracy.Low,
+      accuracy: this.expo.Accuracy.Balanced,
       activityType: this.expo.ActivityType.Other,
-      distanceInterval: 500,
       pausesUpdatesAutomatically: false,
       showsBackgroundLocationIndicator: false,
     });
