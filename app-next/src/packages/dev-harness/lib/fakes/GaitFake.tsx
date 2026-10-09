@@ -30,12 +30,17 @@ export function GaitFake(preview = false, requestPermission?: () => Promise<Perm
         fixture.samples.map((s) => ({ ...s, timestampMs: s.timestampMs - first })),
       );
       provider.onSample((sample) => {
-        if (value === 'walking') listeners.forEach((cb) => cb({ ...sample, timestampMs: start + sample.timestampMs }));
+        if (value === 'walking') listeners.forEach((cb) => cb({ ...sample, bodyAssociated: true, timestampMs: start + sample.timestampMs }));
+        if (value === 'still') listeners.forEach((cb) => cb({
+          ...sample,
+          head: { x: 0.5, y: 0.3, height: 0.1, confidence: 1 },
+          timestampMs: start + sample.timestampMs,
+        }));
       });
       await provider.start();
       timer = setInterval(() => {
         provider.advanceTo(Date.now() - start);
-        if (value !== 'walking') listeners.forEach((cb) => cb({ timestampMs: Date.now(), landmarks: {} }));
+        if (value === 'none') listeners.forEach((cb) => cb({ timestampMs: Date.now(), landmarks: {} }));
       }, 1000 / 15);
     },
     stop: async () => {

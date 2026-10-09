@@ -1,50 +1,15 @@
-# gait-fixture-extractor
+# Local gait extraction
 
-Offline pose extraction for the treadmill-mode gait fixtures (#118).
+See [RECORDING.md](RECORDING.md) for the owner's 60 clips and evaluation commands.
 
-Runs **the same Vision request the on-device module runs** over a video file and emits
-`GaitKeypointSample` JSON that `FixtureGaitVisionProvider` can replay. Because it reuses the
-production request, selection rule, and coordinate convention, the fixtures reproduce on-device
-behaviour instead of approximating it:
+`swift tools/gait-fixture-extractor/extract.swift <video> <out.json> [targetFps]` runs macOS Vision face rectangles and body pose, selects the largest face and largest central body like build 17, and emits screen-space coordinates (y downward). It interprets the video track's preferred orientation transform, including mirrored transforms. The default budget is 15 fps. Missing body and face detections emit nothing, matching build 17. Zero-confidence recognized joints stay in the payload, also matching production.
 
-- `VNDetectHumanBodyPoseRequest`
-- largest-central-body selection, ported from `largestCentralBody()` in `GaitVisionPayloads.swift`
-- the four torso landmarks (`leftShoulder`, `rightShoulder`, `leftHip`, `rightHip`)
-- `y` flipped to screen space (`1 - y`), matching `gaitVisionPayload()`
-- default sampling at 15 fps, matching the device capture budget
+The JSON document contains samples and extraction settings. Times start at the first video frame and model build 17's serial analysis completion: capture time plus measured Vision work. Frames that arrive before the preceding work finishes are dropped. No synthetic empty detections, interpolated observations or repaired timestamps are emitted. Production analysis timing on an iPhone is different from this macOS measurement; the extraction settings identify that limitation. The evaluator runs the real controller on those times.
 
-macOS only — it needs the system Vision framework.
+Keep Camera originals and reports local. `.MOV` and `.mp4` work with AVFoundation. Other formats must be transcoded locally first. A video with no reliable face/body signal is a rejection, not a clip to remove from the success denominator. Do not substitute overlapping crops for independent attempts.
 
-## Usage
+## Build 18
 
-```sh
-swift extract.swift <video> <out.json> [targetFps]
-```
+`./excer gait eval <folder> --payload build18` compiles archived `GaitFrameAnalyzer`, `GaitCameraMotion` and payload-selection snapshots under `build18/` with `build18/main.swift`. These snapshots were imported from 07331d0a for research only; this checkout does not ship that analyzer. It applies the track orientation, scales to a 640-pixel maximum dimension, emits capture PTS, sequences, explicit empty/busy frames, associated joints and background motion. The report includes per-stage mean/p95/max processing and delivery delay. It models a bounded serial 15 fps stream using measured macOS work; an iPhone 13 must still be profiled live.
 
-Prints a one-line JSON summary: frames read, frames analysed, samples emitted, and
-`framesWithConfidentTorso` (all four landmarks at confidence ≥ 0.6, the detector's threshold).
-That last number is the quality signal — a clip with few confident-torso frames is not usable
-as a fixture.
-
-Timestamps are rebased to zero so fixtures do not depend on where a clip was trimmed.
-
-## Input formats
-
-AVFoundation cannot open WebM or OGV, which is what most Creative Commons libraries serve.
-Transcode first:
-
-```sh
-ffmpeg -i in.webm -an -c:v h264_videotoolbox -b:v 3M -pix_fmt yuv420p -vf scale=-2:480 out.mp4
-```
-
-`libx264` is often unavailable in bundled ffmpeg builds; `h264_videotoolbox` ships with macOS.
-
-## Sourcing footage
-
-See #118 for the licensing rules. Short version: commercial-permitting licences only, and the
-standard academic gait datasets are excluded because they are academic-use only.
-
-**Screen the footage before trusting it.** Verified during the first sourcing pass: the only
-keyless-library clip that produced a long clean run was an astronaut on the ISS treadmill —
-harnessed, in microgravity. It would have looked like a perfectly good fixture in the numbers
-while encoding gait that does not exist on Earth. Extract a frame and look at it.
+The default `--payload build17` retains the OTA-compatible extraction path. Run both payloads on the same originals to judge the next binary separately. JSON with optional build 18 fields can also be replayed directly. Reports record detector, extractor, settings and input hashes.

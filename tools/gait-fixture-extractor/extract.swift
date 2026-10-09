@@ -1,15 +1,6 @@
-// Offline gait-fixture extractor (#118).
-//
-// Runs the SAME Vision request the on-device module runs
-// (VNDetectHumanBodyPoseRequest, largest-central-body selection, y flipped to
-// screen space) over a video file, and emits GaitKeypointSample JSON that the
-// FixtureGaitVisionProvider can replay. Fixtures therefore reproduce
-// production behaviour rather than approximating it.
-//
-// Usage: swift extract.swift <video> <out.json> [targetFps]
-
 import AVFoundation
 import Foundation
+import ImageIO
 import Vision
 
 let gaitJointNames: [(eventName: String, visionName: VNHumanBodyPoseObservation.JointName)] = [
@@ -46,7 +37,6 @@ func bodyMetrics(_ observation: VNHumanBodyPoseObservation) -> BodyMetrics? {
   )
 }
 
-/// Mirrors largestCentralBody() in GaitVisionPayloads.swift.
 func largestCentralBody(_ observations: [VNHumanBodyPoseObservation]) -> VNHumanBodyPoseObservation? {
   observations.compactMap { observation -> (VNHumanBodyPoseObservation, BodyMetrics)? in
     guard let metrics = bodyMetrics(observation) else { return nil }
@@ -73,10 +63,14 @@ let minimumFrameIntervalMs = 1_000.0 / targetFps
 
 let asset = AVURLAsset(url: URL(fileURLWithPath: inputPath))
 var videoTrack: AVAssetTrack?
+var transform = CGAffineTransform.identity
 var loadFailure: Error?
 let loadSemaphore = DispatchSemaphore(value: 0)
 Task {
-  do { videoTrack = try await asset.loadTracks(withMediaType: .video).first } catch { loadFailure = error }
+  do {
+    videoTrack = try await asset.loadTracks(withMediaType: .video).first
+    if let track = videoTrack { transform = try await track.load(.preferredTransform) }
+  } catch { loadFailure = error }
   loadSemaphore.signal()
 }
 loadSemaphore.wait()
@@ -90,6 +84,20 @@ guard let track = videoTrack else {
   exit(1)
 }
 
+func orientation(_ t: CGAffineTransform) -> CGImagePropertyOrientation {
+  let a = Int(t.a.rounded()), b = Int(t.b.rounded()), c = Int(t.c.rounded()), d = Int(t.d.rounded())
+  switch (a, b, c, d) {
+  case (0, 1, -1, 0): return .right
+  case (0, -1, 1, 0): return .left
+  case (-1, 0, 0, -1): return .down
+  case (-1, 0, 0, 1): return .upMirrored
+  case (1, 0, 0, -1): return .downMirrored
+  case (0, 1, 1, 0): return .leftMirrored
+  case (0, -1, -1, 0): return .rightMirrored
+  default: return .up
+  }
+}
+let imageOrientation = orientation(transform)
 let reader: AVAssetReader
 do { reader = try AVAssetReader(asset: asset) } catch {
   FileHandle.standardError.write("reader init failed: \(error)\n".data(using: .utf8)!)
@@ -108,28 +116,32 @@ var framesRead = 0
 var framesAnalysed = 0
 var framesWithFullTorso = 0
 var lastEmittedMs = -Double.greatestFiniteMagnitude
+var analysisEndMs = 0.0
+var originMs: Double?
+let poseRequest = VNDetectHumanBodyPoseRequest()
+let faceRequest = VNDetectFaceRectanglesRequest()
 
 while let buffer = output.copyNextSampleBuffer() {
   framesRead += 1
   let presentationMs = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(buffer)) * 1_000
-  guard presentationMs - lastEmittedMs >= minimumFrameIntervalMs else { continue }
+  if originMs == nil { originMs = presentationMs }
+  let captureMs = presentationMs - originMs!
+  guard captureMs + 0.5 - lastEmittedMs >= minimumFrameIntervalMs, captureMs >= analysisEndMs else { continue }
   guard let pixelBuffer = CMSampleBufferGetImageBuffer(buffer) else { continue }
-  lastEmittedMs = presentationMs
+  lastEmittedMs = captureMs
   framesAnalysed += 1
 
-  let request = VNDetectHumanBodyPoseRequest()
-  let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
-  do { try handler.perform([request]) } catch { continue }
-
-  let observations = (request.results ?? []) as [VNHumanBodyPoseObservation]
-  guard let body = largestCentralBody(observations) else {
-    samples.append(["timestampMs": presentationMs, "landmarks": [String: Any]()])
-    continue
-  }
-
+  let startedAt = ProcessInfo.processInfo.systemUptime
+  let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: imageOrientation, options: [:])
+  do { try handler.perform([poseRequest, faceRequest]) } catch { continue }
+  let elapsedMs = (ProcessInfo.processInfo.systemUptime - startedAt) * 1_000
+  analysisEndMs = captureMs + elapsedMs
+  let body = largestCentralBody(poseRequest.results ?? [])
+  let face = (faceRequest.results ?? []).max { $0.boundingBox.height < $1.boundingBox.height }
+  guard body != nil || face != nil else { continue }
   var landmarks: [String: Any] = [:]
   for joint in gaitJointNames {
-    guard let point = try? body.recognizedPoint(joint.visionName), point.confidence > 0 else { continue }
+    guard let body, let point = try? body.recognizedPoint(joint.visionName) else { continue }
     landmarks[joint.eventName] = [
       "x": Double(point.location.x),
       "y": 1 - Double(point.location.y),
@@ -144,7 +156,12 @@ while let buffer = output.copyNextSampleBuffer() {
     }
     if confident { framesWithFullTorso += 1 }
   }
-  samples.append(["timestampMs": presentationMs, "landmarks": landmarks])
+  var sample: [String: Any] = ["timestampMs": analysisEndMs, "landmarks": landmarks]
+  if let face {
+    let box = face.boundingBox
+    sample["head"] = ["x": Double(box.midX), "y": 1 - Double(box.midY), "height": Double(box.height), "confidence": Double(face.confidence)]
+  }
+  samples.append(sample)
 }
 
 if reader.status == .failed {
@@ -152,15 +169,14 @@ if reader.status == .failed {
   exit(1)
 }
 
-// Rebase timestamps to zero so fixtures are independent of source trim points.
-let baseMs = samples.compactMap { $0["timestampMs"] as? Double }.min() ?? 0
 let rebased = samples.map { sample -> [String: Any] in
   var copy = sample
-  copy["timestampMs"] = ((sample["timestampMs"] as? Double ?? 0) - baseMs).rounded()
+  copy["timestampMs"] = sample["timestampMs"] as? Double ?? 0
   return copy
 }
 
-let data = try JSONSerialization.data(withJSONObject: rebased, options: [.prettyPrinted, .sortedKeys])
+let document: [String: Any] = ["samples": rebased, "extraction": ["version": 2, "payload": "build17", "targetFps": targetFps, "orientation": imageOrientation.rawValue, "timing": "capture-relative plus measured serial Vision duration", "transform": [transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty]]]
+let data = try JSONSerialization.data(withJSONObject: document, options: [.prettyPrinted, .sortedKeys])
 try data.write(to: URL(fileURLWithPath: outputPath))
 
 let summary = """

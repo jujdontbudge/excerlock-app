@@ -1,3 +1,4 @@
+import { gaitCommand, gaitHelp } from './commands/gait.ts';
 import { checkCommand, help as checkHelp } from './commands/check.ts';
 import { featureCommand, help as featureHelp } from './commands/feature.ts';
 import { doctorCommand, doctorHelp, newCommand, newHelp, serverCommand, serverHelp } from './commands/misc.ts';
@@ -27,6 +28,7 @@ const usage = `excer: control and verification for ExcerLock
 Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.md.`;
 
 const helps: Record<string, string> = {
+  gait: gaitHelp,
   check: checkHelp,
   feature: featureHelp,
   demo: demoHelp,
@@ -50,6 +52,8 @@ async function main(argv: string[]): Promise<number> {
     return 0;
   }
   switch (command) {
+    case 'gait':
+      return gaitCommand(args);
     case 'check':
       return checkCommand(args);
     case 'feature':

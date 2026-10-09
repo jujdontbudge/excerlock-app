@@ -1,193 +1,165 @@
 import type { GaitKeypointSample, GaitVisionProvider } from '../../../ports/GaitVisionProvider';
-import { GAIT_SCAN_TIMEOUT_MS, GaitPeriodicityDetector } from './GaitPeriodicityDetector';
+import { GAIT_SETTINGS, WindowedGaitDetector, type WindowedGaitResult } from './WindowedGaitDetector';
 
 export const GAIT_FAILURE_GRACE_MS = 30_000;
-
 export type TreadmillScanPhase = 'idle' | 'scanning' | 'needsFraming' | 'verified' | 'permissionDenied' | 'expired';
-
-export type TreadmillScanSnapshot = Readonly<{
-  phase: TreadmillScanPhase;
-  confidence: number;
-}>;
-
+export type TreadmillScanSnapshot = Readonly<{ phase: TreadmillScanPhase; confidence: number }>;
 export interface TreadmillScanDependencies {
   readonly provider: GaitVisionProvider;
   readonly now: () => number;
-  readonly onVerified: () => void | Promise<void>;
+  readonly schedule?: (callback: () => void, delayMs: number) => () => void;
+  readonly onVerified: () => void | boolean | Promise<void | boolean>;
   readonly onPermissionDenied: () => void | Promise<void>;
   readonly onExpired: () => void | Promise<void>;
 }
-
-const IDLE: TreadmillScanSnapshot = Object.freeze({
-  phase: 'idle',
-  confidence: 0,
-});
-
+const IDLE: TreadmillScanSnapshot = Object.freeze({ phase: 'idle', confidence: 0 });
 export class TreadmillScanController {
-  private detector: GaitPeriodicityDetector | undefined;
-  private failureDeadlineMs: number | undefined;
-  private failureTimer: ReturnType<typeof setTimeout> | undefined;
+  private dependencies: TreadmillScanDependencies;
+  private result: WindowedGaitResult | undefined;
+  private detector: WindowedGaitDetector | undefined;
+  private listeners = new Set<() => void>();
+  private snapshot = IDLE;
+  private generation = 0;
+  private starting = false;
   private finishing = false;
-  private readonly listeners = new Set<() => void>();
-  private scanStartedAtMs: number | undefined;
-  private scanTimer: ReturnType<typeof setTimeout> | undefined;
-  private snapshot: TreadmillScanSnapshot = IDLE;
-  private started = false;
+  private lifecycle: Promise<void> = Promise.resolve();
   private unsubscribe: (() => void) | undefined;
-
-  public constructor(private readonly dependencies: TreadmillScanDependencies) {}
-
-  public getSnapshot(): TreadmillScanSnapshot {
+  private timers: (() => void)[] = [];
+  private lastPublishedAt = -Infinity;
+  constructor(dependencies: TreadmillScanDependencies) {
+    this.dependencies = dependencies;
+  }
+  getSnapshot(): TreadmillScanSnapshot {
     return this.snapshot;
   }
-
-  public subscribe(listener: () => void): () => void {
+  getResult() {
+    return this.result;
+  }
+  subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
-
-  public async start(): Promise<void> {
-    if (this.started || this.finishing) {
-      return;
-    }
+  start(): Promise<void> {
+    if (this.starting || this.detector || this.finishing) return this.lifecycle;
+    const generation = ++this.generation;
+    this.starting = true;
+    this.result = undefined;
     this.publish({ phase: 'scanning', confidence: 0 });
-    this.unsubscribe = this.dependencies.provider.onSample((sample) => {
-      this.process(sample);
-    });
-    try {
-      await this.dependencies.provider.start();
-    } catch (error) {
-      this.unsubscribe?.();
-      this.unsubscribe = undefined;
-      if (isCameraPermissionDenied(error)) {
-        this.publish({ phase: 'permissionDenied', confidence: 0 });
-        await this.dependencies.onPermissionDenied();
-        return;
-      }
-      this.publish(IDLE);
-      throw error;
-    }
-    this.started = true;
-    this.beginScan(this.dependencies.now());
+    const work = this.lifecycle
+      .catch(() => undefined)
+      .then(async () => {
+        if (generation !== this.generation) return;
+        try {
+          await this.dependencies.provider.start();
+          if (generation !== this.generation) {
+            await this.dependencies.provider.stop();
+            return;
+          }
+          this.starting = false;
+          this.detector = new WindowedGaitDetector({ startedAtMs: this.dependencies.now() });
+          this.unsubscribe = this.dependencies.provider.onSample((sample) => this.process(sample, generation));
+          this.schedule(() => this.timeout(generation), GAIT_SETTINGS.timeoutMs);
+          this.poll(generation);
+        } catch (error) {
+          if (generation !== this.generation) return;
+          this.starting = false;
+          await this.dependencies.provider.stop().catch(() => undefined);
+          if (generation !== this.generation) return;
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'ERR_GAIT_VISION_DENIED'
+          ) {
+            this.publish({ phase: 'permissionDenied', confidence: 0 });
+            await this.dependencies.onPermissionDenied();
+            return;
+          }
+          this.publish(IDLE);
+          throw error;
+        }
+      });
+    this.lifecycle = work;
+    return work;
   }
-
-  public async stop(): Promise<void> {
-    await this.cleanUp();
+  stop(): Promise<void> {
+    ++this.generation;
+    this.starting = false;
+    this.finishing = false;
+    this.detach();
     this.publish(IDLE);
+    const work = this.lifecycle.catch(() => undefined).then(() => this.dependencies.provider.stop());
+    this.lifecycle = work;
+    return work;
   }
-
-  private beginScan(startedAtMs: number): void {
-    this.scanStartedAtMs = startedAtMs;
-    this.detector = new GaitPeriodicityDetector({ startedAtMs });
-    this.scheduleScanTimeout();
+  private process(sample: GaitKeypointSample, generation: number): void {
+    if (generation !== this.generation || this.finishing || !this.detector) return;
+    const result = this.detector.process(sample, this.dependencies.now());
+    this.result = result;
+    if (result.complete && result.classification === 'walking') {
+      void this.finish(generation, true);
+      return;
+    }
+    this.publish({ phase: 'scanning', confidence: result.confidence });
   }
-
-  private process(sample: GaitKeypointSample): void {
-    if (this.finishing || this.detector === undefined) {
-      return;
-    }
-    const result = this.detector.process(sample);
-    if (result.classification === 'walking' && result.complete) {
-      void this.finishVerified();
-      return;
-    }
-    this.publish({
-      phase: this.failureDeadlineMs === undefined ? 'scanning' : 'needsFraming',
-      confidence: result.confidence,
-    });
+  private poll(generation: number): void {
+    this.schedule(() => {
+      if (generation !== this.generation || !this.detector || this.finishing) return;
+      this.publish({ phase: 'scanning', confidence: this.detector.getResult(this.dependencies.now()).confidence });
+      this.poll(generation);
+    }, 200);
   }
-
-  private scheduleScanTimeout(): void {
-    const startedAtMs = this.scanStartedAtMs;
-    if (startedAtMs === undefined) {
-      return;
-    }
-    if (this.scanTimer !== undefined) {
-      clearTimeout(this.scanTimer);
-    }
-    this.scanTimer = setTimeout(
-      () => {
-        this.scanTimer = undefined;
-        this.handleScanTimeout();
-      },
-      Math.max(0, startedAtMs + GAIT_SCAN_TIMEOUT_MS - this.dependencies.now()),
-    );
-  }
-
-  private handleScanTimeout(): void {
-    const detector = this.detector;
-    if (detector === undefined || this.finishing) {
-      return;
-    }
-    const now = this.dependencies.now();
-    const result = detector.getResult(now);
-    if (!result.complete) {
-      this.scheduleScanTimeout();
-      return;
-    }
-    if (result.classification === 'walking') {
-      void this.finishVerified();
-      return;
-    }
-    if (this.failureDeadlineMs === undefined) {
-      this.failureDeadlineMs = now + GAIT_FAILURE_GRACE_MS;
-      this.failureTimer = setTimeout(() => {
-        this.failureTimer = undefined;
-        void this.finishExpired();
-      }, GAIT_FAILURE_GRACE_MS);
-    }
+  private timeout(generation: number): void {
+    if (generation !== this.generation || this.finishing) return;
+    this.detach();
     this.publish({ phase: 'needsFraming', confidence: 0 });
-    this.beginScan(now);
+    void this.dependencies.provider.stop().catch(() => undefined);
+    this.schedule(() => {
+      void this.finish(generation, false);
+    }, GAIT_FAILURE_GRACE_MS);
   }
-
-  private async finishVerified(): Promise<void> {
-    if (this.finishing) {
-      return;
-    }
+  private async finish(generation: number, pass: boolean): Promise<void> {
+    if (generation !== this.generation || this.finishing) return;
     this.finishing = true;
-    await this.cleanUp();
-    this.publish({ phase: 'verified', confidence: 1 });
-    await this.dependencies.onVerified();
+    this.detach();
+    await this.dependencies.provider.stop().catch(() => undefined);
+    if (generation !== this.generation) return;
+    let accepted = false;
+    try {
+      accepted = pass && (await this.dependencies.onVerified()) !== false;
+    } catch {
+      accepted = false;
+    }
+    if (generation !== this.generation) return;
+    this.finishing = false;
+    this.publish({ phase: accepted ? 'verified' : 'expired', confidence: accepted ? 1 : 0 });
+    if (!accepted) await this.dependencies.onExpired();
   }
-
-  private async finishExpired(): Promise<void> {
-    if (this.finishing) {
-      return;
-    }
-    this.finishing = true;
-    await this.cleanUp();
-    this.publish({ phase: 'expired', confidence: 0 });
-    await this.dependencies.onExpired();
-  }
-
-  private async cleanUp(): Promise<void> {
-    if (this.scanTimer !== undefined) {
-      clearTimeout(this.scanTimer);
-      this.scanTimer = undefined;
-    }
-    if (this.failureTimer !== undefined) {
-      clearTimeout(this.failureTimer);
-      this.failureTimer = undefined;
-    }
+  private detach(): void {
+    this.timers.splice(0).forEach((cancel) => cancel());
     this.unsubscribe?.();
     this.unsubscribe = undefined;
     this.detector = undefined;
-    this.scanStartedAtMs = undefined;
-    this.failureDeadlineMs = undefined;
-    const wasStarted = this.started;
-    this.started = false;
-    if (wasStarted) {
-      await this.dependencies.provider.stop().catch(() => undefined);
-    }
-    this.finishing = false;
   }
-
+  private schedule(callback: () => void, delayMs: number): void {
+    const schedule =
+      this.dependencies.schedule ??
+      ((cb, ms) => {
+        const id = setTimeout(cb, ms);
+        return () => clearTimeout(id);
+      });
+    const cancel = schedule(() => {
+      this.timers = this.timers.filter((v) => v !== cancel);
+      callback();
+    }, delayMs);
+    this.timers.push(cancel);
+  }
   private publish(snapshot: TreadmillScanSnapshot): void {
+    if (snapshot.phase === this.snapshot.phase && snapshot.confidence === this.snapshot.confidence) return;
+    const now = this.dependencies.now();
+    if (snapshot.phase === this.snapshot.phase && now - this.lastPublishedAt < 200) return;
+    this.lastPublishedAt = now;
     this.snapshot = Object.freeze(snapshot);
     this.listeners.forEach((listener) => listener());
   }
-}
-
-function isCameraPermissionDenied(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ERR_GAIT_VISION_DENIED';
 }
