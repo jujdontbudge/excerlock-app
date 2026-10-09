@@ -39,6 +39,7 @@ import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySele
 import { rememberSignIn } from '../identity/rememberedSignIn';
 import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { pathFor } from '../onboarding/onboardingPath';
+import { classBackedPort } from './lib/fakes/classBackedPort';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   gymFixSource?: () => Promise<GymLocationFix | null>;
@@ -125,8 +126,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       );
     });
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
-  const auth = identityLab.route(AuthFake(ctx), (lab) => lab.auth);
-  const subscription = identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription);
+  const auth = classBackedPort('auth', identityLab.route(AuthFake(ctx), (lab) => lab.auth));
+  const subscription = classBackedPort('subscription', identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription));
   const subscriptionAdmission = rememberAdmission(SubscriptionAdmissionFake(ctx, auth, subscription), {
     environment: 'sandbox',
     now: () => Date.parse(ctx.clock.now()),

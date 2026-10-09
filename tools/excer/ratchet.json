@@ -1,6 +1,7 @@
 {
   "comments": 0,
   "dependency-rules": 0,
+  "detached-methods": 55,
   "illustration-token-importers": 30,
   "raw-colours": 0,
   "raw-type": 0,

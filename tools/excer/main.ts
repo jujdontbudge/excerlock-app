@@ -2,6 +2,7 @@ import { checkCommand, help as checkHelp } from './commands/check.ts';
 import { featureCommand, help as featureHelp } from './commands/feature.ts';
 import { doctorCommand, doctorHelp, newCommand, newHelp, serverCommand, serverHelp } from './commands/misc.ts';
 import { moveCommand, moveHelp } from './commands/move.ts';
+import { help as otaHelp, otaCommand } from './commands/ota.ts';
 import { help as proveHelp, proveCommand } from './commands/prove.ts';
 import { demoCommand, demoHelp, simCommand, simHelp } from './commands/sim.ts';
 import { UsageError } from './lib/shell.ts';
@@ -15,6 +16,8 @@ const usage = `excer: control and verification for ExcerLock
   excer demo <scenario> | list      start the app in a scripted scenario
   excer sim <command>               drive the owned simulator (status, start, open, tap, shot, tree)
   excer prove <feature>             run a feature's proofs on the simulator and save evidence
+  excer ota --message <m> [--publish]
+                                    gate (and publish) a production OTA update
   excer server health|ready [--prod]
   excer server smoke                real API + Postgres, one account from sign-up to erasure
   excer new package <name>
@@ -29,6 +32,7 @@ const helps: Record<string, string> = {
   demo: demoHelp,
   sim: simHelp,
   prove: proveHelp,
+  ota: otaHelp,
   server: serverHelp,
   doctor: doctorHelp,
   new: newHelp,
@@ -56,6 +60,8 @@ async function main(argv: string[]): Promise<number> {
       return simCommand(args);
     case 'prove':
       return proveCommand(args);
+    case 'ota':
+      return otaCommand(args);
     case 'server':
       return serverCommand(args);
     case 'doctor':

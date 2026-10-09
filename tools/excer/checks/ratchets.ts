@@ -62,6 +62,36 @@ function scan(pattern: RegExp, files: string[]): string[] {
   });
 }
 
+export const detachedMethods: Check = {
+  name: 'detached-methods',
+  why: 'A port method passed around without its object crashes on device when the port is a class (the 6d2c0115 launch crash). Count may only fall.',
+  tier: 'static',
+  async run(): Promise<CheckResult> {
+    const { ESLint } = require('eslint') as { ESLint: ESLintClass };
+    const parser = require('@typescript-eslint/parser') as object;
+    const plugin = require('@typescript-eslint/eslint-plugin') as object;
+    const linter = new ESLint({
+      cwd: appRoot,
+      overrideConfigFile: true,
+      overrideConfig: [
+        { ignores: ['**/node_modules/**', 'ios/**', 'build/**', 'dist/**', 'evidence/**', '**/*.d.ts'] },
+        {
+          files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+          languageOptions: { parser, parserOptions: { projectService: true, tsconfigRootDir: appRoot } },
+          linterOptions: { reportUnusedDisableDirectives: 'off' },
+          plugins: { '@typescript-eslint': plugin },
+          rules: { '@typescript-eslint/unbound-method': 'error' },
+        },
+      ],
+    });
+    const results = await linter.lintFiles([join(appRoot, 'src'), join(appRoot, 'app')]);
+    const hits = results.flatMap((result) =>
+      result.messages.filter((message) => message.ruleId === '@typescript-eslint/unbound-method').map((message) => `${rel(result.filePath)}:${message.line}`),
+    );
+    return { kind: 'count', ratchet: 'detached-methods', value: hits.length, samples: hits };
+  },
+};
+
 export const rawColours: Check = {
   name: 'raw-colours',
   why: 'Colours come from design-system tokens, never hex or rgb literals. Count may only fall.',

@@ -21,6 +21,6 @@ export function toggleShowcaseMode(auth: AuthPort): boolean | null {
 export function useShowcaseMode(): boolean {
   const { auth } = useRuntime(),
     on = useShowcaseModeStore((s) => s.data.on),
-    userId = useSyncExternalStore(auth.subscribeIdentity, () => accountId(auth));
+    userId = useSyncExternalStore((listener) => auth.subscribeIdentity(listener), () => accountId(auth));
   return on && showcaseAllowed(userId);
 }

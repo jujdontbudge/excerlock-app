@@ -15,6 +15,8 @@ publication. See [ADR 0025](../adr/0025-main-is-the-release-source.md).
 
 ## Release coordination
 
+Publish production OTA updates only with `./excer ota --message "<what changed>" --publish` ([ADR 0068](../adr/0068-ota-ship-gate.md)); never run `eas update` for production directly. It runs the full check and the ship proofs, then publishes under the release lock.
+
 Run the **whole** release sequence under one app lock:
 
 ```sh

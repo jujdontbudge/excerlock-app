@@ -36,6 +36,14 @@ then-expect: Journey app · paid yes · admitted yes
 ```
 
 ```proof
+name: every-tab-opens
+scenario: trial-active
+open: /
+actions: expect Apps blocked until | open /conditions | expect Add condition | open /analytics | expect This week: | open /settings | expect Manage subscription | open /
+expect: Apps blocked until | Lock list
+```
+
+```proof
 name: sign-in-survives-relaunch
 scenario: reinstall-keychain
 open: /
