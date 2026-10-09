@@ -12,7 +12,8 @@ export const help = `excer ota --message "<what changed>" [--publish]
 
 The only way to publish a production OTA update (docs/ota.md). Refuses unless:
   1. nothing that goes into the bundle is uncommitted, and HEAD is origin/main;
-  2. excer check --full passes (includes exporting the iOS release bundle);
+  2. excer check passes, plus the release-bundle export and public-config-secrets
+     (expo-dependencies is skipped: an OTA must not change native dependencies);
   3. the ship proofs pass on the simulator: a fresh install opens Welcome, a
      subscriber opens Home, and Home, Conditions, Analytics and Settings all open
      for a signed-in account. The dev fakes for class-backed ports (auth,
@@ -52,8 +53,8 @@ export async function otaCommand(args: string[]): Promise<number> {
   }
   out.ok(`bundle inputs clean at ${head.slice(0, 8)} (origin/main)`);
 
-  if (!step(fromRoot('excer'), ['check', '--full'])) {
-    out.fail('excer check --full failed; not shipping');
+  if (!step(fromRoot('excer'), ['check']) || !step(fromRoot('excer'), ['check', '--only', 'public-config-secrets,release-bundle'])) {
+    out.fail('excer check failed; not shipping');
     return 1;
   }
   for (const [feature, proof] of shipProofs) {

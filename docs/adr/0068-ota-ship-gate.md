@@ -10,7 +10,7 @@ date: 2026-10-08
 `./excer ota --message "<what changed>" --publish` is the only way to publish a production OTA update. It refuses unless:
 
 - nothing that goes into the bundle is uncommitted, and HEAD is `origin/main`;
-- `./excer check --full` passes, including the `detached-methods` ratchet and the iOS release bundle export;
+- `./excer check` passes, including the `detached-methods` ratchet, and so do `public-config-secrets` and the iOS `release-bundle` export. `expo-dependencies` is left out: it asks for newer native packages, which an OTA must not change;
 - the ship proofs pass on the simulator: `launch/first-launch-welcome`, `launch/subscriber-opens-home` and `launch/every-tab-opens`, which opens Home, Conditions, Analytics and Settings for a signed-in account.
 
 It publishes under the release lock and tags `ota-runtime<version>-<date>-<sha>`. Running `eas update` for production directly is not allowed. Without `--publish` the command runs the gate only.
@@ -26,7 +26,7 @@ The alternatives were a Release-configuration end-to-end run of the real runtime
 ## Consequences
 
 - A detached port method fails `./excer check`, and a render crash on any main screen fails the ship proofs, before anything is published.
-- Publishing takes several minutes longer: the full check and three proofs.
+- Publishing takes a few minutes longer: the checks, the bundle export and three proofs.
 - The fakes do not cover native-module failures or Release-only behaviour. A real-runtime boot test remains a follow-up.
 - The existing 55 detached methods are a ratchet ceiling and should be removed over time.
 
