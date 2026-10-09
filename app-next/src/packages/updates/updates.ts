@@ -8,6 +8,7 @@ export const OTA_FOREGROUND_STALE_MS = 6 * 60 * 60 * 1000;
 export const OTA_CHECK_BUDGET_MS = 15_000;
 export const OTA_FETCH_BUDGET_MS = 60_000;
 export const OTA_MAX_RELOAD_ATTEMPTS = 2;
+export const OTA_APPLY_ON_COLD_START_ONLY = true;
 
 const OTA_GUARD_KEY = 'excerlock-next.ota-guard.v1';
 const OTA_ENVELOPE_KEY = 'excerlock-next.ota-envelope.v1';
@@ -874,6 +875,7 @@ export class OtaCoordinator {
   ): Promise<OtaReloadResult> {
     const pending = this.pendingUpdateId;
     if (!pending) return { status: 'no-pending' };
+    if (OTA_APPLY_ON_COLD_START_ONLY) return { status: 'deferred-unsafe', reason: 'cold-start-only', updateId: pending };
     if (this.pendingSource === 'observation' &&
         (this.pendingStagedAtSeq == null || this.pendingStagedAtSeq >= currentSeq)) {
       return { status: 'deferred-unsafe', reason: 'needs-fresh-foreground', updateId: pending };

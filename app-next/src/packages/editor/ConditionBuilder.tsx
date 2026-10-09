@@ -39,7 +39,7 @@ export function ConditionBuilder({ id, onClose, onNeeds, onStage }: {
         <OnboardingHeader
           progress={0}
           showProgress={false}
-          onBack={f.step === 'O20' || f.step === 'S3' ? f.cancel : f.back}
+          onBack={f.step === 'O20' || (f.step === 'S3' && f.editing) ? f.cancel : f.back}
           onClose={f.cancel}
         />
       }

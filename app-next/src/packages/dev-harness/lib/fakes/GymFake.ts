@@ -34,7 +34,7 @@ export function GymFake(ctx: FakeContext, readFix?: () => Promise<GymLocationFix
     if (JSON.stringify(ctx.snapshot().gymVisits) !== JSON.stringify(snapshot)) ctx.update({ gymVisits: snapshot });
   };
   const flush = () => { const next = writes.catch(() => undefined).then(project); writes = next; return next; };
-  const transition = async (type: 'enter' | 'exit', id: string, manualEpoch?: number) => { if (manualEpoch === undefined && type === 'enter') ctx.log('gym_presence_auto_started'); if (type === 'exit' && detectionStore.getState().data.gym.regions[id]?.confirmedSince != null) ctx.log('gym_presence_ended'); await processor.process({ type, regionId: id, atMs: Date.parse(ctx.clock.now()), manualEpoch }); await flush(); };
+  const transition = async (type: 'enter' | 'exit', id: string, manualEpoch?: number, offsetMs = 0) => { if (manualEpoch === undefined && type === 'enter') ctx.log('gym_presence_auto_started'); if (type === 'exit' && detectionStore.getState().data.gym.regions[id]?.confirmedSince != null) ctx.log('gym_presence_ended'); await processor.process({ type, regionId: id, atMs: Date.parse(ctx.clock.now()) + offsetMs, manualEpoch }); await flush(); };
   const currentFix = async (request = false) => {
     if (request && !['whenInUse', 'always'].includes(permissionsStore.getState().data.location)) await ctx.request('location');
     if (!['whenInUse', 'always'].includes(permissionsStore.getState().data.location)) return null;
@@ -91,7 +91,7 @@ export function GymFake(ctx: FakeContext, readFix?: () => Promise<GymLocationFix
       const gym = list().find((place) => place.id === id);
       if (!gym) throw new Error('Saved gym not found');
       const epoch = await gymVisitLogEpoch();
-      await confirmGymCheckIn({ gym, read: () => currentFix(), confirmation, transition: (type) => transition(type, id, epoch) });
+      await confirmGymCheckIn({ gym, read: () => currentFix(), confirmation, transition: (type) => transition(type, id, epoch, type === 'exit' ? -1 : 0) });
       await flush();
     },
     enableAutoDetect: async () => {

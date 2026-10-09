@@ -41,6 +41,15 @@ expect: Where do you walk? | (Select all that apply) | Outside | Inside | Treadm
 ```
 
 ```proof
+name: builder-back-from-plan
+scenario: trial-active
+open: /builder
+actions: tap Walking | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect Your plan is ready | tap Back
+expect: When should blocking be active?
+absent: Discard changes?
+```
+
+```proof
 name: builder-walking-goal-field
 scenario: trial-active
 open: /builder

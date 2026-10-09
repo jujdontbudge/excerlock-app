@@ -4,6 +4,7 @@ import { addDays, dayKey, localDayStart } from '../schedule/calendar';
 import { windowInstances } from '../schedule/schedule';
 import { applyProgress } from './progress';
 import { progressDay } from './lib/progressDay';
+import { creditedGymVisit } from './gymCreditFloor';
 
 export type ExactStepMeasurement = { from: number; through: number; steps: number; timezone: string };
 export type StepMeasurementRange = { key: string; from: number; to: number; timezone: string };
@@ -89,7 +90,7 @@ export function projectInstanceProgress(
       }
     } else if (mode.kind === 'target' && mode.activity === 'gym' && mode.metric === 'minutes') {
       const intervals = gym
-        .filter((visit) => configured.has(visit.regionId))
+        .filter((visit) => configured.has(visit.regionId) && creditedGymVisit(visit, rule))
         .map((visit) => ({ from: visit.confirmedAt, to: visit.exitedAt ?? Date.parse(now) }));
       const measured = clippedDuration(intervals, from, to, mode.goal * 60_000);
       progress = measured.milliseconds / 60_000;
@@ -99,6 +100,7 @@ export function projectInstanceProgress(
         .filter(
           (visit) =>
             configured.has(visit.regionId) &&
+            creditedGymVisit(visit, rule) &&
             visit.confirmedAt >= from &&
             visit.confirmedAt <= to &&
             visit.confirmedAt < instance.end,

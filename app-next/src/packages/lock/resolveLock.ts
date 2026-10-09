@@ -1,3 +1,4 @@
+import { gymCreditFloor } from '../progress/gymCreditFloor';
 import { unlockHint } from './lib/unlockHint';
 import { Rule, RuleDay, LockDecision, GymPresence, WalkingDetection, PlacementEvidence } from '../model/types';
 import { dayKey, windowInstances, currentInstances, nextInstanceStart, isActiveAt } from '../schedule/schedule';
@@ -33,7 +34,8 @@ export function resolveLock({ now, timezone: tz, rules, ruleDays, detection, pla
   if (stateRule && placement.liveRelief && placement.since)
     return { state: 'unlockedPropped', ruleId: stateRule.id, since: placement.since };
   if (gymPresence?.confirmedAt) {
-    const gym = active.find((r) => r.activity === 'gym');
+    const confirmedAt = Date.parse(gymPresence.confirmedAt);
+    const gym = active.find((r) => r.activity === 'gym' && confirmedAt >= gymCreditFloor(r));
     if (gym) return { state: 'unlockedAtGym', ruleId: gym.id, placeId: gymPresence.placeId, since: gymPresence.confirmedAt };
   }
   if (active.length) {

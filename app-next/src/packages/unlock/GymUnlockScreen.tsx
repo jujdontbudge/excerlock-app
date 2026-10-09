@@ -14,6 +14,10 @@ import { GymUnlockMap } from './lib/GymUnlockMap';
 import { ruleDaysStore as useRuleDaysStore } from '../conditions/ruleDaysStore';
 import { permissionsStore as usePermissionsStore } from '../permissions/permissionsStore';
 import { dayKey } from '../schedule/calendar';
+import { gymCreditFloor } from '../progress/gymCreditFloor';
+import type { GymPresence, Rule } from '../model/types';
+const gymPresenceCredits = (presence: GymPresence | null, rule: Rule) =>
+  !!presence?.confirmedAt && Date.parse(presence.confirmedAt) >= gymCreditFloor(rule);
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const router = useRouter(),
     runtime = useRuntime();
@@ -24,7 +28,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
     ),
   );
   const [alreadyCredited] = useState(
-    !preview && (met || !!useRuleDaysStore.getState().data.gymPresence?.confirmedAt),
+    !preview && (met || (!!rule && gymPresenceCredits(useRuleDaysStore.getState().data.gymPresence, rule))),
   );
   const state = useGymUnlock(preview, alreadyCredited);
   const window = rule?.schedule.window;

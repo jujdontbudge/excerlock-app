@@ -33,7 +33,7 @@ export const noTests: Check = {
 
 export const updatesOwner: Check = {
   name: 'updates-owner',
-  why: 'Only src/packages/updates/updates.ts talks to expo-updates, and never through ON_ERROR_RECOVERY (docs/ota.md).',
+  why: 'Only src/packages/updates/updates.ts talks to expo-updates, never through ON_ERROR_RECOVERY (docs/ota.md), and an update applies only on a cold start (ADR 0070).',
   tier: 'static',
   run() {
     const owner = 'app-next/src/packages/updates/updates.ts';
@@ -41,6 +41,10 @@ export const updatesOwner: Check = {
     const source = existsSync(fromRoot(owner)) ? read(fromRoot(owner)) : '';
     if (!importsModule(source, /expo-updates/)) problems.push(`${owner} must own the expo-updates import`);
     if (/ON_ERROR_RECOVERY/.test(source)) problems.push(`${owner} uses ON_ERROR_RECOVERY`);
+    if (!/export const OTA_APPLY_ON_COLD_START_ONLY = true;/.test(source))
+      problems.push(`${owner} must keep OTA_APPLY_ON_COLD_START_ONLY = true: a reload of a running or resuming app can hang it (ADR 0070)`);
+    if ((source.match(/Updates\.reloadAsync\(/g) ?? []).length > 1 || (source.match(/this\.updates\.reload\(/g) ?? []).length > 1)
+      problems.push(`${owner} may reload in one place only, behind OTA_APPLY_ON_COLD_START_ONLY`);
     if (/import[^;]*(onboarding|paywall|subscriptionport)/i.test(source))
       problems.push(`${owner} imports paywall or onboarding state; the OTA coordinator takes primitives only`);
     return verdict(problems);

@@ -3,6 +3,7 @@ import type { Rule, RuleDay } from '../../model/types';
 import { addDays, dayKey, localDayStart } from '../../schedule/calendar';
 import { windowInstances } from '../../schedule/schedule';
 import { applyProgress } from '../progress';
+import { gymCreditFloor } from '../gymCreditFloor';
 
 type Segment = { start: number; end: number };
 
@@ -32,22 +33,28 @@ export function projectGymHistory(
     validateInterval(interval);
     return configured.has(interval.regionId) && interval.confirmedAt <= nowMs;
   });
-  const byDay = splitByLocalDay(
-    union(eligible.map((interval) => ({ start: interval.confirmedAt, end: Math.min(interval.exitedAt ?? nowMs, nowMs) }))),
-    timezone,
-  );
-  const confirmations = new Map<string, number>();
-  for (const interval of eligible) {
-    const day = dayKey(new Date(interval.confirmedAt).toISOString(), timezone);
-    confirmations.set(day, Math.min(confirmations.get(day) ?? Infinity, interval.confirmedAt));
-  }
-  const days = new Set([...byDay.keys(), ...confirmations.keys()]);
+  const creditFrom = (floor: number) => {
+    const credited = eligible.filter((interval) => interval.confirmedAt >= floor);
+    const byDay = splitByLocalDay(
+      union(credited.map((interval) => ({ start: interval.confirmedAt, end: Math.min(interval.exitedAt ?? nowMs, nowMs) }))),
+      timezone,
+    );
+    const confirmations = new Map<string, number>();
+    for (const interval of credited) {
+      const day = dayKey(new Date(interval.confirmedAt).toISOString(), timezone);
+      confirmations.set(day, Math.min(confirmations.get(day) ?? Infinity, interval.confirmedAt));
+    }
+    return { byDay, confirmations };
+  };
+  const all = creditFrom(-Infinity);
+  const days = new Set([...all.byDay.keys(), ...all.confirmations.keys()]);
   const result = [...rows];
   for (const day of [...days].sort()) {
     for (const rule of rules) {
       if (!rule.enabled || rule.activity !== 'gym' || !windowInstances(rule, day, timezone).length) continue;
       const index = result.findIndex((row) => row.ruleId === rule.id && row.day === day);
       const row = index < 0 ? { ruleId: rule.id, day, progress: 0, met: false, metAt: null } : result[index];
+      const { byDay, confirmations } = creditFrom(gymCreditFloor(rule));
       let next: RuleDay;
       if (rule.mode.kind === 'event') {
         const confirmedAt = confirmations.get(day);

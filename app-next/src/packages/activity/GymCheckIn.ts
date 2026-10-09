@@ -16,6 +16,7 @@ export async function confirmGymCheckIn(options: {
   if (status !== 'inside') throw new GymCheckInError(status);
   if (signal?.aborted) throw new GymCheckInError('cancelled');
   const started = Date.now();
+  await options.transition('exit', started - 1);
   await options.transition('enter', started);
   try {
     do {
