@@ -12,6 +12,7 @@ export function ScreenShell({
   safeBottom = true,
   dock = false,
   bounce = true,
+  scrollEnabled = true,
   scrollUnderStatusBar = true,
   tinted = true,
   orangeBackground = true,
@@ -29,6 +30,7 @@ export function ScreenShell({
   safeBottom?: boolean;
   dock?: boolean;
   bounce?: boolean;
+  scrollEnabled?: boolean;
   scrollUnderStatusBar?: boolean;
   tinted?: boolean;
   orangeBackground?: boolean;
@@ -81,6 +83,7 @@ export function ScreenShell({
             testID="screen-scroll"
             ref={scroll}
             alwaysBounceVertical={bounce}
+            scrollEnabled={scrollEnabled}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={[

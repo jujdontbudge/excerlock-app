@@ -66,7 +66,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   }, [preview, runtime]);
   useEffect(() => {
     if (!working) return;
-    const start = Date.now(), duration = preview ? 3000 : PRESENCE_CONFIRM_MS;
+    const start = Date.now(), duration = PRESENCE_CONFIRM_MS;
     const timer = setInterval(() => setValue(Math.min(1, (Date.now() - start) / duration)), GYM_FIX_SAMPLE_MS);
     return () => clearInterval(timer);
   }, [working, preview]);
@@ -106,7 +106,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       }
       setChecking(false); setWorking(true); setValue(0);
       runtime.analytics.track('gym_unlock_tapped', { preview });
-      if (preview) await gymWait(3000, controller.signal);
+      if (preview) await gymWait(PRESENCE_CONFIRM_MS, controller.signal);
       else if (nearest) await runtime.gym.checkIn(nearest.id, { milliseconds: PRESENCE_CONFIRM_MS, signal: controller.signal });
       if (controller.signal.aborted) return;
       const opened = preview || await apply();

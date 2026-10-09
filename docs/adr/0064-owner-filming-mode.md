@@ -15,7 +15,7 @@ A hidden filming mode makes the walking Condition react in about a second, so th
   - It measures upward acceleration along gravity, smoothed over 3 samples.
   - A step is a peak of at least 0.12 g that re-arms below −0.03 g.
   - Two steps 250–1000 ms apart within 1.3 s count as walking.
-  - One second with no vertical movement of 0.09 g or more counts as stopped.
+  - 1.5 seconds with no vertical movement of 0.09 g or more counts as stopped (1 s until 2026-10-08).
 - **Verdict.** The detector's verdict replaces the normal motion evidence:
   - walking counts as fully verified walking (`verifiedMs = WALK_QUALIFY_MS`), so relief starts at once;
   - stopped is a confirmed stop, so the lock returns at once with no stop grace;

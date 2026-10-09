@@ -5,7 +5,7 @@ import { gymPickerCopy as c } from './gymPickerCopy';
 import { PickerState } from '../usePicker';
 import { PickerMap } from './PickerMap';
 import { Icon } from '../../ui/Icon';
-export function PlaceStep({ picker: p }: { picker: PickerState }) {
+export function PlaceStep({ picker: p, onMapTouching }: { picker: PickerState; onMapTouching?: (touching: boolean) => void }) {
   const { height } = useWindowDimensions();
   return (
     <>
@@ -18,6 +18,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
         height={Math.min(420, Math.max(340, height * 0.44))}
         showLocation={!!p.location}
         onSettle={p.setPin}
+        onTouching={onMapTouching}
       />
       <Pressable
         accessibilityRole="button"

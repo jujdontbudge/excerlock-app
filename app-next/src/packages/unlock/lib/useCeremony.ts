@@ -6,7 +6,7 @@ import { haptic } from '../../ui/haptics';
 import { useUnlockMotion } from './useUnlockMotion';
 export const RING_LAP_MS = 1800;
 export const STRIDE_STALL_MS = 1000;
-export function useCeremony(value: number, verified: boolean, message: string, { paced = false } = {}) {
+export function useCeremony(value: number, verified: boolean, message: string, { paced = false, fillMs }: { paced?: boolean; fillMs?: number } = {}) {
   const progress = useSharedValue(0),
     m = useUnlockMotion(),
     { reduced } = m,
@@ -16,13 +16,18 @@ export function useCeremony(value: number, verified: boolean, message: string, {
     [stalledAt, setStalledAt] = useState(-1),
     [full, setFull] = useState(false);
   const tick = useRef(0);
+  const filling = !steady && fillMs !== undefined && value > 0 && value < 1 && !verified;
   const started = value > 0 || verified,
     moving = started && (verified || stalledAt !== value),
     lifted = verified && (!steady || full);
   useEffect(() => {
-    if (steady) return;
+    if (steady || filling) return;
     progress.set(m.timing(value, 'press'));
-  }, [steady, value, progress, m]);
+  }, [steady, filling, value, progress, m]);
+  useEffect(() => {
+    if (!filling || fillMs === undefined) return;
+    progress.set(m.timing(1, 'press', { curve: 'steady', stretch: ((1 - progress.get()) * fillMs) / m.duration.press }));
+  }, [filling, fillMs, progress, m]);
   useEffect(() => {
     if (!steady) return;
     const stall = setTimeout(() => setStalledAt(value === 0 ? -1 : value), value === 0 ? 0 : STRIDE_STALL_MS);

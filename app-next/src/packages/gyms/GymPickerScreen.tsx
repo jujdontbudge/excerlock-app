@@ -24,6 +24,7 @@ export function GymPickerScreen({
 }) {
   const { gym } = useRuntime();
   const [saved, setSaved] = useState(false);
+  const [mapTouched, setMapTouched] = useState(false);
   const p = usePicker(
     gym,
     () => { const settings = useSettingsStore.getState().data; if (settings.gymBackgroundAsked || settings.gymAutoDetectOptOut || settings.gymAutoDetect) onSaved(); else setSaved(true); },
@@ -32,6 +33,7 @@ export function GymPickerScreen({
   return (
     <ScreenShell
       scrollResetKey={p.stage}
+      scrollEnabled={!mapTouched}
       overlay={saved ? <GymBackgroundSetup onAnswered={onSaved} /> : undefined}
       header={
         p.stage === 'find' ? (
@@ -62,7 +64,7 @@ export function GymPickerScreen({
         ) : undefined
       }>
       <Animated.View key={p.stage} entering={fadeIn} style={{ gap: p.stage === 'place' ? t.space.md : t.space.xl }}>
-        {p.stage === 'find' ? <FindStep picker={p} /> : <PlaceStep picker={p} />}
+        {p.stage === 'find' ? <FindStep picker={p} /> : <PlaceStep picker={p} onMapTouching={setMapTouched} />}
       </Animated.View>
     </ScreenShell>
   );

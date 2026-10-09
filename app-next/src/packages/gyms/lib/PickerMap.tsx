@@ -20,6 +20,7 @@ export function PickerMap({
   height,
   showLocation,
   onSettle,
+  onTouching,
 }: {
   coordinate: Coordinates;
   hasPin: boolean;
@@ -28,6 +29,7 @@ export function PickerMap({
   height: number;
   showLocation: boolean;
   onSettle: (coordinate: Coordinates) => void;
+  onTouching?: (touching: boolean) => void;
 }) {
   const map = useRef<MapView>(null),
     moving = useRef(false),
@@ -87,6 +89,9 @@ export function PickerMap({
         borderWidth: t.stroke.hairline,
         borderColor: t.surface.transparent,
       }}
+      onTouchStart={() => onTouching?.(true)}
+      onTouchEnd={() => onTouching?.(false)}
+      onTouchCancel={() => onTouching?.(false)}
       onLayout={(e) => {
         const next = e.nativeEvent.layout;
         if (next.width === size.width && next.height === size.height) return;

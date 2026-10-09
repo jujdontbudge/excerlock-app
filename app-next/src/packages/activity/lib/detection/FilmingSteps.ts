@@ -10,7 +10,7 @@ export const FILMING_STEPS = {
   maxStepGapMs: 1000,
   startWindowMs: 1300,
   startSteps: 2,
-  stopMs: 1000,
+  stopMs: 1500,
   staleMs: 2000,
 } as const;
 

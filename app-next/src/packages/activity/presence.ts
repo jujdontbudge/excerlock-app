@@ -1,3 +1,3 @@
-export const PRESENCE_CONFIRM_MS = 30000;
+export const PRESENCE_CONFIRM_MS = 3000;
 export const PRESENCE_EXIT_GRACE_MS = 60000;
 export const PRESENCE_RETRY_MS = 30000;

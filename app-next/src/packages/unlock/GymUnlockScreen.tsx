@@ -6,7 +6,7 @@ import { UnlockLockFrame } from './lib/UnlockLockFrame';
 import { useRuntime } from '../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { unlockCopy as c } from './lib/unlockCopy';
-import { useGymUnlock } from './lib/useGymUnlock';
+import { PRESENCE_CONFIRM_MS, useGymUnlock } from './lib/useGymUnlock';
 import { useCeremony } from './lib/useCeremony';
 import { gymUnlockSubline } from './entry';
 import { UnlockLayout, Detected } from './lib/UnlockLayout';
@@ -31,7 +31,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   const minute = window?.kind === 'range' ? window.endMinute : 1439;
   const end = `${Math.floor(minute / 60) % 12 || 12}${minute % 60 ? ':' + String(minute % 60).padStart(2, '0') : ''} ${minute < 720 ? 'AM' : 'PM'}`;
   const subline = gymUnlockSubline(rule, preview && !rule ? '9 PM' : end);
-  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected);
+  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected, { fillMs: PRESENCE_CONFIRM_MS });
   const close = () => {
     runtime.analytics.track('unlock_ceremony_done', { kind: 'gym', preview });
     router.back();
