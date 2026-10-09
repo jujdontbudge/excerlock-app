@@ -43,11 +43,9 @@ period, sends both native event streams through it, and publishes cadence-freshn
 deadlines with an on-device watchdog. A walking classification by itself never becomes an active
 walking signal.
 
-The module does not decide whether a person is walking. `WalkVerifier` requires both a walking
-classification and sustained cadence at or above
-`WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE`. That app-fixed constant lives only in
-`app/src/signals/motion/constants.ts`; its current 65 steps/minute value is the midpoint of the PRD's
-60–70 starting band. It is provisional until physical-device spike #27 tunes it and is never a user
+The module does not decide whether a person is walking. The activity package's `MotionAdapter`
+does, with the app-fixed `MIN_WALKING_CADENCE_PER_MINUTE` in
+`src/packages/activity/lib/detection/MotionAdapter.ts`. It is never a user
 setting. Renewable 15-minute access increments and full-price walking are product/session rules,
 not native-module configuration.
 
@@ -113,10 +111,7 @@ it is private API regardless. It is not a route.
 **Consequence for this module:** `motionAvailabilityPayload()` maps one-to-one onto the framework's
 own availability calls (all eleven measure `false` on the simulator), so on a simulator the module
 degrades to a hard unavailability error and **no Walk & Scroll code path past the availability gate
-can ever execute there**. `FixtureMotionProvider` remains the only way to exercise Walk & Scroll
-behaviour without hardware — which is what it is for. The e2e-next scenario `E2E-M1` uses exactly
-this: on the simulator it proves every bridge function exists, rejects with the documented code and
-stops cleanly (`app-next/e2e-next/README.md`); sensor readings stay a device-lane concern.
+can ever execute there**. Sensor readings stay a device-lane concern.
 
 Do **not** grant motion to the simulator before launching the app: with Motion & Fitness authorized
 the runtime's boot reconcile starts detection, the motion-less simulator rejects it and the boot

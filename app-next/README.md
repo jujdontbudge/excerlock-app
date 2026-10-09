@@ -1,13 +1,8 @@
-# ExcerLock — Phase 1
+# ExcerLock app
 
-A separate Expo SDK 57 app using local fake data. The original app and server are read-only references. Product copy belongs in src/content; presentation tokens in src/design-system; IO contracts in src/ports. Real services are unavailable in Phase 1.
+The shipping iOS app: Expo SDK 57, React Native 0.86 and Expo Router, with Screen Time extensions in `targets/` and native modules in `modules/`.
 
-From the repo root run `npm install`. From this folder run `npm test`, `npm run typecheck`, `npm run lint`. `npm start` uses IPv4 localhost port 8091. Build with `sh scripts/simulator.sh build`, then `boot`, `install`, and `launch`. This uses Expo build-only mode plus simctl so Simulator.app stays closed. Finish with `sh scripts/simulator.sh shutdown`.
-
-Task evidence lives in evidence/T00 through evidence/T16; indexes are committed, generated media and logs stay local. Open `excerlock://dev` for 24 scenarios, clock controls, permission/session/entitlement toggles, prompt behavior, event log and component previews. `excerlock://dev?scenario=home-locked-walking` loads a scenario and follows the boot gate. “Load and keep edits” preserves validated store data. Gemini gates were deferred by Johan; final acceptance records that limitation.
-
-Phase 1 Home retains tab scroll position and reads live local progress. Capture links `excerlock://home?steps=5000` and `excerlock://home?advance=3600000` preserve Home while changing fake steps or clock. Adapter context is persisted separately from the eight product stores, so a cold launch resumes the same scenario and signals. Setup branch capture uses `excerlock://dev?scenario=runner-distance&setup=X3` (or a gym/walking scenario).
-
-Final local acceptance is indexed in [evidence/T16/ACCEPTANCE.md](evidence/T16/ACCEPTANCE.md). The app includes all onboarding branches, schedule/plan/trial/setup, Home, Conditions, Analytics, Settings and session sheets. `scripts/accept-branches.py` replays eight complete fresh-to-Home journeys; `accept-permissions.py`, `accept-edges.py` and `capture-acceptance-data.py` cover the remaining native checks. Use `accept-cold-launch.py` after installing a fresh dev client to acknowledge its host-only first-run chrome.
-
-Analytics reconciles today's local fake sensor/workout facts; prior fixture days remain historical. The gym search has six local candidates and enforces five saved places at 100 m. No real authentication, purchases, permission requests, backend or Screen Time enforcement are implemented. Phase 2 has not started.
+- Routes live in `app/`, product code in `src/packages/<name>/`. Shape and import rules: `ARCHITECTURE.md`. Screens: `src/packages/ui/UI-STYLE.md`.
+- From this folder: `npm run typecheck`, `npm run lint`, `npm start` (Metro on port 8091). From the repo root: `./excer check`.
+- Drive and verify the app on the simulator with `./excer` (the `verify-excerlock` skill). Build a new binary only when native code changes.
+- Releases: `docs/agents/operations.md`. OTA updates: `docs/ota.md`.

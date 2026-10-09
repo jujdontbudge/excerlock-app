@@ -1,9 +1,0 @@
-{"level":"info","ts":1789012805.401576,"msg":"using config from file","file":"/tmp/excerlock-aasa.BFc7Rnwo/Caddyfile"}
-{"level":"info","ts":1789012805.4031699,"msg":"adapted config to JSON","adapter":"caddyfile"}
-{"level":"info","ts":1789012805.4044976,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x1958abc3b580"}
-{"level":"info","ts":1789012805.4192615,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
-{"level":"info","ts":1789012805.4193707,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
-Valid configuration
-{"level":"info","ts":1789012805.4253433,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0x1958abc3b580"}
-{"level":"info","ts":1789012805.425382,"logger":"http","msg":"servers shutting down with eternal grace period"}
-AASA deployed and verified; prior Caddy configuration retained at /etc/caddy/Caddyfile.aasa-backup.20260910T040005Z.85834

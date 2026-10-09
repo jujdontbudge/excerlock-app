@@ -1,8 +1,0 @@
-{
-  "dependencies": { "react-native-adapty": "4.0.2" },
-  "rootCoordination": [
-    "Declare the installed SDK4 dependency in app-next package/lock.",
-    "Provide the public SDK key through native config; never ship the Adapty secret key.",
-    "Wire the six-product StoreKit fixture/debug scheme via the native lane; do not enable it for TestFlight device verification."
-  ]
-}

@@ -141,7 +141,7 @@ app-next/scripts/verify-ota.sh \
 
 ### Bumping `runtimeVersion`
 
-Only when `plans/ship/02-native-manifest.md` changes or a native
+Only when the native manifest (`app-next/config/native.ts`) changes or a native
 dependency's iOS code changes. Procedure: bump the string, build, submit,
 wait for Ready for Sale, then publish JS to both the old and the new runtime
 until the old runtime's 30-day active-install share is under 5%. Never orphan

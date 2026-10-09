@@ -1,2 +1,0 @@
-PASS expected: run `python3 app-next/scripts/audit-privacy-manifest.py`
-Verified 2026-09-10: six exact non-tracking declarations; ProductInteraction linked for identified PostHog analytics; UserID purposes Analytics + AppFunctionality; plist lint OK.

@@ -1,17 +1,9 @@
 # Development scripts
 
-Own reproducible local checks and headless simulator workflows. They do not change the reference app or use real product services.
+Release, catalog and research helpers. Drive the simulator with `./excer sim`, not with scripts here.
 
-`sh scripts/check.sh` runs the task acceptance checks. Expo MCP supplies and verifies the Expo recipes used here.
-
-`capture-previews.py` captures both variants of each design-system component at normal and accessibility-large content sizes. `sim.py` supplies accessibility-driven taps, gestures and recording. Capture paths are absolute, and generated evidence is excluded from Metro's file map. Keep the simulator headless; no Maestro.
-
-`capture-final-flows.py <flow>` produces T15 recordings; set `EXCER_FINAL_EVIDENCE=evidence/T16` for a final-source acceptance replay. `visible_tap.py` scrolls an AX target above fixed tabs before tapping; never use a hidden row's coordinates. idb reports custom adjustables as Button plus increment/decrement actions, not necessarily Slider.
-
-T16: `accept-cold-launch.py` handles observed dev-client host chrome; `accept-branches.py [branch]` drives complete onboarding and verifies W3 kill/resume on walking-goal; `accept-permissions.py` exercises local grant/deny choices; `accept-edges.py` covers paywall, units, five gyms and delete-to-empty; `capture-acceptance-data.py` compares live Home and recap facts. Scripts target only the owned ExcerLock-Next simulator.
-
-`accept-preferences.py` verifies actual native Switch value changes and auto-detect grant/deny/disable outcomes after scroll settling.
-
-`accept-picker-stability.py` measures the native picker heading before and after a query, verifying that filtering preserves control positions.
-
-`catalog-drift.py` compares the App Store Connect, Adapty and StoreKit product identifiers. `subscription-metadata.py` checks the metadata behind those identifiers for every SKU — grid-derived `en-US` display name, description, group, group order and introductory offer, and `READY_TO_SUBMIT` state — and `subscription-metadata.py --fill` applies only missing or differing fields (it never touches a `READY_TO_SUBMIT` subscription, a price or availability). Its live evidence is in `evidence/asc-subscription-metadata/`.
+- **Catalog:** `catalog-drift.py` compares the App Store Connect, Adapty and StoreKit product identifiers. `subscription-metadata.py` checks the metadata behind those identifiers for every SKU — grid-derived `en-US` display name, description, group, group order and introductory offer, and `READY_TO_SUBMIT` state — and `subscription-metadata.py --fill` applies only missing or differing fields (it never touches a `READY_TO_SUBMIT` subscription, a price or availability). Run them through `npm run catalog:*`.
+- **Release checks:** `verify-binary.sh` audits a built payload (entitlements, Info.plist, privacy manifest, signed manifest, bundle size, no linked trace). `verify-ota.sh` proves an OTA update on installed phones (`docs/ota.md`). `verify-no-dev-bundle.cjs` and `upload-sourcemaps.sh` support release builds. `eas-secrets.ts` uploads only the allowlisted client variables to EAS.
+- **Startup:** `measure-startup.sh` and `startup-stage-medians.cjs` (ADR 0033, 0037, 0038).
+- **Linked recorder research:** `build-linked-recorder-standalone.sh`, `prove-linked-recorder-on-phone.sh` and their helpers (`research/linked-recorder/README.md`).
+- **Other:** `storekit-sim.sh` (`storekit/README.md`), `audit-privacy-manifest.py` (`privacy/README.md`), `export-icons.cjs` (`assets/icons/FOUNDRY.md`), `check-env.ts` (CI).

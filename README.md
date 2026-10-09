@@ -1,46 +1,18 @@
 # ExcerLock
 
-`main` is the authoritative product branch. Open `/Users/johansardar/ExcerLock`
-for ongoing work. Completed changes are integrated into `main`; task branches
-and the older shipping worktree are historical working copies.
+ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must be met before their distracting apps unlock. Agents start with [`AGENTS.md`](AGENTS.md).
 
-## Application and releases
-
-- **iOS application:** [`app-next/`](app-next). Run Expo/EAS commands from this directory.
-- **Backend:** [`server/`](server), deployed using [`deploy/README.md`](deploy/README.md).
+- **iOS app:** [`app-next/`](app-next).
+- **API:** [`server/`](server), deployed with [`deploy/README.md`](deploy/README.md).
 - **Website:** [`site/`](site).
-- **Legacy application:** `app/` remains for reference and regression tests; it is not a release target.
 
-App Store binaries and Expo OTA updates both originate from verified commits on
-`main`. Record the commit, version/build number, native runtime, and artifact or
-update ID for each release. The Expo channel named `production` is a distribution
-setting, independent of the Git branch name `main`.
-
-Pushing `main` runs CI and service readiness checks. Publishing is a separate
-operation governed by [`docs/agents/operations.md`](docs/agents/operations.md).
-The current authorization stops at submission readiness: TestFlight upload is
-allowed; App Review submission, public release, and production OTA publication
-remain excluded.
-
-See [`docs/releases/2026-09-11-main-consolidation.md`](docs/releases/2026-09-11-main-consolidation.md)
-for the observed Apple/Expo state and consolidation evidence.
+`main` is the release source. App Store binaries and OTA updates come from verified commits on `main`; publishing follows [`docs/agents/operations.md`](docs/agents/operations.md).
 
 ## Local checks
 
-Use npm 11.19.0 (pinned in `package.json` and CI). npm 10 resolves this
-workspace override graph differently and rejects the otherwise valid lockfile.
+Use npm 11.19.0 (pinned in `package.json` and CI); npm 10 resolves the workspace overrides differently and rejects the lockfile.
 
 ```sh
 npm ci
-npm run typecheck
-npm run test:unit
-npm run test --workspace app-next
-npm run lint --workspace app-next
-npm run test:guardrails
+./excer check
 ```
-
-The full CI workflow also verifies Expo config loading, installed native patches,
-and signed-manifest validation. Agents follow the standing TDD + E2E + screenshot
-loop in [`AGENTS.md`](AGENTS.md); do not ship TestFlight on a red loop. Product
-requirements live in [`plans/ship/README.md`](plans/ship/README.md), with deferred
-work in [`plans/post-ship/README.md`](plans/post-ship/README.md).

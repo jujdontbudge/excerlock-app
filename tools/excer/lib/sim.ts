@@ -1,4 +1,4 @@
-import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, statSync, truncateSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -197,21 +197,29 @@ const companionSocket = (udid: string) => `/tmp/idb/${udid}_companion.sock`;
 const idbArgs = (udid: string, args: string[]) => existsSync(companionSocket(udid))
   ? ['--companion', companionSocket(udid), ...args] : args;
 
+const companionLogLimitBytes = 5 * 1024 * 1024;
+
 export function ensureCompanion(udid: string): void {
-  if (run('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]), { timeout: 10000 }).code === 0) return;
+  const logPath = join(stateDir(), `idb-companion-${udid}.log`);
+  if (run('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]), { timeout: 10000 }).code === 0) {
+    if (existsSync(logPath) && statSync(logPath).size > companionLogLimitBytes) truncateSync(logPath);
+    return;
+  }
   const socket = companionSocket(udid);
+  run('/usr/bin/pkill', ['-f', `idb_companion --udid ${udid}`]);
   run('/bin/mkdir', ['-p', '/tmp/idb']);
   run('/bin/rm', ['-f', socket]);
-  const log = openSync(join(stateDir(), `idb-companion-${udid}.log`), 'w');
+  writeFileSync(logPath, '');
+  const log = openSync(logPath, 'a');
   const set = deviceSet(udid);
-  const child = spawn('idb_companion', ['--udid', udid, '--grpc-domain-sock', socket, ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
+  const child = spawn('idb_companion', ['--udid', udid, '--grpc-domain-sock', socket, '--log-level', 'info', ...(set ? ['--device-set-path', set] : [])], { detached: true, stdio: ['ignore', log, log] });
   child.unref();
   closeSync(log);
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (existsSync(socket) && run('idb', idbArgs(udid, ['ui', 'describe-all', '--udid', udid]), { timeout: 10000 }).code === 0) return;
     run('/bin/sleep', ['0.5']);
   }
-  throw new Error(`idb_companion did not start for ${udid}; see ${join(stateDir(), `idb-companion-${udid}.log`)}`);
+  throw new Error(`idb_companion did not start for ${udid}; see ${logPath}`);
 }
 
 export function tree(udid: string): AxNode[] {

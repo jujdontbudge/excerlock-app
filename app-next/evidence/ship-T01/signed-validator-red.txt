@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/johansardar/ExcerLock-build/ship/app-next/scripts/test_verify_signed_manifest.py", line 9, in <module>
-    spec.loader.exec_module(module)
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
-  File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
-  File "<frozen importlib._bootstrap_external>", line 1159, in get_code
-  File "<frozen importlib._bootstrap_external>", line 1217, in get_data
-FileNotFoundError: [Errno 2] No such file or directory: '/Users/johansardar/ExcerLock-build/ship/app-next/scripts/verify_signed_manifest.py'

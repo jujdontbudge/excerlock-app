@@ -4,8 +4,8 @@ Presentation only. S3 commits the plan; this step reads the draft and the W1
 preference in `profileStore`, and Continue only advances to the S3c trial preview. No detector,
 permission, entitlement, shielding, or server mutation is called by this scene.
 
-Source of visual truth: `condition-demo/IMPLEMENTATION-PROMPT.md`, approved HTML,
-and Sunburst asset provenance under `condition-demo/gen/`. The soft cards and
+Source of visual truth: the approved condition-demo design and the asset provenance in
+`app-next/assets/condition-demo/provenance/PROVENANCE.md`. The soft cards and
 illustrated palette deliberately follow that approval instead of normal app
 chrome. Assets are copied unchanged; no frames were regenerated.
 
@@ -43,7 +43,7 @@ locked state without adding diagnostic text to the user-facing copy.
 The seven `demo-*-gated` onboarding proofs check a blocked early Continue and a
 successful later Continue. `demo-unlock-haptic` checks the initial lock and unlock
 cues. Timed simulator captures, actual taps, and continuous-state transitions are
-indexed in `.excer/demo-3s/index.md`. They do not claim native Screen Time or real
+saved under `.excer/demo-3s/`. They do not claim native Screen Time or real
 motion/location enforcement on a simulator.
 
 New onboarding capability and assets are **new-submission material, never OTA**.
@@ -52,7 +52,7 @@ New onboarding capability and assets are **new-submission material, never OTA**.
 
 Native review correction: shortened year/free/scrolled beats to 1.8/1.6/3 seconds (6.4 seconds total, previously 14.4). Math Continue appears after 3 seconds. Neutral dots now use the darker comparison token throughout, including the unfilled portion of the final band; orange still means scrolling. These revisions supersede the original pacing/color description below.
 
-Reference: [Unrot on ScreensDesign](https://screensdesign.com/apps/unrot-earn-your-screentime/?id=2334), current recording, 2:40–3:10. Observed the 31-second excerpt and half-second frame strips in `app-next/evidence/unrot-impact/`. The current video is 5:19 long; the page's current embedded recording is ID 3251 even though the provided URL query is 2334.
+Reference: [Unrot on ScreensDesign](https://screensdesign.com/apps/unrot-earn-your-screentime/?id=2334), current recording, 2:40–3:10. Observed the 31-second excerpt and half-second frame strips. The current video is 5:19 long; the page's current embedded recording is ID 3251 even though the provided URL query is 2334.
 
 Observed sequence:
 

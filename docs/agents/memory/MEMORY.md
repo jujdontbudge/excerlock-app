@@ -1,0 +1,24 @@
+# Memory Index
+
+- [AppBuildingNotes off-limits](appbuildingnotes-off-limits.md) — never enter /Users/johansardar/AppBuildingNotes unless Johan explicitly asks; use the local spec copy at ExcerLock/excerlock-app-prd.md
+- [Plan for thousands of users](plan-for-thousands-of-users.md) — Johan's standing rule: evaluate every decision at thousands of DAU; surface scaling ceilings explicitly
+- [Lane sessions use Opus](lane-sessions-use-opus.md) — spawn all Fable agent lanes/sessions with --model opus per Johan 2026-07-29
+- [Machine resource limits](machine-resource-limits.md) — ~20GB RAM: no big agent fleets, and always `xcrun simctl shutdown all` when done
+- [Test findings: fix or ticket](test-findings-fix-or-ticket.md) — every bug found while testing gets fixed inline or a GitHub issue same-session
+- [ADHD Band idea location](adhd-band-idea-location.md) — the unnamed ADHD wearable venture: spec in AppBuildingNotes, HTML analysis is a Claude artifact, never got a product name
+- [Describe tests by action](describe-tests-by-action.md) — never use harness codes like M4/P3/C1 with Johan; say what the tester does
+- [Rebuild plan and process](rebuild-plan-and-process.md) — Sept 2026 rebuild: Phase 2 merged on rebuild/phase-2 (86062db, 2026-09-08); next is a real build + T11 runbook; open items are GitHub issues; "Gemini" = the agy CLI
+- [Old app has built detection](old-app-has-built-detection.md) — gait vision, placement classifier and treadmill scan exist in ExcerLock/app; survey it before designing detection or asking Johan
+- [Expo MCP disconnect cause](expo-mcp-disconnect-cause.md) — the doctor hook's `claude mcp list` blanked shared OAuth tokens under concurrent sessions; fixed 2026-09-07 with a passive keychain read
+- [CLIs over MCPs](clis-over-mcps.md) — Johan's rule since 2026-09-07: vendor CLIs, never MCP servers; Supabase is auth-only, app DB on a GCP free-tier VM
+- [API hosting on GCP](api-hosting-gcp.md) — API VM excerlock-api 34.134.201.129 in GCP project excerlock since 2026-09-07; Azure is dead; deploy from a clean checkout with deploy.sh
+- [Simulator purchase and sign-in testing](simulator-purchase-needs-sandbox-tester.md) — sandbox buys fail on simulator (device only); tester in Keychain; email sign-up code broken (#147)
+- [App Store live on runtime 4](app-store-live-runtime4.md) — 1.0 build 17 released 2026-10-01; check archive-17.log before any production OTA; whole subscription catalog in review since 2026-10-01
+- [First-launch OTA catch-up](first-launch-ota-catch-up.md) — agreed rules for switching fresh installs to the latest update during onboarding; built on branch JohanSardar/ota-first-launch, ships in build 18
+- [Judge by top consumer app UX](judge-by-top-consumer-app-ux.md) — every rule and ADR must pass "would a top consumer app do this?"; restate intent before big asks
+- [Treadmill false unlock #163](treadmill-false-unlock-163.md) — fix built on a worker branch (unmerged); waits on Johan's 60 clips and build 18; Astra = codex gpt-6-astra
+- [Gym unlock bugs #165](gym-unlock-bugs-165.md) — fix shipped by OTA 2026-10-04 (fcf16c76); still needs Johan's iPhone checks at the gym
+- [Lifecycle spec #162](lifecycle-spec-162.md) — stay-signed-in fix on fix/stay-signed-in (ADR 0061); ADR reversals in #162 await Johan's yes; fake social proof (0058) is live
+- [Filming mode ADR 0064](filming-mode-0064.md) — hidden 7-tap switch shipped by OTA 2026-10-03; remove or disclose before the next App Store submission
+- [Centring audit ADR 0065](centring-audit-0065.md) — shipped by production OTA 2026-10-04 (48084fec, group 58e41b93); proofs fail on off-centre text/icons; follow-ups #168–#170
+- [OTA 2026-10-07 girl + restyle](ota-20261007-girl-restyle.md) — c7030f26, group c2566883: girl character, Before and After, warm restyle, Dream Body paywall; shield colour waits for build 18

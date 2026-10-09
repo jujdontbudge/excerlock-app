@@ -1,4 +1,0 @@
-https://excerlock.com/ 200 text/html; charset=utf-8
-https://excerlock.com/privacy 200 text/html; charset=utf-8
-https://excerlock.com/terms 200 text/html; charset=utf-8
-https://excerlock.com/support 200 text/html; charset=utf-8
