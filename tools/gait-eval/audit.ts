@@ -96,6 +96,7 @@ function loss(clip: Mapping, result: Decision) {
 }
 const offsets = [0, 50, 100, 150, 200, 250, 500, 1000];
 const candidates: {
+  lateralCorrelation: number;
   correlation: number;
   rms: number;
   outcomes: {
@@ -106,11 +107,13 @@ const candidates: {
   }[][];
 }[] = [];
 for (const correlation of [0.4, 0.5, 0.6])
-  for (const rms of [0.01, 0.015, 0.02]) {
-    const path = join(output, `candidate-${correlation}-${rms}.ts`);
+  for (const rms of [0.01, 0.015, 0.02])
+   for (const lateralCorrelation of [0.65, 0.7, 0.75]) {
+    const path = join(output, `candidate-${correlation}-${rms}-${lateralCorrelation}.ts`);
     writeFileSync(
       path,
       source
+        .replace("'./LateralGait'", JSON.stringify(join(root, "app-next/src/packages/unlock/lib/gait/LateralGait")))
         .replace(
           "'./GaitCorroboration'",
           JSON.stringify(
@@ -124,6 +127,7 @@ for (const correlation of [0.4, 0.5, 0.6])
           `minRepeatCorrelation: ${GAIT_SETTINGS.minRepeatCorrelation}`,
           `minRepeatCorrelation: ${correlation}`,
         )
+        .replace(`lateralCorrelation: ${GAIT_SETTINGS.lateralCorrelation}`, `lateralCorrelation: ${lateralCorrelation}`)
         .replace(`minRms: ${GAIT_SETTINGS.minRms}`, `minRms: ${rms}`),
     );
     const { WindowedGaitDetector: Detector } = (await import(path)) as {
@@ -140,7 +144,7 @@ for (const correlation of [0.4, 0.5, 0.6])
         };
       }),
     );
-    candidates.push({ correlation, rms, outcomes });
+    candidates.push({ lateralCorrelation, correlation, rms, outcomes });
   }
 const folds = clips.map((clip, held) => {
   const ranked = candidates
@@ -152,6 +156,7 @@ const folds = clips.map((clip, held) => {
         0,
       ),
       priorDistance:
+        Math.abs(candidate.lateralCorrelation - 0.7) / 0.05 +
         Math.abs(candidate.correlation - 0.5) / 0.1 +
         Math.abs(candidate.rms - 0.015) / 0.005,
     }))
@@ -162,6 +167,7 @@ const folds = clips.map((clip, held) => {
   const selected = ranked[0];
   return {
     heldOut: clip.original,
+    lateralCorrelation: selected.lateralCorrelation,
     correlation: selected.correlation,
     rms: selected.rms,
     trainingLoss: selected.trainingLoss,
@@ -205,15 +211,14 @@ for (const clip of clips) {
   });
 }
 const report = {
-  releaseRecommendation: "NO-GO",
-  continuousIntegrationVerified: false,
+  controllerEvidence: "See robustness report for full-stream production-controller qualification and stale-coverage release.",
   sourceHash,
   settings: GAIT_SETTINGS,
   limitations: [
     "Exploratory same-person leave-one-take-out after feature exploration; not independent population validation.",
     "Offsets and scale transformations are correlated versions of the same footage, not extra subjects or new observations.",
-    "Every original is kept at its actual length; no padding or looping. Short no-pass results are censored.",
-    "Continuous detector release is measured on every sample; the production one-shot controller still stops capture after a pass and cannot enforce that release.",
+    "Only owner-authorized slow walking and deliberate bob are looped to 20 seconds in the prepared review. Other short no-pass clips are censored.",
+    "Detector-only streams below omit controller continuity; the robustness report measures production-controller callbacks, not physical Screen Time shields.",
     "The stop fold permits up to one second of observation latency after the approximate 13-second boundary. It does not claim exact foot-contact timing.",
   ],
   candidates,
@@ -236,7 +241,8 @@ console.log(
       })),
       folds: folds.map((fold) => ({
         heldOut: fold.heldOut,
-        correlation: fold.correlation,
+        lateralCorrelation: fold.lateralCorrelation,
+      correlation: fold.correlation,
         rms: fold.rms,
         heldOutLoss: fold.outcomes.reduce((a, b) => a + b.loss, 0),
       })),

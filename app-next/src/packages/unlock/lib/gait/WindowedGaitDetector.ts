@@ -1,15 +1,18 @@
+import { lateralGait, recentGaitMotion } from './LateralGait';
 import { inspectCorroboration, type CorroborationRejection } from './GaitCorroboration';
 import type { GaitKeypointSample, GaitLandmark } from '../../../ports/GaitVisionProvider';
 
 export const GAIT_SETTINGS = Object.freeze({
-  version: 'windowed-3',
+  version: 'windowed-4',
   windowMs: 4_000,
+  lateralWindowMs: 8_000,
+  lateralCorrelation: 0.7,
   evaluateMs: 250,
   holdMs: 500,
   timeoutMs: 30_000,
   maxGapMs: 200,
   binMs: 100,
-  coverage: 0.85,
+  coverage: 0.6,
   sampleHz: 30,
   minHz: 1.2,
   maxHz: 2.5,
@@ -152,7 +155,7 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
         p.map((v) => v.scale),
         0.1,
       ) >
-    1.5
+    2
   )
     return fail('framingJump');
   const values: number[] = [];
@@ -268,7 +271,7 @@ export class WindowedGaitDetector {
       )
         this.resetEvidence();
       if (next) this.tracks[source].push(next);
-      this.tracks[source] = this.tracks[source].filter((v) => v.timestampMs >= now - GAIT_SETTINGS.windowMs);
+      this.tracks[source] = this.tracks[source].filter((v) => v.timestampMs >= now - GAIT_SETTINGS.lateralWindowMs);
     }
     if (now - this.startedAtMs < GAIT_SETTINGS.windowMs || now - this.lastEvaluation < GAIT_SETTINGS.evaluateMs)
       return this.getResult(receivedAtMs);
@@ -285,6 +288,11 @@ export class WindowedGaitDetector {
             : face.reason === 'coverage'
               ? shoulders
               : face;
+    if (candidate.classification !== 'walking' &&
+      [4_000, 5_000, 6_000, 7_000, GAIT_SETTINGS.lateralWindowMs].some((duration) => lateralGait(this.tracks.face, now, duration, GAIT_SETTINGS.lateralCorrelation)))
+      candidate = { ...face, source: 'face', classification: 'walking', reason: 'holding' };
+    if (candidate.source && !recentGaitMotion(this.tracks[candidate.source], now))
+      candidate = { ...candidate, classification: 'notWalking', reason: 'recentStillness' };
     if (candidate.classification === 'walking') {
       const track = this.tracks[candidate.source!];
       const rejection = inspectCorroboration(
@@ -329,8 +337,6 @@ export class WindowedGaitDetector {
         reason: 'coverage',
       };
     }
-    if (now >= this.startedAtMs + GAIT_SETTINGS.timeoutMs)
-      return { ...this.result, confidence: 0, classification: 'notWalking', complete: true, evaluatedAtMs: now };
     return this.result;
   }
   private resetEvidence(): void {
