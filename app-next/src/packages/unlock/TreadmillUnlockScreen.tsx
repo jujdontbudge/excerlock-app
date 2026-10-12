@@ -19,6 +19,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     preview && __DEV__ && runtime.dev ? runtime.dev.createGaitPreview() : runtime.gait,
   );
   const [snapshot, setSnapshot] = useState<TreadmillScanSnapshot>({ phase: 'idle', confidence: 0 });
+  const handedOff = useRef(false);
   const verified = useRef(false),
     rule = useRulesStore((s) => s.data.rules.find((r) => r.id === ruleId));
   const denied = snapshot.phase === 'permissionDenied';
@@ -28,30 +29,42 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     lifted = ceremony.lifted;
   const close = () => {
     if (verified.current) runtime.analytics.track('unlock_ceremony_done', { kind: 'treadmill', preview });
-    if (!preview && !verified.current) runtime.walking.stop();
+    if (!preview && !handedOff.current) runtime.walking.stop();
     router.back();
   };
   useEffect(() => {
     let active = true;
+    let foreground = AppState.currentState === 'active';
+    let recordedPass = false;
     runtime.analytics.track('unlock_screen_opened', { kind: 'treadmill', preview });
     const start = Date.now();
     const controller = new TreadmillScanController({
       provider,
       now: Date.now,
-      onVerified: () => {
-        verified.current = true;
+      onVerified: async () => {
+        if (!active || !foreground || handedOff.current) return false;
         if (!preview) {
-          runtime.walking.completeProppedScan();
+          if (!rule) return false;
+          await runtime.walking.start(rule, { placement: 'propped' });
+          if (!active || !foreground || handedOff.current) { runtime.walking.stop(); return false; }
+          if (!runtime.walking.completeProppedScan()) return false;
         }
-        runtime.analytics.track('treadmill_scan_verified', { ms: Date.now() - start, preview });
+        verified.current = true;
+        if (!recordedPass) runtime.analytics.track('treadmill_scan_verified', { ms: Date.now() - start, preview });
+        recordedPass = true;
+        return true;
+      },
+      onUnverified: () => {
+        verified.current = false;
+        if (!preview && !handedOff.current) runtime.walking.stop();
       },
       onPermissionDenied: () => {
-        if (!preview) runtime.walking.stop();
+        if (!preview && !handedOff.current) runtime.walking.stop();
         runtime.analytics.track('treadmill_scan_failed', { reason: 'denied' });
         haptic('warning');
       },
       onExpired: () => {
-        if (!preview) runtime.walking.stop();
+        if (!preview && !handedOff.current) runtime.walking.stop();
         runtime.analytics.track('treadmill_scan_failed', { reason: 'timeout' });
         if (active) router.back();
       },
@@ -65,7 +78,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           if (!rule || rule.mode.kind !== 'state') throw new Error('Choose a treadmill walking condition first.');
           await runtime.walking.start(rule, { placement: 'propped' });
         }
-        if (active) {
+        if (active && foreground && !handedOff.current) {
           runtime.analytics.track('treadmill_scan_started', { preview });
           await controller.start();
         }
@@ -79,8 +92,8 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     };
     void startScan();
     const app = AppState.addEventListener('change', (state) => {
-      if (verified.current) return;
-      if (state === 'active') void controller.start();
+      foreground = state === 'active';
+      if (foreground && !handedOff.current) void controller.start();
       else void controller.stop();
     });
     return () => {
@@ -88,7 +101,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       app.remove();
       stop();
       void controller.stop();
-      if (!preview && !verified.current) runtime.walking.stop();
+      if (!preview && !handedOff.current) runtime.walking.stop();
     };
   }, [runtime, provider, preview, rule, router]);
   const scanning = snapshot.confidence > 0 || lifted,
@@ -109,6 +122,8 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         : c.treadmill.propBody;
   const walkInHand = async () => {
     if (rule && !preview) {
+      handedOff.current = true;
+      runtime.walking.stop();
       await runtime.walking.start(rule);
       verified.current = true;
     }
@@ -121,7 +136,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       preview={preview}
       footer={
         ceremony.done ? (
-          <PrimaryButton label={c.done} onPress={close} />
+          <PrimaryButton label={c.treadmill.stop} onPress={close} />
         ) : (
           <PrimaryButton
             label={denied ? c.treadmill.handheld : c.treadmill.walking}
@@ -141,7 +156,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         />
       </View>
       {ceremony.showMessage ? (
-        <Heading key="detected" title={c.treadmill.detected} centered />
+        <Heading key="detected" title={c.treadmill.detected} support={c.treadmill.keepOpen} centered />
       ) : (
         <Heading key={title} title={title} support={body} centered />
       )}

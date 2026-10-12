@@ -1,3 +1,5 @@
+import { createProppedState, reducePropped } from '../../app-next/src/packages/activity/proppedMachine';
+import { WalkingDurationLedger } from '../../app-next/src/packages/activity/WalkingDurationLedger';
 import { GaitPeriodicityDetector } from "./LegacyDetector";
 import { TreadmillScanController as LegacyController } from "./LegacyController";
 import { TreadmillScanController } from "../../app-next/src/packages/unlock/lib/gait/TreadmillScanController";
@@ -79,6 +81,7 @@ export async function replay(
       passAt = clock.now;
       return true;
     },
+    onUnverified: () => {},
     onExpired: () => {},
     onPermissionDenied: () => {},
   };
@@ -126,4 +129,50 @@ export async function replay(
     reasons,
     phase,
   };
+}
+export async function replayContinuous(samples: readonly GaitKeypointSample[], start = 0) {
+  const clock = new VirtualClock();
+  clock.now = start;
+  let receiver: ((sample: GaitKeypointSample) => void) | undefined;
+  let running = false;
+  const transitions: { at: number; qualified: boolean }[] = [];
+  let propped = createProppedState(start);
+  let stored: string | null = null;
+  const ledger = new WalkingDurationLedger({ getItem: async () => stored, setItem: async (_, value) => { stored = value; } });
+  const observeProgress = () => ledger.observe({ generation: 0, at: clock.now, verified: propped.phase === 'propped' && propped.verifiedSince != null, timezone: 'UTC' });
+  const controller = new TreadmillScanController({
+    provider: {
+      start: async () => { running = true; },
+      stop: async () => { running = false; },
+      onSample: (callback) => { receiver = callback; return () => { receiver = undefined; }; },
+    },
+    now: () => clock.now,
+    schedule: (callback, delay) => clock.schedule(callback, delay),
+    onVerified: () => {
+      propped = reducePropped(propped, { kind: 'startScan', at: clock.now, foreground: true }, clock.now);
+      propped = reducePropped(propped, { kind: 'scanPass', at: clock.now, foreground: true, generation: propped.scanGeneration! }, clock.now);
+      transitions.push({ at: clock.now, qualified: true }); return true;
+    },
+    onUnverified: () => {
+      propped = reducePropped(propped, { kind: 'coverageLost', at: clock.now }, clock.now);
+      transitions.push({ at: clock.now, qualified: false });
+    },
+    onPermissionDenied: () => {},
+    onExpired: () => {},
+  });
+  await controller.start();
+  for (const sample of samples) {
+    const at = sample.analysisTimestampMs ?? sample.timestampMs;
+    if (at < start) continue;
+    await clock.advance(at);
+    if (running) receiver?.(sample);
+    await clock.flush();
+    await observeProgress();
+  }
+  const progress = await ledger.read();
+  const observedTransitions = [...transitions];
+  await clock.advance(clock.now + 1000);
+  const staleTransitions = transitions.slice(observedTransitions.length);
+  await controller.stop();
+  return { transitions: observedTransitions, staleTransitions, progress };
 }

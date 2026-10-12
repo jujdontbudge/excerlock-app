@@ -48,6 +48,14 @@ export class DetectionService {
       if (this.disposers.length) return;
       const generation = detectionStore.getState().data.generation;
       if (__LINKED_RECORDER_TRACE__) this.lastDurableTraceData = detectionStore.getState().data;
+      await this.enqueue(async () => {
+        this.assertGeneration(generation);
+        const data = detectionStore.getState().data;
+        if (data.propped.phase !== 'propped') return;
+        const at = Math.max(data.observedAt, data.propped.watermark);
+        detectionStore.getState().patch({ propped: reducePropped(data.propped, { kind: 'coverageLost', at }, at) });
+        await this.commitObserved(at, generation, undefined, 'camera_restart');
+      });
       this.disposers = [
         this.deps.motion.subscribe((evidence) => {
           void this.enqueue(() => this.applyMotion(evidence, walkingGraceMs, generation)).catch((error) =>
@@ -286,7 +294,7 @@ export class DetectionService {
     );
   }
   cancelProppedScan(now: number, generation: number): Promise<void> {
-    return this.applyPropped({ kind: 'scanCancel', at: now }, now, generation);
+    return this.applyPropped({ kind: 'coverageLost', at: now }, now, generation);
   }
   reconcileMotion(now: number, graceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
@@ -416,7 +424,7 @@ export class DetectionService {
 }
 
 export function isMeasuredWalkingState(data: Pick<DetectionData, 'walking' | 'propped'>): boolean {
-  return data.walking.phase === 'active' || (data.propped.phase === 'active' && data.propped.verifiedSince != null);
+  return data.walking.phase === 'active' || (['propped', 'active'].includes(data.propped.phase) && data.propped.verifiedSince != null);
 }
 
 function nextLocalMidnight(from: number, timezone: string): number {

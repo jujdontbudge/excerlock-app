@@ -14,6 +14,8 @@ export const unlockCopy = {
     handheld: 'Continue with phone in hand',
     walking: "I'm walking",
     detected: 'Screen Time unlocked!',
+    keepOpen: 'Keep this screen open so the camera can see you walking.',
+    stop: 'Stop treadmill scan',
   },
   gym: {
 

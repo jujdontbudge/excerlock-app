@@ -92,7 +92,6 @@ export class NativeWalkingPort implements WalkingPort {
   completeProppedScan(): boolean {
     const scan = this.scanGeneration;
     if (scan === null) return false;
-    this.scanGeneration = null;
     const data = detectionStore.getState().data;
     void this.options.service.completeProppedScan(this.now(), scan, data.generation).catch(this.options.onError);
     return true;
