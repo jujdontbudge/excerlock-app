@@ -218,3 +218,9 @@ Evidence: `.excer/treadmill-loop/robustness-7/report.json`.
 | startstop-stop-walking | 4.55 | 14.41 |
 
 Acceptance failures: 0/306.
+
+## Final verification
+
+27 parameter combinations, 18 leave-one-take-out folds × eight offsets: zero held-out losses. Full production-controller replay: 306/306 acceptance cases pass. The six originals/authorized-loop walks retain qualification after acquisition; six augmented walking runs still have temporary losses, itemized in SESSION-ONE.md. Lifecycle replay passes continued qualification beyond 30 seconds, missing-frame revocation/reacquisition, stale-stream revocation and cancellation during an asynchronous pass. The real propped reducer and duration ledger stop Progress after the stop callback.
+
+`./excer check`: 22 passed. Evaluator typecheck passed. Both requested proofs were individually timeboxed to 300 seconds and exited blocked by the installed binary's missing `ExpoUpdates` native module. No compatible cached binary was found in this checkout or standard DerivedData; no production module was mocked to bypass the error. Details and evidence paths: SESSION-ONE.md.

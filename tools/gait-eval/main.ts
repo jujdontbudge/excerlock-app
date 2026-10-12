@@ -310,7 +310,7 @@ const report = {
   limits: [
     "Owner/setup evaluation only; filename labels are not visual ground truth.",
     "Clips shorter than 25 seconds and explicitly unverified labels block GO. A no-pass on a short clip is censored evidence, not a safe rejection.",
-    "Transition violations follow supplied labels; verify contradictory labels before tuning. A one-shot scan cannot prove continuous walking or relock after a later stop.",
+    "Transition violations follow supplied labels; verify contradictory labels before tuning. This first-pass report does not measure continuous qualification; use the full-stream robustness audit.",
     "Camera-app video replay does not prove live iPhone timing, lag or suspended Screen Time enforcement.",
     "Deliberate rhythmic imitation is a known residual.",
   ],
@@ -335,5 +335,5 @@ const text = [
 ];
 writeFileSync(join(dir, "report.md"), `${text.join("\n")}\n`);
 console.log(
-  `\n${verdict}: ${timely.length}/18 walks within 10 s; ${falsePasses.length} held-out incidental passes.\nReport: ${join(dir, "report.md")}`,
+  `\n${verdict}: ${timely.length}/${walks.length} supplied walks within 10 s; ${falsePasses.length} held-out incidental passes.\nReport: ${join(dir, "report.md")}`,
 );
