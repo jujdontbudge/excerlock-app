@@ -61,7 +61,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   setSteps(value: number): void;
   setPresence(value: 'inside' | 'outside'): void;
   setMotion(value: 'walking' | 'still'): void;
-  setGait(value: 'none' | 'walking' | 'still'): void;
+  setGait(value: 'none' | 'walking' | 'still' | 'walking-then-still'): void;
   createGaitPreview(): GaitPort;
   setPlacement(value: 'propped' | 'handheld'): void;
   setTime(now: string, timezone?: string): void;

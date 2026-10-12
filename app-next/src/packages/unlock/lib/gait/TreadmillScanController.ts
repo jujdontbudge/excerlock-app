@@ -114,7 +114,7 @@ export class TreadmillScanController {
     const walking = result.classification === 'walking' && (result.complete || this.qualified);
     if (walking) this.lastWalkingAt = now;
     const lostCoverage = ['coverage', 'timestamp', 'framingJump', 'recentStillness'].includes(result.reason);
-    const qualified = walking || (this.qualified && !lostCoverage && now - this.lastWalkingAt < 2500);
+    const qualified = walking || (this.qualified && !lostCoverage && now - this.lastWalkingAt < 3500);
     this.setQualified(qualified, generation);
     if (!qualified) this.publish({ phase: 'scanning', confidence: result.confidence });
   }
@@ -146,7 +146,8 @@ export class TreadmillScanController {
   private poll(generation: number): void {
     this.schedule(() => {
       if (generation !== this.generation || !this.detector || this.finishing) return;
-      this.updateQualification(this.detector.getResult(this.dependencies.now()), generation);
+      this.result = this.detector.getResult(this.dependencies.now());
+      this.updateQualification(this.result, generation);
       this.poll(generation);
     }, 200);
   }

@@ -25,7 +25,7 @@ export type HistoryDay = {
   scheduled: boolean;
 };
 export type Scenario = {
-  gait?: 'none' | 'walking' | 'still';
+  gait?: 'none' | 'walking' | 'still' | 'walking-then-still';
   motion?: 'walking' | 'still';
   id: string;
   title: string;

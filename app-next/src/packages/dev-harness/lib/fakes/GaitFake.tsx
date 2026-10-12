@@ -1,13 +1,12 @@
 import { View } from 'react-native';
 import type { PermissionStatus } from '../../../model/types';
 import { GaitPort } from '../../../ports/GaitPort';
-import { FixtureGaitVisionProvider } from './FixtureGaitVisionProvider';
 import fixture from './real-walk-single.json';
 import { Pictogram } from '../../../ui/Pictogram';
 import { tokens as t } from '../../../ui/tokens';
 import { permissionsStore } from '../../../permissions/permissionsStore';
-export function GaitFake(preview = false, requestPermission?: () => Promise<PermissionStatus>): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
-  let value: 'none' | 'walking' | 'still' = 'none',
+export function GaitFake(preview = false, requestPermission?: () => Promise<PermissionStatus>): GaitPort & { set(value: 'none' | 'walking' | 'still' | 'walking-then-still'): void } {
+  let value: 'none' | 'walking' | 'still' | 'walking-then-still' = 'none',
     timer: ReturnType<typeof setInterval> | undefined;
   const listeners = new Set<Parameters<GaitPort['onSample']>[0]>();
   return {
@@ -25,22 +24,26 @@ export function GaitFake(preview = false, requestPermission?: () => Promise<Perm
         throw Object.assign(new Error('Camera denied'), { code: 'ERR_GAIT_VISION_DENIED' });
       if (timer) clearInterval(timer);
       const start = Date.now(),
-        first = fixture.samples[0].timestampMs;
-      const provider = new FixtureGaitVisionProvider(
-        fixture.samples.map((s) => ({ ...s, timestampMs: s.timestampMs - first })),
-      );
-      provider.onSample((sample) => {
-        if (value === 'walking') listeners.forEach((cb) => cb({ ...sample, bodyAssociated: true, timestampMs: start + sample.timestampMs }));
-        if (value === 'still') listeners.forEach((cb) => cb({
-          ...sample,
-          head: { x: 0.5, y: 0.3, height: 0.1, confidence: 1 },
-          timestampMs: start + sample.timestampMs,
-        }));
-      });
-      await provider.start();
+        first = fixture.samples[0].timestampMs,
+        duration = fixture.samples[fixture.samples.length - 1].timestampMs - first + 1000 / 15;
+      let lastWalking = fixture.samples[0];
       timer = setInterval(() => {
-        provider.advanceTo(Date.now() - start);
-        if (value === 'none') listeners.forEach((cb) => cb({ timestampMs: Date.now(), landmarks: {} }));
+        const now = Date.now(), elapsed = now - start;
+        const phase = elapsed % (2 * duration);
+        const at = (phase <= duration ? phase : 2 * duration - phase) + first;
+        const sample = fixture.samples.find((frame) => frame.timestampMs >= at) ?? fixture.samples[fixture.samples.length - 1];
+        if (value === 'walking' || (value === 'walking-then-still' && elapsed < 16000)) {
+          lastWalking = sample;
+          listeners.forEach((cb) => cb({ ...sample, bodyAssociated: true, timestampMs: now }));
+        } else if (value === 'walking-then-still') {
+          listeners.forEach((cb) => cb({ ...lastWalking, bodyAssociated: true, timestampMs: now }));
+        } else if (value === 'still') {
+          listeners.forEach((cb) => cb({
+            ...sample,
+            head: { x: 0.5, y: 0.3, height: 0.1, confidence: 1 },
+            timestampMs: now,
+          }));
+        } else listeners.forEach((cb) => cb({ timestampMs: now, landmarks: {} }));
       }, 1000 / 15);
     },
     stop: async () => {

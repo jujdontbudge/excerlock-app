@@ -4,6 +4,7 @@ const walk = makeRule('walk', { kind: 'state', activity: 'walking' });
 const gym = makeRule('gym', { kind: 'event', activity: 'gym', trigger: 'arrival' });
 export const unlockScenarios = [
   base('unlock-treadmill-scan', 'Unlock · treadmill scan', { rules: [walk], ruleDays: [], gait: 'walking' }),
+  base('unlock-treadmill-stop', 'Unlock · treadmill stops', { rules: [walk], ruleDays: [], gait: 'walking-then-still' }),
   base('unlock-treadmill-framing', 'Unlock · treadmill framing', { rules: [walk], ruleDays: [], gait: 'still' }),
   base('unlock-treadmill-denied', 'Unlock · camera denied', {
     rules: [walk],

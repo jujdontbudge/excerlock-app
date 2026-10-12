@@ -135,7 +135,7 @@ export async function replayContinuous(samples: readonly GaitKeypointSample[], s
   clock.now = start;
   let receiver: ((sample: GaitKeypointSample) => void) | undefined;
   let running = false;
-  const transitions: { at: number; qualified: boolean }[] = [];
+  const transitions: { at: number; qualified: boolean; reason?: string }[] = [];
   let propped = createProppedState(start);
   let stored: string | null = null;
   const ledger = new WalkingDurationLedger({ getItem: async () => stored, setItem: async (_, value) => { stored = value; } });
@@ -155,7 +155,7 @@ export async function replayContinuous(samples: readonly GaitKeypointSample[], s
     },
     onUnverified: () => {
       propped = reducePropped(propped, { kind: 'coverageLost', at: clock.now }, clock.now);
-      transitions.push({ at: clock.now, qualified: false });
+      transitions.push({ at: clock.now, qualified: false, reason: controller.getResult()?.reason });
     },
     onPermissionDenied: () => {},
     onExpired: () => {},

@@ -1,5 +1,5 @@
 {
-  "version": "windowed-4",
+  "version": "windowed-5",
   "windowMs": 4000,
   "lateralWindowMs": 8000,
   "lateralCorrelation": 0.7,
@@ -7,8 +7,6 @@
   "holdMs": 500,
   "timeoutMs": 30000,
   "maxGapMs": 200,
-  "binMs": 100,
-  "coverage": 0.6,
   "sampleHz": 30,
   "minHz": 1.2,
   "maxHz": 2.5,
@@ -20,5 +18,7 @@
   "minCameraQuality": 0.7,
   "maxCameraRms": 0.015,
   "minKneeRms": 0.025,
-  "maxKneeCorrelation": -0.25
+  "maxKneeCorrelation": -0.25,
+  "binMs": 100,
+  "coverage": 0.6
 }

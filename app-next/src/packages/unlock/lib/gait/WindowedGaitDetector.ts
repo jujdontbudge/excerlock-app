@@ -3,7 +3,7 @@ import { inspectCorroboration, type CorroborationRejection } from './GaitCorrobo
 import type { GaitKeypointSample, GaitLandmark } from '../../../ports/GaitVisionProvider';
 
 export const GAIT_SETTINGS = Object.freeze({
-  version: 'windowed-4',
+  version: 'windowed-5',
   windowMs: 4_000,
   lateralWindowMs: 8_000,
   lateralCorrelation: 0.7,
@@ -124,21 +124,13 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
     ...details,
   });
   if (p.length < 2) return fail('coverage');
-  const bins = new Set(
-    p.map((v) =>
-      Math.min(
-        GAIT_SETTINGS.windowMs / GAIT_SETTINGS.binMs - 1,
-        Math.floor((v.timestampMs - start) / GAIT_SETTINGS.binMs),
-      ),
-    ),
-  );
   const gaps = [
     p[0].timestampMs - start,
     now - p[p.length - 1].timestampMs,
     ...p.slice(1).map((v, i) => v.timestampMs - p[i].timestampMs),
   ];
   if (
-    bins.size / (GAIT_SETTINGS.windowMs / GAIT_SETTINGS.binMs) < GAIT_SETTINGS.coverage ||
+    p.length < GAIT_SETTINGS.windowMs * 0.0065 ||
     Math.max(...gaps) > GAIT_SETTINGS.maxGapMs
   )
     return fail('coverage');
@@ -176,7 +168,7 @@ function evaluate(points: readonly Point[], now: number, source: Track): Windowe
   const recent = smooth.slice(-GAIT_SETTINGS.sampleHz);
   const recentMean = mean(recent);
   const recentRms = Math.sqrt(mean(recent.map((v) => (v - recentMean) ** 2)));
-  if (recentRms < GAIT_SETTINGS.minRms) return fail('recentStillness', { rms, recentRms });
+  if (recentRms < GAIT_SETTINGS.minRms) return fail('smallBob', { rms, recentRms });
   const result = rhythm(signal),
     details = { rms, r: result.r, r2: result.r2, hz: result.hz };
   if (rms < GAIT_SETTINGS.minRms || quantile(signal, 0.9) - quantile(signal, 0.1) < GAIT_SETTINGS.minRange)
@@ -291,7 +283,7 @@ export class WindowedGaitDetector {
     if (candidate.classification !== 'walking' &&
       [4_000, 5_000, 6_000, 7_000, GAIT_SETTINGS.lateralWindowMs].some((duration) => lateralGait(this.tracks.face, now, duration, GAIT_SETTINGS.lateralCorrelation)))
       candidate = { ...face, source: 'face', classification: 'walking', reason: 'holding' };
-    if (candidate.source && !recentGaitMotion(this.tracks[candidate.source], now))
+    if (candidate.source && candidate.reason !== 'coverage' && !recentGaitMotion(this.tracks[candidate.source], now))
       candidate = { ...candidate, classification: 'notWalking', reason: 'recentStillness' };
     if (candidate.classification === 'walking') {
       const track = this.tracks[candidate.source!];
