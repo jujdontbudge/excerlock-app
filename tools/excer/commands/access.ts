@@ -45,7 +45,7 @@ export function accessCommand(args: string[]): number {
   if (prod) {
     out.info(`${action === 'list' ? 'Reading' : 'Changing'} PRODUCTION DATABASE (${environment} authorization lane)`);
     const command = 'sudo systemd-run --quiet --pipe --wait --collect --property=User=excerlock --property=WorkingDirectory=/opt/excerlock/server --property=EnvironmentFile=/etc/excerlock/env /usr/bin/node /opt/excerlock/server/dist/packages/subscriptions/accessCommand.js';
-    result = run('gcloud', ['compute', 'ssh', 'excerlock-api', '--project=174877771548', '--zone=us-central1-a', '--quiet', '--ssh-flag=-T', '--command', command], { input });
+    result = run('gcloud', ['compute', 'ssh', 'excerlock-api', '--project=excerlock', '--zone=us-central1-a', '--quiet', '--ssh-flag=-T', '--command', command], { input });
   } else {
     const databaseUrl = process.env.EXCER_ACCESS_DATABASE_URL;
     if (!databaseUrl) throw new UsageError('Set EXCER_ACCESS_DATABASE_URL to your isolated local Postgres database');

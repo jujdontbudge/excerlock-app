@@ -6,9 +6,12 @@
 - Combined-code proofs before publishing, on build 18: launch `account-bound-proof-matches`, `wrong-account-proof-fails-closed`, `wrong-environment-proof-fails-closed`, `unavailable-proof-fails-closed`, `returning-unpaid-to-paywall`; paywall `identity-purchase-to-setup`, `offer-a-checkout-selects-trial-product`, `offer-b-checkout-selects-monthly-twin`, `trial-switch`. On the runtime 4 binary: the three ship proofs, `wrong-account-proof-fails-closed`, `returning-unpaid-to-paywall`, both offer checkouts, `trial-switch`, `onboarding/offer-b-complete-onboarding`, `walking-state-home`, `treadmill-stop-relocks`.
 - `paywall/restore-wrong-store-account-stays-unpaid` fails identically on unmodified `main` (`No purchase found` never appears); it predates this release.
 
+## Server deploy
+
+`deploy/deploy.sh` from `555b6b33` (server code as in `b4906c47`), dry run first. Migration `0011_complimentary-access` (two new tables, no destructive statements) applied; 14 journal entries. Local and public `/v1/health` and `/v1/ready` 200 for Production and TestFlight; unauthenticated `POST /v1/subscription/resync` 401. `./excer access` with `--prod` needed the project ID `excerlock` instead of the project number; after that fix a Sandbox-lane grant, list and revoke on `grant-smoke-test@example.com` round-tripped (grant `febff645`).
+
 ## Not yet done
 
-- Server: migration `0011_complimentary-access` and the grant-aware resync are on `main` but not deployed; until then no complimentary grant applies.
 - App Store Connect: launch plans still carry the one-week trial; the client reads the trial length from the store offer.
 - Adapty: no paywall B, audience or A/B test yet; every user gets arm A.
 

@@ -14,7 +14,7 @@ only needs `DEPLOY_HOST` and `DEPLOY_SSH_KEY`.
 |---|---|
 | Public IP | `34.134.201.129` (`dig +short api.excerlock.com A`) |
 | SSH | `DEPLOY_HOST=johansardar@34.134.201.129 DEPLOY_SSH_KEY=~/.ssh/google_compute_engine` |
-| Instance | `excerlock-api`, `us-central1-a`, `e2-micro`, GCP project `174877771548` (**x86_64**) |
+| Instance | `excerlock-api`, `us-central1-a`, `e2-micro`, GCP project `excerlock` (number `174877771548`) (**x86_64**) |
 | Stack | Debian 12 · Node 22.23.2 · Postgres 15 (local socket) · Caddy 2.11.4 |
 | Health | `curl https://api.excerlock.com/v1/health` → `{"ok":true,...}`; `/v1/ready` → `{"ready":true,...}` |
 
