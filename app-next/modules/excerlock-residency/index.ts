@@ -10,7 +10,7 @@ export type ResidencyStatus = {
   lastUpdateAt: number;
   availableMemoryMb: number;
 };
-type ResidencyModule = { setWanted(wanted: boolean, foreground: boolean): void; status(): ResidencyStatus };
+type ResidencyModule = { setWanted(wanted: boolean, foreground: boolean, until: number): void; status(): ResidencyStatus };
 
 export function getResidencyModule(): ResidencyModule | null {
   return requireOptionalNativeModule<ResidencyModule>('ExcerlockResidency');

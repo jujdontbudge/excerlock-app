@@ -6,7 +6,7 @@ export type AwakeSessionState = {
   authorization: LocationAuthorizationStatus;
   error: string | null;
 };
-export type ResidencyAnchor = { setWanted(wanted: boolean, foreground: boolean): void };
+export type ResidencyAnchor = { setWanted(wanted: boolean, foreground: boolean, until: number): void };
 export class AwakeSession {
   private state: AwakeSessionState;
   constructor(private readonly location: LocationProvider, private readonly residency: ResidencyAnchor | null = null) {
@@ -20,7 +20,7 @@ export class AwakeSession {
   snapshot(): AwakeSessionState {
     return { ...this.state };
   }
-  async reconcile(windowActive: boolean): Promise<AwakeSessionState> {
+  async reconcile(windowActive: boolean, relaunchUntil: number | null = null): Promise<AwakeSessionState> {
     this.state = {
       ...this.state,
       requested: windowActive,
@@ -34,7 +34,8 @@ export class AwakeSession {
         await this.location.startWalkKeepAlive();
       }
       this.state = { ...this.state, running: this.location.isWalkKeepAliveActive() };
-      this.residency?.setWanted(windowActive && this.state.running, AppState.currentState === 'active');
+      const relaunch = windowActive && this.state.running && relaunchUntil !== null && relaunchUntil > Date.now();
+      this.residency?.setWanted(relaunch, AppState.currentState === 'active', relaunch ? relaunchUntil : 0);
     } catch (error) {
       this.state = {
         ...this.state,

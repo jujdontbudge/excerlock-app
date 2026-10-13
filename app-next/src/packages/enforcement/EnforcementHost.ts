@@ -33,6 +33,7 @@ export class EnforcementHost {
   private disposed = false;
   private previous: WatchdogRegistration | null = null;
   private watchdogMayBeLive = true;
+  private renewalFailureReported: WatchdogRegistration | null = null;
   private windowsSignature: string | null = null;
   private traceSequence = 0;
   constructor(private deps: {
@@ -125,7 +126,8 @@ export class EnforcementHost {
           this.previous = plan.register;
         } catch (error) {
           if (!renewing || !fresh() || !this.previous || !this.stillProtects(this.previous, snapshot)) throw error;
-          this.deps.report(error);
+          if (this.renewalFailureReported !== this.previous) this.deps.report(error);
+          this.renewalFailureReported = this.previous;
         }
         if (!this.previous || this.previous.end <= this.deps.read().now) throw new Error('No live watchdog protection');
         if (!fresh()) return 'superseded';

@@ -282,7 +282,7 @@ public final class ExcerlockEnforcementModule: Module {
         let sameContext: (ExcerlockMonitorRegistration) -> Bool = {
           $0.policyGeneration == policyGeneration && $0.accountGeneration == accountGeneration && $0.selectionVersion == selectionVersion
         }
-        let staleIds = registrations.filter { !$0.value.committed && $0.value.revision != revision }.map(\.key)
+        let staleIds = registrations.filter { !$0.value.committed && ($0.value.revision != revision || now - $0.value.registeredAt > 30_000) }.map(\.key)
         stale.append(contentsOf: staleIds); staleIds.forEach { registrations.removeValue(forKey: $0) }
         var committedId: String? = nil
         if let id = prior?.committedId, state == "conditional", let registration = registrations[id], sameContext(registration), registration.end > now { committedId = id }
@@ -304,10 +304,12 @@ public final class ExcerlockEnforcementModule: Module {
           windows: keptWindows,
           shielded: prior?.shielded ?? false)
         try store.writeLocked(record)
-        let orphans = DeviceActivityCenter().activities.map(\.rawValue).filter {
-          $0.hasPrefix(excerlockWatchdogPrefix) && registrations[$0] == nil && !stale.contains($0)
+        if prior == nil || prior?.revision != revision {
+          let orphans = DeviceActivityCenter().activities.map(\.rawValue).filter {
+            $0.hasPrefix(excerlockWatchdogPrefix) && registrations[$0] == nil && !stale.contains($0)
+          }
+          stale.append(contentsOf: orphans)
         }
-        stale.append(contentsOf: orphans)
       }
       if !stale.isEmpty { DeviceActivityCenter().stopMonitoring(stale.map { DeviceActivityName($0) }) }
       #if EXCERLOCK_LINKED_RECORDER_TRACE

@@ -10,7 +10,7 @@ export const expoLocalNotifications: LocalNotificationsBackend = {
       : await Notifications.getPermissionsAsync();
     const status: PermissionStatus = result.granted || result.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
       ? 'granted' : result.status === 'undetermined' ? 'notDetermined' : 'denied';
-    permissionsStore.getState().patch({ notifications: status });
+    if (permissionsStore.getState().data.notifications !== status) permissionsStore.getState().patch({ notifications: status });
     return status;
   },
   schedule(plan) {
@@ -20,5 +20,8 @@ export const expoLocalNotifications: LocalNotificationsBackend = {
       trigger: plan.at <= Date.now() ? null : { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(plan.at) },
     });
   },
-  cancel: (id) => Notifications.cancelScheduledNotificationAsync(id),
+  async cancel(id) {
+    await Notifications.cancelScheduledNotificationAsync(id);
+    if (id === 'background_check') await Notifications.dismissNotificationAsync(id);
+  },
 };

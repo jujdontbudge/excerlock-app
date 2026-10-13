@@ -147,20 +147,16 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         await detection.awake.reconcile(false);
       },
     );
-    const backgroundCheck = new BackgroundCheck({
-      arm: () => client.notifications.armBackgroundCheck(),
-      disarm: () => client.notifications.cancel('background_check'),
-      report: (error) => options.reportError(error),
-    });
-    cleanups.push(() => backgroundCheck.dispose());
-    const syncBackgroundCheck = (awakeRequested: boolean) =>
-      backgroundCheck.sync(
-        awakeRequested &&
-          AppState.currentState !== 'active' &&
-          settingsStore.getState().data.notificationsEnabled &&
-          client.notifications.status() === 'granted' &&
-          rulesStore.getState().data.rules.some((rule) => rule.enabled && rule.activity === 'walking'),
-      );
+    const launchAppState = currentAppState();
+    const walkingWindowEnd = (): number | null => {
+      const ends = rulesStore
+        .getState()
+        .data.rules.filter((rule) => rule.enabled && rule.activity === 'walking')
+        .flatMap((rule) => currentInstances(rule, clock.readNow(), clock.timezone()))
+        .map((instance) => Date.parse(instance.end))
+        .filter((end) => Number.isFinite(end));
+      return ends.length ? Math.max(...ends) : null;
+    };
     const walking = new NativeWalkingPort({
       service: detection.service,
       motion: detection.motion,
@@ -252,7 +248,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           permissions: permissionsStore.getState().data,
         });
         await Promise.all(
-          ['trial_ending', 'open_to_unlock', 'shield_open'].map((id) => client.notifications.cancel(id)),
+          ['trial_ending', 'open_to_unlock', 'shield_open', 'background_check'].map((id) => client.notifications.cancel(id)),
         );
         selectionVersion = `deleted:${Date.now()}`;
         await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
@@ -267,6 +263,20 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         listeners.forEach((listener) => listener());
       },
     });
+    const backgroundCheck = new BackgroundCheck({
+      arm: () => client.notifications.armBackgroundCheck(),
+      disarm: () => client.notifications.cancel('background_check'),
+      report: (error) => options.reportError(error),
+    });
+    cleanups.push(() => backgroundCheck.dispose());
+    const syncBackgroundCheck = (keepAliveRunning: boolean) =>
+      backgroundCheck.sync(
+        keepAliveRunning &&
+          AppState.currentState !== 'active' &&
+          settingsStore.getState().data.notificationsEnabled &&
+          client.notifications.status() === 'granted' &&
+          walkingWindowEnd() !== null,
+      );
     cleanups.push(() => client.dispose());
     readStrideGatePayload = () => client.analytics.flags.getPayload('stride_gate_config');
     const shieldCopy = createShieldCopyWriter({
@@ -522,9 +532,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             }
             const awake = await detection.awake.reconcile(
               snapshot.state === 'shield' || snapshot.state === 'conditional',
+              walkingWindowEnd(),
             );
             if (awake.error) options.reportError(new Error(awake.error));
-            syncBackgroundCheck(awake.requested);
+            syncBackgroundCheck(awake.requested && awake.running);
             let applied: Awaited<ReturnType<typeof host.reconcile>>;
             try {
               applied = await host.reconcile(wakeSource !== 'manual');
@@ -807,7 +818,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       const booted = client.auth.identity();
       if (booted.kind === 'canonical' && booted.userId) await activateAccount(booted).catch(options.reportError);
       if (client.auth.identity().kind !== 'deleting') deletionSuspended = false;
-      client.analytics.track('runtime_launched', { app_state: currentAppState() });
+      client.analytics.track('runtime_launched', { app_state: launchAppState });
       await reconcile('foreground');
       stops.push(
         rulesStore.subscribe(request),
@@ -821,7 +832,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         }),
       );
       const appState = AppState.addEventListener('change', (state) => {
-        syncBackgroundCheck(state !== 'active' && detection.awake.snapshot().requested);
+        const awake = detection.awake.snapshot();
+        syncBackgroundCheck(state !== 'active' && awake.requested && awake.running);
         void reconcile(state === 'active' ? 'foreground' : 'background', state === 'active' ? 'full' : 'tick').catch(
           options.reportError,
         );
