@@ -12,4 +12,5 @@ export class NativeEnforcementTransport implements EnforcementTransport {
   cancelWatchdogs(revision: number): Promise<void> { return this.native.cancelWatchdogs(revision); }
   replaceWindows(windows: { id: string; start: number; end: number }[], revision: number): Promise<void> { return this.native.replaceWindows(windows, revision); }
   policyRevision(): number { return this.native.getPolicyRevision(); }
+  fastWatchdog(): boolean { return this.native.watchdogWarning === true; }
 }

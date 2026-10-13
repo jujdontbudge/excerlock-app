@@ -65,10 +65,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: linkedRecorderResearch ? [linkedRecorderConfig.URL_SCHEME] : ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    // 4: Expo SDK 57 patch updates changed native iOS code in expo, expo-location,
-    // expo-notifications, expo-updates and others — JS built against them must never
-    // reach a runtime-3 binary (docs/ota.md "Bumping runtimeVersion").
-    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '4',
+    // 5: the residency module and the watchdog warning are new native code (ADR 0076);
+    // JS built for 5 must never reach a runtime-4 binary (docs/ota.md "Bumping runtimeVersion").
+    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '5',
     ios: {
       ...config.ios,
       ...(linkedRecorderResearch ? researchIos(nativeConfig.ios, linkedIdentifiers) : nativeConfig.ios),

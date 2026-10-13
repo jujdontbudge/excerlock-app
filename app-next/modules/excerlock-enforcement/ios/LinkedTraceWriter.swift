@@ -258,7 +258,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       ]
     ],
     .extensionCallback: [
-      "callback": ["threshold_reached", "interval_started", "interval_ended"],
+      "callback": ["threshold_reached", "interval_started", "interval_ended", "interval_warning"],
       "status": ["received", "applied", "rejected", "failed"],
       "reason": [
         "start_only", "policy_error", "policy_version", "not_conditional", "not_committed",

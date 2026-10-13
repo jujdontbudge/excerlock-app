@@ -5,6 +5,7 @@ import type { WatchdogRegistration } from '../../../src/packages/ports/watchdog'
 
 export class ExcerlockEnforcementModule extends NativeModule {
   getPolicyRevision!: () => number;
+  watchdogWarning?: boolean;
   publish!: (snapshot: EnforcementSnapshot) => Promise<readonly string[]>;
   shield!: (revision: number) => Promise<boolean>;
   unshield!: (revision: number) => Promise<boolean>;

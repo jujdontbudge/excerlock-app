@@ -1,3 +1,4 @@
+import { AppState } from 'react-native';
 import type { LocationAuthorizationStatus, LocationProvider } from '../location/LocationProvider';
 export type AwakeSessionState = {
   requested: boolean;
@@ -5,9 +6,10 @@ export type AwakeSessionState = {
   authorization: LocationAuthorizationStatus;
   error: string | null;
 };
+export type ResidencyAnchor = { setWanted(wanted: boolean, foreground: boolean): void };
 export class AwakeSession {
   private state: AwakeSessionState;
-  constructor(private readonly location: LocationProvider) {
+  constructor(private readonly location: LocationProvider, private readonly residency: ResidencyAnchor | null = null) {
     this.state = {
       requested: false,
       running: location.isWalkKeepAliveActive(),
@@ -32,6 +34,7 @@ export class AwakeSession {
         await this.location.startWalkKeepAlive();
       }
       this.state = { ...this.state, running: this.location.isWalkKeepAliveActive() };
+      this.residency?.setWanted(windowActive && this.state.running, AppState.currentState === 'active');
     } catch (error) {
       this.state = {
         ...this.state,

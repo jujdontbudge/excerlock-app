@@ -1,5 +1,5 @@
 import type { ScheduleIssue } from '../schedule/scheduleWindowPlan';
-import { planWatchdog, type WatchdogContext, type WatchdogRegistration } from '../ports/watchdog';
+import { planWatchdog, WATCHDOG_FAST_RENEW_MS, type WatchdogContext, type WatchdogRegistration } from '../ports/watchdog';
 import { linkedTrace } from '@linked-trace';
 
 export type EnforcementSnapshot = {
@@ -23,6 +23,7 @@ export interface EnforcementTransport {
   cancelWatchdogs(revision: number): Promise<void>;
   replaceWindows(windows: { id: string; start: number; end: number }[], snapshotRevision: number): Promise<void>;
   policyRevision?(): number;
+  fastWatchdog?(): boolean;
 }
 export type EnforcementResult = 'applied' | 'preserved' | 'superseded';
 
@@ -93,10 +94,11 @@ export class EnforcementHost {
         const plan = planWatchdog({
           now: snapshot.now, decision: snapshot.relief, entitlement: 'active', canEnforce: true,
           deleting: false, context: snapshot.context, eligibleUntil: snapshot.eligibleUntil,
-          previous: this.previous, force,
+          previous: this.previous, force, fast: native.fastWatchdog?.() === true,
         });
         if (plan.cancel) throw new Error('Conditional relief has no eligible watchdog window');
-        if (plan.register) {
+        const renewing = this.previous !== null && plan.register !== null && this.stillProtects(this.previous, snapshot);
+        if (plan.register) try {
           const stageId = __LINKED_RECORDER_TRACE__ ? this.traceId('stage', snapshot.revision) : '';
           if (__LINKED_RECORDER_TRACE__) this.traceWatchdog(stageId, 'stage', 'attempt', snapshot.revision, plan.register);
           let id: string;
@@ -121,6 +123,9 @@ export class EnforcementHost {
           if (!committed) throw new Error('Watchdog commit rejected');
           if (!fresh()) return 'superseded';
           this.previous = plan.register;
+        } catch (error) {
+          if (!renewing || !fresh() || !this.previous || !this.stillProtects(this.previous, snapshot)) throw error;
+          this.deps.report(error);
         }
         if (!this.previous || this.previous.end <= this.deps.read().now) throw new Error('No live watchdog protection');
         if (!fresh()) return 'superseded';
@@ -137,6 +142,16 @@ export class EnforcementHost {
       this.deps.report(error);
       throw error;
     }
+  }
+
+  private stillProtects(registration: WatchdogRegistration, snapshot: EnforcementSnapshot): boolean {
+    const now = this.deps.read().now;
+    const deadline = registration.fireAt ?? registration.end;
+    return deadline - now >= WATCHDOG_FAST_RENEW_MS && registration.end > now &&
+      registration.policyGeneration === snapshot.context.policyGeneration &&
+      registration.accountGeneration === snapshot.context.accountGeneration &&
+      registration.selectionVersion === snapshot.context.selectionVersion &&
+      registration.eligibleUntil === snapshot.eligibleUntil;
   }
 
   private async stopWatchdogBeforePublishDropsIt(native: EnforcementTransport): Promise<void> {

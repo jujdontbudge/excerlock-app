@@ -59,6 +59,7 @@ import { isAccountDataReady } from '../../model/accountDataReady';
 import { createActivityAccountData } from '../../activity/ActivityAccountData';
 import { expoNotificationResponses } from '../../notifications/ExpoNotificationResponses';
 import { BackgroundCheck } from './BackgroundCheck';
+import { WATCHDOG_TICK_MS } from '../../ports/watchdog';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
@@ -834,6 +835,13 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           void reconcile('manual', 'tick').catch(options.reportError);
         }),
       );
+      if (native.watchdogWarning === true) {
+        const renew = setInterval(() => {
+          if (AppState.currentState !== 'active' && lastEnforcement?.state === 'conditional')
+            void reconcile('manual', 'tick').catch((error: unknown) => options.reportError(error));
+        }, WATCHDOG_TICK_MS);
+        stops.push(() => clearInterval(renew));
+      }
       stops.push(
         registerHeadlessDetectionHandler(async () => {
           await reconcile('geofence');

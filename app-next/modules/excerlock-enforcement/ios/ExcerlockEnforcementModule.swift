@@ -10,7 +10,7 @@ import UIKit
 
 struct EnforcementContextInput: Record { @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = "" }
 struct EnforcementSnapshotInput: Record { @Field var revision: Int = 0; @Field var now: Double = 0; @Field var context = EnforcementContextInput(); @Field var state: String = "unknown"; @Field var relief: String?; @Field var eligibleUntil: Double = 0; @Field var openReason: String?; @Field var futureEnforcementEligible: Bool = false }
-struct WatchdogInput: Record { @Field var start: Double = 0; @Field var end: Double = 0; @Field var registeredAt: Double = 0; @Field var eligibleUntil: Double = 0; @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = "" }
+struct WatchdogInput: Record { @Field var start: Double = 0; @Field var end: Double = 0; @Field var registeredAt: Double = 0; @Field var eligibleUntil: Double = 0; @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = ""; @Field var fireAt: Double = 0 }
 struct WindowInput: Record { @Field var id: String = ""; @Field var start: Double = 0; @Field var end: Double = 0 }
 
 public final class ExcerlockEnforcementModule: Module {
@@ -39,6 +39,7 @@ public final class ExcerlockEnforcementModule: Module {
       try ShieldCopyOverrides.write(json, defaults: defaults)
     }
     Function("getPolicyRevision") { () throws -> Int in try self.getPolicyRevision() }
+    Constant("watchdogWarning") { true }
     #if EXCERLOCK_LINKED_RECORDER_TRACE
     Function("startLinkedTrace") { (sessionId: String, nonce: String) throws -> [String: Any] in
       let status = try LinkedTraceWriter.shared.startSession(sessionId: sessionId, nonce: nonce)
@@ -285,7 +286,7 @@ public final class ExcerlockEnforcementModule: Module {
         stale.append(contentsOf: staleIds); staleIds.forEach { registrations.removeValue(forKey: $0) }
         var committedId: String? = nil
         if let id = prior?.committedId, state == "conditional", let registration = registrations[id], sameContext(registration), registration.end > now { committedId = id }
-        if let old = prior?.committedId, committedId == nil { registrations.removeValue(forKey: old) }
+        if let old = prior?.committedId, committedId == nil { registrations.removeValue(forKey: old); stale.append(old) }
         // Windows from another policy/account/selection context leave the record
         // here; their DeviceActivity monitors must leave the system with them, or
         // every context change leaks a set and the app hits Apple's activity
@@ -303,6 +304,10 @@ public final class ExcerlockEnforcementModule: Module {
           windows: keptWindows,
           shielded: prior?.shielded ?? false)
         try store.writeLocked(record)
+        let orphans = DeviceActivityCenter().activities.map(\.rawValue).filter {
+          $0.hasPrefix(excerlockWatchdogPrefix) && registrations[$0] == nil && !stale.contains($0)
+        }
+        stale.append(contentsOf: orphans)
       }
       if !stale.isEmpty { DeviceActivityCenter().stopMonitoring(stale.map { DeviceActivityName($0) }) }
       #if EXCERLOCK_LINKED_RECORDER_TRACE
@@ -322,8 +327,10 @@ public final class ExcerlockEnforcementModule: Module {
   private func stageWatchdog(plan: WatchdogInput, revision: Int) async throws -> String {
     let start = plan.start; let end = plan.end; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
       let policyGeneration = plan.policyGeneration; let accountGeneration = plan.accountGeneration; let selectionVersion = plan.selectionVersion
+      let fireAt: Double? = plan.fireAt > 0 ? plan.fireAt : nil
       guard end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
             end <= eligibleUntil else { throw ExcerlockPolicyError.invalidSnapshot }
+      if let fireAt { guard fireAt > start, fireAt < end, end - fireAt >= 60 * 1000 else { throw ExcerlockPolicyError.invalidSnapshot } }
       let id = excerlockWatchdogPrefix + "stage." + UUID().uuidString
       #if EXCERLOCK_LINKED_RECORDER_TRACE
       let linkedTraceOperationId = UUID().uuidString.lowercased()
@@ -337,7 +344,7 @@ public final class ExcerlockEnforcementModule: Module {
       let registration = ExcerlockMonitorRegistration(id: id, revision: revision,
         policyGeneration: policyGeneration, accountGeneration: accountGeneration,
         selectionVersion: selectionVersion, start: start, end: end,
-        registeredAt: registeredAt, eligibleUntil: eligibleUntil, committed: false)
+        registeredAt: registeredAt, eligibleUntil: eligibleUntil, committed: false, fireAt: fireAt)
       try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
         guard record.revision == revision, record.state == "conditional", record.policyGeneration == policyGeneration, record.accountGeneration == accountGeneration, record.selectionVersion == selectionVersion else { throw ExcerlockPolicyError.staleRevision }
@@ -347,9 +354,11 @@ public final class ExcerlockEnforcementModule: Module {
       }
       do {
         let calendar = Calendar.autoupdatingCurrent
+        let warningSeconds = fireAt.map { Int(((end - $0) / 1000).rounded(.down)) }
         let schedule = DeviceActivitySchedule(
           intervalStart: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: start / 1000)),
-          intervalEnd: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: end / 1000)), repeats: false)
+          intervalEnd: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: end / 1000)), repeats: false,
+          warningTime: warningSeconds.map { DateComponents(minute: $0 / 60, second: $0 % 60) })
         try DeviceActivityCenter().startMonitoring(DeviceActivityName(id), during: schedule)
         let stillCurrent = try ExcerlockPolicyStore.shared.locked { () -> Bool in
           let record = try ExcerlockPolicyStore.shared.readLocked()

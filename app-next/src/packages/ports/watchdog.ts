@@ -2,6 +2,9 @@ import type { Entitlement, LockDecision } from '../model/types';
 
 export const WATCHDOG_MS = 15 * 60_000;
 export const WATCHDOG_RENEW_MS = 5 * 60_000;
+export const WATCHDOG_FIRE_MS = 90_000;
+export const WATCHDOG_FAST_RENEW_MS = 30_000;
+export const WATCHDOG_TICK_MS = 15_000;
 export const MAX_DEVICE_ACTIVITY_MONITORS = 20;
 export type WatchdogContext = {
   policyGeneration: number;
@@ -13,6 +16,7 @@ export type WatchdogRegistration = WatchdogContext & {
   end: number;
   registeredAt: number;
   eligibleUntil: number;
+  fireAt?: number;
 };
 export type WatchdogInput = {
   now: number;
@@ -24,6 +28,7 @@ export type WatchdogInput = {
   eligibleUntil: number;
   previous: WatchdogRegistration | null;
   force?: boolean;
+  fast?: boolean;
 };
 export type WatchdogPlan = { register: WatchdogRegistration | null; cancel: boolean };
 const idle = (): WatchdogPlan => ({ register: null, cancel: false });
@@ -62,13 +67,17 @@ export function planWatchdog(input: WatchdogInput): WatchdogPlan {
   if (input.entitlement === 'unknown') {
     return previous && !sameContext(previous, input.context) ? cancel() : idle();
   }
+  const fast = input.fast === true && input.decision !== 'unlockedAtGym';
   if (previous && !input.force && sameContext(previous, input.context) &&
     previous.eligibleUntil === input.eligibleUntil && previous.end > input.now &&
-    input.now - previous.registeredAt < WATCHDOG_RENEW_MS) return idle();
+    (fast ? previous.fireAt !== undefined && input.now - previous.registeredAt < WATCHDOG_FAST_RENEW_MS
+      : previous.fireAt === undefined && input.now - previous.registeredAt < WATCHDOG_RENEW_MS)) return idle();
 
   const end = Math.min(input.now + WATCHDOG_MS, input.eligibleUntil);
   const start = Math.min(input.now, end - WATCHDOG_MS);
-  return { register: { ...input.context, start, end, registeredAt: input.now, eligibleUntil: input.eligibleUntil }, cancel: false };
+  const register: WatchdogRegistration = { ...input.context, start, end, registeredAt: input.now, eligibleUntil: input.eligibleUntil };
+  const fireAt = Math.min(input.now + WATCHDOG_FIRE_MS, end - 60_000);
+  return { register: fast && fireAt >= input.now + WATCHDOG_FAST_RENEW_MS ? { ...register, fireAt } : register, cancel: false };
 }
 
 export function assertMonitorBudget(counts: readonly number[]): void {

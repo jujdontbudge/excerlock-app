@@ -12,6 +12,23 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     handle(activity, callback: "interval_ended", started: false)
   }
 
+  override func intervalWillEndWarning(for activity: DeviceActivityName) {
+    super.intervalWillEndWarning(for: activity)
+    guard activity.rawValue.hasPrefix(excerlockWatchdogPrefix) else { return }
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    traceCallback(activity, callback: "interval_warning", status: "received", reason: nil)
+    do {
+      let result = try ExcerlockPolicyStore.shared.handleWatchdogResult(activity.rawValue)
+      traceCallback(activity, callback: "interval_warning", status: result.applied ? "applied" : "rejected", reason: result.reason)
+    } catch {
+      traceCallback(activity, callback: "interval_warning", status: "failed", reason: "policy_error")
+    }
+    LinkedTraceWriter.shared.flush()
+    #else
+    _ = try? ExcerlockPolicyStore.shared.handleWatchdog(activity.rawValue)
+    #endif
+  }
+
   override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
     super.eventDidReachThreshold(event, activity: activity)
     guard activity.rawValue.hasPrefix(excerlockWatchdogPrefix) else { return }

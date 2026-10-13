@@ -12,6 +12,7 @@ import { fastWalkingDetection } from './filmingModeStore';
 import { PlacementAdapter } from './lib/detection/PlacementAdapter';
 import { decimateDeviceMotion, strideSourceFrom } from './lib/detection/deviceMotionStreams';
 import { DetectionService, type DetectionWake } from './DetectionService';
+import { createResidencyModuleClient } from './lib/native/ResidencyModuleClient';
 import { AwakeSession } from './lib/detection/AwakeSession';
 import { StepsDetectionAdapter } from './lib/detection/StepsDetectionAdapter';
 import { registerHeadlessDetectionHandler } from './headlessRegistry';
@@ -44,7 +45,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     walkingTimezone: () => options.getWakeContext().timezone,
     onError: options.onError,
   });
-  const awake = new AwakeSession(location);
+  const awake = new AwakeSession(location, createResidencyModuleClient());
   const steps = new StepsDetectionAdapter(rawMotion);
   const unregisterHeadless = options.registerHeadless === false ? () => {} : registerHeadlessDetectionHandler(async () => {
     const context = options.getWakeContext();

@@ -8,11 +8,12 @@ let excerlockSelectionHandle = "excerlock.selection.locked.v1"
 let excerlockSelectionDefaultsKey = "familyActivitySelectionIds"
 let excerlockWatchdogPrefix = "excerlock.watchdog."
 let excerlockWindowPrefix = "excerlock.window."
+let excerlockWatchdogEarlyToleranceMs: Double = 5_000
 
 struct ExcerlockMonitorRegistration: Codable, Equatable {
   let id: String; let revision: Int; let policyGeneration: Int; let accountGeneration: Int
   let selectionVersion: String; let start: Double; let end: Double; let registeredAt: Double
-  let eligibleUntil: Double; var committed: Bool
+  let eligibleUntil: Double; var committed: Bool; var fireAt: Double? = nil
 }
 struct ExcerlockScheduledWindow: Codable, Equatable {
   let monitorId: String; let id: String; let revision: Int; let policyGeneration: Int
@@ -145,7 +146,7 @@ final class ExcerlockPolicyStore {
     guard r.committedId == id else { return .init(applied: false, reason: "not_committed") }
     guard let m = r.registrations[id], m.committed else { return .init(applied: false, reason: "registration_missing") }
     guard m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion else { return .init(applied: false, reason: "generation_mismatch") }
-    guard now >= m.end else { return .init(applied: false, reason: "before_end") }
+    guard now >= (m.fireAt.map { $0 - excerlockWatchdogEarlyToleranceMs } ?? m.end) else { return .init(applied: false, reason: "before_end") }
     guard now < m.eligibleUntil, now < r.eligibleUntil else { return .init(applied: false, reason: "ineligible") }
     guard r.windows.isEmpty || r.windows.values.contains(where: { windowActive($0, now: now) }) else { return .init(applied: false, reason: "outside_window") }
     try apply(true, record: &r, initiator: "watchdog"); try writeLocked(r)
