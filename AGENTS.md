@@ -53,6 +53,8 @@ Read `app-next/src/packages/ui/UI-STYLE.md` before touching a screen. Take every
 
 These need the user's explicit go-ahead in the current conversation: pushing, merging to `main`, deploying the server, publishing an OTA update, uploading to TestFlight, submitting to App Review, sending email, and changing production data or third-party dashboards. `main` in `JohanSardar/excerlock-app` is the release source. Run authorized releases under the release lock described in `docs/agents/operations.md`. Leave other agents' uncommitted work untouched.
 
+Complimentary Premium by email: `docs/agents/access.md` and `./excer access --help`. `--prod` grant/revoke changes production data and requires explicit authorization.
+
 ## Production
 
 The API runs on Google Compute Engine: instance `excerlock-api` in `us-central1-a` (Debian, Node, local PostgreSQL, systemd, Caddy). Read `deploy/README.md` before touching it, and deploy only through `deploy/deploy.sh`, dry run first. After a deploy, check both `/v1/health` and `/v1/ready`, locally and at the public URL.

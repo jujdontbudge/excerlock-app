@@ -83,6 +83,7 @@ export async function createClientServices(options: {
         { environment: backend.environment, now: Date.now, identity: () => identity.auth.identity() },
       )
     : unavailableSubscriptionAdmission();
+  identity.subscription.bindAdmission(subscriptionAdmission);
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),
     {

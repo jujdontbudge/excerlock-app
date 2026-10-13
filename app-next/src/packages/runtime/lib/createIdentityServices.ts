@@ -25,6 +25,7 @@ export async function createIdentityServices(options: {
   beforeAccountSwitch?(): Promise<void>;
   prepareAccount?(identity: AuthIdentity): Promise<void>;
   sdk?: AdaptySdkPort;
+  secureBackend?: AuthServiceConfig['secureBackend'];
 }) {
   let authServices: AuthServices | undefined;
   const getIdentity = (): AuthIdentity => authServices?.auth.identity() ?? {
@@ -52,6 +53,7 @@ export async function createIdentityServices(options: {
   try {
     authServices = await createAuthServices({
       ...options.config,
+      secureBackend: options.secureBackend,
       analyticsIdentify: (id) => analytics.identify(id), analyticsReset: () => analytics.reset(),
       subscriptionIdentify: (id) => subscription.identify(id), subscriptionReset: () => subscription.reset(),
       getPosthogDistinctId: () => analytics.getDistinctId(),

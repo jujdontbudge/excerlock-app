@@ -142,3 +142,7 @@ asc web subscriptions availability remove-from-sale --subscription-id <ASC_ID>
 ```
 
 Anyone already subscribed to a product taken off sale keeps it and continues renewing.
+
+## Complimentary Premium
+
+Server-owned grants by confirmed account email are independent of purchases and partitioned by authorization environment (ADR 0077). Agents use `./excer access grant|revoke|list`; see [the workflow](agents/access.md). Adapty still owns paid subscriptions, products, trials, restore and pricing.

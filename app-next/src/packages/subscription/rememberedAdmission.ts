@@ -4,6 +4,7 @@ import { createPersistedStore } from '../persistence/createPersistedStore';
 import * as v from '../persistence/validation';
 
 type RememberedAdmission = {
+  source?: 'complimentary';
   userId: string;
   environment: StoreEnvironment;
   expiresAt: string;
@@ -19,6 +20,7 @@ export const rememberedAdmissionStore = createPersistedStore<{ admission: Rememb
   {
     admission: v.nullable(
       v.shape({
+        source: (value) => value === undefined || value === 'complimentary',
         userId: v.text,
         environment: v.oneOf(['production', 'sandbox']),
         expiresAt: v.iso,
@@ -46,7 +48,7 @@ export function rememberAdmission(
       admission.environment !== options.environment ||
       live.userId !== identity.userId ||
       live.generation !== identity.generation ||
-      options.now() >= Date.parse(admission.expiresAt) + OFFLINE_GRACE_MS
+      options.now() >= Date.parse(admission.expiresAt) + (admission.source === 'complimentary' ? 0 : OFFLINE_GRACE_MS)
     )
       return null;
     return { ...admission, generation: identity.generation };
@@ -58,8 +60,14 @@ export function rememberAdmission(
     verify: async (identity) => {
       const result = await port.verify(identity);
       if (result.type === 'eligible') {
-        const { userId, environment, expiresAt, observedAt, verifiedAt } = result.lease;
-        rememberedAdmissionStore.getState().patch({ admission: { userId, environment, expiresAt, observedAt, verifiedAt } });
+        const { userId, environment, expiresAt, observedAt, verifiedAt, source } = result.lease;
+        const previous = rememberedAdmissionStore.getState().data.admission;
+        const retainPaid = source === 'complimentary' && previous && previous.source !== 'complimentary' && previous.userId === userId && previous.environment === environment && Date.parse(previous.expiresAt) + OFFLINE_GRACE_MS > Math.max(options.now(), Date.parse(expiresAt));
+        if (retainPaid) {
+          rememberedAdmissionStore.getState().patch({ admission: previous });
+          return result;
+        }
+        rememberedAdmissionStore.getState().patch({ admission: { userId, environment, expiresAt, observedAt, verifiedAt, ...(source ? { source } : {}) } });
       } else if (result.type === 'ineligible') forgetAdmission();
       return result;
     },

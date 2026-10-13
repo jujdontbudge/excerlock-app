@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 
 const REQUIRED_TABLES = [
   "users",
+  "complimentary_access_grants",
+  "complimentary_access_audit",
   "adapty_subscription_states",
   "adapty_webhook_events",
   "support_requests",
@@ -49,6 +51,14 @@ export async function checkSchemaReady(
         and not exists (
           select 1
           from (values
+            ('complimentary_access_grants', 'email'),
+            ('complimentary_access_grants', 'environment'),
+            ('complimentary_access_grants', 'expires_at'),
+            ('complimentary_access_grants', 'revoked_at'),
+            ('complimentary_access_grants', 'matched_user_id'),
+            ('complimentary_access_audit', 'grant_id'),
+            ('complimentary_access_audit', 'actor'),
+            ('complimentary_access_audit', 'occurred_at'),
             ('users', 'clerk_deleted_at'),
             ('users', 'auth_provider'),
             ('users', 'auth_deleted_at'),

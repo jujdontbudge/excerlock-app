@@ -7,10 +7,12 @@ import type {
   SubscriptionOperation,
   SubscriptionPaywall,
   SubscriptionPort,
+  SubscriptionAdmissionPort,
 } from '../ports/SubscriptionPort';
 import type { Unsubscribe } from '../model/models';
 import { forgetObservedEntitlement, noteObservedEntitlement } from './winbackSession';
 import { entitlementStore } from './entitlementStore';
+import { rememberedAdmissionStore } from './rememberedAdmission';
 import type { RunIdentityOperation } from '../identity/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './lib/entitlementMapping';
 import { ADAPTY_FALLBACK_FILE_NAME } from './lib/fallbackPaywall';
@@ -31,6 +33,37 @@ const isAlreadyOwned = (error: unknown) =>
   typeof error === 'object' && error !== null && 'adaptyCode' in error && error.adaptyCode === 107;
 
 export class AdaptySubscriptionAdapter implements SubscriptionPort {
+  private observedEntitlement: Entitlement = rememberedAdmissionStore.getState().data.admission?.source === 'complimentary'
+    ? { status: 'none', renewsAt: null }
+    : entitlementStore.getState().data.entitlement;
+  private admission: SubscriptionAdmissionPort | null = null;
+  private stopAdmission: Unsubscribe | null = null;
+  private admissionExpiry: ReturnType<typeof setTimeout> | null = null;
+  bindAdmission(port: SubscriptionAdmissionPort): void {
+    this.admission = port;
+    this.stopAdmission?.();
+    this.stopAdmission = rememberedAdmissionStore.subscribe(() => this.publishEntitlement());
+    this.publishEntitlement();
+  }
+  private effectiveEntitlement(): Entitlement {
+    const identity = this.deps.getIdentity();
+    const lease = identity.kind === 'canonical' && !identity.isAnonymous && identity.userId
+      ? this.admission?.current({ userId: identity.userId, generation: identity.generation }) : null;
+    if (lease?.source !== 'complimentary') return this.observedEntitlement;
+    const paid = this.observedEntitlement;
+    const end = paid.accessExpiresAt ?? paid.renewsAt;
+    if ((paid.status === 'active' || paid.status === 'trial') && (paid.isLifetime || !end || Date.parse(end) > Date.now())) return paid;
+    return { status: 'active', renewsAt: null, accessExpiresAt: lease.expiresAt, willRenew: false, observedAt: lease.verifiedAt };
+  }
+  private publishEntitlement(): Entitlement {
+    if (this.disposed) return entitlementStore.getState().data.entitlement;
+    const entitlement = this.effectiveEntitlement();
+    entitlementStore.getState().patch({ entitlement });
+    if (this.admissionExpiry) clearTimeout(this.admissionExpiry);
+    const end = entitlement.accessExpiresAt ? Date.parse(entitlement.accessExpiresAt) - Date.now() : 0;
+    this.admissionExpiry = end > 0 ? setTimeout(() => this.publishEntitlement(), Math.min(end + 1, 2_147_483_647)) : null;
+    return entitlement;
+  }
   private activation: Promise<void> | null = null;
   private listener: { remove(): void } | null = null;
   private expected: { userId: string; generation: number } | null = null;
@@ -79,7 +112,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   }
   entitlement(): SubscriptionEntitlement {
     return {
-      ...entitlementStore.getState().data.entitlement,
+      ...this.effectiveEntitlement(),
       offer: { trialDays: 0, reminderDaysBefore: 0, label: '' },
     };
   }
@@ -116,7 +149,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       throw new Error('Identity changed during Adapty identify');
     this.expected = { userId, generation: identity.generation };
     forgetObservedEntitlement();
-    entitlementStore.getState().patch({ entitlement: { status: 'unknown', renewsAt: null } });
+    this.observedEntitlement = { status: 'unknown', renewsAt: null };
+    this.publishEntitlement();
   }
   async reset(): Promise<void> {
     this.expected = null;
@@ -270,6 +304,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   }
   dispose(): void {
     this.disposed = true;
+    this.stopAdmission?.();
+    if (this.admissionExpiry) clearTimeout(this.admissionExpiry);
     this.listener?.remove();
     this.listener = null;
   }
@@ -306,9 +342,9 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       this.deps.getIdentity().generation !== expected.generation
     )
       return entitlementStore.getState().data.entitlement;
-    const current = entitlementStore.getState().data.entitlement;
-    const next = reduceEntitlement(current, mapEntitlement(profile), source);
-    entitlementStore.getState().patch({ entitlement: next });
+    const next = reduceEntitlement(this.observedEntitlement, mapEntitlement(profile), source);
+    this.observedEntitlement = next;
+    this.publishEntitlement();
     noteObservedEntitlement(next.status);
     if (next.status === 'active' || next.status === 'trial')
       void this.deps.recoveryJournal.confirm(expected.userId, this.deps.now()).catch(this.deps.reportError);

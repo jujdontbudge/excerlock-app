@@ -3,7 +3,7 @@ id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
 scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict]
-server: [PUT /v1/user, DELETE /v1/user]
+server: [PUT /v1/user, DELETE /v1/user, POST /v1/subscription/resync]
 depends: [setup]
 ---
 ## Sub-features
@@ -126,3 +126,55 @@ wait: 30
 - A sign-in is remembered on this install until Sign out or Delete account, so `/settings/account` opens directly for a returning account (ADR 0061; setup/returning-settings-opens). A reinstall asks for sign-in again.
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
 - The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.
+
+The complimentary local harness is enabled only in a development bundle with `EXPO_PUBLIC_EXCER_LOCAL_ACCESS=1`. It requires loopback `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_API_URL` and a local `EXPO_PUBLIC_SUPABASE_ANON_KEY`. It runs the production Supabase email-code adapter, identity coordinator, Adapty Entitlement adapter and server admission adapter. Session storage is namespaced local AsyncStorage because the reused simulator Debug binary cannot use Keychain. Adapty SDK, telemetry, sensors and Screen Time are local stand-ins; it cannot purchase or prove native shields. Provision a local confirmed email grant in the Sandbox lane, then use Welcome → Sign in → Continue with email → Send code → Verify code from the local mail sink and finish Setup. Never connect this harness to real accounts or vendor services. The following proof starts from that established user path, captures the admitted app and proves a cold relaunch. The sign-in actions and sink/database evidence are recorded separately because OTPs must not be committed.
+
+```proof
+name: complimentary-email-code-keeps-access
+open: /
+expect: Add condition | Home
+absent: Start for $0.00 | Let's try that again
+relaunch-after-expect: true
+after-relaunch-expect: Add condition | Home
+wait: 30
+```
+
+After revoking that grant in the local CLI and a successful foreground check, this focused proof verifies loss of protected access. Its precondition is a confirmed inactive paid mirror; unknown paid evidence opens verification instead.
+
+```proof
+name: complimentary-revoked-opens-paywall
+open: /
+expect: Restore purchases | Account and help
+absent: Add condition
+wait: 30
+```
+
+Sign out of the granted account, then use Welcome's email code to recover a different confirmed unpaid account with no grant and an inactive Sandbox paid mirror. The previous account's grant must not follow it.
+
+```proof
+name: complimentary-non-granted-opens-paywall
+open: /
+expect: Restore purchases | Account and help
+absent: Add condition
+wait: 30
+```
+
+The next two proofs use a verified finite complimentary grant, then stop only the isolated local API/auth services while keeping Metro running. The first runs before the response expiry; the second runs after it. Both capture cold process launches. This distinguishes cached offline access from the absence of a three-day paid grace for grants.
+
+```proof
+name: complimentary-offline-keeps-home
+open: /
+expect: Add condition | Home
+absent: Start for $0.00 | Let's try that again
+relaunch-after-expect: true
+after-relaunch-expect: Add condition | Home
+wait: 30
+```
+
+```proof
+name: complimentary-offline-expiry-closes-access
+open: /
+expect: Let's try that again | Try again | Account and help
+absent: Add condition
+wait: 30
+```

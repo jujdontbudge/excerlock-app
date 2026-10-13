@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { config } from "../packages/config/config.js";
-import { createDrizzleAdaptyWebhookRepository, createAdaptyProfileGateway, createSubscriptionResyncService, verifyXcodeTransaction, xcodeAuthorization } from "../packages/subscriptions/index.js";
+import { createComplimentaryAccessRepository, createDrizzleAdaptyWebhookRepository, createAdaptyProfileGateway, createSubscriptionResyncService, verifyXcodeTransaction, xcodeAuthorization } from "../packages/subscriptions/index.js";
+import { createSupabaseConfirmedEmailReader } from "../packages/identity/confirmedEmail.js";
 import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 
 export interface SubscriptionResync { resync(userId: string): Promise<unknown> }
@@ -20,10 +21,14 @@ export function createSubscriptionRoutes(dependencies: { resync?: SubscriptionRe
       if (keys.length > 0) {
         return reply.code(400).send({ error: { code: "INVALID_RESYNC_REQUEST", message: "Subscription resync does not accept identity or environment input" } });
       }
-      if (!config.adaptySecretKey && !dependencies.resync) return reply.code(503).send({ error: { code: "SUBSCRIPTION_RESYNC_UNAVAILABLE", message: "Subscription resync is temporarily unavailable" } });
+
       const service = dependencies.resync ?? createSubscriptionResyncService({
         repository: createDrizzleAdaptyWebhookRepository(),
-        gateway: createAdaptyProfileGateway(config.adaptySecretKey as string, config.adaptyApiUrl, fetch, config.deletionGatewayTimeoutMs),
+        gateway: config.adaptySecretKey ? createAdaptyProfileGateway(config.adaptySecretKey, config.adaptyApiUrl, fetch, config.deletionGatewayTimeoutMs) : { fetchProfile: async () => { throw new Error("Subscription resync is unavailable"); } },
+        ...(config.supabaseUrl && config.supabaseServiceRoleKey ? { complimentary: {
+          readEmail: createSupabaseConfirmedEmailReader({ supabaseUrl: config.supabaseUrl, serviceRoleKey: config.supabaseServiceRoleKey }).read,
+          readGrant: createComplimentaryAccessRepository().read,
+        } } : {}),
         authorizationEnvironment: config.subscriptionAuthorizationStoreEnvironment,
       });
       let operation = inFlight.get(userId);

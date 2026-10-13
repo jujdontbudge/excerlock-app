@@ -1,3 +1,4 @@
+import { accessCommand, accessHelp } from './commands/access.ts';
 import { gaitCommand, gaitHelp } from './commands/gait.ts';
 import { checkCommand, help as checkHelp } from './commands/check.ts';
 import { featureCommand, help as featureHelp } from './commands/feature.ts';
@@ -10,6 +11,7 @@ import { UsageError } from './lib/shell.ts';
 
 const usage = `excer: control and verification for ExcerLock
 
+  excer access grant|revoke|list     complimentary Premium by confirmed email
   excer doctor                      is this machine ready?
   excer check [--full]              static verification (typecheck, lint, invariants, ratchets)
   excer feature list|show|graph|check|routes
@@ -28,6 +30,7 @@ const usage = `excer: control and verification for ExcerLock
 Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.md.`;
 
 const helps: Record<string, string> = {
+  access: accessHelp,
   gait: gaitHelp,
   check: checkHelp,
   feature: featureHelp,
@@ -52,6 +55,8 @@ async function main(argv: string[]): Promise<number> {
     return 0;
   }
   switch (command) {
+    case 'access':
+      return accessCommand(args);
     case 'gait':
       return gaitCommand(args);
     case 'check':

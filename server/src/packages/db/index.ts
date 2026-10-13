@@ -2,6 +2,8 @@ export { closeDb, getDb } from "./client.js";
 import * as schema from "./schema.js";
 export type DatabaseSchema = typeof schema;
 export {
+  complimentaryAccessGrants,
+  complimentaryAccessAudit,
   adaptySubscriptionStates,
   adaptyWebhookEvents,
   featureRequests,

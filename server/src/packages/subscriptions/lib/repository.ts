@@ -15,7 +15,7 @@ export interface SubscriptionAuthorization {
   hasAccess: boolean;
   expiresAt: Date | null;
   observedAt: Date | null;
-  source: SubscriptionSource | null;
+  source: SubscriptionSource | "complimentary" | null;
 }
 export function authorizeEnvironment(observation: EnvironmentObservation | null, environment: AdaptyEnvironment, now = new Date()): SubscriptionAuthorization {
   const valid = observation?.environment === environment && observation.syncState === "current" && observation.status !== "unknown";

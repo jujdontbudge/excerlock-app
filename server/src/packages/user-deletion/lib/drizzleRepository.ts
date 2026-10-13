@@ -1,6 +1,8 @@
 import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
+  complimentaryAccessAudit,
+  complimentaryAccessGrants,
   adaptySubscriptionStates,
   adaptyWebhookEvents,
   featureRequestVotes,
@@ -49,6 +51,12 @@ export function createDrizzleUserDeletionRepository(
   return {
     async prepareDeletion(userId, deletedAt, provider = "supabase") {
       return database.transaction(async (transaction) => {
+        await transaction.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+        const erasedGrants = await transaction.update(complimentaryAccessGrants).set({ email: null, note: null, matchedUserId: null, revokedAt: deletedAt, revokedBy: "account-deletion" }).where(eq(complimentaryAccessGrants.matchedUserId, userId)).returning({ id: complimentaryAccessGrants.id });
+        for (const grant of erasedGrants) {
+          await transaction.update(complimentaryAccessAudit).set({ note: null }).where(eq(complimentaryAccessAudit.grantId, grant.id));
+          await transaction.insert(complimentaryAccessAudit).values({ id: crypto.randomUUID(), grantId: grant.id, action: "erase", actor: "account-deletion", occurredAt: deletedAt });
+        }
         await transaction
           .insert(users)
           .values({

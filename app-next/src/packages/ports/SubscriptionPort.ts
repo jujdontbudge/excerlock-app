@@ -45,6 +45,7 @@ export type PurchaseResult =
   | { type: 'user_cancelled' | 'pending' | 'already_subscribed' };
 export type StoreEnvironment = 'production' | 'sandbox';
 export type SubscriptionAdmissionLease = {
+  source?: 'complimentary';
   userId: string;
   generation: number;
   environment: StoreEnvironment;

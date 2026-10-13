@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -262,3 +263,26 @@ export type AdaptySubscriptionState =
   typeof adaptySubscriptionStates.$inferSelect;
 export type NewAdaptySubscriptionState =
   typeof adaptySubscriptionStates.$inferInsert;
+
+export const complimentaryAccessGrants = pgTable("complimentary_access_grants", {
+  id: text("id").primaryKey(),
+  email: text("email"),
+  environment: text("environment").$type<AdaptyEnvironment>().notNull(),
+  grantedBy: text("granted_by").notNull(),
+  grantedAt: timestamp("granted_at", { withTimezone: true }).notNull(),
+  note: text("note"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokedBy: text("revoked_by"),
+  matchedUserId: text("matched_user_id").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [uniqueIndex("complimentary_access_active_email_environment").on(table.email, table.environment).where(sql`${table.revokedAt} is null`)]);
+
+export const complimentaryAccessAudit = pgTable("complimentary_access_audit", {
+  id: text("id").primaryKey(),
+  grantId: text("grant_id").notNull().references(() => complimentaryAccessGrants.id),
+  action: text("action").$type<"grant" | "revoke" | "erase">().notNull(),
+  actor: text("actor").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  note: text("note"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+});

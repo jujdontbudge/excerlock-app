@@ -4,6 +4,7 @@ import type {
   SubscriptionAdmissionPort,
   SubscriptionAdmissionResult,
 } from '../ports/SubscriptionPort';
+import { forgetAdmission, rememberedAdmissionStore } from './rememberedAdmission';
 
 type AuthContext = { accessToken: string; userId: string; generation: number };
 type AuthorizationResponse = {
@@ -12,10 +13,11 @@ type AuthorizationResponse = {
   hasAccess: boolean;
   expiresAt: string | null;
   observedAt: string | null;
-  source: 'webhook' | 'resync' | null;
+  source: 'webhook' | 'resync' | 'complimentary' | null;
 };
 type ResyncResponse = {
   accountId: string;
+  complimentaryAccessChecked?: boolean;
   authorization: AuthorizationResponse;
   verifiedAt: string;
 };
@@ -35,7 +37,7 @@ function parseResponse(value: unknown): ResyncResponse | null {
   if (typeof authorization.hasAccess !== 'boolean') return null;
   if (authorization.expiresAt !== null && !finiteDate(authorization.expiresAt)) return null;
   if (authorization.observedAt !== null && !finiteDate(authorization.observedAt)) return null;
-  if (authorization.source !== null && !['webhook', 'resync'].includes(String(authorization.source))) return null;
+  if (authorization.source !== null && !['webhook', 'resync', 'complimentary'].includes(String(authorization.source))) return null;
   return value as ResyncResponse;
 }
 
@@ -94,6 +96,10 @@ export function createServerSubscriptionAdmission(options: {
       return { type: 'unavailable' };
     }
     const authorization = payload.authorization;
+    if (payload.complimentaryAccessChecked === true && authorization.source !== 'complimentary' && rememberedAdmissionStore.getState().data.admission?.source === 'complimentary') {
+      lease = null;
+      forgetAdmission();
+    }
     if (authorization.status === 'unknown') return { type: 'unavailable' };
     if (!authorization.hasAccess || authorization.status !== 'active') {
       lease = null;
@@ -112,6 +118,7 @@ export function createServerSubscriptionAdmission(options: {
       return { type: 'unavailable' };
     }
     lease = {
+      ...(authorization.source === 'complimentary' ? { source: 'complimentary' as const } : {}),
       userId: identity.userId,
       generation: identity.generation,
       environment: options.environment,

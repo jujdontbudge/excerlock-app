@@ -1,3 +1,4 @@
+import { attachLocalAccessHarness } from './LocalAccessHarness';
 import { createNativeLocationProvider } from '../../activity/NativeGymLocation';
 import * as StoreReview from 'expo-store-review';
 import { createStoreReviewPort } from './createStoreReviewPort';
@@ -112,6 +113,7 @@ export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise
       const { attachNativePermissionHarness } = require('./NativePermissionHarness') as typeof import('./NativePermissionHarness');
       attachNativePermissionHarness(runtime);
     }
+    attachLocalAccessHarness(runtime);
     return runtime;
   }
   throw new Error('Demo services are unavailable in a release build');
