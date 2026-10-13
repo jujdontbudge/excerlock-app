@@ -2,7 +2,7 @@ import type { NotificationsPort } from '../ports/NotificationsPort';
 import { permissionsStore } from '../permissions/permissionsStore';
 import { expoLocalNotifications } from './ExpoLocalNotifications';
 import { LocalNotifications } from './lib/LocalNotifications';
-import { openToUnlockPlan } from './notificationPlan';
+import { backgroundCheckPlan, openToUnlockPlan } from './notificationPlan';
 export function createNativeNotifications(isCurrent: () => boolean, generation: () => number = () => 0): NotificationsPort {
   const local = new LocalNotifications(expoLocalNotifications, isCurrent, generation);
   return {
@@ -14,6 +14,7 @@ export function createNativeNotifications(isCurrent: () => boolean, generation: 
       return local.schedule({ id: 'trial_ending', at: timestamp, title: 'Your trial ends in two days', body: 'Review your ExcerLock subscription before your trial ends.', url: 'excerlock://paywall' });
     },
     scheduleOpenToUnlock: () => local.schedule(openToUnlockPlan({ now: Date.now(), alwaysDenied: true, targetMetWhileClosed: true })!),
+    armBackgroundCheck: () => local.schedule(backgroundCheckPlan(Date.now())!),
     cancel: (id) => local.cancel(id),
   };
 }

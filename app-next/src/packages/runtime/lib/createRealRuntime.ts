@@ -58,6 +58,7 @@ import { createAccountDataCoordinator } from '../AccountDataCoordinator';
 import { isAccountDataReady } from '../../model/accountDataReady';
 import { createActivityAccountData } from '../../activity/ActivityAccountData';
 import { expoNotificationResponses } from '../../notifications/ExpoNotificationResponses';
+import { BackgroundCheck } from './BackgroundCheck';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
@@ -145,6 +146,20 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         await detection.awake.reconcile(false);
       },
     );
+    const backgroundCheck = new BackgroundCheck({
+      arm: () => client.notifications.armBackgroundCheck(),
+      disarm: () => client.notifications.cancel('background_check'),
+      report: (error) => options.reportError(error),
+    });
+    cleanups.push(() => backgroundCheck.dispose());
+    const syncBackgroundCheck = (awakeRequested: boolean) =>
+      backgroundCheck.sync(
+        awakeRequested &&
+          AppState.currentState !== 'active' &&
+          settingsStore.getState().data.notificationsEnabled &&
+          client.notifications.status() === 'granted' &&
+          rulesStore.getState().data.rules.some((rule) => rule.enabled && rule.activity === 'walking'),
+      );
     const walking = new NativeWalkingPort({
       service: detection.service,
       motion: detection.motion,
@@ -508,6 +523,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               snapshot.state === 'shield' || snapshot.state === 'conditional',
             );
             if (awake.error) options.reportError(new Error(awake.error));
+            syncBackgroundCheck(awake.requested);
             let applied: Awaited<ReturnType<typeof host.reconcile>>;
             try {
               applied = await host.reconcile(wakeSource !== 'manual');
@@ -790,6 +806,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       const booted = client.auth.identity();
       if (booted.kind === 'canonical' && booted.userId) await activateAccount(booted).catch(options.reportError);
       if (client.auth.identity().kind !== 'deleting') deletionSuspended = false;
+      client.analytics.track('runtime_launched', { app_state: currentAppState() });
       await reconcile('foreground');
       stops.push(
         rulesStore.subscribe(request),
@@ -803,6 +820,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         }),
       );
       const appState = AppState.addEventListener('change', (state) => {
+        syncBackgroundCheck(state !== 'active' && detection.awake.snapshot().requested);
         void reconcile(state === 'active' ? 'foreground' : 'background', state === 'active' ? 'full' : 'tick').catch(
           options.reportError,
         );

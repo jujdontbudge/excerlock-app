@@ -4,5 +4,6 @@ export interface NotificationsPort {
   request(): Promise<PermissionStatus>;
   scheduleTrialReminder(at: string): Promise<string>;
   scheduleOpenToUnlock(): Promise<string>;
+  armBackgroundCheck(): Promise<string>;
   cancel(id: string): Promise<void>;
 }

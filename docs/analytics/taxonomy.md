@@ -15,6 +15,7 @@ Source of truth: `app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts`. Ev
 | `unlock_ceremony_done`, `unlock_screen_opened` | `kind` (`gym`/`treadmill`), optional `preview` boolean |
 | `treadmill_scan_started`, `treadmill_scan_verified` | optional `preview`; verified also has numeric `ms` |
 | `treadmill_scan_failed` | `reason` (`denied`/`timeout`) |
+| `runtime_launched` | `app_state` at process start (`active`, `inactive`, `background`, `unknown`); one per process, so the gap before it shows when iOS ended the previous one |
 | `gym_unlock_confirmed`, `gym_unlock_checked`, `gym_unlock_tapped` | optional `preview`; checked/tapped may include numeric `distance` |
 | `condition_created` | optional coarse `activity` (currently demo/test usage) |
 | `$feature_flag_called` | `$feature_flag`, `$feature_flag_response`; once per stable generation/name/placement snapshot |

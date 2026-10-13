@@ -84,6 +84,7 @@ requires a migration note here.
 | `treadmill_scan_started` | `preview` |
 | `treadmill_scan_verified` | `ms`, `preview` |
 | `treadmill_scan_failed` | `reason` |
+| `runtime_launched` | `app_state` (`background` means iOS relaunched the app) |
 
 Plus `$screen` via the `trackScreen()` wrapper — PostHog-reserved, deliberately not in the registry.
 

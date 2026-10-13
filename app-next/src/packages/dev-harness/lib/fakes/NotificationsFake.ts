@@ -13,6 +13,7 @@ export function NotificationsFake(ctx: FakeContext): NotificationsPort {
     request: () => ctx.request('notifications'),
     scheduleTrialReminder: (at) => schedule('trial_reminder', at),
     scheduleOpenToUnlock: () => schedule('open_to_unlock', ctx.clock.now()),
+    armBackgroundCheck: () => schedule('background_check', ctx.clock.now()),
     cancel: async (id) => {
       ctx.log('notification_cancelled', { id });
     },

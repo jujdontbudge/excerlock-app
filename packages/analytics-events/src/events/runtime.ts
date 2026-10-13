@@ -27,6 +27,7 @@ export const runtimeEvents = {
   treadmill_scan_started: { owner: 'client', transmittedProperties: ['preview'] },
   treadmill_scan_verified: { owner: 'client', transmittedProperties: ['ms', 'preview'] },
   treadmill_scan_failed: { owner: 'client', transmittedProperties: ['reason'] },
+  runtime_launched: { owner: 'client', transmittedProperties: ['app_state'] },
 } as const satisfies EventSpecMap
 
 export interface RuntimeEventProps {
@@ -46,4 +47,5 @@ export interface RuntimeEventProps {
   treadmill_scan_started: { preview: boolean }
   treadmill_scan_verified: { ms: number; preview: boolean }
   treadmill_scan_failed: { reason: TreadmillScanFailure }
+  runtime_launched: { app_state: EnforcementAppState }
 }
