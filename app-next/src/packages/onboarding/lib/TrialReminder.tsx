@@ -7,6 +7,9 @@ import { illustrationTokens as art } from '../../ui/illustrationTokens';
 import { Icon } from '../../ui/Icon';
 import { useMotion } from '../../ui/useMotion';
 import { planCopy as c } from '../../conditions/planCopy';
+import type { TrialOffer } from '../../ports/SubscriptionPort';
+import { fallbackTrialOffer } from '../../subscription/trialOffer';
+import { subscriptionCopy } from '../../subscription/subscriptionCopy';
 
 const bell = art.reminder;
 const swing = Object.fromEntries(
@@ -15,13 +18,14 @@ const swing = Object.fromEntries(
   }]),
 );
 
-export function TrialReminder() {
+export function TrialReminder({ offer = fallbackTrialOffer }: { offer?: TrialOffer }) {
   const m = useMotion();
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: t.space.xl }}>
       <Label accessibilityRole="header" variant="display" style={{ textAlign: 'center', maxWidth: 330 }}>
         {c.reminderTitle}
       </Label>
+      <Label variant="label" style={{ textAlign: 'center' }}>{subscriptionCopy.reminder(offer)}</Label>
       <Animated.View
         accessible
         accessibilityRole="image"
@@ -54,6 +58,11 @@ export function TrialReminder() {
           </Label>
         </View>
       </Animated.View>
+      <View style={{ alignSelf: 'stretch', gap: t.space.md }}>
+        {subscriptionCopy.timeline(offer).map((milestone) => (
+          <Label key={milestone.title} variant="support" style={{ textAlign: 'center' }}>{milestone.title}</Label>
+        ))}
+      </View>
       <View style={{ flexGrow: 1 }} />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
         <Icon name="check" size={t.icon.md} />

@@ -12,14 +12,90 @@ Prices are equalized across territories from the US price.
 ## Launch plans
 
 The paywall sells `com.johansardar.excerlock.premium.a.monthly` (`6796884508`) and
-`com.johansardar.excerlock.premium.a.annual` (`6796884321`). Both carry a one-week free-trial
-introductory offer (`ONE_WEEK`, `FREE_TRIAL`, one period) in all 175 territories. Annual has had it
-since launch. Monthly got it on September 23, 2026, on Johan's call, so the onboarding paywall can
-show the trial badge on both plans and keep "No payment due now" whichever plan is picked. It was
-created with `asc subscriptions offers introductory create --subscription-id 6796884508
---all-territories --offer-duration ONE_WEEK --offer-mode FREE_TRIAL --number-of-periods 1`, with
-175/175 created, while both products were `WAITING_FOR_REVIEW` in the build 10 submission. The
-local StoreKit harness catalog and the demo fake match.
+`com.johansardar.excerlock.premium.a.annual` (`6796884321`). The current live offers remain `ONE_WEEK` until the lead completes the rollout below. The target
+is `THREE_DAYS`, `FREE_TRIAL`, one period, in all 175 territories, on both launch plans.
+The app derives the displayed duration from Adapty/StoreKit and falls back to three days only
+when metadata is unavailable. Existing trials keep their StoreKit expiry; the app reminds them
+one day before that expiry. The independent `.t7` grid remains a seven-day catalog and must not
+be changed by this launch-plan rollout.
+
+## Three-day trial versus no-trial experiment
+
+[ADR 0078](adr/0078-adapty-onboarding-trial-assignment.md) owns the client behavior. Nothing in
+this document authorizes a dashboard, product or release change by a worker.
+
+The operator must configure the following in Adapty app `9b8a6cf2-22c5-46f9-b938-35c27da2c66f`,
+on access level `premium`, subscription group `ExcerLock Premium — Variant A` (`22279282`).
+Do not use the separate 45-grid group.
+
+| Paywall | Products, in this order | Remote config in every locale |
+|---|---|---|
+| A | `com.johansardar.excerlock.premium.a.annual`, `com.johansardar.excerlock.premium.a.monthly`, `com.johansardar.excerlock.premium.a.annual.notrial`, `com.johansardar.excerlock.premium.a.monthly.notrial` | `{"trial":true,"recommendedProductId":"com.johansardar.excerlock.premium.a.annual"}` |
+| B | `com.johansardar.excerlock.premium.a.annual.notrial`, `com.johansardar.excerlock.premium.a.monthly.notrial` | `{"trial":false,"recommendedProductId":"com.johansardar.excerlock.premium.a.annual.notrial"}` |
+
+Keep the existing neutral `title`/`body` remote config, or use `Choose your plan` and
+`Build a healthier relationship with your phone.` No trial copy on B. `trial` must be a JSON
+boolean, never the strings `"true"` or `"false"`. A includes its twins to keep the existing
+Enable free trial toggle; B contains exactly the two approved twins and no intro offer.
+The product order is annual then monthly on both arms. These products have the same prices
+and group; only A's base products have introductory offers.
+
+Placements:
+
+- `onboarding_trial_fallback`: All Users/default audience → A, 100%, no A/B test, no B.
+- `onboarding`: All Users/default audience → A. Create the numeric custom attribute
+  `onboarding_offer_version` and an audience/segment requiring it to equal `1`. Attach the
+  trial/no-trial A/B test to that audience only: A 50%, B 50%, sticky Adapty assignment.
+  Older clients without the attribute must receive A. The client sets it through the existing
+  SDK profile API before requesting `onboarding`; a failed update falls back to the control
+  placement. Do not target by build number alone: runtime 4/build 17 and runtime 5/build 18
+  can each still be running older JavaScript.
+- Keep `in_app` and `winback` outside this experiment.
+- Disable any PostHog `onboarding_variant` tail manipulation intended to independently
+  remove these trial screens. The client enforces their inclusion from Adapty regardless,
+  but unrelated PostHog ordering would confound this comparison.
+
+Release and operator order:
+
+1. Read-only confirm the base launch plans and both `.notrial` twins are approved, purchasable
+   in all required territories and in group `22279282`; confirm the twins have no intro offer.
+2. Duplicate/create A and B with the exact products/config above. Create the custom-attribute
+   audience and the control-only fallback placement. Keep the experiment disabled and the
+   live `onboarding` default on A. Prepare the 50/50 test without activating it.
+3. Integrate the JavaScript change into release `main` with authorization. Run the OTA ship
+   gate and publish separately to runtime 4/build 17 and runtime 5/build 18 under the release
+   lock. The current checkout is runtime 5 and `./excer ota` has no runtime selector. The lead
+   must prepare a runtime-4-compatible payload from its verified release source, backporting
+   this JavaScript patch and preserving its native surface, and arrange a certified ship-gate
+   path for it before publication. Do not relabel the complete runtime-5 bundle as runtime 4.
+   Runtime 5 uses the normal `./excer ota` path. Verify each installed OTA still reads the current seven-day metadata
+   correctly, and the marker is present before enabling its experiment audience. No native
+   module, dependency, StoreKit environment selection, build or runtime-version change is needed.
+4. Only after both OTA publications succeed, replace the launch plans' current intro offers
+   in App Store Connect: monthly `6796884508`, annual `6796884321`, `THREE_DAYS`, `FREE_TRIAL`,
+   `numberOfPeriods = 1`, all 175 territories and future territories. End/remove the old
+   `ONE_WEEK` offers as ASC requires; do not leave overlapping effective offers. Verify the
+   effective duration, mode, dates and territory coverage on both products. Do not alter
+   renewal prices, subscription groups, twins or any `.t7` grid product. This changes future
+   eligible trials, not an already-started trial's expiry.
+5. Wait for StoreKit/Adapty catalog propagation. On updated clients verify both monthly and
+   annual show the actual three-day offer, Day 2 reminder/Day 3 billing, toggle on A, plain
+   billing for intro-ineligible accounts, and the control-only fallback. Verify a real Sandbox
+   purchase and reminder separately; simulator scripted SDK evidence is not a receipt.
+6. Activate the `onboarding` custom-attribute audience A/B test at A 50% / B 50%. Verify a
+   known B assignment skips only `S3c` and `S3d`, keeps `S3e`, has no toggle/trial wording and
+   purchases the selected `.notrial` twin. Verify A still selects the base product by default.
+   Confirm `logShowFlow` reports the retained variation, not a second assignment.
+
+PostHog receives the ordinary UI exposure `onboarding_offer_exposed` with `arm` (`a`/`b`),
+`source` (`adapty`/`fallback`), `intro_offer` (`available`/`unavailable`/`unknown`) and optional
+`variation_id`, plus `offer_arm`/`offer_source` on `paywall_viewed`, only under the existing
+opt-in and ready canonical identity rules. It receives no new feature-flag exposure; this
+experiment does not use a PostHog flag. Purchase/restore/trial/subscription lifecycle prefixes
+are blocked at the PostHog boundary. Adapty owns purchase conversion and revenue measurement.
+Fallback users must be analyzed separately; the effective split can differ from 50/50 during
+outages or late loads. A known intro-ineligible user remains A but skips unavailable trial
+promises and sees ordinary billing.
 
 | Product ID | Period | US price | Free trial | ASC ID |
 |---|---|---|---|---|
@@ -142,6 +218,8 @@ asc web subscriptions availability remove-from-sale --subscription-id <ASC_ID>
 ```
 
 Anyone already subscribed to a product taken off sale keeps it and continues renewing.
+
+The numeric audience marker is persistent profile metadata, not a per-request capability attestation. Disable B before rolling back this JavaScript, and consider a marker-bearing account reopened by an older client when validating rollout audiences. The marker limits ordinary pre-OTA rollout exposure; it is not an authorization or cross-device version guarantee.
 
 ## Complimentary Premium
 

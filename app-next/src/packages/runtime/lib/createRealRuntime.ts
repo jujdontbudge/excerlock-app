@@ -732,6 +732,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       experiments: client.experiments,
       signInRequired: client.signInRequired,
       onboardingFlow: client.onboardingFlow,
+      onboardingOffer: client.onboardingOffer,
       shieldCopy,
       strideGate,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },

@@ -18,6 +18,8 @@ Source of truth: `app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts`. Ev
 | `runtime_launched` | `app_state` at process start (`active`, `inactive`, `background`, `unknown`); one per process, so the gap before it shows when iOS ended the previous one |
 | `gym_unlock_confirmed`, `gym_unlock_checked`, `gym_unlock_tapped` | optional `preview`; checked/tapped may include numeric `distance` |
 | `condition_created` | optional coarse `activity` (currently demo/test usage) |
+| `onboarding_offer_exposed` | `arm` (`a`/`b`), `source` (`adapty`/`fallback`), `intro_offer` (`available`/`unavailable`/`unknown`), optional `variation_id`; once for the frozen rendered onboarding offer |
+| `paywall_viewed` | `placement`, `has_trial`, optional `variation_id`, `offer_arm` (`a`/`b`) and `offer_source` (`adapty`/`fallback`) on onboarding |
 | `$feature_flag_called` | `$feature_flag`, `$feature_flag_response`; once per stable generation/name/placement snapshot |
 
 Every emission registers `environment`, `runtime_version`, `update_id`, `walk_places`, and `$device_id`.
@@ -29,3 +31,5 @@ Every emission registers `environment`, `runtime_version`, `update_id`, `walk_pl
 ## Forbidden data
 
 Properties whose keys contain email, address, latitude, longitude, receipt, token, user ID, message, error, or URL are dropped. Values must be boolean, number, or a 1–64 character alphanumeric/underscore/hyphen token. Purchase, trial, and subscription lifecycle event prefixes are blocked. Never add coordinates, HealthKit samples, step counts, app-selection tokens, authentication material, receipts, URLs, or free text without updating code guardrails, this taxonomy, the manifest, and App Store labels together.
+
+The Adapty onboarding offer experiment is not a PostHog flag. Its ordinary UI exposure is subject to the same opt-in and ready canonical identity rules; Adapty owns purchases and revenue. Purchase, restore, trial and subscription lifecycle prefixes are rejected by the client PostHog boundary. See [ADR 0078](../adr/0078-adapty-onboarding-trial-assignment.md).

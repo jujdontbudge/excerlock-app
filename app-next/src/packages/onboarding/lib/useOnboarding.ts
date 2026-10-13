@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../onboardingStore';
-import { nextStep, prevStep, progressFraction, resumeStep, type FlowOrder } from './flow';
+import { nextStep, prevStep, progressFraction, resumeStep, offerFlowOrder, type FlowOrder } from './flow';
 import { createDraft } from '../../conditions/draft';
 import { draftFromAnswers } from '../../conditions/answersDraft';
 import { scenarioFor } from './condition-demo/model';
@@ -28,6 +28,14 @@ export function useOnboarding() {
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const step = params.step ?? resumeStep(state, flowOrder),
     flow = { step, answers: state.answers };
+  const offer = ['S3e', 'S3c', 'S3d'].includes(step)
+    ? runtime.onboardingOffer?.freeze(step === 'S3c' || step === 'S3d')
+    : runtime.onboardingOffer?.snapshot();
+  const order = offerFlowOrder(flowOrder, offer?.trialAvailable ?? true);
+  useEffect(() => { void runtime.onboardingOffer?.prefetch(); }, [runtime]);
+  useEffect(() => {
+    if (['S3e', 'S3c', 'S3d'].includes(step)) runtime.onboardingOffer?.expose();
+  }, [step, runtime]);
   useEffect(() => {
     const port = runtime.onboardingFlow;
     if (!port) return;
@@ -73,7 +81,8 @@ export function useOnboarding() {
     answers: state.answers,
     direction,
     isAdvancing,
-    progress: progressFraction(flow, flowOrder),
+    progress: progressFraction(flow, order),
+    offer: offer?.offer,
     setAnswer: (key: string, value: string | number | boolean | number[] | string[]) => {
       if (key === 'name') advanceEpoch.current += 1;
       useOnboardingStore.getState().patch({ answers: { ...useOnboardingStore.getState().data.answers, [key]: value } });
@@ -114,7 +123,11 @@ export function useOnboarding() {
         move(destination);
       } else {
         const latest = useOnboardingStore.getState().data.answers;
-        move(nextStep({ step, answers: latest }, flowOrder));
+        const destination = nextStep({ step, answers: latest }, order);
+        const frozen = ['S3e', 'S3c', 'S3d', 'P'].includes(destination)
+          ? runtime.onboardingOffer?.freeze()
+          : runtime.onboardingOffer?.snapshot();
+        move(nextStep({ step, answers: latest }, offerFlowOrder(flowOrder, frozen?.trialAvailable ?? true)));
       }
       } finally {
         advancing.current = false;
@@ -140,7 +153,7 @@ export function useOnboarding() {
         useOnboardingStore.getState().patch({ answers: { ...restored, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });
         move(destination);
-      } else move(prevStep(flow, flowOrder), true);
+      } else move(prevStep(flow, order), true);
     },
   };
 }

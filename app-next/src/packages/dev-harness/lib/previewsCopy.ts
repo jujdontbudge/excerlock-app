@@ -1,3 +1,5 @@
+import { subscriptionCopy } from '../../subscription/subscriptionCopy';
+
 export const previewCopy = {
   gallery: 'Component gallery',
   intro: 'Shared controls, layouts and motion.',
@@ -47,11 +49,7 @@ export const previewCopy = {
   now: 'Now',
   goal: 'Your goal',
   dots: 'Days reclaimed',
-  timeline: [
-    { title: 'Today', body: 'Try your full plan.' },
-    { title: 'Day 5', body: 'A reminder before your trial ends.' },
-    { title: 'Day 7', body: 'Your plan begins.' },
-  ],
+  timeline: subscriptionCopy.timeline(),
   bars: [
     { label: 'M', value: 3200 },
     { label: 'T', value: 5100 },

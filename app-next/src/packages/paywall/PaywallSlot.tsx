@@ -67,9 +67,10 @@ export function PaywallSlot() {
       beginWelcome();
       router.replace('/onboarding/O01');
     } else {
-      useOnboardingStore.getState().patch({ step: 'S3d', complete: false });
+      const step = runtime.onboardingOffer?.snapshot().trialAvailable === false ? 'S3e' : 'S3d';
+      useOnboardingStore.getState().patch({ step, complete: false });
       beginOnboarding();
-      router.replace('/onboarding/S3d');
+      router.replace(`/onboarding/${step}`);
     }
   };
   return (

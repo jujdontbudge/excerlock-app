@@ -1,4 +1,5 @@
 import type { Entitlement } from '../model/types';
+import { TRIAL_REMINDER_DAYS_BEFORE } from '../subscription/trialOffer';
 export type LocalNotificationId = 'trial_ending' | 'open_to_unlock' | 'background_check' | 'shield_open';
 export const BACKGROUND_CHECK_MS = 3 * 60_000;
 export const BACKGROUND_CHECK_RENEW_MS = 60_000;
@@ -6,9 +7,12 @@ export type NotificationLanding = 'excerlock://home' | 'excerlock://unlock/propp
 export type LocalNotificationPlan = { id: Exclude<LocalNotificationId, 'shield_open'>; at: number; title: string; body: string; url: NotificationLanding };
 export function trialReminderPlan(entitlement: Entitlement, now: number): LocalNotificationPlan | null {
   if (entitlement.status !== 'trial' || !entitlement.accessExpiresAt) return null;
-  const at = Date.parse(entitlement.accessExpiresAt) - 2 * 86400000;
+  const at = Date.parse(entitlement.accessExpiresAt) - TRIAL_REMINDER_DAYS_BEFORE * 86400000;
   if (!Number.isFinite(now) || !Number.isFinite(at) || at <= now) return null;
-  return { id: 'trial_ending', at, title: 'Your trial ends in two days', body: 'Review your ExcerLock subscription before your trial ends.', url: 'excerlock://paywall' };
+  return trialReminderNotification(at);
+}
+export function trialReminderNotification(at: number): LocalNotificationPlan {
+  return { id: 'trial_ending', at, title: 'Your trial ends tomorrow', body: 'Review your ExcerLock subscription before your trial ends.', url: 'excerlock://paywall' };
 }
 export function openToUnlockPlan(input: { now: number; alwaysDenied: boolean; targetMetWhileClosed: boolean }): LocalNotificationPlan | null {
   if (!Number.isFinite(input.now) || !input.alwaysDenied || !input.targetMetWhileClosed) return null;

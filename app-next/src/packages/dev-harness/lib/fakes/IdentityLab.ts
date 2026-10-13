@@ -177,6 +177,7 @@ function labProduct(
   amount: number,
   unit: 'year' | 'month',
   trial: boolean,
+  trialDays = 3,
 ): AdaptyPaywallProduct {
   return {
     variationId: 'identity-lab',
@@ -188,7 +189,7 @@ function labProduct(
       subscriptionPeriod: { unit, numberOfUnits: 1 },
       localizedSubscriptionPeriod: unit,
       offer: trial
-        ? { phases: [{ paymentMode: 'free_trial', numberOfPeriods: 1, subscriptionPeriod: { unit: 'week', numberOfUnits: 1 } }] }
+        ? { phases: [{ paymentMode: 'free_trial', numberOfPeriods: trialDays === 6 ? 2 : 1, subscriptionPeriod: { unit: trialDays === 7 ? 'week' : 'day', numberOfUnits: trialDays === 7 ? 1 : trialDays === 6 ? 3 : trialDays } }] }
         : undefined,
     },
   } as unknown as AdaptyPaywallProduct;
@@ -464,7 +465,7 @@ export async function createIdentityLab(
       ? [...grants.values()].filter((grant) => grant.owner === owner).map((grant) => grant.status)
       : [];
     const status = statuses.includes('active') ? 'active' : statuses.includes('trial') ? 'trial' : undefined;
-    const days = status === 'trial' ? 7 : 30;
+    const days = status === 'trial' ? ctx.scenario.onboardingOffer?.trialDays ?? 3 : 30;
     return {
       customerUserId: owner,
       accessLevels: status
@@ -508,6 +509,7 @@ export async function createIdentityLab(
       resolved.forEach(({ claim, restored }) => claim.resolve(restored));
     });
   };
+  let finishLateProducts: (() => void) | null = null;
   const sdk: AdaptySdkPort = {
     activate: async () => undefined,
     setFallback: async () => undefined,
@@ -524,22 +526,49 @@ export async function createIdentityLab(
     logout: async () => {
       customerUserId = undefined;
     },
+    updateProfile: async (params) => { ctx.log('lab_offer_audience', { version: params.customAttributes.onboarding_offer_version }); },
     getFlow: async (placement) => {
       attempts.flow += 1;
-      const ok = !(script.plans === 'failFirst' && attempts.flow === 1);
+      const offer = ctx.scenario.onboardingOffer;
+      const fallback = placement === 'onboarding_trial_fallback';
+      if (fallback && finishLateProducts) {
+        const finish = finishLateProducts;
+        setTimeout(() => { ctx.log('lab_late_offer_returned', { arm: 'b' }); finish(); }, 500);
+      }
+      const ok = !(script.plans === 'failFirst' && attempts.flow === 1)
+        && !(offer?.arm === 'error' && !fallback)
+        && !(offer?.fallbackError && fallback);
       ctx.log('lab_flow', { placement, attempt: attempts.flow, ok });
       if (!ok) throw networkError('Flow request failed');
-      return { placementId: placement, variationId: `identity-lab-${placement}`, remoteConfigs: [] } as unknown as AdaptyFlow;
+      const trial = fallback ? true : offer?.arm === 'unknown' ? undefined : offer?.arm === 'a';
+      return {
+        placementId: placement,
+        variationId: offer ? `offer-${fallback ? 'fallback' : offer.arm}` : `identity-lab-${placement}`,
+        remoteConfigs: offer ? [{ lang: 'en', data: { trial, recommendedProductId: 'com.johansardar.excerlock.premium.a.annual' } }] : [],
+      } as unknown as AdaptyFlow;
     },
-    getPaywallProducts: async () =>
-      script.plans === 'empty'
-        ? []
-        : [
+    getPaywallProducts: async (flow) => {
+      const offer = ctx.scenario.onboardingOffer;
+      if (offer) {
+        const fallback = flow.variationId === 'offer-fallback';
+        const noTrial = !fallback && ['b', 'unknown', 'late'].includes(offer.arm);
+        if (offer.arm === 'late' && !fallback) await new Promise<void>((resolve) => { finishLateProducts = resolve; });
+        const eligible = fallback || offer.introEligible !== false;
+        const plans = [
+          labProduct('com.johansardar.excerlock.premium.a.annual', 'Annual', 49.99, 'year', eligible, offer.trialDays),
+          labProduct('com.johansardar.excerlock.premium.a.monthly', 'Monthly', 9.99, 'month', eligible, offer.trialDays),
+          labProduct('com.johansardar.excerlock.premium.a.annual.notrial', 'Annual', 49.99, 'year', false),
+          labProduct('com.johansardar.excerlock.premium.a.monthly.notrial', 'Monthly', 9.99, 'month', false),
+        ];
+        return noTrial ? plans.slice(2) : plans;
+      }
+      return script.plans === 'empty' ? [] : [
             labProduct('lab.annual', 'Lab annual', 49.99, 'year', script.purchase !== 'alreadyOwned'),
             labProduct('lab.monthly', 'Lab monthly', 9.99, 'month', script.purchase !== 'alreadyOwned'),
-          ],
-    logShowFlow: async () => undefined,
-    makePurchase: async () => {
+          ];
+    },
+    logShowFlow: async (flow) => { ctx.log('lab_paywall_shown', { variation: flow.variationId }); },
+    makePurchase: async (product) => {
       attempts.purchase += 1;
       const configured = script.purchase ?? ctx.snapshot().outcome;
       const result = configured === 'errorFirst' && attempts.purchase > 1
@@ -569,7 +598,9 @@ export async function createIdentityLab(
         updateSubscriptionLab();
         return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
       }
-      grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'trial' });
+      const trial = product.subscription?.offer?.phases.some((phase) => phase.paymentMode === 'free_trial') ?? false;
+      if (ctx.scenario.onboardingOffer) ctx.log('lab_offer_purchase', { plan: product.vendorProductId, trial });
+      grants.set(STORE_SUBSCRIPTION_ID, { owner, status: trial ? 'trial' : 'active' });
       const purchased = profile(owner);
       if (script.delayedCallbacks) {
         queuedProfiles.push({ operation: 'purchase', owner, profile: purchased });
@@ -668,9 +699,9 @@ export async function createIdentityLab(
     identify: (id) => adapter.identify(id),
     reset: () => adapter.reset(),
     refresh: () => adapter.refresh(),
-    loadPaywall: async (placement) => {
+    loadPaywall: async (placement, options) => {
       try {
-        const paywall = await adapter.loadPaywall(placement);
+        const paywall = await adapter.loadPaywall(placement, options);
         ctx.log('lab_plans_loaded', { placement, plans: paywall.products.length });
         return paywall;
       } catch (error) {

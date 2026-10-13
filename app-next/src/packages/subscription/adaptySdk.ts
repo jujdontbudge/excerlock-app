@@ -6,6 +6,7 @@ export interface AdaptySdkPort {
   getProfile(): Promise<AdaptyProfile>;
   identify(userId: string): Promise<void>;
   logout(): Promise<void>;
+  updateProfile(params: { customAttributes: { onboarding_offer_version: number } }): Promise<unknown>;
   getFlow(placement: string, options: { fetchPolicy: string; loadTimeoutMs: number }): Promise<AdaptyFlow>;
   getPaywallProducts(flow: AdaptyFlow): Promise<AdaptyPaywallProduct[]>;
   logShowFlow(flow: AdaptyFlow): Promise<void>;

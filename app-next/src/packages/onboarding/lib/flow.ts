@@ -47,9 +47,22 @@ export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
   const pre = (order?.preBranch ?? preBranch)
     .filter((step) => !['O25', 'O23', 'O24'].includes(step))
     .flatMap((step) => step === 'O22' ? [step, ...(['O25', 'O23', 'O24'].filter((target) => applies(target, answers)))] : [step]);
-  const orderedTail = (order?.tail ?? tail).filter((step) => !['S4', 'S5', 'S3e'].includes(step))
-    .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : step === 'S3c' ? ['S3e', step] : [step]);
+  const tailOrder = order?.tail ?? tail;
+  const beforeAfterAnchor = tailOrder.includes('S3b') ? 'S3b' : tailOrder.includes('S3c') ? 'S3c' : 'P';
+  const orderedTail = tailOrder.filter((step) => !['S4', 'S5', 'S3e'].includes(step))
+    .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : step === beforeAfterAnchor
+      ? step === 'S3b' ? [step, 'S3e'] : ['S3e', step]
+      : [step]);
   return [...pre, ...branchFor(answers), ...orderedTail];
+}
+
+export function offerFlowOrder(order: FlowOrder | null, trialAvailable: boolean): FlowOrder {
+  return {
+    preBranch: order?.preBranch ?? preBranch,
+    tail: trialAvailable
+      ? [...(order?.tail ?? tail).filter((step) => step !== 'S3c' && step !== 'S3d' && step !== 'P'), 'S3c', 'S3d', 'P']
+      : (order?.tail ?? tail).filter((step) => step !== 'S3c' && step !== 'S3d'),
+  };
 }
 
 function applicableOrder(state: FlowState, order?: FlowOrder | null): FlowOrder | null {

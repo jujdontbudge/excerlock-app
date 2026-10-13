@@ -2,14 +2,14 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked, trial-reminder-three-days, trial-reminder-too-late, onboarding-offer-fallback-error, onboarding-offer-a, onboarding-offer-b]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), the free trial switch (shown only when the paywall serves a trial and a no-trial product for the same period; on gives Start for $0.00, off gives Continue), then one-line Yearly and Monthly plan pills (plan length left, price right: the yearly plan as its weekly price, other plans per their own period), with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "7 day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), the free trial switch (shown only when the paywall serves a trial and a no-trial product for the same period; on gives Start for $0.00, off gives Continue), then one-line Yearly and Monthly plan pills (plan length left, price right: the yearly plan as its weekly price, other plans per their own period), with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -24,7 +24,7 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /sample-paywall
-expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly · $0.96 / week | Monthly · $9.99 / month | 7 day free trial, then $49.99/year | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly · $0.96 / week | Monthly · $9.99 / month | 3-day free trial, then $49.99/year | Start for $0.00
 ```
 
 ```proof
@@ -34,7 +34,7 @@ open: /sample-paywall
 tap: Free trial enabled
 expect: Enable free trial | Billed as $49.99/year | Continue
 then-tap: Enable free trial
-then-expect: Free trial enabled | 7 day free trial, then $49.99/year | Start for $0.00
+then-expect: Free trial enabled | 3-day free trial, then $49.99/year | Start for $0.00
 ```
 
 ```proof
@@ -260,6 +260,52 @@ then-open: dev
 then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"}
 ```
 
+```proof
+name: trial-reminder-one-day-before-expiry
+scenario: trial-reminder-three-days
+open: /dev
+expect: Trial reminder Your trial ends tomorrow · 2026-09-09T15:00:00.000Z · 24 hours before expiry
+```
+
+```proof
+name: trial-reminder-past-time-is-not-scheduled
+scenario: trial-reminder-too-late
+open: /dev
+expect: Trial reminder None
+```
+
+```proof
+name: offer-fallback-outage-keeps-retry
+scenario: onboarding-offer-fallback-error
+open: /sample-paywall
+expect: Continue | Restore purchases | Terms of Use | Privacy Policy
+absent: Free trial | Enable free trial | free trial | Start for $0.00 | Loading plans
+then-tap: Continue
+then-open: /dev
+then-expect: paywall_error {"operation":"load"} | onboarding_trial_fallback
+wait: 20
+```
+
+```proof
+name: offer-b-checkout-selects-monthly-twin
+scenario: onboarding-offer-b
+open: /onboarding/S3b
+actions: expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Billed as $49.99/year | tap Monthly | expect Billed as $9.99/month | tap Continue
+expect: Continue with Apple
+then-open: /dev
+then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly.notrial","trial":false} | Purchase operations 1 | Purchase recovery accountConnection
+```
+
+```proof
+name: offer-a-checkout-selects-trial-product
+scenario: onboarding-offer-a
+open: /onboarding/S3c
+actions: expect 3-day free trial | tap Try for $0.00 | expect Day 2 · Reminder | tap Continue | expect Free trial enabled | tap Free trial enabled | expect Enable free trial | tap Monthly | expect Billed as $9.99/month | tap Enable free trial | expect 3-day free trial, then $9.99/month | tap Start for $0.00
+expect: Continue with Apple
+then-open: /dev
+then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly","trial":true} | Purchase operations 1 | Purchase recovery accountConnection
+```
+
 ## Gotchas
 - The purchase-error retry proof checks the recorded error before retrying, because the floating error notice can disappear while the simulator accessibility query runs.
 - The app uses Adapty, not RevenueCat.
@@ -268,3 +314,5 @@ then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_r
 - The win-back paywall appears when the first live entitlement of a launch is `expired`, even though the persisted store still says `trial` from the last run (the real app hydrates `trial`, then Adapty's first profile says `expired`). `trial-lapsed-while-closed` reproduces it: Home mounts on the hydrated `trial`, and the fake publishes `expired` 20 s after launch (`entitlementTimeline`). `trial-lapses-in-session` publishes a live `trial` at 1 s and `expired` at 20 s, which must show the in-app placement instead. Both proofs read the placement from the fake `paywall_viewed` event on `dev`. A lapse observed live after a live `trial`/`active` in the same session (`subscription/winbackSession.ts`) does not trigger it. Do not deep-link after the relaunch: opening a URL rebuilds navigation and remounts Home.
 - The `identity-lab-*` scenarios swap demo mode's `AuthFake` and `SubscriptionFake` for the real `createAuthServices` (SupabaseAuthAdapter + IdentityCoordinator) and `AdaptySubscriptionAdapter`, over a scripted Supabase client, a scripted `PUT /v1/user` and a scripted Adapty SDK (`dev-harness/lib/fakes/IdentityLab.ts`). The scenario's `identityLab` script makes one edge fail once or run slow (8 s). They reproduce App Review 2.1(b) on Build 12: a user-sync failure at launch left the identity spine unready for the whole session, and a cold start onto the paywall raced the spine. Plans are named "Lab annual" / "Lab monthly" so a lab screenshot is never mistaken for StoreKit data. Checkout, account A and account B have independent ownership. Delayed-callback scenarios queue immutable purchase/restore profiles and deliver them after an account transition. They prove identity generation, journal and admission gating only, not StoreKit, Adapty transfer behavior or a sandbox account.
 - The dev client's floating tools button (gear) sits on top of the paywall's Restore link; turn it off in the dev menu (Tools button) before `identity-restore-not-found`, or the tap opens the dev menu.
+
+- ADR 0078: the onboarding offer is retained from its early Adapty response, including product handles and impression variation. B requires `trial: false` and the two approved `.notrial` twins. A includes both base and twin plans for the toggle; introductory ineligibility remains A with ordinary billing. Notification timing diagnostics run the production `trialReminderPlan`; they are not proof of iOS delivery.

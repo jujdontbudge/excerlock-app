@@ -21,6 +21,8 @@ import { HomeLockStatus } from '../home/HomeLockStatus';
 import { progressContent } from '../home/progressContent';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { inactiveWalkingStatus } from '../ports/WalkingPort';
+import type { TrialOffer } from '../ports/SubscriptionPort';
+import { fallbackTrialOffer } from '../subscription/trialOffer';
 
 const frame = { source: require('../../../assets/phone-frame.png'), width: 703, height: 1442 } as const;
 const hole = { left: 35, top: 29, width: 632, height: 1383, radius: 112 } as const;
@@ -29,7 +31,7 @@ const device = { width: 402, height: (402 * hole.height) / hole.width, insets: {
 const statusBar = { centre: 31, time: 68, icons: 334 } as const;
 const granted = { screenTime: 'granted', motion: 'granted', location: 'whenInUse', camera: 'granted', notifications: 'granted' } as const;
 
-export function PlanTrialPreview({ rule, onBack }: { rule: Rule; onBack: () => void }) {
+export function PlanTrialPreview({ rule, onBack, offer = fallbackTrialOffer }: { rule: Rule; onBack: () => void; offer?: TrialOffer }) {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const height = Math.min(box.height, (box.width * 0.68 * frame.height) / frame.width);
   return (
@@ -41,6 +43,7 @@ export function PlanTrialPreview({ rule, onBack }: { rule: Rule; onBack: () => v
         </Label>
         <View style={{ width: t.icon.md }} />
       </View>
+      <Label variant="label" style={{ textAlign: 'center' }}>{offer.label}</Label>
       <View
         testID="trial-phone-box"
         style={{ flex: 1, alignSelf: 'stretch', alignItems: 'center' }}

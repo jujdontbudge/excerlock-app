@@ -22,6 +22,8 @@ import { GaitFake } from './lib/fakes/GaitFake';
 import { GymFake } from './lib/fakes/GymFake';
 import { AuthFake } from './lib/fakes/AuthFake';
 import { SubscriptionFake } from './lib/fakes/SubscriptionFake';
+import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
+import { trialReminderPlan } from '../notifications/notificationPlan';
 import { AnalyticsFake } from './lib/fakes/AnalyticsFake';
 import { NotificationsFake } from './lib/fakes/NotificationsFake';
 import { SyncFake } from './lib/fakes/SyncFake';
@@ -128,6 +130,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
   const auth = classBackedPort('auth', identityLab.route(AuthFake(ctx), (lab) => lab.auth));
   const subscription = classBackedPort('subscription', identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription));
+  const analytics = AnalyticsFake(ctx);
+  const onboardingOffer = createOnboardingOffer({ subscription, analytics, identityGeneration: () => auth.identity().generation });
   const subscriptionAdmission = rememberAdmission(SubscriptionAdmissionFake(ctx, auth, subscription), {
     environment: 'sandbox',
     now: () => Date.parse(ctx.clock.now()),
@@ -190,6 +194,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         notificationResponses.reset();
         if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
+        onboardingOffer.reset();
         identityLab.start();
         gait.set(scenario.gait ?? 'none');
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
@@ -204,6 +209,9 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
             : undefined,
           otaResume: null,
         });
+        void onboardingOffer.prefetch();
+        const trialReminder = trialReminderPlan(scenario.entitlement, Date.parse(ctx.clock.now()));
+        ctx.update({ trialReminder: trialReminder ? `${trialReminder.title} · ${new Date(trialReminder.at).toISOString()} · ${Math.round((Date.parse(scenario.entitlement.accessExpiresAt!) - trialReminder.at) / 3600000)} hours before expiry` : 'None' });
         if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
           if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
           rememberSignIn(auth.identity());
@@ -620,7 +628,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     auth,
     subscription,
     subscriptionAdmission,
-    analytics: AnalyticsFake(ctx),
+    analytics,
+    onboardingOffer,
     reviewPreset: {
       isEnabled: async () => ctx.scenario.remoteFlags?.reviewPreset ?? false,
       expose: () => undefined,

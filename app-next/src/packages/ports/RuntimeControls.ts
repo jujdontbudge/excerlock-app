@@ -51,6 +51,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
   protectedRouteMounts: string[];
   remoteFlags?: string;
   onboardingPath?: string;
+  trialReminder?: string;
   notificationResponses: { delivered: ('home' | 'unlock')[]; handled: number };
   otaResume: { route: string; outcome: 'denied' | 'restored' } | null;
 };
