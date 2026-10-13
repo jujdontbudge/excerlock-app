@@ -33,6 +33,7 @@ export function attachLocalAccessHarness(runtime: Runtime) {
     makePurchase: async () => { throw new Error('Local access harness cannot purchase'); },
     restorePurchases: async () => profile(),
     setIntegrationIdentifier: async () => undefined,
+    updateProfile: async () => undefined,
   };
   let services: Awaited<ReturnType<typeof createIdentityServices>> | null = null;
   let admission = unavailableSubscriptionAdmission();
