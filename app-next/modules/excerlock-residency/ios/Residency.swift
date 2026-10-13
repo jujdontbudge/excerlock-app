@@ -6,6 +6,7 @@ import os
 final class Residency: NSObject, CLLocationManagerDelegate {
   static let shared = Residency()
   static let wantedKey = "excerlock.residency.wanted.v1"
+  private let log = Logger(subsystem: "com.johansardar.excerlock.residency", category: "residency")
 
   private let lock = NSLock()
   private var updates: Task<Void, Never>?
@@ -21,6 +22,7 @@ final class Residency: NSObject, CLLocationManagerDelegate {
   func launched(options: [UIApplication.LaunchOptionsKey: Any]?) {
     launchedForLocation = options?[.location] != nil
     launchedInBackground = UIApplication.shared.applicationState == .background
+    log.notice("launch location=\(self.launchedForLocation, privacy: .public) background=\(self.launchedInBackground, privacy: .public) wanted=\(self.wanted, privacy: .public)")
     if wanted { start(foreground: UIApplication.shared.applicationState == .active) }
   }
 
@@ -53,6 +55,7 @@ final class Residency: NSObject, CLLocationManagerDelegate {
       previous?.invalidate()
     }
     if updates == nil {
+      log.notice("start foreground=\(foreground, privacy: .public)")
       updates = Task.detached(priority: .utility) { [weak self] in
         do {
           for try await _ in CLLocationUpdate.liveUpdates() {
@@ -69,6 +72,7 @@ final class Residency: NSObject, CLLocationManagerDelegate {
   private func stop() {
     lock.lock()
     guard updates != nil || session != nil || visits != nil else { lock.unlock(); return }
+    log.notice("stop")
     updates?.cancel()
     updates = nil
     if #available(iOS 18.0, *) { (session as? CLServiceSession)?.invalidate() }
@@ -91,7 +95,11 @@ final class Residency: NSObject, CLLocationManagerDelegate {
   }
 
   private func markUpdate() {
-    lock.lock(); lastUpdateAt = Date().timeIntervalSince1970 * 1000; lock.unlock()
+    lock.lock()
+    let first = lastUpdateAt == 0
+    lastUpdateAt = Date().timeIntervalSince1970 * 1000
+    lock.unlock()
+    if first { log.notice("first live update") }
   }
 
   func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {}
