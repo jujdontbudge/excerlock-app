@@ -1,6 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import { appRoot, fromRoot, repoRoot } from '../lib/paths.ts';
 import { flag, must, option, out, run, UsageError } from '../lib/shell.ts';
+import { bundleId, ownedDevice, simctlArgs } from '../lib/sim.ts';
+
+const runtimes = ['4', '5'];
 
 export const shipProofs = [
   ['launch', 'first-launch-welcome'],
@@ -8,7 +11,7 @@ export const shipProofs = [
   ['launch', 'every-tab-opens'],
 ] as const;
 
-export const help = `excer ota --message "<what changed>" [--publish]
+export const help = `excer ota --message "<what changed>" [--runtime 4|5] [--publish]
 
 The only way to publish a production OTA update (docs/ota.md). Refuses unless:
   1. nothing that goes into the bundle is uncommitted, and HEAD is origin/main;
@@ -19,8 +22,18 @@ The only way to publish a production OTA update (docs/ota.md). Refuses unless:
      for a signed-in account. The dev fakes for class-backed ports (auth,
      subscription) throw on detached method calls, as the device does.
 Without --publish it stops after the gate. With --publish it publishes under the
-release lock and tags ota-runtime<version>-<date>-<sha>. Publishing still needs
-the owner's go-ahead in the conversation.`;
+release lock and tags ota-runtime<version>-<date>-<sha>. --runtime (default 5)
+publishes the same commit to that runtime; the ship proofs then require the
+simulator's installed app to be a build of that runtime, so install one first.
+Publishing still needs the owner's go-ahead in the conversation.`;
+
+function installedRuntime(): string | null {
+  const device = ownedDevice();
+  const container = run('xcrun', simctlArgs(device.udid, ['get_app_container', device.udid, bundleId]));
+  if (container.code) return null;
+  const value = run('plutil', ['-extract', 'EXUpdatesRuntimeVersion', 'raw', `${container.stdout.trim()}/Expo.plist`]);
+  return value.code ? null : value.stdout.trim();
+}
 
 const bundleInputs = ['app', 'src', 'modules', 'plugins', 'assets', 'config', 'patches', 'app.config.ts', 'app.json', 'index.js', 'babel.config.js', 'metro.config.js', 'package.json', 'eas.json'].map((path) => `app-next/${path}`);
 
@@ -36,6 +49,8 @@ const step = (command: string, args: string[], cwd = repoRoot) => spawnSync(comm
 export async function otaCommand(args: string[]): Promise<number> {
   const publish = flag(args, 'publish');
   const message = option(args, 'message');
+  const runtime = option(args, 'runtime') ?? '5';
+  if (!runtimes.includes(runtime)) throw new UsageError(`--runtime must be one of ${runtimes.join(', ')}`);
   if (args.length > 0) throw new UsageError(`unexpected arguments: ${args.join(' ')}`);
   if (!message) throw new UsageError('--message is required');
 
@@ -57,6 +72,11 @@ export async function otaCommand(args: string[]): Promise<number> {
     out.fail('excer check failed; not shipping');
     return 1;
   }
+  const proofRuntime = installedRuntime();
+  if (proofRuntime !== runtime) {
+    out.fail(`the simulator's installed app is runtime ${proofRuntime ?? 'unknown'}; install a runtime ${runtime} build before shipping to runtime ${runtime}`);
+    return 1;
+  }
   for (const [feature, proof] of shipProofs) {
     if (!step(fromRoot('excer'), ['prove', feature, '--proof', proof])) {
       out.fail(`ship proof ${feature}/${proof} failed; not shipping`);
@@ -73,17 +93,18 @@ export async function otaCommand(args: string[]): Promise<number> {
   const published = run(
     'python3',
     [fromRoot('scripts', 'agent-ops.py'), 'run', '--', 'npx', 'eas-cli', 'update', '--branch', 'production', '--environment', 'production', '--platform', 'ios', '--non-interactive', '--message', `${sha} ${message}`],
-    { cwd: appRoot },
+    { cwd: appRoot, env: { ...process.env, EXCERLOCK_OTA_RUNTIME: runtime } },
   );
   process.stdout.write(published.stdout.split('\n').slice(-12).join('\n') + '\n');
   if (published.code !== 0) {
     out.fail(`eas update failed (${published.code}):\n${published.stderr.split('\n').slice(-12).join('\n')}`);
     return 1;
   }
-  const runtime = /Runtime version\s+(\S+)/.exec(published.stdout)?.[1] ?? 'unknown';
+  const publishedRuntime = /Runtime version\s+(\S+)/.exec(published.stdout)?.[1] ?? 'unknown';
+  if (publishedRuntime !== runtime) out.fail(`eas published runtime ${publishedRuntime}, expected ${runtime}`);
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const tag = `ota-runtime${runtime}-${date}-${sha}`;
+  const tag = `ota-runtime${publishedRuntime}-${date}-${sha}`;
   run('git', ['tag', tag, head]);
   out.ok(`published ${sha}; tagged ${tag} locally`);
-  return 0;
+  return publishedRuntime === runtime ? 0 : 1;
 }

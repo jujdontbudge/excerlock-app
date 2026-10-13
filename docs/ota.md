@@ -147,3 +147,10 @@ wait for Ready for Sale, then publish JS to both the old and the new runtime
 until the old runtime's 30-day active-install share is under 5%. Never orphan
 a runtime that still has installs. Version bumps never change
 `runtimeVersion`.
+
+Publish to the older runtime with `./excer ota --message "<what changed>" --runtime 4 --publish`
+from the same `origin/main` commit. The flag sets `EXCERLOCK_OTA_RUNTIME=4`, which is the only
+way `app.config.ts` reports runtime 4, and the gate refuses unless the simulator's installed app
+is a runtime 4 build, so the ship proofs run on that binary. The JavaScript stays runtime-4 safe
+through optional native module lookups (ADR 0076); a commit that needs runtime 5 native code
+must not be published with `--runtime 4`.
