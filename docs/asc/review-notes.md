@@ -1,9 +1,9 @@
-# App Review notes (live for version 1.0, Build 12)
+# App Review notes (live for version 1.0.1, Build 18)
 
-The exact text in App Store Connect review details `15958994-c459-4b32-9327-242dda3b6cb5`, set 2026-09-26. Update this file whenever the live notes change.
+The exact text in App Store Connect review details `b4388fd8-23da-4e34-83e3-9210af040b1e` (version 1.0.1), set 2026-10-12. Update this file whenever the live notes change.
 
 ```text
-GUIDELINE 2.5.1: Like Build 11, this build (12) ships without HealthKit. The binary does not link the HealthKit framework and carries no HealthKit entitlement or Health usage descriptions. ExcerLock never offered an Apple Health feature: steps and walking are measured on device with Core Motion (Motion & Fitness).
+GUIDELINE 2.5.1: Like builds 11 to 17, this build (18) ships without HealthKit. The binary does not link the HealthKit framework and carries no HealthKit entitlement or Health usage descriptions. ExcerLock never offered an Apple Health feature: steps and walking are measured on device with Core Motion (Motion & Fitness).
 
 ExcerLock uses Apple's Family Controls / Screen Time APIs to shield apps the user selects until the user completes a movement condition (walking or gym). It is a self-control tool for the user's own device, not a parental-control app and not a medical app.
 
@@ -20,8 +20,9 @@ PERMISSIONS
 - Screen Time (Family Controls): required to shield apps. If denied or no apps are chosen, Home shows a card naming what is not set up, with a button to finish it or open Settings.
 - Motion & Fitness: counts steps and detects walking on device.
 - Location While Using: recognizes arrival at the gym the user saved. Location Always (optional): keeps walk detection and gym auto-detect running while ExcerLock is closed. Both are asked only when a condition needs them; manual Check in and Check walking remain available.
+- New in 1.0.1: while a walking condition's window is active and Location Always is granted, ExcerLock uses Core Location live updates and visit monitoring so iOS can relaunch it in the background after closing it. This keeps walking unlocks and re-locks working; it stops when the walking window ends, and location stays on the device.
 - Camera (optional): when the phone is propped up, the camera checks walking movement on device. Nothing is recorded or uploaded.
-- Notifications: trial reminder only.
+- Notifications: a trial-ending reminder, a "walking goal complete" prompt, and, during a walking condition, a notice if iOS closed ExcerLock in the background so the user can turn walking detection back on.
 No location, steps or app selections are sent to our servers.
 
 ACCOUNT
