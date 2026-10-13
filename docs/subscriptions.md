@@ -64,11 +64,8 @@ Release and operator order:
    live `onboarding` default on A. Prepare the 50/50 test without activating it.
 3. Integrate the JavaScript change into release `main` with authorization. Run the OTA ship
    gate and publish separately to runtime 4/build 17 and runtime 5/build 18 under the release
-   lock. The current checkout is runtime 5 and `./excer ota` has no runtime selector. The lead
-   must prepare a runtime-4-compatible payload from its verified release source, backporting
-   this JavaScript patch and preserving its native surface, and arrange a certified ship-gate
-   path for it before publication. Do not relabel the complete runtime-5 bundle as runtime 4.
-   Runtime 5 uses the normal `./excer ota` path. Verify each installed OTA still reads the current seven-day metadata
+   lock: `./excer ota --runtime 5` and `./excer ota --runtime 4`, each with the ship proofs on an
+   installed build of that runtime (`docs/ota.md`). Done for `b4906c47` on 2026-10-13. Verify each installed OTA still reads the current seven-day metadata
    correctly, and the marker is present before enabling its experiment audience. No native
    module, dependency, StoreKit environment selection, build or runtime-version change is needed.
 4. Only after both OTA publications succeed, replace the launch plans' current intro offers
