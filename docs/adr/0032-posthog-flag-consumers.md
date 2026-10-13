@@ -5,6 +5,8 @@ date: 2026-09-16
 
 # 0032: PostHog flag rails with one production consumer per registry entry
 
+Partly superseded by [ADR 0078](0078-adapty-onboarding-trial-assignment.md): Adapty owns inclusion of the two trial steps, and Before and After remains in both arms. Other non-monetary onboarding order variations stay on this rail.
+
 ## Decision
 
 Every non-monetary A/B stays in PostHog and is delivered over the existing generation-scoped

@@ -21,6 +21,7 @@ import { ShieldCopyPort } from './ShieldCopyPort';
 import type { StrideGatePort } from './lib/StrideGatePort';
 import type { SensorStreamModuleClient } from './SensorStreamPort';
 import type { OnboardingFlowPort } from './OnboardingFlowPort';
+import type { OnboardingOfferPort } from './OnboardingOfferPort';
 import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
 import type { NotificationResponsesPort } from './NotificationResponsesPort';
 export type Runtime = {
@@ -48,6 +49,7 @@ export type Runtime = {
   experiments?: PaywallExperimentPort;
   signInRequired?: SignInRequiredPort;
   onboardingFlow?: OnboardingFlowPort;
+  onboardingOffer?: OnboardingOfferPort;
   shieldCopy?: ShieldCopyPort;
   strideGate?: StrideGatePort;
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };

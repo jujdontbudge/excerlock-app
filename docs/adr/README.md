@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **accepted**.
 - [0066: Onboarding can stage several Conditions](0066-onboarding-stages-several-conditions.md) — **accepted**.
 - [0065: Text and icons are centred by construction and every proof measures it](0065-centring-by-construction.md) — **accepted**.
 - [0064: Owner filming mode makes walking unlock and lock in about a second](0064-owner-filming-mode.md) — **accepted**.

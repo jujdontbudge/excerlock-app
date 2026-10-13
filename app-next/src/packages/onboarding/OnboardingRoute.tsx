@@ -121,8 +121,8 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
   if (flow.step === 'S5') body = <RatingScreen onPrompted={onRatingPrompted} />;
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
   if (flow.step === 'S3e') body = <BeforeAfter answers={flow.answers} onBack={flow.back} />;
-  if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} />;
-  if (flow.step === 'S3d') body = <TrialReminder />;
+  if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} offer={flow.offer} />;
+  if (flow.step === 'S3d') body = <TrialReminder offer={flow.offer} />;
   return (
     <OnboardingShell
       step={flow.step}

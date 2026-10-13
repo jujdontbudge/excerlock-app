@@ -13,7 +13,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       if (ctx.result() === 'cancel') return entitlement();
       const next = {
         status: 'trial' as const,
-        renewsAt: new Date(Date.parse(ctx.clock.now()) + 7 * 86400000).toISOString(),
+        renewsAt: new Date(Date.parse(ctx.clock.now()) + fakeOffer.trialDays * 86400000).toISOString(),
+        accessExpiresAt: new Date(Date.parse(ctx.clock.now()) + fakeOffer.trialDays * 86400000).toISOString(),
       };
       entitlementStore.getState().patch({ entitlement: next });
       noteObservedEntitlement(next.status);
@@ -54,7 +55,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
           localizedPeriod: 'year',
           localizedWeeklyPrice: '$0.96',
           periodUnit: 'year',
-          offerLabel: '7 days free',
+          offerLabel: fakeOffer.label,
+          trialOffer: fakeOffer,
           recommended: true,
         },
         {
@@ -66,7 +68,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
           localizedPeriod: 'month',
           localizedWeeklyPrice: '$2.31',
           periodUnit: 'month',
-          offerLabel: '7 days free',
+          offerLabel: fakeOffer.label,
+          trialOffer: fakeOffer,
           recommended: false,
         },
         {
@@ -96,13 +99,14 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       ],
     }),
     logPaywallShown: async () => undefined,
-    purchase: async () => {
+    purchase: async (handle) => {
       operation = { busy: true, pending: false, error: null };
       try {
         if (ctx.result() === 'cancel') return { type: 'user_cancelled' as const };
         const next = {
-          status: 'trial' as const,
-          renewsAt: new Date(Date.parse(ctx.clock.now()) + 7 * 86400000).toISOString(),
+          status: handle.endsWith('-now') ? 'active' as const : 'trial' as const,
+          renewsAt: new Date(Date.parse(ctx.clock.now()) + (handle.endsWith('-now') ? 30 : fakeOffer.trialDays) * 86400000).toISOString(),
+          accessExpiresAt: new Date(Date.parse(ctx.clock.now()) + (handle.endsWith('-now') ? 30 : fakeOffer.trialDays) * 86400000).toISOString(),
         };
         entitlementStore.getState().patch({ entitlement: next });
       noteObservedEntitlement(next.status);

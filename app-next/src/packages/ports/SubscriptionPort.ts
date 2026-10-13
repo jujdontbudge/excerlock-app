@@ -30,6 +30,7 @@ export type PaywallProduct = {
   localizedWeeklyPrice: string | null;
   periodUnit: string | null;
   offerLabel: string | null;
+  trialOffer?: TrialOffer | null;
   recommended: boolean;
 };
 export type SubscriptionPaywall = {
@@ -39,6 +40,7 @@ export type SubscriptionPaywall = {
   flowVariationId: string;
   products: readonly PaywallProduct[];
   generation: number;
+  trial?: boolean;
 };
 export type PurchaseResult =
   | { type: 'success'; entitlement: Entitlement }
@@ -69,7 +71,7 @@ export interface SubscriptionPort {
   identify(userId: string): Promise<void>;
   reset(): Promise<void>;
   refresh(): Promise<Entitlement>;
-  loadPaywall(placement: SubscriptionPaywall['placement']): Promise<SubscriptionPaywall>;
+  loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingTrialFallback: boolean }): Promise<SubscriptionPaywall>;
   logPaywallShown(generation: number): Promise<void>;
   purchase(handle: string): Promise<PurchaseResult>;
   operation(): SubscriptionOperation;

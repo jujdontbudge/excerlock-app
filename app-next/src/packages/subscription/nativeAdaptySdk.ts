@@ -8,6 +8,7 @@ export const nativeAdaptySdk: AdaptySdkPort = {
   getProfile: () => adapty.getProfile(),
   identify: (id) => adapty.identify(id),
   logout: () => adapty.logout(),
+  updateProfile: ({ customAttributes }) => adapty.updateProfile({ codableCustomAttributes: customAttributes }),
   getFlow: (placement, options) => {
     if (options.fetchPolicy !== 'reload_revalidating_cache_data') throw new Error('Unsupported paywall fetch policy');
     const params: GetPlacementParamsInput = { fetchPolicy: 'reload_revalidating_cache_data', loadTimeoutMs: options.loadTimeoutMs };

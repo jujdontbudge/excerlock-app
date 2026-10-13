@@ -43,6 +43,7 @@ import { scenario24 } from './walk-state-ready';
 import { scenario25 } from './trial-lapsed-while-closed';
 import { scenario26 } from './trial-lapses-in-session';
 import { screenshotsFull } from './screenshots-full';
+import { onboardingOfferScenarios } from './onboarding-offer';
 export const scenarios = [
   gymUiucOutside,
   gymUiucManual,
@@ -94,4 +95,5 @@ export const scenarios = [
   ...conditionDemoScenarios,
   ...beforeAfterScenarios,
   ...identityLabScenarios,
+  ...onboardingOfferScenarios,
 ];

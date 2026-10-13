@@ -18,6 +18,7 @@ import { deviceLocale, pickRemoteConfig } from './lib/remoteConfig';
 import { weeklyPrice } from './lib/weeklyPrice';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 import { PurchaseRecoveryJournal } from './PurchaseRecoveryJournal';
+import { trialOffer } from './trialOffer';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
 type Loaded = {
@@ -36,6 +37,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   private expected: { userId: string; generation: number } | null = null;
   private loaded: Loaded | null = null;
   private paywallGeneration = 0;
+  private onboardingAudienceGeneration: number | null = null;
   private op: SubscriptionOperation = { busy: false, pending: false, error: null };
   private restoreInFlight = false;
   private disposed = false;
@@ -140,12 +142,18 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       if (timer) clearTimeout(timer);
     });
   }
-  async loadPaywall(placement: SubscriptionPaywall['placement']): Promise<SubscriptionPaywall> {
+  async loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingTrialFallback: boolean }): Promise<SubscriptionPaywall> {
+    const generation = ++this.paywallGeneration;
     await this.deps.recoveryJournal.ready();
     await this.deps.waitForIdentityReady();
     const identity = this.requireExpected();
     await this.ensureActivated();
-    const flow = await this.deps.sdk.getFlow(placement, {
+    if (placement === 'onboarding' && !options?.onboardingTrialFallback && this.onboardingAudienceGeneration !== identity.generation) {
+      await this.deps.sdk.updateProfile({ customAttributes: { onboarding_offer_version: 1 } });
+      this.assertIdentity(identity);
+      this.onboardingAudienceGeneration = identity.generation;
+    }
+    const flow = await this.deps.sdk.getFlow(options?.onboardingTrialFallback ? 'onboarding_trial_fallback' : placement, {
       fetchPolicy: 'reload_revalidating_cache_data',
       loadTimeoutMs: 5000,
     });
@@ -153,7 +161,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const products = await this.deps.sdk.getPaywallProducts(flow);
     this.assertIdentity(identity);
     if (!products.length) throw new Error('Plans could not load');
-    const generation = ++this.paywallGeneration;
+    if (generation !== this.paywallGeneration) throw new Error('Paywall request superseded');
     const remote = this.remoteCopy(flow);
     const mapped = products.map((product, index) =>
       this.mapProduct(product, generation, index, remote.recommendedProductId),
@@ -166,6 +174,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       flowVariationId: String(flow.variationId ?? ''),
       products: mapped,
       generation,
+      trial: remote.trial,
     } as const;
     this.loaded = {
       generation,
@@ -323,6 +332,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const period =
       product.subscription?.localizedSubscriptionPeriod ?? product.subscription?.subscriptionPeriod?.unit ?? '';
     const free = product.subscription?.offer?.phases.find((phase) => phase.paymentMode === 'free_trial');
+    const introductoryOffer = free ? trialOffer(free.subscriptionPeriod, free.numberOfPeriods) : null;
     return {
       handle: `${generation}:${product.variationId}:${index}:${product.vendorProductId}`,
       vendorProductId: product.vendorProductId,
@@ -332,11 +342,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       localizedPeriod: period,
       localizedWeeklyPrice: weeklyPrice(product.price, product.subscription?.subscriptionPeriod, deviceLocale()),
       periodUnit: product.subscription?.subscriptionPeriod?.unit ?? null,
-      offerLabel: free ? `${free.numberOfPeriods} ${free.subscriptionPeriod.unit} free` : null,
+      offerLabel: introductoryOffer?.label ?? null,
+      trialOffer: introductoryOffer,
       recommended: recommendedProductId === product.vendorProductId,
     };
   }
-  private remoteCopy(flow: AdaptyFlow): { title?: string; body?: string; recommendedProductId?: string } {
+  private remoteCopy(flow: AdaptyFlow): { title?: string; body?: string; recommendedProductId?: string; trial?: boolean } {
     const data = pickRemoteConfig(flow.remoteConfigs, deviceLocale())?.data;
     if (!data || typeof data !== 'object') return {};
     const value = data as Record<string, unknown>;
@@ -344,6 +355,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       title: typeof value.title === 'string' ? value.title : undefined,
       body: typeof value.body === 'string' ? value.body : undefined,
       recommendedProductId: typeof value.recommendedProductId === 'string' ? value.recommendedProductId : undefined,
+      trial: typeof value.trial === 'boolean' ? value.trial : undefined,
     };
   }
 }

@@ -1,4 +1,7 @@
-export const fakeOffer = { trialDays: 7, reminderDaysBefore: 2, label: '7-day free trial' };
+import type { TrialOffer } from '../ports/SubscriptionPort';
+import { fallbackTrialOffer } from './trialOffer';
+
+export const fakeOffer = fallbackTrialOffer;
 export const subscriptionCopy = {
   T1: 'Try ExcerLock free',
   offerBody: 'Make space for movement and the things that matter.',
@@ -8,17 +11,17 @@ export const subscriptionCopy = {
     { icon: 'chart', text: 'See your progress build' },
   ],
   T2: "We'll remind you before it ends",
-  reminder: '2 days before your trial ends',
+  reminder: (offer: TrialOffer = fallbackTrialOffer) => `${offer.reminderDaysBefore} day before your trial ends`,
   reminderBody: 'A heads-up, so you can decide what comes next.',
   T3: 'Want a trial reminder?',
   notificationBody: 'Get a reminder before your free trial ends.',
   enable: 'Enable reminders',
   later: 'Maybe later',
   T4: 'How your free trial works',
-  timeline: [
+  timeline: (offer: TrialOffer = fallbackTrialOffer) => [
     { title: 'Today', body: 'Start your free trial and make your plan.' },
-    { title: 'Day 5 · Reminder', body: "We'll remind you if you've enabled notifications." },
-    { title: 'Day 7 · Billing begins', body: 'Your subscription starts unless you cancel before the trial ends.' },
+    { title: `Day ${offer.trialDays - offer.reminderDaysBefore} · Reminder`, body: "We'll remind you if you've enabled notifications." },
+    { title: `Day ${offer.trialDays} · Billing begins`, body: 'Your subscription starts unless you cancel before the trial ends.' },
   ],
   title: 'Choose your plan',
   body: 'Build a healthier relationship with your phone.',
@@ -54,7 +57,7 @@ export const subscriptionCopy = {
   noPayment: 'No payment due now',
   trialBadge: (offer: string) => `${offer} trial`,
   plans: [
-    { id: 'annual', title: 'Annual', price: '$–.–– / year · 7-day free trial' },
+    { id: 'annual', title: 'Annual', price: `$–.–– / year · ${fallbackTrialOffer.label}` },
     { id: 'monthly', title: 'Monthly', price: '$–.–– / month' },
     { id: 'lifetime', title: 'Lifetime', price: '$–.–– once' },
   ],
@@ -72,7 +75,7 @@ export const subscriptionCopy = {
   awaitingApproval: 'Waiting for approval',
   signInToContinue: 'Sign in to continue',
   restored: 'Your purchase has been restored.',
-  devNote: 'Paywall stand-in. Prices and the 7-day trial are placeholders. No purchase occurs.',
+  devNote: 'Paywall stand-in. Prices and offers are placeholders. No purchase occurs.',
   restoreOutcome: 'Restore result',
   restoreOutcomes: ['restored', 'notFound'],
   manage: 'Manage in App Store',

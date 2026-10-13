@@ -30,7 +30,7 @@ export type Scenario = {
   id: string;
   title: string;
   onboarding: 'fresh' | `resumeAt:${string}` | 'complete';
-  onboardingAnswers?: Record<string, string | number | boolean | number[]>;
+  onboardingAnswers?: Record<string, string | number | boolean | number[] | string[]>;
   profile?: Partial<Profile>;
   rules: Rule[];
   lockedApps: LockedApps;
@@ -48,6 +48,7 @@ export type Scenario = {
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
+  onboardingOffer?: { arm: 'a' | 'b' | 'unknown' | 'late' | 'error' | 'malformed'; introEligible?: boolean; trialDays?: number; fallbackError?: boolean };
   purchaseRecovery?: 'pending' | 'accountConnection';
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;

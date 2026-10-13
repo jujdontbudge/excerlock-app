@@ -100,6 +100,7 @@ export function DevControls() {
         <SettingsRow title={`Lease diagnostics ${view.subscriptionLab?.leaseDiagnostics ?? 'Not run'}`} />
         <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
         <SettingsRow title={`Onboarding path ${view.onboardingPath ?? 'Not run'}`} />
+        {view.trialReminder ? <SettingsRow title={`Trial reminder ${view.trialReminder}`} /> : null}
         {view.remoteFlags ? <SettingsRow title={`Remote flags ${view.remoteFlags}`} /> : null}
       </SettingsGroup>
       <SettingsGroup title="Treadmill gait">

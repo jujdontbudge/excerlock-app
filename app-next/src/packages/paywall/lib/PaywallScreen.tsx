@@ -61,7 +61,9 @@ export function PaywallScreen({
     setBusy('load');
     for (let attempt = 0; ; attempt++) {
       try {
-        const next = await runtime.subscription.loadPaywall(placement);
+        const next = placement === 'onboarding' && runtime.onboardingOffer
+          ? await runtime.onboardingOffer.loadPaywall()
+          : await runtime.subscription.loadPaywall(placement);
         setPaywall(next);
         setSelected(withTrial(next.products, defaultPlanHandle(next.products, latest.current.variantKey)));
         latest.current.onLoaded?.(next);
@@ -69,6 +71,7 @@ export function PaywallScreen({
           placement,
           has_trial: next.products.some((item) => item.offerLabel !== null),
           variation_id: next.flowVariationId || undefined,
+          ...(placement === 'onboarding' ? { offer_arm: runtime.onboardingOffer?.snapshot().arm ?? 'a', offer_source: runtime.onboardingOffer?.snapshot().source ?? 'fallback' } : {}),
         });
         break;
       } catch (error) {
@@ -90,8 +93,9 @@ export function PaywallScreen({
   useEffect(() => {
     if (!paywall || shown.current === paywall.generation) return;
     shown.current = paywall.generation;
-    void runtime.subscription.logPaywallShown(paywall.generation);
-  }, [paywall, runtime]);
+    void runtime.subscription.logPaywallShown(paywall.generation).catch((error) => reportError(error, 'load'));
+    if (placement === 'onboarding') runtime.onboardingOffer?.expose();
+  }, [paywall, runtime, placement, reportError]);
   const purchase = async () => {
     if (!selected || busy || recovery.type !== 'none') return;
     if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
@@ -152,8 +156,8 @@ export function PaywallScreen({
     setSelected(handle);
   };
   const pairs = useMemo(() => planPairs(paywall?.products ?? []), [paywall]),
-    switchable = trialSwitchable(pairs),
-    trialOn = !product || product.offerLabel !== null;
+    switchable = paywall?.trial !== false && trialSwitchable(pairs),
+    trialOn = product ? product.offerLabel !== null : false;
   const flip = (next: boolean) => {
     const pair = pairOf(pairs, selected);
     if (pair) choose(planFor(pair, next).handle);
@@ -209,7 +213,7 @@ export function PaywallScreen({
           {product ? (
             <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
               {product.offerLabel
-                ? copy.trialThenBilled(trialLength(product.offerLabel), perPeriod(product))
+                ? copy.trialThenBilled(trialLength(product), perPeriod(product))
                 : copy.billedAs(perPeriod(product))}
             </Label>
           ) : null}

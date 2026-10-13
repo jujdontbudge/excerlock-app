@@ -23,6 +23,7 @@ import type { AuthIdentity } from '../ports/AuthPort';
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
 import { rememberAdmission } from '../subscription/rememberedAdmission';
+import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -96,6 +97,7 @@ export async function createClientServices(options: {
   );
   return {
     auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics,
+    onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation }),
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     onboardingFlow: createOnboardingFlowPort({

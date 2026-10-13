@@ -50,6 +50,7 @@ requires a migration note here.
 | Event | Properties |
 |---|---|
 | `onboarding_screen_viewed` | `screen` (a `FlowScreen` slug, or `plan-demo` for the S3b "How your plan works" step, which adds `scenario` and, for walk-state, `place`) |
+| `onboarding_offer_exposed` | `arm`, `source`, `intro_offer`, optional `variation_id`; ordinary UI exposure, not a feature flag |
 | `onboarding_answer` | `screen` (answer value stays on-device) |
 | `condition_created` / `condition_edited` / `condition_deleted` | — |
 | `earn_claimed` | — |
@@ -59,7 +60,7 @@ requires a migration note here.
 | `shield_screen_opened` | — |
 | `walk_session_started` | — |
 | `walk_session_ended` | — |
-| `paywall_viewed` | `placement`, `has_trial`, `variation_id` |
+| `paywall_viewed` | `placement`, `has_trial`, `variation_id`, optional onboarding `offer_arm`, `offer_source` |
 | `purchase_started` | `placement`, `plan_id` |
 | `purchase_failed` | `reason_class` |
 | `paywall_error` | `operation` |
@@ -130,3 +131,5 @@ registry is the single place to correct them.
 Compile-time invariants live in `src/registry.ts`: the props map and owner map must cover exactly
 the same names, and every props shape must be D12-flat. Runtime invariants (snake_case names,
 owner partition, module disjointness) are in `__tests__/`.
+
+ADR 0078 adds an Adapty-owned onboarding offer experiment. The PostHog client boundary suppresses purchase, restore, trial and subscription lifecycle prefixes even when legacy callers retain those registry names. Adapty measures purchases; only UI exposure and paywall views carry the arm to PostHog.

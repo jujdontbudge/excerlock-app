@@ -144,7 +144,7 @@ export function createPostHogAnalyticsAdapter(options: {
     },
     track(event, props) {
       const started = origin();
-      if (!allowed(started) || !CLIENT_EVENT_ALLOWLIST.has(event)) return;
+      if (!allowed(started) || !CLIENT_EVENT_ALLOWLIST.has(event) || /^(purchase|trial|subscription|restore)_/.test(event)) return;
       const walkPlaces = event === 'walk_places_updated' ? normalizeWalkPlaces(props?.walk_places) : null;
       if (event === 'walk_places_updated' && walkPlaces === null) return;
       void emit(started!, async () => {
