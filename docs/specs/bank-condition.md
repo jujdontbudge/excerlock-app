@@ -155,3 +155,67 @@ export interface BankDrainPort {
 ## Out of scope for v1
 
 Notifications, emergency unlock, Bank beside other Conditions, sharing Points across Conditions, share cards, escalating prices.
+
+## Device spike
+
+Run on a real iPhone with iOS 17.4 or later and the new **Debug** binary. This is
+a release gate; simulator proofs cannot produce Locked-app usage or prove a
+Shield blocks an app. Record device/iOS/build, tick size, observed callback lag,
+re-lock delay, ladder size and extension memory locally; never send selection,
+usage, minutes or Points to analytics or the server.
+
+1. Clear any existing scheduled/watchdog enforcement through the ordinary
+   Condition controls first. Use the dev runtime (Demo mode) for this isolated
+   native spike so the Bank controller does not re-arm it in the foreground.
+   Open **Developer menu → Bank drain diagnostic**, or
+   `excerlock://diagnostics/bank-drain`. A new native Debug build is required;
+   the diagnostic and spike-arm bridge are absent in release binaries.
+2. Tap **Disarm Bank**. Confirm `Arm state: disarmed`, used minutes 0, Bank
+   monitor stopped and Bank shield clear. Tap **Choose Locked apps**, grant
+   Screen Time and select only Instagram. The selection stays opaque and native.
+3. Leave **Bank minutes** at `15`, select **1 minute**, and tap **Arm Bank**.
+   Confirm armed, 15 ladder events, one registered Bank monitor, used minutes 0
+   and Bank shield clear. Note the arm timestamp and total monitor count.
+4. Use Instagram for about three minutes. Reopen the diagnostic to inspect the
+   ticks (used minutes and timestamps), comparing them with a local stopwatch.
+   Spend the next two minutes in an unselected app, on the Home screen, or with
+   the phone locked. Confirm this idle/unselected time does not advance usage.
+5. Force-quit ExcerLock. Return to Instagram and spend the remaining selected-app
+   usage. Confirm Instagram re-locks when the final 15-minute threshold arrives
+   while ExcerLock is still closed. Measure threshold/re-lock lag. Reopen the
+   diagnostic: used minutes must be 15, state exhausted, Bank shield configured,
+   monitor stopped and the final tick timestamp retained.
+6. For continuity, disarm and arm 15 minutes again after Instagram has already
+   been used today. Usage must restart at zero without replaying today's earlier
+   usage. Spend three minutes, read the actual highest reached tick, then arm
+   `15 - usedMinutes + 15` (a 15-minute purchase after applying recorded drain).
+   Confirm new-arm usage resets to zero and already-booked usage is excluded.
+   Late, previously unrecorded usage may arrive immediately through
+   `includesPastActivity`; it must be charged once. Re-lock must use the new
+   final threshold; delayed
+   callbacks from the old arm must not change the new arm's state.
+7. Check the ladder ceiling at Bank minutes `180`, `720` (the initial 12 hours),
+   `1440`, and `2880`. Expect 180, 720, 1440 and 1440 events respectively, with
+   one Bank monitor at every arm. Inspect the monitor extension's memory/jetsam
+   and registration failures. With 2880 armed, keep ExcerLock closed across the
+   24-hour interval end: the extension must register the next interval, preserve
+   recorded cumulative usage, and continue ticking/re-locking on the remaining
+   usage. This interval continuation is a separate long device run.
+8. Repeat the 15-minute, re-arm and ceiling checks with **5 minutes**. Expected
+   15-minute ticks are 5, 10 and 15, and the 24-hour ladder has 288 events. If
+   1-minute delivery, memory or the event ceiling fails, set the production
+   `excerlockBankDrainTickMinutes` constant to 5 and repeat the device gate.
+   Keep `excerlockBankDrainFallbackTickMinutes` at 5.
+9. Tap **Disarm Bank** when finished. Confirm state/ticks/usage clear and the
+   Bank shield lifts. Removing the Bank Condition in the integrated app must do
+   the same. Confirm scheduled Conditions and the existing walking/gym watchdog
+   still behave after the spike. No simulator result substitutes for this check.
+
+Accept only if selected-app usage advances the Bank, idle/unselected usage does
+not, re-arm does not double-charge earlier activity, the largest ladder registers
+within extension memory limits, continuation preserves the Bank across Days, and
+re-lock at zero survives force-quit. Record the measured tick lag and any sub-tick
+interval rounding (one tick plus measured callback lag per boundary; a fresh
+arm starts at the next whole second, while re-arm retains its interval anchor). Registration/continuation failures must show `failed` and keep the
+Bank shield configured without reporting unmeasured usage as spent. If callback
+delivery or that rounding is unacceptable, the drain remains blocked for release.

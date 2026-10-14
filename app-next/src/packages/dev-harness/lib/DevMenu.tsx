@@ -74,6 +74,7 @@ export function DevMenu() {
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow title={c.previews} onPress={() => router.push('/dev?gallery=1' as Href)} />
+        <SettingsRow title="Bank drain diagnostic" onPress={() => router.push('/diagnostics/bank-drain')} />
         <SettingsRow title={c.shield} onPress={() => router.push('/dev?stage=shield' as Href)} />
       </SettingsGroup>
       <SettingsGroup title={c.events}>

@@ -45,6 +45,9 @@ export function RootNavigator() {
           animationDuration: t.motion.duration.emphasized,
         }}>
         <Stack.Screen name="index" />
+        <Stack.Protected guard={__DEV__}>
+          <Stack.Screen name="diagnostics/bank-drain" />
+        </Stack.Protected>
         {__DEV__ ? <Stack.Screen name="dev" /> : null}
         {__DEV__ ? <Stack.Screen name="sample-paywall" /> : null}
         {__DEV__ ? <Stack.Screen name="treadmill-preview" options={{ presentation: 'fullScreenModal' }} /> : null}
