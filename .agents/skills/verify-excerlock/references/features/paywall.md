@@ -9,7 +9,7 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $49.99", in both offers, and the right side shows the smaller weekly equivalent; when Adapty serves trial and no-trial twins, an offer with a trial shows only the trial plans and a no-trial offer only the no-trial plans, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $49.99", in both offers, and the right side shows the smaller weekly equivalent; when Adapty serves trial and no-trial twins, an offer with a trial shows only the trial plans and a no-trial offer only the no-trial plans, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -24,7 +24,7 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /sample-paywall
-expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly $49.99 · $0.96 / week | Monthly $9.99 · $2.31 / week | 3-day free trial, then $49.99/year | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly $49.99 · $0.96 / week | Monthly $9.99 · $2.31 / week | 3-day free trial, then $49.99/year | Continue
 absent: Free trial enabled | Enable free trial
 ```
 
@@ -33,7 +33,7 @@ name: trial-plan-rows
 scenario: fresh-install
 open: /sample-paywall
 tap: Monthly $9.99 · $2.31 / week
-expect: 3-day free trial, then $9.99/month | Start for $0.00
+expect: 3-day free trial, then $9.99/month | Continue
 absent: Free trial enabled | Enable free trial
 ```
 
@@ -49,7 +49,7 @@ name: winback-after-trial
 scenario: trial-lapsed-while-closed
 relaunch: true
 tap: Sign in | Continue with Apple
-expect: Get your DREAM BODY with ExcerLock | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | Continue
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"
@@ -59,7 +59,7 @@ then-expect: "placement":"winback"
 name: lapse-in-session
 scenario: trial-lapses-in-session
 open: /home
-expect: Close | Get your DREAM BODY with ExcerLock | Start for $0.00
+expect: Close | Get your DREAM BODY with ExcerLock | Continue
 wait: 45
 then-open: dev
 then-expect: "placement":"winback"
@@ -70,7 +70,7 @@ name: identity-sync-retry
 scenario: identity-lab-user-sync-failed
 open: /paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Continue
 ```
 
 ```proof
@@ -79,7 +79,7 @@ scenario: identity-lab-slow-cold-start
 relaunch: true
 open: dev?journey=paywall
 wait: 8
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 absent: Loading plans | Starting ExcerLock
 ```
 
@@ -88,7 +88,7 @@ name: identity-slow-cold-start
 scenario: identity-lab-slow-cold-start
 relaunch: true
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Continue
 ```
 
 ```proof
@@ -96,7 +96,7 @@ name: identity-anonymous-retry
 scenario: identity-lab-anonymous-failed
 open: /paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Continue
 ```
 
 ```proof
@@ -104,7 +104,7 @@ name: identity-plans-retry
 scenario: identity-lab-plans-failed
 open: dev?journey=paywall
 wait: 25
-expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Start for $0.00
+expect: Lab annual · $49.99 / year | Lab monthly · $9.99 / month | Continue
 absent: Retry loading plans | couldn't load
 ```
 
@@ -112,7 +112,7 @@ absent: Retry loading plans | couldn't load
 name: identity-purchase-to-setup
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
-tap: Start for $0.00 | Continue with Apple
+tap: Continue | Continue with Apple
 wait: 25
 expect: Allow Screen Time
 then-open: dev
@@ -123,7 +123,7 @@ then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"res
 name: signin-first-purchase-needs-no-second-signin
 scenario: returning-unpaid
 open: /
-tap: Start for $0.00
+tap: Continue
 wait: 25
 expect: Home | Locked
 then-open: /dev
@@ -143,9 +143,9 @@ expect: Allow Screen Time
 name: identity-purchase-cancelled
 scenario: identity-lab-purchase-cancelled
 open: dev?journey=paywall
-tap: Start for $0.00
+tap: Continue
 wait: 25
-expect: Start for $0.00 | Lab annual · $49.99 / year
+expect: Continue | Lab annual · $49.99 / year
 absent: Choose a plan | Starting your plan | Please retry
 ```
 
@@ -153,7 +153,7 @@ absent: Choose a plan | Starting your plan | Please retry
 name: identity-purchase-error-retries-original-checkout
 scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
-actions: tap Start for $0.00 | open /dev | expect purchase_failed {"reason_class":"unknown"} | expect paywall_error {"operation":"purchase"} | open /paywall | tap Start for $0.00 | tap Continue with Apple
+actions: tap Continue | open /dev | expect purchase_failed {"reason_class":"unknown"} | expect paywall_error {"operation":"purchase"} | open /paywall | tap Continue | tap Continue with Apple
 wait: 25
 expect: Allow Screen Time
 absent: could not finish | Starting your plan
@@ -165,7 +165,7 @@ then-expect: Journey setup · paid yes · admitted no | Active account Checkout 
 name: identity-purchase-pending
 scenario: identity-lab-purchase-pending
 open: dev?journey=paywall
-tap: Start for $0.00
+tap: Continue
 wait: 25
 expect: Continue | Lab annual · $49.99 / year
 absent: still being confirmed | Check purchase status | pending approval
@@ -175,7 +175,7 @@ absent: still being confirmed | Check purchase status | pending approval
 name: identity-purchase-success-without-access
 scenario: identity-lab-purchase-success-without-access
 open: dev?journey=paywall
-tap: Start for $0.00
+tap: Continue
 wait: 25
 expect: Sign in to continue
 absent: Payment received | being confirmed
@@ -187,7 +187,7 @@ then-expect: Journey accountRecovery · paid no · admitted no | Purchase recove
 name: identity-purchase-double-tap-is-serialized
 scenario: identity-lab-purchase-busy
 open: dev?journey=paywall
-tap: Start for $0.00
+tap: Continue
 wait: 25
 expect: Continue with Apple
 then-open: /dev
@@ -253,7 +253,7 @@ then-expect: Journey signIn · paid no · admitted no | Purchase recovery accoun
 name: identity-account-switch-does-not-reuse-checkout
 scenario: identity-lab-apple-linked
 open: dev?journey=paywall
-tap: Start for $0.00 | Continue with Apple | Recover with Apple
+tap: Continue | Continue with Apple | Recover with Apple
 wait: 25
 expect: Sign in to continue
 then-open: dev
@@ -279,7 +279,7 @@ name: offer-fallback-outage-keeps-retry
 scenario: onboarding-offer-fallback-error
 open: /sample-paywall
 expect: Continue | Restore purchases | Terms of Use | Privacy Policy
-absent: Free trial | Enable free trial | free trial | Start for $0.00 | Loading plans
+absent: Free trial | Enable free trial | free trial | Loading plans
 then-tap: Continue
 then-open: /dev
 then-expect: paywall_error {"operation":"load"} | onboarding_trial_fallback
@@ -300,7 +300,7 @@ then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.mon
 name: offer-a-checkout-selects-trial-product
 scenario: onboarding-offer-a
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Try for $0.00 | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99 · $0.96 / week | tap Monthly $9.99 · $2.31 / week | expect 3-day free trial, then $9.99/month | tap Start for $0.00
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99 · $0.96 / week | tap Monthly $9.99 · $2.31 / week | expect 3-day free trial, then $9.99/month | tap Continue
 expect: Continue with Apple
 then-open: /dev
 then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly","trial":true} | Purchase operations 1 | Purchase recovery accountConnection

@@ -18,7 +18,7 @@ export const planCopy = {
   stateSupport: 'Apps stay open while you walk',
   use: 'Import',
   trialTitle: 'We want you to try ExcerLock Premium for free',
-  trialCta: 'Try for $0.00',
+  trialCta: 'Continue',
   trialPreview: 'Your ExcerLock Home screen',
   reminderTitle: "We'll send you a reminder before your trial ends",
   reminderArt: 'A notification bell with one reminder',

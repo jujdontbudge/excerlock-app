@@ -20,7 +20,7 @@ import { defaultPlanHandle } from './paywallVariant';
 import { PaywallHeadline } from './PaywallHeadline';
 import { PaywallReview } from './PaywallReview';
 import { PaywallTagline } from './PaywallTagline';
-import { offeredHandle, offersTrial, planFor, planPairs, trialLength, zeroPrice } from './paywallPlans';
+import { offeredHandle, offersTrial, planFor, planPairs, trialLength } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
 const paywallLoadRetries = 2,
   planRowHeight = t.control.full;
@@ -155,8 +155,7 @@ export function PaywallScreen({
     setSelected(handle);
   };
   const pairs = useMemo(() => planPairs(paywall?.products ?? []), [paywall]),
-    trial = paywall ? offersTrial(paywall) : false,
-    trialOn = product ? product.offerLabel !== null : false;
+    trial = paywall ? offersTrial(paywall) : false;
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
@@ -212,9 +211,7 @@ export function PaywallScreen({
             label={
               recovery.type === 'accountConnection'
                 ? subscriptionCopy.signInToContinue
-                : recovery.type === 'pending' || !trialOn
-                  ? subscriptionCopy.continue
-                  : subscriptionCopy.startFor(product ? zeroPrice(product.localizedPrice) : subscriptionCopy.zeroPrice)
+                : subscriptionCopy.continue
             }
             loading={busy !== null}
             onPress={press}

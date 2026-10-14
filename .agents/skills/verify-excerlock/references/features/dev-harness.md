@@ -6,7 +6,7 @@ scenarios: [dynamic-type-xl, reduce-motion, returning-signed-in, identity-lab-ac
 depends: [launch]
 ---
 ## Sub-features
-- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Create your account" sign-in step that follows a successful purchase, skipping only Apple's payment sheet. For a real StoreKit purchase on the simulator, launch with `app-next/scripts/storekit-sim.sh` (see `app-next/storekit/README.md`), then use the plain link and tap Start for $0.00.
+- `excerlock://sample-paywall` (simulator dev builds only, real or fake services): fills a complete, realistic onboarding (walking 10,000 steps, weekdays 9 AM–9 PM, lose 15 lb, 3 h scrolling), stages its Condition and opens the onboarding paywall. Use it instead of tapping through onboarding when you need the real paywall. Add `?stage=sign-in` to open the "Create your account" sign-in step that follows a successful purchase, skipping only Apple's payment sheet. For a real StoreKit purchase on the simulator, launch with `app-next/scripts/storekit-sim.sh` (see `app-next/storekit/README.md`), then use the plain link and tap Continue.
 - `excerlock://treadmill-preview` (simulator dev builds only): opens the treadmill unlock with the fake walking gait, plus a Replay pill at the top. Each tap restarts the whole scan, progress ring and unlock ceremony from the start, so you can watch the loading and animation over and over.
 - `/dev`: the dev menu, scenario loading (`dev?scenario=<id>`), outcome controls (`restore`, `outcome`, `prompt`, `setup=X1..X5`), the component preview gallery, and the shield preview.
 - `dev?stage=type` and `dev?stage=icons`: centring specimens. Every type variant appears bare, inside a fixed box and inside a row; every icon appears in its own box. The proof's centring measurement fails if any of them drifts.
@@ -161,7 +161,7 @@ name: admitted-account-revocation-replaces-app
 scenario: identity-lab-lifecycle-revocation
 open: dev?lab=lifecycle-revocation
 wait: 30
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account A | Condition owner Account A | Profile Account A | Saved Gym Gym A | Lifecycle revocation before app/admitted after paywall/revoked Entitlement none data account-a/1/Account A/Gym A | Protected route mounts | None
 ```

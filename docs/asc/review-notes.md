@@ -11,7 +11,7 @@ QUICK REVIEW PATH (about 5 minutes, physical iPhone required)
 1. Fresh install. Tap Get started through the three intro pages.
 2. On the name screen ("What should we call you?") enter exactly: App Review (case-sensitive). This applies a reviewer preset: an all-day walking condition with a 20-step goal for today's weekday. It is an ordinary user rule, editable later; it grants no bypass.
 3. Answer the remaining questions (Walking and "Reach a step goal" are already selected). The plan screen reads "Your apps are blocked until you walk 20 steps all day". Tap Import, then Continue.
-4. Subscription: the paywall lists each plan with its billed price (Yearly $49.99, Monthly $9.99) and its weekly equivalent; a free trial, where offered, is stated under the plans and on the button. There is no free-trial toggle. Purchase with a Sandbox Apple ID. Restore purchases is on the paywall and in Settings.
+4. Subscription: the paywall lists each plan with its billed price (Yearly $49.99, Monthly $9.99) and its weekly equivalent; a free trial, where offered, is stated in small text under the plans. The purchase button reads "Continue". There is no free-trial toggle. Purchase with a Sandbox Apple ID. Restore purchases is on the paywall and in Settings.
 5. Sign-in is optional: tap Skip for now. You do not need "Already have an account? Sign in" on the first screen; it is only for returning users.
 6. Choose apps to lock: allow Screen Time when asked and pick at least one app in Apple's app picker. Then allow Motion & Fitness.
 7. Open a selected app: it is shielded. Walk with the iPhone for about 30 seconds (20 steps): the condition completes and the app opens. Steps already counted today also satisfy the goal.

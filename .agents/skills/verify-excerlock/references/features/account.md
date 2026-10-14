@@ -97,7 +97,7 @@ name: account-and-help-back-returns-to-paywall
 scenario: returning-unpaid
 open: /
 tap: Account and help | Back
-expect: Start for $0.00 | Restore purchases | Account and help
+expect: Continue | Restore purchases | Account and help
 ```
 
 ```proof
@@ -133,7 +133,7 @@ The complimentary local harness is enabled only in a development bundle with `EX
 name: complimentary-email-code-keeps-access
 open: /
 expect: Add condition | Home
-absent: Start for $0.00 | Let's try that again
+absent: Get your DREAM BODY with ExcerLock | Let's try that again
 relaunch-after-expect: true
 after-relaunch-expect: Add condition | Home
 wait: 30
@@ -165,7 +165,7 @@ The next two proofs use a verified finite complimentary grant, then stop only th
 name: complimentary-offline-keeps-home
 open: /
 expect: Add condition | Home
-absent: Start for $0.00 | Let's try that again
+absent: Get your DREAM BODY with ExcerLock | Let's try that again
 relaunch-after-expect: true
 after-relaunch-expect: Add condition | Home
 wait: 30

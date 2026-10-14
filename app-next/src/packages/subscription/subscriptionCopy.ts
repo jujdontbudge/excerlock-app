@@ -50,8 +50,6 @@ export const subscriptionCopy = {
   free: 'FREE',
   perWeekShort: '/wk',
   trialThen: (length: string) => `${length} trial then `,
-  startFor: (price: string) => `Start for ${price}`,
-  zeroPrice: '$0.00',
   noPayment: 'No payment due now',
   trialBadge: (offer: string) => `${offer} trial`,
   plans: [

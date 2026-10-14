@@ -42,10 +42,3 @@ export function trialLength(product: PaywallProduct): string {
   const match = /^(\d+)[ -](day|week|month|year)s?/.exec(label);
   return match ? `${match[1]}-${match[2]}` : label.replace(/ free(?: trial)?$/, '');
 }
-
-export function zeroPrice(price: string): string {
-  return price.replace(/\d(?:[\d.,   ]*\d)?/, (amount) => {
-    const decimals = /[.,](\d{1,2})$/.exec(amount);
-    return decimals ? `0${amount[amount.length - decimals[1].length - 1]}${'0'.repeat(decimals[1].length)}` : '0';
-  });
-}

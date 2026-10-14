@@ -82,7 +82,7 @@ expect: Welcome back | Sign in again to open ExcerLock. | Continue with Apple
 name: start-over-sign-in-keeps-onboarding-plan
 scenario: fresh-install
 open: /sample-paywall?stage=sign-in
-tap: Back | Sign in | Continue with Apple | Start for $0.00
+tap: Back | Sign in | Continue with Apple | Continue
 expect: Allow Screen Time
 ```
 

@@ -77,21 +77,21 @@ scenario: subscription-proof-matching
 open: /
 expect: day streak | Apps blocked until
 then-open: /dev?scenario=subscription-proof-lapsed&keep=1
-then-expect: Start for $0.00 | Restore purchases
+then-expect: Continue | Restore purchases
 ```
 
 ```proof
 name: returning-unpaid-to-paywall
 scenario: returning-unpaid
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 ```
 
 ```proof
 name: returning-expired-to-paywall
 scenario: returning-expired
 open: /
-expect: Start for $0.00 | Restore purchases | Close
+expect: Continue | Restore purchases | Close
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None
 ```
@@ -100,9 +100,9 @@ then-expect: Journey paywall | Protected route mounts | None
 name: remote-flags-not-authority
 scenario: returning-unpaid-remote-bypass-attempt
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 deny-routes: protected
-deny-expect: Start for $0.00 | Restore purchases
+deny-expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in optional review preset enabled paywall variant error | Protected route mounts | None
 ```
@@ -111,18 +111,18 @@ then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in op
 name: unpaid-home-deep-link-blocked
 scenario: returning-unpaid
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 then-open: /home
-then-expect: Start for $0.00 | Restore purchases
+then-expect: Continue | Restore purchases
 ```
 
 ```proof
 name: all-protected-deep-links-blocked
 scenario: returning-unpaid
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 deny-routes: protected
-deny-expect: Start for $0.00 | Restore purchases
+deny-expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Protected route mounts | None
 ```
@@ -131,9 +131,9 @@ then-expect: Protected route mounts | None
 name: unpaid-home-notification-blocked
 scenario: returning-unpaid
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 notifications: home
-notification-expect: Start for $0.00 | Restore purchases
+notification-expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered home · Handled 1
 ```
@@ -142,9 +142,9 @@ then-expect: Journey paywall | Protected route mounts | None | Notification resp
 name: unpaid-unlock-notification-blocked
 scenario: returning-unpaid
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 notifications: unlock
-notification-expect: Start for $0.00 | Restore purchases
+notification-expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None | Notification responses | Delivered unlock · Handled 1
 ```
@@ -154,7 +154,7 @@ name: forged-onboarding-return-blocked
 scenario: reinstall-keychain
 open: /onboarding/S3d?returnTo=%2Fhome
 tap: Continue
-expect: Start for $0.00 | Restore purchases | No payment due now
+expect: Continue | Restore purchases | No payment due now
 then-open: /dev
 then-expect: Protected route mounts | None
 ```
@@ -164,7 +164,7 @@ name: unpaid-paywall-back-gesture-blocked
 scenario: returning-unpaid
 open: /
 gesture: back
-expect: Start for $0.00 | Restore purchases | Close
+expect: Continue | Restore purchases | Close
 then-open: /dev
 then-expect: Journey paywall | Protected route mounts | None
 ```
@@ -184,7 +184,7 @@ name: unpaid-home-ota-envelope-blocked
 scenario: returning-unpaid-ota-home
 relaunch: true
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /home | Protected route mounts | None
 ```
@@ -194,7 +194,7 @@ name: unpaid-unlock-ota-envelope-blocked
 scenario: returning-unpaid-ota-unlock
 relaunch: true
 open: /
-expect: Start for $0.00 | Restore purchases
+expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protected route mounts | None
 ```
@@ -261,7 +261,7 @@ then-expect: Journey app · paid yes · admitted yes
 name: long-setup-keeps-admission
 scenario: fresh-install
 open: /sample-paywall?stage=sign-in
-actions: tap Continue with Apple | tap Start for $0.00 | tap Not now | open /dev?advance=360000 | tap Not now
+actions: tap Continue with Apple | tap Continue | tap Not now | open /dev?advance=360000 | tap Not now
 expect: Home
-absent: Start for $0.00
+absent: Get your DREAM BODY with ExcerLock
 ```
