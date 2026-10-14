@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0080: Scoped bearer tokens grant complimentary access over HTTPS](0080-scoped-access-grant-tokens.md) — **accepted**.
 - [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **accepted**.
 - [0066: Onboarding can stage several Conditions](0066-onboarding-stages-several-conditions.md) — **accepted**.
 - [0065: Text and icons are centred by construction and every proof measures it](0065-centring-by-construction.md) — **accepted**.

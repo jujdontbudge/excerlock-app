@@ -29,6 +29,10 @@ After the server containing migration `0011_complimentary-access` is deployed:
 
 `--prod` runs the deployed command on `excerlock-api`, as the `excerlock` service user with the service's EnvironmentFile. Recipient data travels through stdin. Never print the EnvironmentFile. Grant/revoke output contains only an opaque grant ID, lane and dates; list includes private recipient emails and notes. Do not paste list output into analytics, logs, issues or shared artifacts. The audit actor is the active gcloud account for production, and OS user/host for local work. Audit dates come from the server/database execution, not the device.
 
+## Scoped token for other agents
+
+A non-engineering agent, such as marketing's agent on another Mac, uses `tools/marketing-access/excerlock-access/` instead of `--prod` ([ADR 0080](../adr/0080-scoped-access-grant-tokens.md)). Hand a person that folder plus its `HANDOFF.md`. They run `excerlock-access setup <label>` there and send back the `label:sha256hex` line. With the owner's approval, add it to `ACCESS_GRANT_TOKEN_HASHES` (comma-separated) in `/etc/excerlock/env` with `sudoedit`, then restart `excerlock-api` and `excerlock-api-testflight`. Remove the line and restart to revoke the token. Their audit actor is `token:<label>`. The token can grant, check one email and revoke, and nothing else.
+
 Revocation takes effect on the next successful launch/foreground/renewal check. It never cancels an Apple subscription. A paying account remains entitled. Offline complimentary access lasts until the last server response boundary, at most 24 hours, with no three-day paid grace. Unknown paid evidence after grant removal opens verification; a confirmed unpaid account sees the Paywall. Sign out and account deletion keep their existing protections. Account deletion scrubs matched recipient emails and notes and revokes their grants.
 
 Emails are trimmed and lowercased. Gmail dots and plus tags are **not** rewritten; grant the actual signed-in address. Apple Hide My Email uses the relay address on the Supabase account. A user-supplied profile field cannot claim somebody else's grant.
