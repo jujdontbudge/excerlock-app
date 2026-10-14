@@ -4,23 +4,32 @@ One word per concept. Code, copy, commits, issues and agent output use these wor
 
 ## Product
 
-**Condition**: what a user must do to open their locked apps during a schedule. A Condition has a kind, a goal (for targets), a Schedule and Locked apps. _Avoid_: rule (the code's old name; stored keys still say `rule`, which is an invariant, not a naming choice).
+**Condition**: what a user must do to open their locked apps during a schedule. A Condition has a kind, a goal (for targets), a Schedule and Locked apps. A Bank Condition has a Difficulty instead of a goal and no Schedule. _Avoid_: rule (the code's old name; stored keys still say `rule`, which is an invariant, not a naming choice).
 
 **Condition kind**: how a Condition is met. Exactly one of:
 - **Walking target**: apps stay locked until the user walks a number of steps or minutes that day.
 - **Walking state**: apps open only while the user is walking.
 - **Gym target**: apps stay locked until the user spends a number of minutes at a saved gym.
 - **Gym presence**: apps open while the user is at a saved gym (arrival starts it).
+- **Bank** (walking or gym): apps stay locked while the Bank is empty; the activity earns Points, Points buy screen time in the Shop, and using Locked apps spends Bank time. Only one Bank Condition is enabled at a time, and no other Condition can sit next to it.
+
+**Points**: what a Bank Condition's activity earns (steps or gym minutes), at the rate its Difficulty sets. Points never expire while their Bank Condition exists. "Earned" is the right word for Points and only for Points.
+
+**Difficulty**: Easy, Medium or Hard. Sets how many Points an activity earns and the daily minimum that keeps the Streak.
+
+**Shop**: the tab where Points buy screen time. It exists only while a Bank Condition is enabled. **Offer**: one thing the Shop sells, a price in Points for an amount of screen time.
+
+**Bank**: screen time the user has bought and not yet spent. It drains only while Locked apps are in use. It starts at 12 hours when a Bank Condition is added, has no cap, never expires, and ends, with its Points, when that Condition is removed. _Avoid_: balance, wallet.
 
 **Schedule**: the days and the time window (all day, or a start and end minute that may cross midnight) in which a Condition locks apps.
 
 **Locked apps**: the user's Screen Time selection, held only as an opaque handle. App names and bundle ids never reach JavaScript, the server or analytics.
 
-**Progress**: how far a Condition is toward being met today. **Met** is the moment it is satisfied for the day. _Avoid_: earned, credit, ledger.
+**Progress**: how far a Condition is toward being met today. **Met** is the moment it is satisfied for the day. _Avoid_: earned, credit, ledger (Points are earned; Progress is not).
 
 **Day**: a local calendar day (`DayKey`, `YYYY-MM-DD`). A Day is **sealed** once it is over and its Progress becomes History.
 
-**History**: sealed Days, the source of Streak and Reclaimed time. **Streak**: consecutive Days with every scheduled Condition met. **Reclaimed time**: screen time the user kept locked.
+**History**: sealed Days, the source of Streak and Reclaimed time. **Streak**: consecutive Days with every scheduled Condition met; a Bank Condition is met on a Day once its Difficulty's daily minimum is reached. **Reclaimed time**: screen time the user kept locked.
 
 **Lock decision**: the single answer to "should apps be locked right now, and why", computed from Conditions, Progress, Activity and Entitlement. **Unlock**: the moment a Lock decision turns open, as the user experiences it. _Avoid_: relief.
 

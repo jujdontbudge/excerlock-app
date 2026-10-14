@@ -2,6 +2,8 @@
 
 ## Index
 
+- [0081: The Bank Condition sells screen time that drains only while Locked apps are used](0081-bank-condition.md) — **proposed**.
+- [0080: Reward motion is the one exception to still screens](0080-reward-motion.md) — **proposed**.
 - [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **accepted**.
 - [0066: Onboarding can stage several Conditions](0066-onboarding-stages-several-conditions.md) — **accepted**.
 - [0065: Text and icons are centred by construction and every proof measures it](0065-centring-by-construction.md) — **accepted**.

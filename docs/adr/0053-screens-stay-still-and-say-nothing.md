@@ -26,6 +26,7 @@ Alternatives: per-screen inline banners with reserved space (still status text, 
 
 ## References
 
+- [0080: Reward motion is the one exception to still screens](0080-reward-motion.md) — **proposed**; narrows this ADR for Points and Bank moments.
 - `app-next/src/packages/ui/Notice.tsx`, `ui/PrimaryButton.tsx`, `ui/SecondaryButton.tsx`, `paywall/lib/PaywallScreen.tsx`
 - `packages/eslint-plugin-excerlock/index.cjs` (`no-status-text`)
 - [0024: Keep account access after subscription lapse](0024-keep-account-access-after-subscription-lapse.md) — **accepted**; the recovery exit stays on the verification failure screen.
