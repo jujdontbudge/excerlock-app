@@ -278,7 +278,7 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    name = `${product.offerLabel ? copy.freeThen : ''}${planName(product)} ${product.localizedPrice}`,
+    name = `${planName(product)} ${product.localizedPrice}`,
     price = product.localizedWeeklyPrice && product.periodUnit !== 'week'
       ? `${product.localizedWeeklyPrice}${copy.perWeek}`
       : `${product.localizedPrice} / ${product.periodUnit ?? product.localizedPeriod}`;

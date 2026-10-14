@@ -15,7 +15,6 @@ export const paywallCopy = {
     quote: '“This finally got me to lose 15 lbs after months of no progress.”',
   },
   perWeek: ' / week',
-  freeThen: 'FREE then ',
   billedAs: (price: string) => `Billed as ${price}`,
   trialThenBilled: (length: string, price: string) => `${length} free trial, then ${price}`,
   account: 'Account and help',

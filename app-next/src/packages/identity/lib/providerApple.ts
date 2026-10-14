@@ -51,7 +51,8 @@ export async function requestAppleCredential(deps: AppleNativeDeps, rawNonce?: s
   } catch (error) {
     const code = (error as { code?: unknown })?.code;
     if (code === 'ERR_REQUEST_CANCELED') throw new AuthCancelledError();
-    throw new AuthError('Apple sign-in failed. Please try again.', { code: 'APPLE_SIGNIN_FAILED' });
+    const native = typeof code === 'string' && /^[A-Z0-9_]{1,40}$/.test(code) ? `_${code}` : '';
+    throw new AuthError('Apple sign-in failed. Please try again.', { code: `APPLE_SIGNIN_FAILED${native}` });
   }
   if (!credential.identityToken) {
     throw new AuthError('Apple did not return a token. Please try again.', { code: 'APPLE_TOKEN_MISSING' });

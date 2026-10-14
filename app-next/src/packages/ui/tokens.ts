@@ -53,6 +53,7 @@ export const tokens = {
     success: '#27834A',
     error: '#BD3038',
   },
+  beforeAfter: { before: '#BD3038', beforeTint: '#FCE7E7', after: '#27834A', afterTint: '#E4F4E9' },
   chart: {
     barWidth: 22, barPlot: 168, barMinimum: 14, barHeadroom: 22,
     exercise: accent, comparison: '#92929C', grid: '#ECECEF',

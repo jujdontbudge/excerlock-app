@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Image, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Ellipse, Path } from 'react-native-svg';
 import { Answers } from '../../model/answers';
 import { BackButton } from '../../ui/BackButton';
 import { Icon } from '../../ui/Icon';
@@ -37,8 +37,6 @@ const beat = 140,
     floor: t.space.md,
     shadow: 0.07,
     minHeight: 440,
-    cloud: { width: 64, height: 40, fall: 22, drops: [26, 38, 50] },
-    sun: 76,
     sparkle: 'M12 0C13 7 17 11 24 12C17 13 13 17 12 24C11 17 7 13 0 12C7 11 11 7 12 0Z',
     arrow: { width: 56, height: 48 },
   } as const;
@@ -117,11 +115,11 @@ function Side({ kind, lines, figure, rowsAt }: { kind: 'before' | 'after'; lines
           overflow: 'hidden',
           borderRadius: t.radius.card + (after ? look.cutout : 0),
           paddingTop: t.space.lg,
-          backgroundColor: after ? t.brand.track : t.surface.well,
+          backgroundColor: after ? t.beforeAfter.afterTint : t.beforeAfter.beforeTint,
           ...(after ? { borderWidth: look.cutout, borderColor: t.surface.warmCanvas } : null),
         }}>
         <View style={{ paddingHorizontal: t.space.md, gap: t.space.sm }}>
-          <Label variant="display" accessible={false} style={{ textAlign: 'left', color: after ? t.brand.primary : t.text.primary }}>
+          <Label variant="display" accessible={false} style={{ textAlign: 'left', color: after ? t.beforeAfter.after : t.beforeAfter.before }}>
             {title}
           </Label>
           {lines.map((line, index) => (
@@ -130,7 +128,7 @@ function Side({ kind, lines, figure, rowsAt }: { kind: 'before' | 'after'; lines
               entering={enterAt(m, rowsAt + index * beat)}
               style={{ flexDirection: 'row', gap: t.space.xs + t.stroke.selected }}>
               <View style={{ height: t.type.label.lineHeight, justifyContent: 'center' }}>
-                <Icon name={after ? 'check' : 'close'} size={t.icon.sm} tone={after ? 'accent' : 'muted'} variant="utility" />
+                <Icon name={after ? 'check' : 'close'} size={t.icon.sm} tone={after ? 'success' : 'danger'} variant="utility" />
               </View>
               <Label
                 variant="label"
@@ -143,8 +141,8 @@ function Side({ kind, lines, figure, rowsAt }: { kind: 'before' | 'after'; lines
         </View>
         <FigureBox figure={figure} glow={after} cover={after ? 0 : look.overlap} />
       </View>
-      <View pointerEvents="none" style={after ? { position: 'absolute', top: -t.space.xl, right: -t.space.md } : { position: 'absolute', top: -t.space.lg, right: look.overlap + t.space.xs }}>
-        {after ? <Sun /> : <Cloud />}
+      <View pointerEvents="none" style={{ position: 'absolute', top: t.space.lg, right: after ? t.space.md : look.overlap + t.space.md }}>
+        <Icon name={after ? 'check' : 'close'} size={t.icon.lg} tone={after ? 'success' : 'danger'} variant="utility" />
       </View>
     </View>
   );
@@ -180,104 +178,12 @@ function FigureBox({ figure, glow, cover }: { figure: Figure; glow: boolean; cov
           {glow ? (
             <>
               <Sparkle size={t.icon.md} color={t.swatch.yellow} delay={0} style={{ left: left - t.space.sm, bottom: look.floor + height * 0.78 }} />
-              <Sparkle size={t.icon.sm} color={t.brand.primary} delay={t.motion.duration.emphasized * 2} style={{ left: left + width - t.space.xs, bottom: look.floor + height * 0.9 }} />
+              <Sparkle size={t.icon.sm} color={t.beforeAfter.after} delay={t.motion.duration.emphasized * 2} style={{ left: left + width - t.space.xs, bottom: look.floor + height * 0.9 }} />
               <Sparkle size={t.icon.sm} color={t.swatch.yellow} delay={t.motion.duration.emphasized * 3} style={{ left: left + width - t.space.lg, bottom: look.floor + height * 0.5 }} />
             </>
           ) : null}
         </>
       ) : null}
-    </View>
-  );
-}
-
-function Cloud() {
-  const m = useMotion(),
-    { width, height, fall, drops } = look.cloud;
-  return (
-    <View style={{ width, height: height + fall }}>
-      {drops.map((left, index) => (
-        <Animated.View
-          key={left}
-          style={[
-            { position: 'absolute', left, top: height - t.space.sm },
-            m.keyframes(
-              {
-                from: { opacity: 0, transform: [{ translateY: 0 }] },
-                '30%': { opacity: 1 },
-                to: { opacity: 0, transform: [{ translateY: fall }] },
-              },
-              'emphasized',
-              { loop: true, spread: t.motion.duration.emphasized * 1.5, delay: index * beat * 3, curve: 'steady' },
-            ) as ViewStyle,
-          ]}>
-          <Svg width={6} height={9} viewBox="0 0 6 9">
-            <Path d="M3 0C3 0 6 4.5 6 6A3 3 0 0 1 0 6C0 4.5 3 0 3 0Z" fill={t.swatch.sky} />
-          </Svg>
-        </Animated.View>
-      ))}
-      <Svg width={width} height={height} viewBox="0 0 64 40">
-        <G fill={t.chart.comparison}>
-          <Circle cx={18} cy={26} r={11} />
-          <Circle cx={33} cy={18} r={15} />
-          <Circle cx={48} cy={26} r={11} />
-          <Rect x={18} y={22} width={30} height={15} />
-        </G>
-      </Svg>
-    </View>
-  );
-}
-
-function Sun() {
-  const m = useMotion(),
-    size = look.sun,
-    centre = size / 2,
-    rays = Array.from({ length: 8 }, (_, index) => (index * Math.PI) / 4);
-  return (
-    <View style={{ width: size, height: size }}>
-      <Animated.View
-        style={[
-          { position: 'absolute', width: size, height: size },
-          m.keyframes(
-            {
-              from: { opacity: 0.6, transform: [{ scale: 0.86 }] },
-              '50%': { opacity: 1, transform: [{ scale: 1.04 }] },
-              to: { opacity: 0.6, transform: [{ scale: 0.86 }] },
-            },
-            'breathe',
-            { loop: true },
-          ) as ViewStyle,
-        ]}>
-        <Svg width={size} height={size}>
-          <Circle cx={centre} cy={centre} r={centre} fill={t.brand.light} fillOpacity={0.7} />
-        </Svg>
-      </Animated.View>
-      <Animated.View
-        style={[
-          { position: 'absolute', width: size, height: size },
-          m.keyframes(
-            { from: { transform: [{ rotate: '0deg' }] }, to: { transform: [{ rotate: '360deg' }] } },
-            'breathe',
-            { loop: true, spread: t.motion.duration.breathe * 4, curve: 'steady' },
-          ) as ViewStyle,
-        ]}>
-        <Svg width={size} height={size}>
-          {rays.map((angle) => (
-            <Line
-              key={angle}
-              x1={centre + Math.cos(angle) * size * 0.3}
-              y1={centre + Math.sin(angle) * size * 0.3}
-              x2={centre + Math.cos(angle) * size * 0.4}
-              y2={centre + Math.sin(angle) * size * 0.4}
-              stroke={t.swatch.yellow}
-              strokeWidth={t.stroke.glyph + 1}
-              strokeLinecap="round"
-            />
-          ))}
-        </Svg>
-      </Animated.View>
-      <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Circle cx={centre} cy={centre} r={size * 0.22} fill={t.swatch.yellow} />
-      </Svg>
     </View>
   );
 }

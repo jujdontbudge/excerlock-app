@@ -25,7 +25,7 @@ scenario: identity-lab-provider-attempts
 open: dev?journey=signIn
 tap: Continue with Apple | Continue with Google | Continue with Google
 wait: 30
-expect: Become ADDICTED to exercise
+expect: HACK your brain and become ADDICTED to exercise.
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Provider attempts Apple canceled · Google failed · Google success · account lab-checkout-1 · grants 0 | lab_provider_attempt {"provider":"apple","attempt":1,"result":"cancelled","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":1,"result":"failed","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"google","attempt":2,"result":"success","account":"lab-checkout-1","grants":0} | lab_link_identity {"provider":"google","result":"ok"} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
 ```
