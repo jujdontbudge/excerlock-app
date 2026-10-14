@@ -9,6 +9,7 @@ let excerlockSelectionDefaultsKey = "familyActivitySelectionIds"
 let excerlockWatchdogPrefix = "excerlock.watchdog."
 let excerlockWindowPrefix = "excerlock.window."
 let excerlockWatchdogEarliestMs: Double = 60_000
+let excerlockMaxDeviceActivityMonitors = 20
 
 struct ExcerlockMonitorRegistration: Codable, Equatable {
   let id: String; let revision: Int; let policyGeneration: Int; let accountGeneration: Int

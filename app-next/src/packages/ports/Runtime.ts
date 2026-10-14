@@ -1,4 +1,6 @@
 import type { ComponentType } from 'react';
+import type { BankDrainPort } from './BankDrainPort';
+import type { BankDrainDiagnosticPort } from './BankDrainDiagnosticPort';
 import { SupportPort } from './SupportPort';
 import { StoreReviewPort } from './StoreReviewPort';
 import { IncidentReportPort } from './IncidentReportPort';
@@ -28,6 +30,8 @@ export type Runtime = {
   readonly kind: 'fake' | 'real';
   appPickerHost?: ComponentType;
   screenTime: ScreenTimePort;
+  bankDrain: BankDrainPort;
+  bankDrainDiagnostic?: BankDrainDiagnosticPort;
   steps: StepsPort;
   walking: WalkingPort;
   gait: GaitPort;

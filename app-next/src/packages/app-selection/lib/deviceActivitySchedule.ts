@@ -2,7 +2,6 @@ const WALK_INCREMENT_MINUTES = 15;
 
 export const UNLOCK_INCREMENT_MS = WALK_INCREMENT_MINUTES * 60_000;
 export const UNLOCK_LEASE_MONITOR = "excerlock.unlock-lease.v1";
-export const BALANCE_DRAIN_MONITOR = "excerlock.balance-drain.v1";
 
 export type DeviceActivityDateComponents = Readonly<{
   year: number;
@@ -39,10 +38,6 @@ export function localDaySchedule(atMs: number): Readonly<{
     intervalEnd: localDateComponents(end.getTime()),
     repeats: false,
   };
-}
-
-export function balanceRungEventName(index: number): string {
-  return `excerlock.balance-rung.${index}`;
 }
 
 export function usageThresholdComponents(thresholdMinutes: number): Readonly<{

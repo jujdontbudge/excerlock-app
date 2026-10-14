@@ -1,4 +1,4 @@
-export type DesiredOsState = { shields: "up" | "down"; drainThresholds: number[] };
+export type DesiredOsState = { shields: "up" | "down" };
 
 export type ScreenTimeAuthorizationStatus =
   | "notDetermined"
