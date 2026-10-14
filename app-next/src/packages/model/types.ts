@@ -13,6 +13,7 @@ export type Rule = {
 };
 
 export type RuleMode =
+  | { kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' }
   | { kind: 'target'; activity: 'walking'; metric: 'steps' | 'minutes'; goal: number }
   | { kind: 'state'; activity: 'walking' | 'gym' }
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
@@ -83,11 +84,12 @@ export type Permissions = {
 
 export type UnlockHint = {
   ruleId: string;
-  action: 'walk' | 'arrive' | 'progress';
+  action: 'walk' | 'arrive' | 'progress' | 'shop';
   remaining: number | null;
   unit: string | null;
 };
 export type LockDecision =
+  | { state: 'unlockedBank'; ruleId: string }
   | { state: 'noRulesToday'; nextLockAt: string | null }
   | { state: 'beforeWindow'; nextLockAt: string; ruleId: string; getAheadRuleId: string | null }
   | { state: 'locked'; activeRuleIds: string[]; nextUnlockHint: UnlockHint }

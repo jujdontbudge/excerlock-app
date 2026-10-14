@@ -7,6 +7,7 @@ import { projectEnforcement } from './lib/projectEnforcement';
 import type { EnforcementSnapshot } from './EnforcementHost';
 
 export type RuntimeEnforcementInput = {
+  bankMinutes?: number;
   now: string; timezone: string; rules: Rule[]; ruleDays: RuleDay[];
   walking: WalkingStatus; gymPresence: GymPresence | null;
   entitlement: Entitlement; deleting: boolean; accountGeneration: number;
@@ -28,9 +29,9 @@ export class RuntimeEnforcementSource {
       now: input.now, timezone: input.timezone, rules: input.rules, ruleDays: input.ruleDays,
       detection: { state: walking.phase === 'active' || walking.phase === 'grace' ? 'active' : walking.phase === 'unknown' ? 'unknown' : 'inactive', since: walking.since },
       placement: { state: walking.placement, liveRelief: walking.proppedVerified, since: walking.proppedSince },
-      gymPresence: input.gymPresence,
+      gymPresence: input.gymPresence, bankMinutes: input.bankMinutes,
     });
-    const plan = planScheduleWindows(input.rules, input.now, input.timezone);
+    const plan = planScheduleWindows(input.rules.filter((rule) => rule.mode.kind !== 'bank'), input.now, input.timezone);
     const ends = input.rules.flatMap(rule => currentInstances(rule, input.now, input.timezone)).map(instance => Date.parse(instance.end));
     const activeUntil = ends.length ? Math.max(...ends) : null;
     let projected: EnforcementSnapshot = projectEnforcement({

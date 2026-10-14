@@ -30,9 +30,9 @@ export type { FlowOrder };
 function branchFor(answers: Answers): string[] {
   switch (answers.activity) {
     case 'gym':
-      return answers.gymMode === 'time' ? ['G0F', 'G0H', 'G1', 'G2'] : ['G0F', 'G0H', 'G1'];
+      return answers.gymMode === 'bank' ? ['G0F', 'G0H', 'G1', 'D'] : answers.gymMode === 'time' ? ['G0F', 'G0H', 'G1', 'G2'] : ['G0F', 'G0H', 'G1'];
     default:
-      return answers.walkingMode === 'state' ? ['W0', 'W1', 'W2'] : ['W0', 'W1', 'W2', 'W3'];
+      return answers.walkingMode === 'bank' ? ['W0', 'W1', 'W2', 'D'] : answers.walkingMode === 'state' ? ['W0', 'W1', 'W2'] : ['W0', 'W1', 'W2', 'W3'];
   }
 }
 
@@ -53,7 +53,7 @@ export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
     .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : step === beforeAfterAnchor
       ? step === 'S3b' ? [step, 'S3e'] : ['S3e', step]
       : [step]);
-  return [...pre, ...branchFor(answers), ...orderedTail];
+  return [...pre, ...branchFor(answers), ...orderedTail.filter((step) => step !== 'S1' || (answers.activity === 'gym' ? answers.gymMode !== 'bank' : answers.walkingMode !== 'bank'))];
 }
 
 export function offerFlowOrder(order: FlowOrder | null, trialAvailable: boolean): FlowOrder {

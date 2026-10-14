@@ -156,7 +156,7 @@ export function projectInstanceProgress(
   return rows;
 }
 
-function clippedDuration(
+export function clippedDuration(
   intervals: readonly { from: number; to: number }[],
   from: number,
   to: number,

@@ -37,6 +37,10 @@ export function DevControls() {
   };
   return (
     <>
+      <SettingsGroup title="Bank usage">
+        <SettingsRow title="Use 15 Bank minutes" onPress={() => dev.advanceBankUsage(15)} />
+        <SettingsRow title="Empty Bank" onPress={() => dev.advanceBankUsage(1000000)} />
+      </SettingsGroup>
       <SettingsGroup title="Gym visits">
         <SettingsRow title={`Gym visits ${view.gymVisits?.visits ?? 0}`} />
         <SettingsRow title={`Gym visit ${view.gymVisits?.confirmed ? 'confirmed' : 'unconfirmed'}`} />

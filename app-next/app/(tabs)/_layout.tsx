@@ -1,3 +1,4 @@
+import { rulesStore as useRulesStore } from '../../src/packages/conditions/rulesStore';
 import { useEffect } from 'react';
 import { useRuntime } from '../../src/packages/ports/useRuntime';
 import { startProgressSync } from '../../src/packages/home/progressSync';
@@ -12,7 +13,8 @@ import { useDevProtectedRouteMount } from '../../src/packages/launch/DevProtecte
 export default function TabLayout() {
   useDevProtectedRouteMount();
   const motion = useMotion(),
-    runtime = useRuntime();
+    runtime = useRuntime(),
+    showShop = useRulesStore((state) => state.data.rules.some((condition) => condition.enabled && condition.mode.kind === 'bank'));
   useEffect(() => startProgressSync(runtime), [runtime]);
   useEffect(() => startGymPresenceSync(runtime), [runtime]);
   useEffect(() => startWalkingSync(runtime), [runtime]);
@@ -28,6 +30,7 @@ export default function TabLayout() {
       }}
       tabBar={({ state, navigation }) => (
         <TabBar
+          showShop={showShop}
           selected={state.routes[state.index].name as TabId}
           onSelect={(tab) => {
             const route = state.routes.find((r) => r.name === tab)!;

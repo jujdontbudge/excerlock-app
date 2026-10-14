@@ -19,7 +19,9 @@ export function validateRule(value: unknown): RuleIssue[] {
   if (!record(m) || m.activity !== value.activity || !['walking', 'gym'].includes(String(m.activity)))
     issues.push('mode');
   else {
-    if (m.kind === 'state') {
+    if (m.kind === 'bank') {
+      if (!['easy', 'medium', 'hard'].includes(String(m.difficulty))) issues.push('mode');
+    } else if (m.kind === 'state') {
       if (!['walking', 'gym'].includes(String(m.activity))) issues.push('mode');
     } else if (m.kind === 'event') {
       if (m.activity !== 'gym' || m.trigger !== 'arrival') issues.push('mode');

@@ -32,6 +32,7 @@ export function projectEnforcement(input: EnforcementProjection): EnforcementSna
   if (expiry !== null && !Number.isFinite(expiry)) throw new Error('Invalid access expiry');
   if (expiry !== null && expiry <= now && !input.entitlement.isLifetime && !input.entitlement.isInGracePeriod) return { ...snapshot, openReason: 'lapsed' };
   const eligible = { ...snapshot, windows, futureEnforcementEligible: windows.length > 0 };
+  if (decision.state === 'unlockedBank') return { ...snapshot, openReason: 'outsideWindow' };
   if (decision.state === 'unlockedMet') {
     const relock = decision.relockAt === null ? now : Date.parse(decision.relockAt);
     if (!Number.isFinite(relock) || relock < now) throw new Error('Stale earned suppression boundary');

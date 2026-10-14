@@ -10,6 +10,7 @@ export const walkingCopy = {
   modes: [
     { id: 'state', title: 'Unlock while walking (Recommended)', support: 'Apps open while you walk, close when you stop' },
     { id: 'steps', title: 'Reach a step goal', support: 'Unlocks your apps for the rest of the day' },
+    { id: 'bank', title: 'Buy screen time', support: 'Earn Points with your steps, then spend them in the Shop' },
     { id: 'minutes', title: 'Walk for a set time', support: 'Unlocks after your walking minutes are complete' },
   ],
   goal: 'Daily step goal',

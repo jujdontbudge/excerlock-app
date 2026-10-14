@@ -59,6 +59,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
   load(id: string, keepEdits?: boolean): Promise<void>;
   advance(ms: number): void;
+  advanceBankUsage(minutes: number): void;
   setSteps(value: number): void;
   setPresence(value: 'inside' | 'outside'): void;
   setMotion(value: 'walking' | 'still'): void;

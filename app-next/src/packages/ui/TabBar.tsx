@@ -6,7 +6,7 @@ import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { LinearGradient } from 'expo-linear-gradient';
-export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab: TabId) => void }) {
+export function TabBar({ selected, onSelect, showShop = false }: { selected: TabId; onSelect: (tab: TabId) => void; showShop?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -27,7 +27,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
         style={{ position: 'absolute', top: -56, bottom: 0, left: 0, right: 0 }}
       />
       <View style={{ flexDirection: 'row' }}>
-        {tabItems.map((tab) => (
+        {tabItems.filter((tab) => tab.id !== 'shop' || showShop).map((tab) => (
           <View key={tab.id} style={{ flex: 1 }}>
             <PressableScale
               label={tab.title}

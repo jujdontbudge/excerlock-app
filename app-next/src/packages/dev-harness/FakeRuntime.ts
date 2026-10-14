@@ -1,5 +1,6 @@
+import { startFakeBankEvidence } from './lib/bankEvidence';
+import { createBankDrainFake } from './lib/fakes/BankDrainFake';
 import type { GymLocationFix } from '../ports/GymPort';
-import { BankDrainFake } from './lib/fakes/BankDrainFake';
 import { FakePickerHost } from './FakePickerHost';
 import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
@@ -62,6 +63,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let accountData = options.createAccountData();
   let accountTransitions: string[] = [];
   const ctx = new FakeContext(scenarios[0]),
+    bankDrain = createBankDrainFake(() => ctx.clock.now()),
     notificationResponses = NotificationResponsesFake((snapshot) => ctx.update({ notificationResponses: snapshot })),
     walking = WalkingFake(ctx),
     gait = GaitFake(false, () => ctx.request('camera')),
@@ -193,6 +195,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         const scenario = scenarios.find((s) => s.id === id);
         if (!scenario) throw new Error('Unknown scenario');
         ctx.update({ loading: true });
+        bankDrain.reset();
         walking.stop();
         ctx.resolve(false);
         await identityLab.stop();
@@ -228,6 +231,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         walking.resume();
       },
       advance: ctx.clock.advance,
+      advanceBankUsage: (minutes) => bankDrain.advance(minutes),
       setPresence: (presence) => ctx.update({ presence }), setMotion: (motion) => ctx.update({ motion }),
       setGait: gait.set, createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
       setPlacement: (placement) => ctx.update({ placement }),
@@ -623,12 +627,12 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,
     };
-  return {
+  const runtime: FakeRuntimeInstance = {
     kind: 'fake',
+    bankDrain,
     appPickerHost: FakePickerHost,
     clock: ctx.clock,
     screenTime: ScreenTimeFake(ctx),
-    bankDrain: BankDrainFake(() => ctx.clock.now()),
     steps: StepsFake(ctx),
     walking,
     gait,
@@ -672,6 +676,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     status: { ready: () => ready, flush: async () => { await gym.flush(); await persistence.flush(); }, snapshot: ctx.snapshot, subscribe: ctx.subscribe },
     dev,
     dispose: () => {
+      stopBankEvidence();
       void identityLab.stop();
       activity.dispose();
       persistence.dispose();
@@ -681,6 +686,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       ctx.dispose();
     },
   };
+  const stopBankEvidence = startFakeBankEvidence(runtime);
+  return runtime;
 }
 
 function labInstallArm(offer: Scenario['onboardingOffer']): 'a' | 'b' {

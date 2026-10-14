@@ -1,3 +1,5 @@
+import { BankSection } from './BankSection';
+import { useBank } from '../bank/Bank';
 import { GymBackgroundSetup } from '../gyms/GymBackgroundSetup';
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { HomeLockStatus } from './HomeLockStatus';
@@ -39,6 +41,7 @@ import { SetupReminder } from './lib/SetupReminder';
 export function HomeScreen() {
   useDemoProgress();
   useLapsedWinbackOffer();
+  const bank = useBank();
   const runtime = useRuntime(),
     router = useRouter(),
     homeClock = useHomeClock(),
@@ -73,7 +76,7 @@ export function HomeScreen() {
       rule,
       row: { ruleId: rule.id, day: dayKey(now, runtime.clock.timezone()), progress: 0, met: false, metAt: null },
     });
-  const conditionCards = conditions.map(({ rule, row }) => {
+  const conditionCards = conditions.filter(({ rule }) => rule.mode.kind !== 'bank').map(({ rule, row }) => {
     const model = progressContent(rule, row, permissions, session, auto);
     const kind = unlockKind(rule);
     const atGym = kind === 'gym' && !row.met ? presence : null;
@@ -126,7 +129,7 @@ export function HomeScreen() {
         </View>
       </View>
       <SetupReminder />
-      {scheduleIssue ? (
+      {bank ? null : scheduleIssue ? (
         <View style={{ padding: t.space.md, gap: t.space.md,
           backgroundColor: t.surface.softChoice, borderRadius: t.radius.card,
           borderWidth: t.stroke.hairline, borderColor: t.surface.transparent }}>
@@ -145,7 +148,7 @@ export function HomeScreen() {
         </Label>
       ) : null}
       <View style={{ gap: t.space.md }}>
-        {conditionCards}
+        {bank ? <BankSection onShop={() => router.navigate('/shop')} /> : conditionCards}
       </View>
       <Reveal>
         <View

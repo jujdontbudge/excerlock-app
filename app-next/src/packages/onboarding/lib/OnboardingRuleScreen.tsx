@@ -1,6 +1,7 @@
+import { BankConditionPreview } from '../../conditions/BankConditionPreview';
 import { useEffect, useMemo } from 'react';
 import { AnswerProps } from './types';
-import { createDraft, DraftAction, reduceDraft } from '../../conditions/draft';
+import { createDraft, DraftAction, reduceDraft, isBankDraft } from '../../conditions/draft';
 import { useRuleDraftStore } from '../../conditions/RuleDraftStore';
 import { RuleScreen, BranchStep } from '../../conditions/RuleScreen';
 import { Activity } from '../../model/types';
@@ -23,6 +24,9 @@ export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps &
       case 'setWalkingMode':
         setAnswer('walkingMode', action.value);
         break;
+      case 'setDifficulty':
+        setAnswer('difficulty', action.value);
+        break;
       case 'setStepGoal':
         setAnswer('stepGoal', number(action.value));
         break;
@@ -42,7 +46,7 @@ export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps &
       step={step}
       draft={draft}
       onAction={onAction}
-      preview={
+      preview={isBankDraft(draft) ? <BankConditionPreview activity={draft.activity} difficulty={draft.difficulty} /> :
         <ConditionPreview
           icon={activity}
           schedule={schedule}

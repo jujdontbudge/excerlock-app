@@ -65,6 +65,7 @@ export function WalkingScreen({
               <ChoiceRow
                 emphasis="solid"
                 title={m.title}
+                support={m.id === 'bank' ? m.support : undefined}
 
                 selected={d.walkingMode === m.id}
                 compact

@@ -12,6 +12,7 @@ import { streak } from '../progress/streak';
 import { reclaimedPeriod } from '../progress/reclaimed';
 import { addDays } from '../schedule/calendar';
 import { inactiveWalkingStatus } from '../ports/WalkingPort';
+import { bankStore as useBankStore } from '../bank/bankStore';
 const noopSubscribe = () => () => undefined;
 function useClockValue(supplied?: string) {
   const runtime = useRuntime();
@@ -35,6 +36,7 @@ export function useRuntimeStatus() {
 }
 export function useLockDecision(suppliedNow?: string) {
   const runtime = useRuntime(),
+    bankMinutes = useBankStore((state) => state.data.account?.bankMinutes ?? 0),
     now = useClockValue(suppliedNow),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
@@ -42,12 +44,12 @@ export function useLockDecision(suppliedNow?: string) {
     walking = useSyncExternalStore((notify) => runtime.walking.observe(notify), () => runtime.walking.snapshot(), () => inactiveWalkingStatus);
   return useMemo(
     () => resolveLock({
-      now, timezone, rules, ruleDays: days,
+      now, timezone, rules, ruleDays: days, bankMinutes,
       detection: { state: walking.phase === 'active' || walking.phase === 'grace' ? 'active' : walking.phase === 'unknown' ? 'unknown' : 'inactive', since: walking.since },
       placement: { state: walking.placement, liveRelief: walking.proppedVerified, since: walking.proppedSince },
       gymPresence,
     }),
-    [now, timezone, rules, days, walking, gymPresence],
+    [now, timezone, rules, days, walking, gymPresence, bankMinutes],
   );
 }
 export function useWalkingStatus() {

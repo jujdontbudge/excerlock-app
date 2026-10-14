@@ -52,6 +52,9 @@ requires a migration note here.
 | `onboarding_screen_viewed` | `screen` (a `FlowScreen` slug, or `plan-demo` for the S3b "How your plan works" step, which adds `scenario` and, for walk-state, `place`) |
 | `onboarding_offer_exposed` | `arm`, `source`, `intro_offer`, optional `variation_id`; ordinary UI exposure, not a feature flag |
 | `onboarding_answer` | `screen` (answer value stays on-device) |
+| `bank_condition_created` | `activity`, `difficulty` |
+| `offer_bought` | `offer_id` |
+| `points_collected` / `bank_emptied` | — |
 | `condition_created` / `condition_edited` / `condition_deleted` | — |
 | `earn_claimed` | — |
 | `sick_day_override_used` | — (reason text stays on-device, D12) |

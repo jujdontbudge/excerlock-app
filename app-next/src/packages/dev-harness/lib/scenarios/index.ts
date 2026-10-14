@@ -44,6 +44,7 @@ import { scenario25 } from './trial-lapsed-while-closed';
 import { scenario26 } from './trial-lapses-in-session';
 import { screenshotsFull } from './screenshots-full';
 import { onboardingOfferScenarios } from './onboarding-offer';
+import { bankScenarios } from './bank';
 export const scenarios = [
   gymUiucOutside,
   gymUiucManual,
@@ -96,4 +97,5 @@ export const scenarios = [
   ...beforeAfterScenarios,
   ...identityLabScenarios,
   ...onboardingOfferScenarios,
+  ...bankScenarios,
 ];

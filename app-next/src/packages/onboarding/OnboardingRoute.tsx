@@ -1,3 +1,5 @@
+import { BankConditionConflict } from '../conditions/BankExclusivity';
+import { bankConditionCopy } from '../conditions/bankCopy';
 import { useIsFocused } from 'expo-router';
 import { notify } from '../ui/Notice';
 import { ReactNode, useCallback, useMemo, useRef, useState } from 'react';
@@ -81,8 +83,8 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
         });
         haptic('commit');
       } catch (error) {
-        if (!(error instanceof SchedulePlanError)) throw error;
-        notify(c.scheduleLimit);
+        if (!(error instanceof SchedulePlanError) && !(error instanceof BankConditionConflict)) throw error;
+        notify(error instanceof BankConditionConflict ? bankConditionCopy.exclusive : c.scheduleLimit);
         haptic('error');
         return;
       }

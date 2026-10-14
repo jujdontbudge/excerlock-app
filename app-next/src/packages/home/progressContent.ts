@@ -13,6 +13,7 @@ export function progressContent(
     title = ruleName(rule),
     format = (value: number) =>
       value.toLocaleString('en-US');
+  if (m.kind === 'bank') return { title, icon: rule.activity, value: 0, detail: 'Buy screen time in the Shop', action: undefined, label: undefined } as const;
   if (m.kind === 'state') {
     const mine = session.ruleId === rule.id ? session : null;
     const live = !!mine && ['active', 'grace'].includes(mine.phase);

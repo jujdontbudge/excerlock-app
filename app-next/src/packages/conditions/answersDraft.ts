@@ -9,10 +9,11 @@ export function draftFromAnswers(a: Answers, base?: RuleDraft): RuleDraft {
     ...d,
     id: String(a.ruleId ?? d.id),
     createdAt: String(a.ruleCreatedAt ?? d.createdAt),
-    walkingMode: ['minutes', 'state'].includes(String(a.walkingMode)) ? a.walkingMode as 'minutes' | 'state' : 'steps',
+    walkingMode: ['minutes', 'state', 'bank'].includes(String(a.walkingMode)) ? a.walkingMode as 'minutes' | 'state' | 'bank' : 'steps',
+    difficulty: a.difficulty === 'easy' || a.difficulty === 'hard' ? a.difficulty : 'medium',
     stepGoal: number(a.stepGoal, 10000),
     walkMinutes: number(a.walkMinutes, 20),
-    gymMode: a.gymMode === 'time' || a.gymMode === 'arrival' || a.gymMode === 'presence' ? a.gymMode : d.gymMode,
+    gymMode: a.gymMode === 'time' || a.gymMode === 'arrival' || a.gymMode === 'presence' || a.gymMode === 'bank' ? a.gymMode : d.gymMode,
     gymMinutes: number(a.gymMinutes, 30),
   };
 }

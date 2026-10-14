@@ -63,6 +63,9 @@ import { expoNotificationResponses } from '../../notifications/ExpoNotificationR
 import { BackgroundCheck } from './BackgroundCheck';
 import { WATCHDOG_TICK_MS } from '../../ports/watchdog';
 
+import { projectBankEvidence, planBankMeasurements } from '../../bank/BankEvidence';
+import { bankStore } from '../../bank/bankStore';
+
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 const APP_STATES = new Set(['active', 'background', 'inactive']);
 const currentAppState = (): EnforcementAppState => {
@@ -154,7 +157,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     const walkingWindowEnd = (): number | null => {
       const ends = rulesStore
         .getState()
-        .data.rules.filter((rule) => rule.enabled && rule.activity === 'walking')
+        .data.rules.filter((rule) => rule.enabled && rule.activity === 'walking' && rule.mode.kind !== 'bank')
         .flatMap((rule) => currentInstances(rule, clock.readNow(), clock.timezone()))
         .map((instance) => Date.parse(instance.end))
         .filter((end) => Number.isFinite(end));
@@ -293,6 +296,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         now: clock.readNow(),
         timezone: clock.timezone(),
         rules: rulesStore.getState().data.rules,
+        bankMinutes: bankStore.getState().data.account?.bankMinutes ?? 0,
         ruleDays: ruleDaysStore.getState().data.days,
         walking: committedWalking,
         gymPresence: committedGymPresence,
@@ -398,12 +402,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             if (disposed) return;
             if (mode === 'full') {
               if (motion === 'granted' && !deleting) {
-                const ranges = planStepInstanceMeasurements(
+                const ranges = [...planStepInstanceMeasurements(
                   rulesStore.getState().data.rules,
                   new Date(now).toISOString(),
                   clock.timezone(),
                   new Set(historyStore.getState().data.days.map((row) => row.day)),
-                );
+                ), ...planBankMeasurements(new Date(now).toISOString(), clock.timezone())];
                 await detection.service.measureStepRanges(ranges, detectionStore.getState().data.generation);
               }
               const ledger = await detection.historyLedger.read();
@@ -415,7 +419,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const duration = await detection.walkingDurationLedger.read();
             const detected = detection.snapshot();
             const configured = settingsStore.getState().data.gymPlaces.map((place) => place.id);
-            const rows = projectInstanceProgress(
+            const progressRows = projectInstanceProgress(
               rulesStore.getState().data.rules,
               previous,
               instanceMeasurements,
@@ -426,6 +430,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               new Date(now).toISOString(),
               new Set(historyStore.getState().data.days.map((row) => row.day)),
             );
+            const rows = projectBankEvidence(rulesStore.getState().data.rules, progressRows, instanceMeasurements, detected.gym.intervals, configured, clock.timezone(), new Date(now).toISOString());
+            await bankStore.persistBarrier();
             const confirmedId = configured.find((id) => detected.gym.regions[id]?.confirmedSince != null);
             const since = confirmedId ? detected.gym.regions[confirmedId].confirmedSince : null;
             const gymPresence =
@@ -828,6 +834,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       await reconcile('foreground');
       stops.push(
         rulesStore.subscribe(request),
+        bankStore.subscribe((state, before) => {
+          if (state.data.account?.conditionId !== before.data.account?.conditionId || state.data.account?.bankMinutes !== before.data.account?.bankMinutes) request();
+        }),
         settingsStore.subscribe(request),
         ruleDaysStore.subscribe(request),
         permissionsStore.subscribe(request),

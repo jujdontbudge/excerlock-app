@@ -1,3 +1,4 @@
+import { useBank } from '../bank/Bank';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BottomSheet, ChoiceRow, Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
@@ -67,6 +68,7 @@ export function AnalyticsScreen() {
     () => rules.filter((rule) => rule.enabled).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [rules],
   );
+  const bank = useBank();
   const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
   const showcase = useShowcaseMode();
   const canSwitchActivity = showcase || (rules.some((condition) => condition.activity === 'walking')
@@ -78,9 +80,9 @@ export function AnalyticsScreen() {
     (rule) => rule.activity === 'walking' && rule.mode.kind === 'target' && rule.mode.metric === 'steps',
   );
   const gymRule = gymRules.find((rule) => rule.mode.kind === 'target' && rule.mode.metric === 'minutes');
-  const goal = primaryActivity === 'walking'
+  const goal = bank?.today.minimum ?? (primaryActivity === 'walking'
     ? walkingRule?.mode.kind === 'target' ? walkingRule.mode.goal : 10_000
-    : gymRule?.mode.kind === 'target' ? gymRule.mode.goal : 30;
+    : gymRule?.mode.kind === 'target' ? gymRule.mode.goal : 30);
   const stepDays = useMemo(() => model.series.map((point) => point.day), [model.series]);
   const stepFallback = useMemo(
     () => model.series.map((point) => ({ day: point.day, value: point.day > today ? null : point.activity.walking })),
