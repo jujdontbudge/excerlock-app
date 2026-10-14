@@ -30,6 +30,8 @@ The native Screen Time shield is an illustration, not a native enforcement
 surface. Copy is matched to the bundled shield extension. TikTok marks identify
 only the simulated app; no affiliation or integration is implied.
 
+The Bank scenarios (`walk-bank`, `gym-bank`) come from `bankScenarioFor(mode)`, given the Bank Condition's rule mode through `ConditionDemo`'s `bank` prop or `BankConditionDemo`. "You walk" (gym: "You go to the gym") sits over the character or map and "You buy screen time" over a phone showing a miniature Shop. Timeline in `bankStory.ts`, 6.4 s per loop: earning 2.85 s (five Points tokens, 50 each, arc into the Points pill, each landing pulsing it), buying 0.45 s (the 3 h Offer is tapped), spending 1 s (Points roll down, a "+3 h" chip flies into the Bank, the Bank fills), unlocked 1.75 s (the Shop lifts off the open app, one confetti burst, unlock haptic), reset 0.35 s. Continue is ready at 4.8 s. Walking plays on its own until the first Hold to walk; after that, earning moves only while held, and on release the token in flight lands before it pauses. Reduce Motion hides the tokens and chip, crossfades instead of lifting, and drops confetti. `PointsToken` is a stand-in until `ui` ships the official token. Preview: `dev?stage=bank-demo` (`&activity=gym`, `&cast=girl`).
+
 ## Deterministic preview port
 
 Only dev/preview builds accept `excerlock://onboarding/S3b?demoTime=7&demoPause=1`.

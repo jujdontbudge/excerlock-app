@@ -23,6 +23,7 @@ export const devCopy = {
   hapticEntry: (kind: string) => `Haptic ${kind}`,
   previews: 'Component gallery',
   shield: 'Shield preview',
+  bankDemo: 'Bank Condition demo',
   filming: 'Filming mode',
   showcase: 'Showcase data',
   record: 'Record flow',

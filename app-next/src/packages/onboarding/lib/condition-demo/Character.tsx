@@ -104,16 +104,17 @@ export function Character({
     ],
   }));
   const sources = frames[cast][scenario.place === 'treadmill' ? 'free' : 'phone'];
-  const compact = scenario.kind !== 'walk-state';
+  const bankWalker = scenario.kind === 'walk-bank';
+  const compact = scenario.kind !== 'walk-state' && !bankWalker;
   return (
     <Animated.View
       style={[
         {
           position: 'absolute',
-          left: compact ? 16 : 10,
+          left: compact ? 16 : bankWalker ? 4 : 10,
           bottom: 112,
-          width: compact ? 145 : 160,
-          height: compact ? 216 : 238,
+          width: compact ? 145 : bankWalker ? 190 : 160,
+          height: compact ? 216 : bankWalker ? 283 : 238,
         },
         bob,
       ]}>

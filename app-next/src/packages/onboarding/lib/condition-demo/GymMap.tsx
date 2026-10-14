@@ -7,7 +7,15 @@ import { DemoState, Scenario, snapshot } from './model';
 import { demoRows } from './layout';
 const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const Ring = Animated.createAnimatedComponent(Circle);
-export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; scenario: Scenario }) {
+export function GymMap({
+  clock,
+  scenario,
+  box = { top: demoRows.column, height: demoRows.columnHeight },
+}: {
+  clock: SharedValue<DemoState>;
+  scenario: Scenario;
+  box?: { top: number; height: number };
+}) {
   const dot = useAnimatedProps(() => {
     const distance = snapshot(clock.value, scenario).mapFraction * 216;
     const x = distance < 96 ? 40 : distance < 174 ? 40 + distance - 96 : 118;
@@ -20,14 +28,14 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
   });
   const pulse = useAnimatedProps(() => ({
     r: 10 + 14 * (clock.value.time % 1),
-    opacity: snapshot(clock.value, scenario).phase === 'confirming' ? 0.2 : 0,
+    opacity: ['confirming', 'earning'].includes(snapshot(clock.value, scenario).phase) ? 0.2 : 0,
   }));
   const check = useAnimatedProps(() => ({
-    opacity: ['counting', 'unlocked'].includes(snapshot(clock.value, scenario).phase) ? 1 : 0,
+    opacity: scenario.kind !== 'gym-bank' && ['counting', 'unlocked'].includes(snapshot(clock.value, scenario).phase) ? 1 : 0,
   }));
   return (
-    <View style={styles.map}>
-      <Svg width={170} height={demoRows.columnHeight} viewBox="0 0 170 328">
+    <View style={[styles.map, box]}>
+      <Svg width={170} height={box.height} viewBox="0 0 170 328" preserveAspectRatio="xMidYMid slice">
         <Rect width={170} height={328} fill={art.demo.map} />
         {[12, 132, 236].map((y) => (
           <G key={y}>

@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { StyleSheet, Text as NativeText, TextProps, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
@@ -10,7 +11,7 @@ import { tokens as t } from '../../../ui/tokens';
 import { capShift } from '../../../ui/Label';
 import { illustrationTokens as art } from '../../../ui/illustrationTokens';
 import { DemoState, Scenario, snapshot } from './model';
-import { demoRows } from './layout';
+import { bankPhoneLayout, demoRows } from './layout';
 const ScanArc = Animated.createAnimatedComponent(Circle);
 function Text(props: TextProps) {
   const flat = StyleSheet.flatten(props.style);
@@ -40,6 +41,62 @@ export function ClayLock() {
     </Svg>
   );
 }
+export function Feed() {
+  return (
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: art.demo.video }]}>
+      <View style={phoneStyles.videoSubject} />
+      <View style={phoneStyles.tabs}>
+        <Text style={phoneStyles.tab}>Following</Text>
+        <Text style={[phoneStyles.tab, { color: t.text.onAccent, borderBottomWidth: 2, borderColor: t.text.onAccent }]}>For You</Text>
+      </View>
+      <View style={phoneStyles.rail}>
+        <View style={phoneStyles.avatar} />
+        {['♥', '●', '▮', '↗'].map((glyph, i) => (
+          <View key={glyph} style={{ alignItems: 'center' }}>
+            <Text style={{ color: t.text.onAccent, ...art.miniature.glyph }}>{glyph}</Text>
+            <Text style={{ color: t.text.onAccent, ...art.miniature.count }}>{['128K', '2,431', '9,870', 'Share'][i]}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={phoneStyles.caption}>
+        {[52, 100, 70].map((width, i) => (
+          <View
+            key={width}
+            style={{
+              width,
+              height: i ? 6 : 8,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.text.onAccent,
+              opacity: i ? 0.55 : 1,
+            }}
+          />
+        ))}
+      </View>
+      <View style={phoneStyles.bottomTabs}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <View
+            key={i}
+            style={{
+              width: i === 2 ? 26 : 14,
+              height: i === 2 ? 18 : 14,
+              borderRadius: art.corner.glyph,
+              backgroundColor: t.text.onAccent,
+              opacity: i === 2 ? 1 : 0.55,
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+export function Splash({ style }: { style: ComponentProps<typeof Animated.View>['style'] }) {
+  return (
+    <Animated.View style={[phoneStyles.splash, style]}>
+      <TikTokMark />
+      <Text style={{ color: t.text.onAccent, ...art.miniature.wordmark }}>TikTok</Text>
+    </Animated.View>
+  );
+}
 export function Phone({
   clock,
   scenario,
@@ -64,70 +121,24 @@ export function Phone({
     };
   });
   return (
-    <View style={styles.phone}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: art.demo.video }]}>
-        <View style={styles.videoSubject} />
-        <View style={styles.tabs}>
-          <Text style={styles.tab}>Following</Text>
-          <Text style={[styles.tab, { color: t.text.onAccent, borderBottomWidth: 2, borderColor: t.text.onAccent }]}>For You</Text>
-        </View>
-        <View style={styles.rail}>
-          <View style={styles.avatar} />
-          {['♥', '●', '▮', '↗'].map((glyph, i) => (
-            <View key={glyph} style={{ alignItems: 'center' }}>
-              <Text style={{ color: t.text.onAccent, ...art.miniature.glyph }}>{glyph}</Text>
-              <Text style={{ color: t.text.onAccent, ...art.miniature.count }}>{['128K', '2,431', '9,870', 'Share'][i]}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.caption}>
-          {[52, 100, 70].map((width, i) => (
-            <View
-              key={width}
-              style={{
-                width,
-                height: i ? 6 : 8,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.text.onAccent,
-                opacity: i ? 0.55 : 1,
-              }}
-            />
-          ))}
-        </View>
-        <View style={styles.bottomTabs}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <View
-              key={i}
-              style={{
-                width: i === 2 ? 26 : 14,
-                height: i === 2 ? 18 : 14,
-                borderRadius: art.corner.glyph,
-                backgroundColor: t.text.onAccent,
-                opacity: i === 2 ? 1 : 0.55,
-              }}
-            />
-          ))}
-        </View>
-      </View>
-      <Animated.View style={[styles.splash, splash]}>
-        <TikTokMark />
-        <Text style={{ color: t.text.onAccent, ...art.miniature.wordmark }}>TikTok</Text>
-      </Animated.View>
+    <View style={phoneStyles.phone}>
+      <Feed />
+      <Splash style={splash} />
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.surface.topTint }, shield]}>
-        <View style={styles.shieldContent}>
+        <View style={phoneStyles.shieldContent}>
           <ClayLock />
-          <Text style={styles.shieldTitle}>Apps locked. Complete your exercise condition to unlock.</Text>
-          <Text style={styles.shieldBody}>Open ExcerLock to manually trigger a detection.</Text>
+          <Text style={phoneStyles.shieldTitle}>Apps locked. Complete your exercise condition to unlock.</Text>
+          <Text style={phoneStyles.shieldBody}>Open ExcerLock to manually trigger a detection.</Text>
         </View>
-        <View style={styles.close}>
-          <Text style={styles.closeText}>Close</Text>
+        <View style={phoneStyles.close}>
+          <Text style={phoneStyles.closeText}>Close</Text>
         </View>
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, xl]}>
         <LinearGradient
           colors={t.surface.orangeGradient}
           style={[StyleSheet.absoluteFill, { alignItems: 'center', paddingTop: 40, paddingHorizontal: 12 }]}>
-          <View style={styles.scanTile}>
+          <View style={phoneStyles.scanTile}>
             {frame.phase === 'scan' ? (
               <>
                 <Svg width={96} height={96} viewBox="0 0 96 96">
@@ -145,7 +156,7 @@ export function Phone({
                     />
                   </G>
                 </Svg>
-                <Text style={styles.scanPercent}>{Math.round(frame.p * 100)}%</Text>
+                <Text style={phoneStyles.scanPercent}>{Math.round(frame.p * 100)}%</Text>
               </>
             ) : (
               <Svg width={60} height={60} viewBox="0 0 24 24">
@@ -154,27 +165,27 @@ export function Phone({
               </Svg>
             )}
           </View>
-          <Text style={styles.xlTitle}>
+          <Text style={phoneStyles.xlTitle}>
             {frame.phase === 'scan' ? 'Reading your stride' : 'Prop your phone and walk'}
           </Text>
-          <Text style={styles.xlBody}>
+          <Text style={phoneStyles.xlBody}>
             {frame.phase === 'scan'
               ? 'Keep walking. A few seconds.'
               : "Set it upright facing you. The scan starts on its own once you're walking."}
           </Text>
           {frame.phase !== 'scan' ? (
-            <View style={styles.close}>
-              <Text style={styles.closeText}>I’m walking</Text>
+            <View style={phoneStyles.close}>
+              <Text style={phoneStyles.closeText}>I’m walking</Text>
             </View>
           ) : null}
         </LinearGradient>
       </Animated.View>
-      <Text style={[styles.time, { color: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]}>9:41</Text>
-      <View style={[styles.home, { backgroundColor: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]} />
+      <Text style={[phoneStyles.time, { color: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]}>9:41</Text>
+      <View style={[phoneStyles.home, { backgroundColor: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]} />
     </View>
   );
 }
-const styles = StyleSheet.create({
+export const phoneStyles = StyleSheet.create({
   phone: {
     position: 'absolute',
     right: 14,
@@ -255,4 +266,73 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   xlBody: { color: t.text.secondary, marginTop: 8, ...art.miniature.body, textAlign: 'center' },
+});
+export const MiniText = Text;
+export const bankPhoneStyles = StyleSheet.create({
+  shop: { backgroundColor: t.surface.warmCanvas },
+  pill: {
+    position: 'absolute',
+    top: bankPhoneLayout.pill.top,
+    height: bankPhoneLayout.pill.height,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingLeft: 5,
+    paddingRight: 10,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.surface.softChoice,
+  },
+  pillText: { ...art.miniature.title, color: t.text.primary, fontVariant: ['tabular-nums'] },
+  bank: {
+    position: 'absolute',
+    top: bankPhoneLayout.bank.top,
+    left: bankPhoneLayout.bank.inset,
+    right: bankPhoneLayout.bank.inset,
+    height: bankPhoneLayout.bank.height,
+    borderRadius: art.corner.caption,
+    backgroundColor: t.surface.softChoice,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  level: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: t.brand.light },
+  bankLabel: { ...art.miniature.body, color: t.text.secondary },
+  bankValue: { ...art.miniature.percent, color: t.text.primary, fontVariant: ['tabular-nums'] },
+  grid: {
+    position: 'absolute',
+    top: bankPhoneLayout.grid.top,
+    left: bankPhoneLayout.bank.inset,
+    right: bankPhoneLayout.bank.inset,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: bankPhoneLayout.grid.gap,
+  },
+  offer: {
+    width: bankPhoneLayout.grid.card,
+    height: bankPhoneLayout.grid.height,
+    borderRadius: art.corner.caption,
+    backgroundColor: t.surface.softChoice,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    overflow: 'hidden',
+  },
+  offerPicked: { backgroundColor: t.brand.primary },
+  offerContent: { alignItems: 'center', justifyContent: 'center', gap: 2 },
+  offerTime: { ...art.miniature.title, color: t.text.primary },
+  price: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  priceText: { ...art.miniature.body, color: t.text.secondary, fontVariant: ['tabular-nums'] },
+  chip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 48,
+    height: 24,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.brand.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: { ...art.miniature.button, color: t.text.onAccent },
 });
