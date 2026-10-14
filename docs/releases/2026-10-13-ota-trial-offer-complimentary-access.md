@@ -10,10 +10,13 @@
 
 `deploy/deploy.sh` from `555b6b33` (server code as in `b4906c47`), dry run first. Migration `0011_complimentary-access` (two new tables, no destructive statements) applied; 14 journal entries. Local and public `/v1/health` and `/v1/ready` 200 for Production and TestFlight; unauthenticated `POST /v1/subscription/resync` 401. `./excer access` with `--prod` needed the project ID `excerlock` instead of the project number; after that fix a Sandbox-lane grant, list and revoke on `grant-smoke-test@example.com` round-tripped (grant `febff645`).
 
-## Not yet done
+## Trial versus no-trial split (`dc74f7aa`)
 
-- App Store Connect: launch plans still carry the one-week trial; the client reads the trial length from the store offer.
-- Adapty: no paywall B, audience or A/B test yet; every user gets arm A.
+ADR 0079 replaces the Adapty A/B test with a 50/50 install split. B installs load `onboarding_no_trial` → paywall B `a2d11553` (annual and monthly `.notrial`); agents stop or resume B with `adapty placements update` (`docs/subscriptions.md`). Published to runtime 5 (group `4effceb9-9012-49ae-8f23-445746729305`) and runtime 4 (group `2470ffda-b87e-4326-978c-618e9f238764`) after green CI, each through `./excer ota` with the ship gate on an installed build of that runtime.
+
+- Proofs on build 18: onboarding `offer-a-three-days`, `offer-b-no-trial` (asserts the `onboarding_no_trial` placement), `offer-b-killed-shows-a`, `offer-a-intro-ineligible`, `offer-unknown-falls-back`, `offer-late-falls-back`, `offer-error-falls-back`, `offer-malformed-falls-back`. On the runtime 4 binary: `offer-b-no-trial`, `offer-a-three-days`, `offer-b-killed-shows-a`, `offer-error-falls-back`.
+- App Store Connect: both launch plans carry a three-day free trial in all 175 territories.
+- Not verified: a real Sandbox purchase on either arm; the proofs use the scripted Adapty SDK.
 
 ## Limits
 
