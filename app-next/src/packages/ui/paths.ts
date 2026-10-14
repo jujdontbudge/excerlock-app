@@ -33,6 +33,8 @@ export const paths = {
   clock: 'M2 12a10 10 0 1020 0 10 10 0 00-20 0M12 6v6l4 2',
   trash: 'M3 6h18M9 6V3h6v3M6 6l1 16h10l1-16M10 10v8M14 10v8',
   search: 'M2.5 9.5a7 7 0 1014 0 7 7 0 00-14 0M14.5 14.5l7 7',
+  'token-walking': 'M1 12a11 11 0 1022 0 11 11 0 00-22 0',
+  'token-gym': 'M1 12a11 11 0 1022 0 11 11 0 00-22 0',
   info: 'M2 12a10 10 0 1020 0 10 10 0 00-20 0M12 11v6M12 7h.1',
 } as const;
 export type IconName = keyof typeof paths;
