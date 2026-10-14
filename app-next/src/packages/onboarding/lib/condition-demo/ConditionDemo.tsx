@@ -6,6 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { diagnosticsRoutesEnabled } from '../../../platform/diagnosticsRoutes';
 import { demoTestControl, DemoTestQuery } from './testingPort';
 import Animated, {
+  SharedValue,
   useAnimatedStyle,
   useFrameCallback,
   useSharedValue,
@@ -25,12 +26,16 @@ import { Schedule } from '../../../model/types';
 import { Answers } from '../../../model/answers';
 import { profileStore as useProfileStore } from '../../../preferences/profileStore';
 import { settingsStore as useSettingsStore } from '../../../preferences/settingsStore';
-import { advanceDemo, beginHold, endHold, initialDemo, phasesFor, readyAfter, scenarioFor, snapshot } from './model';
+import type { DemoState } from './model';
+import { advanceDemo, bankScenarioFor, beginHold, endHold, initialDemo, isBank, phasesFor, readyAfter, Scenario, scenarioFor, snapshot } from './model';
+import { BankRuleMode } from './bankStory';
+import { BankPhone } from './BankPhone';
+import { BankFlight } from './BankFlight';
 import { Cast, Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
-import { demoRows, promiseCard, sceneGeometry } from './layout';
+import { bankGeometry, bankRows, demoRows, promiseCard, sceneGeometry } from './layout';
 
 function Text(props: TextProps) {
   const { fontScale } = useWindowDimensions();
@@ -45,15 +50,44 @@ export function ConditionDemo({
   answers,
   onBack,
   onReady,
+  bank,
 }: {
   draft: RuleDraft;
   schedule: Schedule;
   answers: Answers;
   onBack: () => void;
   onReady: () => void;
+  bank?: BankRuleMode;
 }) {
   const places = useProfileStore((s) => s.data.walkPlaces.join(','));
-  const scenario = useMemo(() => scenarioFor(draft, places), [draft, places]);
+  const scenario = useMemo(() => (bank ? bankScenarioFor(bank) : scenarioFor(draft, places)), [bank, draft, places]);
+  return <ScenarioDemo {...{ scenario, onBack, onReady }} cast={answers.gender === 'female' ? 'girl' : 'boy'} />;
+}
+export function BankConditionDemo({
+  mode,
+  cast,
+  onBack,
+  onReady,
+}: {
+  mode: BankRuleMode;
+  cast: Cast;
+  onBack: () => void;
+  onReady: () => void;
+}) {
+  const scenario = useMemo(() => bankScenarioFor(mode), [mode]);
+  return <ScenarioDemo {...{ scenario, cast, onBack, onReady }} />;
+}
+function ScenarioDemo({
+  scenario,
+  cast,
+  onBack,
+  onReady,
+}: {
+  scenario: Scenario;
+  cast: Cast;
+  onBack: () => void;
+  onReady: () => void;
+}) {
   const query = useLocalSearchParams<DemoTestQuery>();
   const control = demoTestControl(
     diagnosticsRoutesEnabled(Constants.expoConfig?.extra?.environment, __DEV__),
@@ -63,8 +97,7 @@ export function ConditionDemo({
   return (
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
-      {...{ scenario, control, onBack, onReady }}
-      cast={answers.gender === 'female' ? 'girl' : 'boy'}
+      {...{ scenario, control, onBack, onReady, cast }}
     />
   );
 }
@@ -75,7 +108,7 @@ function DemoScene({
   onReady,
   cast,
 }: {
-  scenario: ReturnType<typeof scenarioFor>;
+  scenario: Scenario;
   control: ReturnType<typeof demoTestControl>;
   onBack: () => void;
   onReady: () => void;
@@ -100,7 +133,7 @@ function DemoScene({
   const [frame, setFrame] = useState(() => snapshot(initial, scenario));
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
   const [burst, setBurst] = useState(0);
-  const cues = useRef(freshDemoCues());
+  const cues = useRef({ ...freshDemoCues(), lockShown: isBank(scenario) });
   const cueMode = useRef({ reduced, paused: !!control?.paused });
   useEffect(() => {
     cueMode.current = { reduced, paused: !!control?.paused };
@@ -138,16 +171,21 @@ function DemoScene({
     const subscription = AppState.addEventListener('change', (state) => {
       lastTick.value = Date.now();
       running.value = state === 'active';
-      if (state !== 'active') clock.set((value) => endHold(value));
+      if (state !== 'active') clock.set((value) => endHold(value, scenario));
     });
     return () => {
       subscription.remove();
       animation.setActive(false);
     };
-  }, [animation, running, clock, lastTick]);
+  }, [animation, running, clock, lastTick, scenario]);
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
   const isGym = scenario.kind.startsWith('gym');
-  const unlockPromise = scenario.kind === 'walk-steps'
+  const bank = isBank(scenario);
+  const unlockPromise = scenario.kind === 'walk-bank'
+    ? 'Your steps earn Points. Points buy screen time.'
+    : scenario.kind === 'gym-bank'
+      ? 'Gym minutes earn Points. Points buy screen time.'
+      : scenario.kind === 'walk-steps'
     ? `Once you hit ${scenario.goal.toLocaleString('en-US')} steps, your apps will unlock.`
     : scenario.kind === 'walk-minutes'
       ? `Once you walk for ${scenario.goal} minutes, your apps will unlock.`
@@ -221,9 +259,10 @@ function DemoScene({
               transformOrigin: 'top left',
               transform: [{ scale }],
             }}>
+            {bank ? <BankStage {...{ clock, scenario, frame, reduced, cast }} height={geometry.height} /> : null}
             {scenario.place === 'treadmill' ? <Treadmill clock={clock} /> : null}
-            {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, cast }} />}
-            <Phone {...{ clock, scenario, frame }} />
+            {bank ? null : isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, cast }} />}
+            {bank ? null : <Phone {...{ clock, scenario, frame }} />}
             {goalCard ? (
               <View style={[styles.info, isGym ? { top: demoRows.below, right: 14 } : { top: demoRows.column, left: 14 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
@@ -239,7 +278,7 @@ function DemoScene({
                 </View>
               </View>
             ) : null}
-            {isGym ? (
+            {isGym && !bank ? (
               <View style={styles.mapCaption}>
                 <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>{mapTitle}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.mapBody}>{mapBody}</Text>
@@ -247,11 +286,11 @@ function DemoScene({
             ) : null}
           </View>
         </View>
-        {scenario.kind === 'walk-state' ? (
+        {scenario.kind === 'walk-state' || scenario.kind === 'walk-bank' ? (
           <View style={styles.hold}>
             <PressableScale label="Hold to walk" haptic="none"
               onPressIn={() => { clock.set((value) => beginHold(value, scenario)); publish(snapshot(clock.get(), scenario), false); }}
-              onPressOut={() => { clock.set((value) => endHold(value)); publish(snapshot(clock.get(), scenario), false); }}
+              onPressOut={() => { clock.set((value) => endHold(value, scenario)); publish(snapshot(clock.get(), scenario), false); }}
               style={styles.holdButton}>
               <Text style={styles.holdLabel}>{frame.manual === 'walking' ? 'Release to stop' : 'Hold to walk'}</Text>
             </PressableScale>
@@ -262,7 +301,54 @@ function DemoScene({
     </View>
   );
 }
+function BankStage({
+  clock,
+  scenario,
+  frame,
+  reduced,
+  cast,
+  height,
+}: {
+  clock: SharedValue<DemoState>;
+  scenario: Scenario;
+  frame: ReturnType<typeof snapshot>;
+  reduced: boolean;
+  cast: Cast;
+  height: number;
+}) {
+  const gym = scenario.kind === 'gym-bank';
+  const { phoneTop, captionTop } = bankGeometry(height);
+  const from = gym ? { x: 132, y: phoneTop + 202 } : { x: 4 + 190 * 0.76, y: height - 112 - 283 * 0.61 };
+  const to = { x: 288, y: phoneTop + 44 };
+  const bend = gym ? { x: 215, y: phoneTop + 10 } : { x: 175, y: phoneTop + 10 };
+  return (
+    <>
+      {gym ? (
+        <GymMap {...{ clock, scenario }} box={{ top: phoneTop, height: bankRows.phoneHeight }} />
+      ) : (
+        <Character {...{ clock, scenario, reduced, cast }} />
+      )}
+      <BankPhone {...{ clock, scenario, frame, reduced }} top={phoneTop} />
+      <View style={[styles.sceneCaption, { top: captionTop, left: 14 }]}>
+        <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>{gym ? 'You go to the gym' : 'You walk'}</Text>
+      </View>
+      <View style={[styles.sceneCaption, { top: captionTop, right: 14 }]}>
+        <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>You buy screen time</Text>
+      </View>
+      {reduced ? null : <BankFlight {...{ clock, scenario, from, bend, to }} />}
+    </>
+  );
+}
 const styles = StyleSheet.create({
+  sceneCaption: {
+    position: 'absolute',
+    width: 170,
+    height: bankRows.captionHeight,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.surface.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   hold: { position: 'absolute', bottom: t.space.xl, alignSelf: 'center' },
   holdButton: { paddingHorizontal: t.space.xl, backgroundColor: t.surface.softChoice, borderWidth: t.stroke.hairline, borderColor: t.surface.transparent, borderRadius: t.radius.pill },
   holdLabel: { ...t.type.label, color: t.text.primary },

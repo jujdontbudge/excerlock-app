@@ -1,7 +1,8 @@
 import type { RuleDraft } from '../../../conditions/draft';
+import { bankFrame, bankPhases, bankRestPoint, BankRuleMode } from './bankStory';
 
 export type Scenario = {
-  kind: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-presence' | 'gym-minutes';
+  kind: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-presence' | 'gym-minutes' | 'walk-bank' | 'gym-bank';
   place: 'outside' | 'treadmill';
   goal: number;
 };
@@ -12,6 +13,7 @@ export type DemoState = {
   distance: number;
   manual: null | 'walking' | 'blocked';
   manualTime: number;
+  gated: boolean;
 };
 export function scenarioFor(draft: RuleDraft, places: string): Scenario {
   return {
@@ -39,8 +41,16 @@ export function scenarioFor(draft: RuleDraft, places: string): Scenario {
             : 0,
   };
 }
+export function bankScenarioFor(mode: BankRuleMode): Scenario {
+  return { kind: mode.activity === 'gym' ? 'gym-bank' : 'walk-bank', place: 'outside', goal: 0 };
+}
+export function isBank(s: Scenario) {
+  'worklet';
+  return s.kind === 'walk-bank' || s.kind === 'gym-bank';
+}
 export function phasesFor(s: Scenario): Phase[] {
   'worklet';
+  if (isBank(s)) return bankPhases;
   if (s.kind === 'walk-state')
     return [
       ...(s.place === 'treadmill'
@@ -73,6 +83,7 @@ export function readyAfter(s: Scenario): number {
   const phases = phasesFor(s);
   const startOf = (name: string) => phases.slice(0, phases.findIndex((phase) => phase.name === name))
     .reduce((sum, phase) => sum + phase.duration, 0);
+  if (isBank(s)) return startOf('unlocked') + 0.5;
   if (s.kind === 'walk-steps' || s.kind === 'walk-minutes' || s.kind === 'gym-minutes')
     return startOf('unlocked');
   if (s.kind === 'gym-arrival') return startOf('unlocked') + Math.min(1, phases.find((phase) => phase.name === 'unlocked')!.duration / 2);
@@ -81,7 +92,7 @@ export function readyAfter(s: Scenario): number {
 }
 export function initialDemo(): DemoState {
   'worklet';
-  return { time: 0, walkTime: 0, distance: 0, manual: null, manualTime: 0 };
+  return { time: 0, walkTime: 0, distance: 0, manual: null, manualTime: 0, gated: false };
 }
 export function phaseAt(time: number, s: Scenario) {
   'worklet';
@@ -100,9 +111,44 @@ function ease(p: number) {
   'worklet';
   return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 }
+function bankSnapshot(state: DemoState, s: Scenario, auto: ReturnType<typeof phaseAt>) {
+  'worklet';
+  const phase = auto.name;
+  const gym = s.kind === 'gym-bank';
+  const walking = !gym && phase === 'earning' && (!state.gated || state.manual === 'walking');
+  const locked = phase !== 'unlocked';
+  const story = bankFrame(phase, auto.local);
+  return {
+    time: state.time,
+    manual: state.manual,
+    phase,
+    local: auto.local,
+    p: Math.min(1, auto.local / auto.duration),
+    total: auto.total,
+    phaseIndex: auto.index,
+    walking,
+    locked,
+    phone: locked ? 'shop' : 'tiktok',
+    statusLocked: locked,
+    progress: story.points,
+    progressFraction: 0,
+    title: locked ? 'Apps are blocked' : 'Unlocked while your Bank has time',
+    caption:
+      phase === 'earning'
+        ? gym
+          ? 'Gym minutes earn Points'
+          : 'Your steps earn Points'
+        : phase === 'unlocked'
+          ? 'Your apps open while your Bank has time'
+          : 'Points buy 3 hours of screen time',
+    mapFraction: 1,
+    goalMet: phase === 'unlocked',
+  };
+}
 export function snapshot(state: DemoState, s: Scenario) {
   'worklet';
   const auto = phaseAt(state.time, s);
+  if (isBank(s)) return bankSnapshot(state, s, auto);
   const phase = state.manual ?? auto.name;
   const local = state.manual ? state.manualTime : auto.local;
   const p = Math.min(1, local / auto.duration);
@@ -188,12 +234,14 @@ export function snapshot(state: DemoState, s: Scenario) {
 }
 export function beginHold(state: DemoState, s: Scenario): DemoState {
   'worklet';
+  if (isBank(s)) return state.manual === 'walking' ? state : { ...state, manual: 'walking', gated: true };
   if (s.kind !== 'walk-state' || state.manual === 'walking') return state;
   const current = snapshot(state, s);
   return { ...state, manual: 'walking', manualTime: current.phase === 'walking' ? current.local : 0 };
 }
-export function endHold(state: DemoState): DemoState {
+export function endHold(state: DemoState, s: Scenario): DemoState {
   'worklet';
+  if (isBank(s)) return state.manual === 'walking' ? { ...state, manual: null } : state;
   return state.manual === 'walking' ? { ...state, manual: 'blocked', manualTime: 0 } : state;
 }
 export function advanceDemo(state: DemoState, s: Scenario, seconds: number): DemoState {
@@ -202,8 +250,17 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
   let remaining = Math.max(0, seconds);
   while (remaining > 0.0000001) {
     const phase = phaseAt(next.time, s);
-    const boundary =
-      next.manual === 'walking'
+    if (isBank(s) && next.gated && next.manual !== 'walking' && phase.name === 'earning') {
+      const rest = bankRestPoint(phase.local) - phase.local;
+      if (rest <= 0.0000001) break;
+      const dt = Math.min(remaining, rest);
+      next.time = (next.time + dt) % phase.total;
+      remaining -= dt;
+      continue;
+    }
+    const boundary = isBank(s)
+      ? phase.duration - phase.local
+      : next.manual === 'walking'
         ? remaining
         : next.manual === 'blocked'
           ? 1.5 - next.manualTime
@@ -213,7 +270,7 @@ export function advanceDemo(state: DemoState, s: Scenario, seconds: number): Dem
       next.walkTime += dt;
       next.distance += dt * 60;
     }
-    if (next.manual) {
+    if (next.manual && !isBank(s)) {
       next.manualTime += dt;
       if (next.manual === 'blocked' && next.manualTime >= 1.5 - 0.0000001) {
         next.manual = null;

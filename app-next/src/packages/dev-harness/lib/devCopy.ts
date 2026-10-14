@@ -24,6 +24,7 @@ export const devCopy = {
   previews: 'Component gallery',
   shield: 'Shield preview',
   rewards: 'Reward motion preview',
+  bankDemo: 'Bank Condition demo',
   filming: 'Filming mode',
   showcase: 'Showcase data',
   record: 'Record flow',
