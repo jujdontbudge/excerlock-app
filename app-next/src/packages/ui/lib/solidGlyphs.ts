@@ -10,6 +10,16 @@ const fit = ({ viewBox, path }: { viewBox: string; path: string }, x = 2, y = 2,
 };
 const gender = (name: keyof typeof genderPaths) => fit(genderPaths[name]);
 const activity = (name: keyof typeof activityPaths) => fit(activityPaths[name]);
+const gymGlyph = (color: string) =>
+  `<g transform="rotate(-8 12 12)" fill="${color}"><rect x="1" y="10.5" width="22" height="3" rx="1.5"/><rect x="5" y="4.5" width="3.5" height="15" rx="1.75"/><rect x="15.5" y="4.5" width="3.5" height="15" rx="1.75"/><rect x="2" y="7.5" width="2.5" height="9" rx="1.25"/><rect x="19.5" y="7.5" width="2.5" height="9" rx="1.25"/></g>`;
+const token = (id: string, glyph: string) =>
+  `<defs><mask id="${id}"><rect x="1" y="1" width="22" height="22" fill="white"/>${glyph}</mask></defs><circle cx="12" cy="12" r="11" fill="currentColor" mask="url(#${id})"/>`;
+const tokenWalking = () => {
+  const { viewBox, path } = activityPaths['person-walking'];
+  const [, , vw, vh] = viewBox.split(' ').map(Number);
+  const height = 14.6, scale = height / vh;
+  return `<g transform="translate(${12 - (vw * scale) / 2} ${12 - height / 2}) scale(${scale})"><path d="${path}" fill="black"/></g>`;
+};
 const fill = (d: string) => `<path fill="currentColor" fill-rule="evenodd" d="${d}"/>`;
 const rect = (x: number, y: number, w: number, h: number, r: number) =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="currentColor"/>`;
@@ -54,5 +64,7 @@ export const solidGlyphs: Partial<Record<IconName, string>> = {
   ),
   shield: fill('M12 1 22 5v6c0 6-7 11-10 12C9 22 2 17 2 11V5Zm-5 10-2 2 5 5 9-9-2-2-7 7Z'),
   mail: fill('M4 2.5h16a3 3 0 0 1 3 3v13a3 3 0 0 1 -3 3H4a3 3 0 0 1 -3 -3V5.5a3 3 0 0 1 3 -3Zm0 3v3l8 6 8 -6V5.5l-8 6Z'),
+  'token-walking': token('token-walking', tokenWalking()),
+  'token-gym': token('token-gym', `<g transform="translate(12 12) scale(0.58) translate(-12 -12)">${gymGlyph('black')}</g>`),
   info: fill('M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22Zm-1.5 5v3h3V6Zm0 5v7h3v-7Z'),
 };
