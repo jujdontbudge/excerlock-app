@@ -20,8 +20,7 @@ import { defaultPlanHandle } from './paywallVariant';
 import { PaywallHeadline } from './PaywallHeadline';
 import { PaywallReview } from './PaywallReview';
 import { PaywallTagline } from './PaywallTagline';
-import { TrialSwitch } from './TrialSwitch';
-import { pairOf, planFor, planPairs, trialLength, trialSwitchable, withTrial, zeroPrice } from './paywallPlans';
+import { offeredHandle, offersTrial, planFor, planPairs, trialLength, zeroPrice } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
 const paywallLoadRetries = 2,
   planRowHeight = t.control.full;
@@ -65,7 +64,7 @@ export function PaywallScreen({
           ? await runtime.onboardingOffer.loadPaywall()
           : await runtime.subscription.loadPaywall(placement);
         setPaywall(next);
-        setSelected(withTrial(next.products, defaultPlanHandle(next.products, latest.current.variantKey)));
+        setSelected(offeredHandle(next, defaultPlanHandle(next.products, latest.current.variantKey)));
         latest.current.onLoaded?.(next);
         runtime.analytics.track('paywall_viewed', {
           placement,
@@ -88,7 +87,7 @@ export function PaywallScreen({
   }, [load]);
   useEffect(() => {
     if (!paywall || chosen.current) return;
-    setSelected(withTrial(paywall.products, defaultPlanHandle(paywall.products, variantKey)));
+    setSelected(offeredHandle(paywall, defaultPlanHandle(paywall.products, variantKey)));
   }, [paywall, variantKey]);
   useEffect(() => {
     if (!paywall || shown.current === paywall.generation) return;
@@ -156,12 +155,8 @@ export function PaywallScreen({
     setSelected(handle);
   };
   const pairs = useMemo(() => planPairs(paywall?.products ?? []), [paywall]),
-    switchable = paywall?.trial !== false && trialSwitchable(pairs),
+    trial = paywall ? offersTrial(paywall) : false,
     trialOn = product ? product.offerLabel !== null : false;
-  const flip = (next: boolean) => {
-    const pair = pairOf(pairs, selected);
-    if (pair) choose(planFor(pair, next).handle);
-  };
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
@@ -190,14 +185,9 @@ export function PaywallScreen({
       footer={
         <>
           <View style={{ gap: t.space.md, paddingBottom: t.space.sm }}>
-          {switchable ? (
-            <Reveal index={2}>
-              <TrialSwitch on={trialOn} locked={busy === 'purchase' || busy === 'restore'} onToggle={flip} />
-            </Reveal>
-          ) : null}
           <View style={{ gap: t.space.md, minHeight: planRowHeight * 2 + t.space.md }}>
             {pairs.map((pair, index) => {
-              const item = planFor(pair, trialOn);
+              const item = planFor(pair, trial);
               return (
                 <Reveal key={pair.period} index={index + 3}>
                   <PlanRow
@@ -288,7 +278,8 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    price = product.periodUnit === 'year' && product.localizedWeeklyPrice
+    name = `${product.offerLabel ? copy.freeThen : ''}${planName(product)} ${product.localizedPrice}`,
+    price = product.localizedWeeklyPrice && product.periodUnit !== 'week'
       ? `${product.localizedWeeklyPrice}${copy.perWeek}`
       : `${product.localizedPrice} / ${product.periodUnit ?? product.localizedPeriod}`;
   useEffect(() => {
@@ -302,7 +293,7 @@ function PlanRow({
   const tint = { color: selected ? t.text.onAccent : t.text.primary };
   return (
     <PressableScale
-      label={`${planName(product)} · ${price}`}
+      label={`${name} · ${price}`}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
       haptic={selected || locked ? 'none' : 'select'}
@@ -322,10 +313,10 @@ function PlanRow({
             ...m.transition(['backgroundColor'], 'standard'),
           },
         ]}>
-        <Label variant="label" style={[tint, { textAlign: 'left' }]}>
-          {planName(product)}
+        <Label variant="label" style={[tint, { flexShrink: 1, textAlign: 'left' }]}>
+          {name}
         </Label>
-        <Label variant="label" style={[tint, { textAlign: 'right' }]}>
+        <Label variant="support" style={[tint, { textAlign: 'right' }]}>
           {price}
         </Label>
       </Animated.View>

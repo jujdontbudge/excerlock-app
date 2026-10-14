@@ -46,8 +46,6 @@ export const subscriptionCopy = {
     time: (hours: number) => `${hours} ${hours === 1 ? 'hour' : 'hours'} less screen time a day`,
   },
   benefitsTitle: 'Benefits',
-  trialOn: 'Free trial enabled',
-  trialOff: 'Enable free trial',
   bestOffer: 'Best offer',
   free: 'FREE',
   perWeekShort: '/wk',

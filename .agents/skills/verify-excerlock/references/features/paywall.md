@@ -9,7 +9,7 @@ depends: [launch]
 ---
 ## Sub-features
 - The onboarding hard wall: no decline and no close. Adapty placements for onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), the free trial switch (shown only when the paywall serves a trial and a no-trial product for the same period; on gives Start for $0.00, off gives Continue), then one-line Yearly and Monthly plan pills (plan length left, price right: the yearly plan as its weekly price, other plans per their own period), with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "FREE then Yearly $49.99" when the plan has a free trial or "Yearly $49.99" without one, and the right side shows the smaller weekly equivalent; when Adapty serves trial and no-trial twins, an offer with a trial shows only the trial plans and a no-trial offer only the no-trial plans, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $49.99/year" (or "Billed as …" without a trial), then the orange Start for $0.00 button. Underlined Terms of Use · Restore purchases · Privacy Policy sit in the safe area underneath; there is no back arrow, and account recovery remains a separate route, not a paywall footer link. The review is preview copy.
 - Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access.
 - Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
 - The server mirrors entitlements from Adapty webhooks and resyncs on request.
@@ -24,17 +24,17 @@ Dev controls change outcomes without touching StoreKit: add `&outcome=success|ca
 name: premium-headline
 scenario: fresh-install
 open: /sample-paywall
-expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | Yearly · $0.96 / week | Monthly · $9.99 / month | 3-day free trial, then $49.99/year | Start for $0.00
+expect: Get your DREAM BODY with ExcerLock | 5 stars | Life changing | This finally got me to lose 15 lbs after months of no progress. | by Alexandra R. | HACK your brain and become ADDICTED to exercise. | FREE then Yearly $49.99 · $0.96 / week | FREE then Monthly $9.99 · $2.31 / week | 3-day free trial, then $49.99/year | Start for $0.00
+absent: Free trial enabled | Enable free trial
 ```
 
 ```proof
-name: trial-switch
+name: trial-plan-rows
 scenario: fresh-install
 open: /sample-paywall
-tap: Free trial enabled
-expect: Enable free trial | Billed as $49.99/year | Continue
-then-tap: Enable free trial
-then-expect: Free trial enabled | 3-day free trial, then $49.99/year | Start for $0.00
+tap: FREE then Monthly $9.99 · $2.31 / week
+expect: 3-day free trial, then $9.99/month | Start for $0.00
+absent: Free trial enabled | Enable free trial
 ```
 
 ```proof
@@ -290,7 +290,7 @@ wait: 20
 name: offer-b-checkout-selects-monthly-twin
 scenario: onboarding-offer-b
 open: /onboarding/S3b
-actions: expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Billed as $49.99/year | tap Monthly | expect Billed as $9.99/month | tap Continue
+actions: expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Yearly $49.99 · $0.96 / week | expect Billed as $49.99/year | tap Monthly $9.99 · $2.31 / week | expect Billed as $9.99/month | tap Continue
 expect: Continue with Apple
 then-open: /dev
 then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly.notrial","trial":false} | Purchase operations 1 | Purchase recovery accountConnection
@@ -300,7 +300,7 @@ then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.mon
 name: offer-a-checkout-selects-trial-product
 scenario: onboarding-offer-a
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Try for $0.00 | expect Day 2 · Reminder | tap Continue | expect Free trial enabled | tap Free trial enabled | expect Enable free trial | tap Monthly | expect Billed as $9.99/month | tap Enable free trial | expect 3-day free trial, then $9.99/month | tap Start for $0.00
+actions: expect 3-day free trial | tap Try for $0.00 | expect Day 2 · Reminder | tap Continue | expect FREE then Yearly $49.99 · $0.96 / week | tap FREE then Monthly $9.99 · $2.31 / week | expect 3-day free trial, then $9.99/month | tap Start for $0.00
 expect: Continue with Apple
 then-open: /dev
 then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly","trial":true} | Purchase operations 1 | Purchase recovery accountConnection

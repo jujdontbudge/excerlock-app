@@ -22,7 +22,8 @@ export function planPairs(products: readonly PaywallProduct[]): PlanPair[] {
   return pairs;
 }
 
-export const trialSwitchable = (pairs: readonly PlanPair[]) => pairs.some((pair) => pair.trial && pair.plain);
+export const offersTrial = (paywall: { trial?: boolean; products: readonly PaywallProduct[] }) =>
+  paywall.trial !== false && planPairs(paywall.products).some((pair) => pair.trial);
 
 export function planFor(pair: PlanPair, trial: boolean): PaywallProduct {
   return (trial ? (pair.trial ?? pair.plain) : (pair.plain ?? pair.trial))!;
@@ -31,9 +32,9 @@ export function planFor(pair: PlanPair, trial: boolean): PaywallProduct {
 export const pairOf = (pairs: readonly PlanPair[], handle: string) =>
   pairs.find((pair) => pair.trial?.handle === handle || pair.plain?.handle === handle);
 
-export function withTrial(products: readonly PaywallProduct[], handle: string): string {
-  const pair = pairOf(planPairs(products), handle);
-  return pair ? planFor(pair, true).handle : handle;
+export function offeredHandle(paywall: { trial?: boolean; products: readonly PaywallProduct[] }, handle: string): string {
+  const pair = pairOf(planPairs(paywall.products), handle);
+  return pair ? planFor(pair, offersTrial(paywall)).handle : handle;
 }
 
 export function trialLength(product: PaywallProduct): string {
