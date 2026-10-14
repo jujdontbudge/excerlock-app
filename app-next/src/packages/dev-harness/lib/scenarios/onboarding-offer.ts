@@ -24,6 +24,7 @@ export const onboardingOfferScenarios = [
   base('onboarding-offer-b-full', 'No trial B · complete onboarding', { ...fullOnboarding, onboardingOffer: { arm: 'b' } }),
   base('onboarding-offer-a', 'onboarding-offer-a', { ...onboarding, onboardingOffer: { arm: 'a' } }),
   base('onboarding-offer-b', 'onboarding-offer-b', { ...onboarding, onboardingOffer: { arm: 'b' } }),
+  base('onboarding-offer-b-killed', 'No trial B · placement repointed to A', { ...onboarding, onboardingOffer: { arm: 'a', assigned: 'b' } }),
   base('onboarding-offer-unknown', 'onboarding-offer-unknown', { ...onboarding, onboardingOffer: { arm: 'unknown' } }),
   base('onboarding-offer-late', 'onboarding-offer-late', { ...onboarding, onboardingOffer: { arm: 'late' } }),
   base('onboarding-offer-error', 'onboarding-offer-error', { ...onboarding, onboardingOffer: { arm: 'error' } }),

@@ -12,6 +12,7 @@ import { contextPersistence } from './lib/contextPersistence';
 import { scenarios } from './lib/scenarios';
 import { FakeContext } from './lib/FakeContext';
 import { loadScenario } from './lib/scenarioLoader';
+import type { Scenario } from '../model/models';
 import { permissionsStore } from '../permissions/permissionsStore';
 import { entitlementStore } from '../subscription/entitlementStore';
 import { sessionStore } from '../identity/sessionStore';
@@ -131,7 +132,12 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   const auth = classBackedPort('auth', identityLab.route(AuthFake(ctx), (lab) => lab.auth));
   const subscription = classBackedPort('subscription', identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription));
   const analytics = AnalyticsFake(ctx);
-  const onboardingOffer = createOnboardingOffer({ subscription, analytics, identityGeneration: () => auth.identity().generation });
+  const onboardingOffer = createOnboardingOffer({
+    subscription,
+    analytics,
+    identityGeneration: () => auth.identity().generation,
+    installId: () => labInstallArm(ctx.scenario.onboardingOffer) === 'b' ? 'lab-install-1' : 'lab-install-4',
+  });
   const subscriptionAdmission = rememberAdmission(SubscriptionAdmissionFake(ctx, auth, subscription), {
     environment: 'sandbox',
     now: () => Date.parse(ctx.clock.now()),
@@ -673,4 +679,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       ctx.dispose();
     },
   };
+}
+
+function labInstallArm(offer: Scenario['onboardingOffer']): 'a' | 'b' {
+  return offer?.assigned ?? (offer && ['b', 'late'].includes(offer.arm) ? 'b' : 'a');
 }

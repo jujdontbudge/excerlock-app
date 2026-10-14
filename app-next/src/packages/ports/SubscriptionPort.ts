@@ -72,7 +72,7 @@ export interface SubscriptionPort {
   identify(userId: string): Promise<void>;
   reset(): Promise<void>;
   refresh(): Promise<Entitlement>;
-  loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingTrialFallback: boolean }): Promise<SubscriptionPaywall>;
+  loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingPlacement: 'onboarding_trial_fallback' | 'onboarding_no_trial' }): Promise<SubscriptionPaywall>;
   logPaywallShown(generation: number): Promise<void>;
   purchase(handle: string): Promise<PurchaseResult>;
   operation(): SubscriptionOperation;

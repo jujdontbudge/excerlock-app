@@ -540,7 +540,7 @@ export async function createIdentityLab(
         && !(offer?.fallbackError && fallback);
       ctx.log('lab_flow', { placement, attempt: attempts.flow, ok });
       if (!ok) throw networkError('Flow request failed');
-      const trial = fallback ? true : offer?.arm === 'unknown' ? undefined : offer?.arm === 'a';
+      const trial = fallback ? true : offer?.arm === 'unknown' || (placement === 'onboarding_no_trial' && offer?.arm === 'b') ? undefined : offer?.arm === 'a';
       return {
         placementId: placement,
         variationId: offer ? `offer-${fallback ? 'fallback' : offer.arm}` : `identity-lab-${placement}`,

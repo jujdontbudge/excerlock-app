@@ -61,6 +61,7 @@ export function createPostHogRuntime(config: PostHogRuntimeConfig, dependencies:
   return {
     analytics,
     getDistinctId: () => boundary.getDistinctId(),
+    getDeviceId: () => boundary.getDeviceId(),
     async dispose() {
       if (disposed) return;
       disposed = true;

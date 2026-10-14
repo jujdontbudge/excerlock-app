@@ -176,18 +176,18 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       if (timer) clearTimeout(timer);
     });
   }
-  async loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingTrialFallback: boolean }): Promise<SubscriptionPaywall> {
+  async loadPaywall(placement: SubscriptionPaywall['placement'], options?: { onboardingPlacement: 'onboarding_trial_fallback' | 'onboarding_no_trial' }): Promise<SubscriptionPaywall> {
     const generation = ++this.paywallGeneration;
     await this.deps.recoveryJournal.ready();
     await this.deps.waitForIdentityReady();
     const identity = this.requireExpected();
     await this.ensureActivated();
-    if (placement === 'onboarding' && !options?.onboardingTrialFallback && this.onboardingAudienceGeneration !== identity.generation) {
+    if (placement === 'onboarding' && !options && this.onboardingAudienceGeneration !== identity.generation) {
       await this.deps.sdk.updateProfile({ customAttributes: { onboarding_offer_version: 1 } });
       this.assertIdentity(identity);
       this.onboardingAudienceGeneration = identity.generation;
     }
-    const flow = await this.deps.sdk.getFlow(options?.onboardingTrialFallback ? 'onboarding_trial_fallback' : placement, {
+    const flow = await this.deps.sdk.getFlow(options?.onboardingPlacement ?? placement, {
       fetchPolicy: 'reload_revalidating_cache_data',
       loadTimeoutMs: 5000,
     });

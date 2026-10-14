@@ -40,20 +40,27 @@ Enable free trial toggle; B contains exactly the two approved twins and no intro
 The product order is annual then monthly on both arms. These products have the same prices
 and group; only A's base products have introductory offers.
 
-Placements:
+Placements ([ADR 0079](adr/0079-install-split-onboarding-trial-assignment.md)):
 
-- `onboarding_trial_fallback`: All Users/default audience → A, 100%, no A/B test, no B.
-- `onboarding`: All Users/default audience → A. Create the numeric custom attribute
-  `onboarding_offer_version` and an audience/segment requiring it to equal `1`. Attach the
-  trial/no-trial A/B test to that audience only: A 50%, B 50%, sticky Adapty assignment.
-  Older clients without the attribute must receive A. The client sets it through the existing
-  SDK profile API before requesting `onboarding`; a failed update falls back to the control
-  placement. Do not target by build number alone: runtime 4/build 17 and runtime 5/build 18
-  can each still be running older JavaScript.
+- `onboarding` `29524927` → A. Clients hashed to A load it.
+- `onboarding_no_trial` `1f9558eb` → B `a2d11553` (the two twins, no remote config needed).
+  Clients hashed to B load it. Repoint it to A to stop B everywhere without an OTA.
+- `onboarding_trial_fallback` `c063b816` → A, 100%, no A/B test, no B.
 - Keep `in_app` and `winback` outside this experiment.
-- Disable any PostHog `onboarding_variant` tail manipulation intended to independently
-  remove these trial screens. The client enforces their inclusion from Adapty regardless,
-  but unrelated PostHog ordering would confound this comparison.
+
+Agent operation, Adapty app `9b8a6cf2-22c5-46f9-b938-35c27da2c66f`:
+
+```sh
+APP=9b8a6cf2-22c5-46f9-b938-35c27da2c66f
+adapty placements get --app $APP 1f9558eb-51ed-4fff-a737-1f357acf71dd
+adapty placements update --app $APP 1f9558eb-51ed-4fff-a737-1f357acf71dd --developer-id onboarding_no_trial --title "Onboarding no trial (B)" --audiences '[{"segment_ids":[],"paywall_id":"cf28c3cc-52c2-4bd0-b467-81d68c84bb8c","priority":0}]'
+adapty placements update --app $APP 1f9558eb-51ed-4fff-a737-1f357acf71dd --developer-id onboarding_no_trial --title "Onboarding no trial (B)" --audiences '[{"segment_ids":[],"paywall_id":"a2d11553-f39b-4ac2-8444-5e51a58e0790","priority":0}]'
+```
+
+The first update stops B (B installs see A, with `assigned_arm: b`); the second resumes B.
+Changing the production placement is a third-party dashboard change and needs the owner's
+go-ahead. Read results in PostHog from `onboarding_offer_exposed` by `assigned_arm`
+(intention to treat) and `arm` (as shown), then Adapty for revenue.
 
 Release and operator order:
 
@@ -79,12 +86,12 @@ Release and operator order:
    annual show the actual three-day offer, Day 2 reminder/Day 3 billing, toggle on A, plain
    billing for intro-ineligible accounts, and the control-only fallback. Verify a real Sandbox
    purchase and reminder separately; simulator scripted SDK evidence is not a receipt.
-6. Activate the `onboarding` custom-attribute audience A/B test at A 50% / B 50%. Verify a
+6. The install split is live once the OTA carrying ADR 0079 is published. Verify a
    known B assignment skips only `S3c` and `S3d`, keeps `S3e`, has no toggle/trial wording and
    purchases the selected `.notrial` twin. Verify A still selects the base product by default.
    Confirm `logShowFlow` reports the retained variation, not a second assignment.
 
-PostHog receives the ordinary UI exposure `onboarding_offer_exposed` with `arm` (`a`/`b`),
+PostHog receives the ordinary UI exposure `onboarding_offer_exposed` with `arm` (`a`/`b`), `assigned_arm` (`a`/`b`),
 `source` (`adapty`/`fallback`), `intro_offer` (`available`/`unavailable`/`unknown`) and optional
 `variation_id`, plus `offer_arm`/`offer_source` on `paywall_viewed`, only under the existing
 opt-in and ready canonical identity rules. It receives no new feature-flag exposure; this

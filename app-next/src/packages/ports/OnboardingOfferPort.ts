@@ -2,6 +2,7 @@ import type { SubscriptionPaywall, TrialOffer } from './SubscriptionPort';
 
 export type OnboardingOffer = {
   arm: 'a' | 'b';
+  assigned: 'a' | 'b';
   source: 'adapty' | 'fallback';
   offer: TrialOffer;
   trialAvailable: boolean;

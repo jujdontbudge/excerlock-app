@@ -1,11 +1,13 @@
 ---
-status: accepted
+status: accepted; assignment superseded by 0079
 date: 2026-10-13
 ---
 
 # 0078: One Adapty offer determines the onboarding tail and checkout
 
 ## Decision
+
+The arm assignment below is superseded by [0079](0079-install-split-onboarding-trial-assignment.md); the rest stands.
 
 Adapty owns the trial versus no-trial experiment on `onboarding`, with a 50/50 A/B test. Each localized remote config must contain a JSON boolean `trial`: `true` for A and `false` for B. B is accepted only with exactly the approved Variant A monthly and annual `.notrial` twins and no introductory offer. Missing, malformed, failed or late assignments fall back to A. Product eligibility never assigns B.
 

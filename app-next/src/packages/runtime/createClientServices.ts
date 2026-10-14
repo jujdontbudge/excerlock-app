@@ -98,7 +98,7 @@ export async function createClientServices(options: {
   );
   return {
     auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics,
-    onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation }),
+    onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation, installId: () => telemetry.getDeviceId() }),
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     onboardingFlow: createOnboardingFlowPort({
