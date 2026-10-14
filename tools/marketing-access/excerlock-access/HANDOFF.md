@@ -13,6 +13,7 @@ This folder lets the marketing agent give creators free ExcerLock Premium by ema
    mkdir -p ~/.local/bin
    ln -sf ~/.claude/skills/excerlock-access/excerlock-access ~/.local/bin/excerlock-access
    chmod +x ~/.claude/skills/excerlock-access/excerlock-access
+   xattr -dr com.apple.quarantine ~/.claude/skills/excerlock-access 2>/dev/null || true
    grep -q '.local/bin' ~/.zshrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
    source ~/.zshrc
    ```
