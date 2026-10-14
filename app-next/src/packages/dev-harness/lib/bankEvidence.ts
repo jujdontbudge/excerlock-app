@@ -3,6 +3,7 @@ import { rulesStore } from '../../conditions/rulesStore';
 import { ruleDaysStore } from '../../conditions/ruleDaysStore';
 import { settingsStore } from '../../preferences/settingsStore';
 import { permissionsStore } from '../../permissions/permissionsStore';
+import { historyStore } from '../../progress/historyStore';
 import { detectionStore } from '../../activity/detectionStore';
 import { planBankMeasurements, projectBankEvidence } from '../../bank/BankEvidence';
 import type { ExactStepMeasurement } from '../../progress/projectInstanceProgress';
@@ -27,12 +28,12 @@ export function startFakeBankEvidence(runtime: Runtime): () => void {
           timezone = runtime.clock.timezone();
         const steps: Record<string, ExactStepMeasurement> = {};
         if (permissionsStore.getState().data.motion === 'granted')
-          for (const range of planBankMeasurements(now, timezone)) {
+          for (const range of planBankMeasurements(now, timezone, new Set(historyStore.getState().data.days.map((row) => row.day)))) {
             const measured = await runtime.steps.metricsBetween(
               new Date(range.from).toISOString(),
               new Date(range.to + 1).toISOString(),
             );
-            steps[range.key] = { from: range.from, through: range.to, steps: measured.steps, timezone };
+            steps[range.key] = { from: range.from, through: range.to, steps: measured.steps, timezone: range.timezone };
           }
         if (
           disposed ||
@@ -52,6 +53,7 @@ export function startFakeBankEvidence(runtime: Runtime): () => void {
           settingsStore.getState().data.gymPlaces.map((place) => place.id),
           timezone,
           now,
+          new Set(historyStore.getState().data.days.map((row) => row.day)),
         );
         if (JSON.stringify(rows) !== JSON.stringify(previous)) ruleDaysStore.getState().patch({ days: rows });
       } while (requested && !disposed);

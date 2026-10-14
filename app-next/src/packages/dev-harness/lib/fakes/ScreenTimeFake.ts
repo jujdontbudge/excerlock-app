@@ -6,7 +6,9 @@ import { rulesStore } from '../../../conditions/rulesStore';
 import { FakeContext } from '../FakeContext';
 import { ScreenTimeAuthorizationError } from '../../../app-selection/ScreenTimeAuthorizationError';
 export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
+  let selectionVersion = 0;
   return {
+    selectionVersion: () => String(selectionVersion),
     selectionSummary: () => fakeSelectionSummary(rulesStore.getState().data.lockedApps),
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
@@ -17,6 +19,7 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
       const initial = rulesStore.getState().data.lockedApps;
       const result = await ctx.prompt({ kind: 'picker', initial });
       const selected = typeof result === 'boolean' ? initial : result;
+      selectionVersion++;
       rulesStore.getState().patch({ lockedApps: selected });
       return selected;
     },
