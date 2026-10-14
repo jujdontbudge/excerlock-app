@@ -9,6 +9,10 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
   override func intervalDidEnd(for activity: DeviceActivityName) {
     super.intervalDidEnd(for: activity)
+    if activity.rawValue.hasPrefix(excerlockBankDrainPrefix) {
+      try? BankDrainStore.shared.intervalEnded(activity.rawValue)
+      return
+    }
     handle(activity, callback: "interval_ended", started: false)
   }
 
@@ -31,6 +35,10 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
   override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
     super.eventDidReachThreshold(event, activity: activity)
+    if activity.rawValue.hasPrefix(excerlockBankDrainPrefix) {
+      try? BankDrainStore.shared.reached(event.rawValue, monitorId: activity.rawValue)
+      return
+    }
     guard activity.rawValue.hasPrefix(excerlockWatchdogPrefix) else { return }
     #if EXCERLOCK_LINKED_RECORDER_TRACE
     traceCallback(activity, callback: "threshold_reached", status: "received", reason: nil)

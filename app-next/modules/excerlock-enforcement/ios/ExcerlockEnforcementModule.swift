@@ -40,6 +40,17 @@ public final class ExcerlockEnforcementModule: Module {
     }
     Function("getPolicyRevision") { () throws -> Int in try self.getPolicyRevision() }
     Constant("watchdogWarning") { true }
+    AsyncFunction("armBankDrain") { (minutes: Double, baselineArmId: String?, bookedMinutes: Double) throws -> Void in
+      try BankDrainStore.shared.arm(minutes, baselineArmId: baselineArmId, bookedMinutes: bookedMinutes)
+    }
+    AsyncFunction("disarmBankDrain") { () throws -> Void in try BankDrainStore.shared.disarm() }
+    AsyncFunction("bankDrainUsage") { () throws -> [String: Any] in try BankDrainStore.shared.usage() }
+    #if DEBUG
+    AsyncFunction("bankDrainDiagnostics") { () throws -> [String: Any] in try BankDrainStore.shared.diagnostics() }
+    AsyncFunction("armBankDrainSpike") { (minutes: Double, tickMinutes: Int, baselineArmId: String?, bookedMinutes: Double) throws -> Void in
+      try BankDrainStore.shared.arm(minutes, tickMinutes: tickMinutes, baselineArmId: baselineArmId, bookedMinutes: bookedMinutes)
+    }
+    #endif
     #if EXCERLOCK_LINKED_RECORDER_TRACE
     Function("startLinkedTrace") { (sessionId: String, nonce: String) throws -> [String: Any] in
       let status = try LinkedTraceWriter.shared.startSession(sessionId: sessionId, nonce: nonce)
@@ -350,7 +361,7 @@ public final class ExcerlockEnforcementModule: Module {
       try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
         guard record.revision == revision, record.state == "conditional", record.policyGeneration == policyGeneration, record.accountGeneration == accountGeneration, record.selectionVersion == selectionVersion else { throw ExcerlockPolicyError.staleRevision }
-        guard DeviceActivityCenter().activities.count < 20 else { throw ExcerlockPolicyError.invalidSnapshot }
+        guard DeviceActivityCenter().activities.count < excerlockMaxDeviceActivityMonitors else { throw ExcerlockPolicyError.invalidSnapshot }
         record.registrations[id] = registration
         try ExcerlockPolicyStore.shared.writeLocked(record)
       }
@@ -490,6 +501,7 @@ public final class ExcerlockEnforcementModule: Module {
       do {
         let calendar = Calendar.autoupdatingCurrent
         for window in staged {
+          guard DeviceActivityCenter().activities.count < excerlockMaxDeviceActivityMonitors else { throw ExcerlockPolicyError.invalidSnapshot }
           let startComponents = calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000))
           let endComponents = calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000))
           guard startComponents != endComponents else { throw ExcerlockPolicyError.invalidSnapshot }

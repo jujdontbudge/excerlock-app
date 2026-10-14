@@ -37,6 +37,10 @@ const MAIN_ONLY_CAPABILITIES = [
 
 const MONITOR_PACKAGE_SOURCES = [
   {
+    destination: "BankDrain.generated.swift",
+    localSource: path.join("modules", "excerlock-enforcement", "ios", "BankDrain.swift"),
+  },
+  {
     destination: "ExcerlockAppGroup.generated.swift",
     localSource: path.join("modules", "excerlock-enforcement", "ios", "ExcerlockAppGroup.swift"),
   },

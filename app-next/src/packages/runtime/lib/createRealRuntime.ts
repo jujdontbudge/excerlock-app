@@ -26,6 +26,8 @@ import { nativeGait } from './NativeGait';
 import { createNativeScreenTimePort, NativeScreenTimePickerHost } from '../../app-selection/createNativeScreenTimePort';
 import { getExcerlockEnforcementModule } from '../../../../modules/excerlock-enforcement';
 import { linkedTrace } from '@linked-trace';
+import { NativeBankDrain } from '../../enforcement/NativeBankDrain';
+import { createBankDrainDiagnostic } from './createBankDrainDiagnostic';
 import { NativeEnforcementTransport } from '../../enforcement/NativeEnforcementTransport';
 import { EnforcementHost } from '../../enforcement/EnforcementHost';
 import { isConditionShieldLift } from '../../enforcement/conditionShieldLift';
@@ -79,6 +81,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   if (!gait) throw new Error('The production gait module is missing');
   let selectionVersion = (await AsyncStorage.getItem(SELECTION_VERSION_KEY)) ?? 'initial';
   const clock = createNativeClockPort();
+  const bankDrain = new NativeBankDrain(clock, error => options.reportError(error));
   const safety = new RuntimeSafety();
   const storeReview = createStoreReviewPort(StoreReview);
   let disposed = false;
@@ -90,7 +93,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   const stops: (() => void)[] = [];
   const listeners = new Set<() => void>();
   let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [], shieldLifts: { confirmed: 0, source: null } };
-  const cleanups: (() => void | Promise<void>)[] = [() => clock.dispose(), () => gait.stop()];
+  const cleanups: (() => void | Promise<void>)[] = [() => clock.dispose(), () => bankDrain.dispose(), () => gait.stop()];
   let cleanupResult: Promise<void> | null = null;
   const cleanupResources = (): Promise<void> => {
     if (cleanupResult) return cleanupResult;
@@ -642,6 +645,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     const runtime: RealRuntime = {
       kind: 'real',
       clock,
+      bankDrain,
       gait: {
         ...gait,
         start: () => safety.startCamera(() => gait.start()),
@@ -790,6 +794,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         void disposeAsync().catch(options.reportError);
       },
     };
+    if (__DEV__) runtime.bankDrainDiagnostic = createBankDrainDiagnostic(bankDrain, runtime.screenTime);
     try {
       stops.push(
         detection.location.on('region', (transition) => {

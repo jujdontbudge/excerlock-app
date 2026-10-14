@@ -1,4 +1,5 @@
 import type { GymLocationFix } from '../ports/GymPort';
+import { BankDrainFake } from './lib/fakes/BankDrainFake';
 import { FakePickerHost } from './FakePickerHost';
 import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
@@ -627,6 +628,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     appPickerHost: FakePickerHost,
     clock: ctx.clock,
     screenTime: ScreenTimeFake(ctx),
+    bankDrain: BankDrainFake(() => ctx.clock.now()),
     steps: StepsFake(ctx),
     walking,
     gait,
