@@ -1,5 +1,5 @@
 import { dayKey } from '../../schedule/calendar';
-import { bankStore } from '../../bank/bankStore';
+import { exportBankAccountData, importBankAccountData } from '../../bank/AccountData';
 import { syncBankCondition } from '../../bank/BankLifecycle';
 import { settingsStore } from '../../preferences/settingsStore';
 import { Scenario } from '../../model/models';
@@ -47,10 +47,10 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });
   if (scenario.bank) {
     syncBankCondition(scenario.clock.now, scenario.clock.timezone);
-    const account = bankStore.getState().data.account;
+    const account = exportBankAccountData().account;
     if (account) {
       const day = dayKey(scenario.clock.now, scenario.clock.timezone);
-      bankStore.getState().patch({ account: { ...account, ...scenario.bank, days: { [day]: { difficulty: account.difficulty, amount: scenario.steps.today, points: scenario.bank.pendingPoints, through: Date.parse(scenario.clock.now) } } } });
+      await importBankAccountData({ account: { ...account, ...scenario.bank, days: { [day]: { difficulty: account.difficulty, amount: scenario.steps.today, points: scenario.bank.pendingPoints, through: Date.parse(scenario.clock.now) } } } });
     }
   }
   ruleDaysStore.getState().patch({ days: scenario.ruleDays, gymPresence: null });

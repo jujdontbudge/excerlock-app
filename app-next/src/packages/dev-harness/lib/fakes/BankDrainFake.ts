@@ -30,7 +30,6 @@ export function createBankDrainFake(
     },
     reset: () => {
       usedMinutes = 0;
-      armed = false;
     },
   };
 }
