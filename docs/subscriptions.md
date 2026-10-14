@@ -19,6 +19,29 @@ when metadata is unavailable. Existing trials keep their StoreKit expiry; the ap
 one day before that expiry. The independent `.t7` grid remains a seven-day catalog and must not
 be changed by this launch-plan rollout.
 
+## Switching price in seconds (live since 2026-10-14)
+
+The onboarding and in-app paywalls now sell the 45-product grid, not the Variant A launch plans. A price or trial change is two Adapty calls and needs no build, OTA or App Review; clients pick it up on their next paywall load. Every grid product is approved, has the `premium` access level, and is in Adapty. Mix only grid products on one paywall (one subscription group, so Apple crossgrades instead of allowing two subscriptions).
+
+| Placement | Paywall | Products |
+|---|---|---|
+| `onboarding` `29524927`, `onboarding_trial_fallback` `c063b816`, `in_app` `beb86e0e` | `c79aa881-9e63-4abd-acc4-369f0ad6048c` | `annual.3999.t3`, `monthly.999.t3`, `annual.3999.t0`, `monthly.999.t0` |
+| `onboarding_no_trial` `1f9558eb` (install-split B) | `cf8d9e7a-7eaa-422f-9061-51db75283fe9` | `annual.3999.t0`, `monthly.999.t0` |
+| `winback` `55351edf` | unchanged | Variant A win-back |
+
+Rules the client relies on: list the yearly product first (it is the default selection). A trial paywall lists the `.t3` (or `.t7`) products, then their `.t0` twins at the same prices, so builds 17 and 18 on old JavaScript can still pair them. A no-trial paywall lists only `.t0` products. The app derives every price and trial length from StoreKit.
+
+```sh
+APP=9b8a6cf2-22c5-46f9-b938-35c27da2c66f
+adapty products list --app $APP --page-size 100 --json   # Adapty product UUIDs by App Store product ID
+adapty paywalls create --app $APP --title "Grid trial: annual 44.99 t3 ..." --product-id <annual t3> --product-id <monthly t3> --product-id <annual t0> --product-id <monthly t0> --json
+adapty placements update --app $APP 29524927-9f2f-4dc0-a56a-ce59c6876c4b --developer-id onboarding --title "<current title>" --audiences '[{"segment_ids":[],"paywall_id":"<new paywall>","priority":0}]'
+```
+
+Repeat the placement update for `onboarding_trial_fallback` and `in_app` with the trial paywall, and for `onboarding_no_trial` with a matching `.t0`-only paywall. Changing a live placement is a third-party dashboard change and needs the owner's go-ahead. Roll back by pointing the placements at the previous paywall ID (A `cf28c3cc-52c2-4bd0-b467-81d68c84bb8c`, B `a2d11553-f39b-4ac2-8444-5e51a58e0790`).
+
+Clients before the 2026-10-14 OTA recognise B only by the Variant A `.notrial` twins, so a grid B paywall sends them to the trial fallback paywall until that OTA is installed.
+
 ## Three-day trial versus no-trial experiment
 
 [ADR 0078](adr/0078-adapty-onboarding-trial-assignment.md) owns the client behavior. Nothing in

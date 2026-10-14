@@ -12,8 +12,11 @@ const fallback = (assigned: 'a' | 'b'): OnboardingOffer => ({ arm: 'a', assigned
 const twins = (paywall: SubscriptionPaywall) => paywall.products.length === 2
   && noTrialPlans.every((id) => paywall.products.some((product) => product.vendorProductId === id && !product.offerLabel));
 
+const plainOnly = (paywall: SubscriptionPaywall) => paywall.products.length > 0
+  && paywall.products.every((product) => !product.offerLabel && !product.trialOffer);
+
 function armFor(paywall: SubscriptionPaywall, assigned: 'a' | 'b'): 'a' | 'b' | null {
-  if ((assigned === 'b' || paywall.trial === false) && twins(paywall)) return 'b';
+  if ((assigned === 'b' || paywall.trial === false) && (twins(paywall) || plainOnly(paywall))) return 'b';
   if (paywall.trial === false) return null;
   return paywall.products.some((product) => !noTrialPlans.includes(product.vendorProductId)) ? 'a' : null;
 }
