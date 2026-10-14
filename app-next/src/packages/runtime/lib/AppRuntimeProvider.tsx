@@ -10,6 +10,7 @@ import { tokens } from '../../ui/tokens';
 import { RuntimeContext } from '../../ports/useRuntime';
 import { NotificationLandingHost } from './NotificationLandingHost';
 import { OtaResumeHost } from './OtaResumeHost';
+import { startBankLifecycle } from '../../bank/BankLifecycle';
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
   const [runtime, setRuntime] = useState<Runtime | null>(
     () =>
@@ -41,6 +42,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
     },
     [runtime],
   );
+  useEffect(() => runtime ? startBankLifecycle(runtime, reportRuntimeError) : undefined, [runtime]);
   if (!runtime)
     return (
       <ScreenShell contentStyle={{ flexGrow: 1, justifyContent: 'center', gap: tokens.space.xl }}>

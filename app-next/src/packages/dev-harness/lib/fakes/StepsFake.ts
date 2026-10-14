@@ -5,6 +5,12 @@ import { stepCount } from '../stepCount';
 import { dayKey } from '../../../schedule/calendar';
 export function StepsFake(ctx: FakeContext): StepsPort {
   const count = () => stepCount(ctx);
+  const baselineAt = (from: string) => {
+    if (Date.parse(from) < Date.parse(ctx.scenario.clock.now)) return 0;
+    const override = ctx.snapshot().stepsOverride;
+    if (override && Date.parse(override.at) <= Date.parse(from)) return override.value;
+    return ctx.scenario.steps.today + Math.floor(Math.max(0, Date.parse(from) - Date.parse(ctx.scenario.clock.now)) / 1000) * (ctx.scenario.steps.autoIncrementPerSecond ?? 0);
+  };
   const pastSteps = (from: string, to: string) => {
     if (!ctx.scenario.steps.pastFromHistory || Date.parse(from) > Date.parse(ctx.clock.now())) return 0;
     const day = dayKey(from, ctx.clock.timezone());
@@ -20,7 +26,7 @@ export function StepsFake(ctx: FakeContext): StepsPort {
     },
     metricsBetween: async (from, to) => {
       const now = Date.parse(ctx.clock.now());
-      const steps = Date.parse(from) <= now && now < Date.parse(to) ? count() : pastSteps(from, to);
+      const steps = Date.parse(from) <= now && now < Date.parse(to) ? Math.max(0, count() - baselineAt(from)) : pastSteps(from, to);
       return {
         steps,
         distanceMeters: steps * 0.76,

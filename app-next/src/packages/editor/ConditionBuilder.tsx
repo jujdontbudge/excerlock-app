@@ -1,3 +1,5 @@
+import { DifficultyStep } from '../conditions/DifficultyStep';
+import { bankOnboardingCopy } from '../onboarding/bankOnboardingCopy';
 import { GymBackgroundSetup } from '../gyms/GymBackgroundSetup';
 import { pageIn, pageOut } from '../ui/presets';
 import { useState } from 'react';
@@ -26,7 +28,7 @@ export function ConditionBuilder({ id, onClose, onNeeds, onStage }: {
   const f = useBuilder(id, onClose, onNeeds, onStage),
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
-  const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);
+  const branch = !['O20', 'S1', 'S3', 'GPlace', 'D'].includes(f.step);
   const enter = pageIn(m.reduced, f.direction);
   const exit = pageOut(m.reduced, f.direction);
   if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} onClose={f.cancel} />;
@@ -77,6 +79,7 @@ export function ConditionBuilder({ id, onClose, onNeeds, onStage }: {
             setAnswer={(key, value) => { if (key === 'activity') f.choose(value as Activity); }}
           />
         ) : null}
+        {f.step === 'D' ? <DifficultyStep {...bankOnboardingCopy} activity={f.draft.activity} difficulty={f.draft.difficulty} onChange={(value) => f.dispatch({ type: 'setDifficulty', value })} /> : null}
         {branch ? <RuleScreen step={f.step as BranchStep} draft={f.draft} onAction={f.dispatch} /> : null}
         {f.step === 'S1' ? <ScheduleScreen draft={f.schedule} onAction={f.onSchedule} onChoose={setWheel} /> : null}
         {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} editing={f.editing} /> : null}

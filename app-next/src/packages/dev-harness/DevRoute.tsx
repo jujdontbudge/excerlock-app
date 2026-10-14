@@ -1,3 +1,4 @@
+import { rulesStore } from '../conditions/rulesStore';
 import { ShieldPreview } from '../enforcement/ShieldPreview';
 import { applyDevControls } from './lib/applyDevControls';
 import { useEffect } from 'react';
@@ -34,7 +35,7 @@ export function DevRoute() {
       });
   }, [scenario, keep, restore, outcome, prompt, setup, journey, notification, lab, advance, dev, router]);
   if (stage === 'shield')
-    return <ShieldPreview onOpen={() => router.replace('/home')} onClose={() => router.replace('/dev')} />;
+    return <ShieldPreview onOpen={() => router.replace(rulesStore.getState().data.rules.some((rule) => rule.enabled && rule.mode.kind === 'bank') ? '/shop' : '/home')} onClose={() => router.replace('/dev')} />;
   if (stage === 'type') return <TypeSpecimen />;
   if (stage === 'icons') return <IconSpecimen />;
   return component || gallery ? <PreviewGallery /> : <DevMenu />;

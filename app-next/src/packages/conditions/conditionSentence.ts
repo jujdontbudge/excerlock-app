@@ -3,7 +3,8 @@ import { Schedule } from '../model/types';
 import { minuteLabel } from '../schedule/scheduleLabel';
 import { domainCopy } from '../schedule/domainCopy';
 import { conditionPreviewCopy as c } from './lib/conditionPreviewCopy';
-import { RuleDraft } from './draft';
+import { bankTrade } from './bankCopy';
+import { RuleDraft, isBankDraft } from './draft';
 import { isValidStepGoal } from './stepGoal';
 
 const answered = (value: unknown) => value !== undefined && value !== '' && Number.isFinite(Number(value));
@@ -29,6 +30,7 @@ export function conditionSentence(
   draft: RuleDraft,
   { schedule, goalChosen = false }: { schedule?: Schedule; goalChosen?: boolean } = {},
 ): string | null {
+  if (isBankDraft(draft)) return bankTrade(draft.activity, draft.difficulty);
   const tail = schedule ? scheduleTail(schedule) : '';
   const sentence = conditionClause(answers, draft, goalChosen);
   return sentence === null ? null : sentence + tail;

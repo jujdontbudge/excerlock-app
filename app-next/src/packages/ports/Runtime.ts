@@ -24,7 +24,9 @@ import type { OnboardingFlowPort } from './OnboardingFlowPort';
 import type { OnboardingOfferPort } from './OnboardingOfferPort';
 import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
 import type { NotificationResponsesPort } from './NotificationResponsesPort';
+import type { BankDrainPort } from './BankDrainPort';
 export type Runtime = {
+  bankDrain: BankDrainPort;
   readonly kind: 'fake' | 'real';
   appPickerHost?: ComponentType;
   screenTime: ScreenTimePort;

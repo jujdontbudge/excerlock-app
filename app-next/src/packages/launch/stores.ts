@@ -12,7 +12,9 @@ import { rememberedSignInStore } from '../identity/rememberedSignIn';
 import { rememberedAdmissionStore } from '../subscription/rememberedAdmission';
 import { filmingModeStore } from '../activity/filmingModeStore';
 import { showcaseModeStore } from '../progress/showcaseModeStore';
+import { bankStore } from '../bank/bankStore';
 export const stores = [
+  bankStore,
   analyticsPreferencesStore,
   historyStore,
   profileStore,

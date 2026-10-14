@@ -1,12 +1,12 @@
-import { RuleDraft } from '../../conditions/draft';
+import { RuleDraft, isBankDraft } from '../../conditions/draft';
 import { ScheduleDraft, scheduleIssues } from '../../conditions/scheduleDraft';
 import { goalRange, validGoal } from '../../conditions/goalRange';
 export function builderPath(d: RuleDraft, staging = false): string[] {
   const branch =
     d.activity === 'walking'
-      ? ['W1', 'W2', ...(d.walkingMode !== 'state' ? ['W3'] : [])]
-      : ['G1', ...(staging ? [] : ['GPlace']), ...(d.gymMode === 'time' ? ['G2'] : [])];
-  return ['O20', ...branch, 'S1', ...(staging ? [] : ['S3'])];
+      ? ['W1', 'W2', ...(d.walkingMode === 'bank' ? ['D'] : d.walkingMode !== 'state' ? ['W3'] : [])]
+      : ['G1', ...(staging ? [] : ['GPlace']), ...(d.gymMode === 'bank' ? ['D'] : d.gymMode === 'time' ? ['G2'] : [])];
+  return ['O20', ...branch, ...(isBankDraft(d) ? [] : ['S1']), ...(staging ? [] : ['S3'])];
 }
 export function builderValid(step: string, d: RuleDraft, s: ScheduleDraft, chosen: boolean) {
   if (step === 'O20') return chosen;

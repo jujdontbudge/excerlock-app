@@ -1,3 +1,5 @@
+import { BankConditionConflict } from '../../conditions/BankExclusivity';
+import { bankConditionCopy } from '../../conditions/bankCopy';
 import { useState } from 'react';
 import { notify } from '../../ui/Notice';
 import { conditionsCopy } from '../../conditions/conditionsCopy';
@@ -6,7 +8,7 @@ import { Keyboard } from 'react-native';
 import { Activity, Rule } from '../../model/types';
 import { rulesStore } from '../../conditions/rulesStore';
 import { settingsStore as useSettingsStore } from '../../preferences/settingsStore';
-import { createDraft, fromRule, toRule } from '../../conditions/draft';
+import { createDraft, fromRule, toRule, isBankDraft } from '../../conditions/draft';
 import { createRuleDraftStore } from '../../conditions/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../../conditions/scheduleDraft';
 import { builderPath, builderValid } from './builderFlow';
@@ -82,13 +84,13 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
       }
     },
     next: () => {
-      if (stage && step === 'S1') {
+      if (stage && (step === 'S1' || step === 'D' && isBankDraft(draft))) {
         try {
           stage(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)));
           haptic('commit');
         } catch (error) {
-          if (!(error instanceof SchedulePlanError)) throw error;
-          notify(conditionsCopy.scheduleLimit);
+          if (!(error instanceof SchedulePlanError) && !(error instanceof BankConditionConflict)) throw error;
+          notify(error instanceof BankConditionConflict ? bankConditionCopy.exclusive : conditionsCopy.scheduleLimit);
           haptic('error');
         }
       } else if (step === 'S3') {
@@ -103,8 +105,8 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();
         } catch (error) {
-          if (!(error instanceof SchedulePlanError)) throw error;
-          notify(conditionsCopy.scheduleLimit);
+          if (!(error instanceof SchedulePlanError) && !(error instanceof BankConditionConflict)) throw error;
+          notify(error instanceof BankConditionConflict ? bankConditionCopy.exclusive : conditionsCopy.scheduleLimit);
           haptic('error');
         }
       } else if (backup) {

@@ -1,3 +1,4 @@
+import { isBankDraft } from '../../../conditions/draft';
 import type { RuleDraft } from '../../../conditions/draft';
 
 export type Scenario = {
@@ -15,14 +16,14 @@ export type DemoState = {
 };
 export function scenarioFor(draft: RuleDraft, places: string): Scenario {
   return {
-    kind:
+    kind: isBankDraft(draft) ? 'walk-steps' :
       draft.activity === 'gym'
         ? draft.gymMode === 'arrival'
           ? 'gym-arrival'
           : draft.gymMode === 'presence'
             ? 'gym-presence'
             : 'gym-minutes'
-        : `walk-${draft.walkingMode}`,
+        : draft.walkingMode === 'bank' ? 'walk-steps' : `walk-${draft.walkingMode}`,
     place:
       draft.activity === 'walking' && draft.walkingMode === 'state' && places.includes('treadmill')
         ? 'treadmill'

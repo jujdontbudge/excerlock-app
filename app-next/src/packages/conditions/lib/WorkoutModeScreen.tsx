@@ -19,6 +19,7 @@ export function WorkoutModeScreen({
           <ChoiceRow
             emphasis="solid"
             title={mode.title}
+            support={'support' in mode ? mode.support : undefined}
             selected={d.gymMode === mode.id}
             compact
             onPress={() => onAction({ type: 'setGymMode', value: mode.id })}

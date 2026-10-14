@@ -24,10 +24,14 @@ import {
 } from '../preferences/SettingsAccountData';
 import type { ActivityAccountData } from '../activity/ActivityAccountData';
 
+import { exportBankAccountData, importBankAccountData, resetBankAccountData } from '../bank/AccountData';
+import type { BankData } from '../bank/bankStore';
+
 const STORAGE_KEY = 'excerlock-next.account-data.v1';
 
 type AccountDataSnapshot = {
   conditions: ConditionsAccountData;
+  bank?: BankData;
   history: HistoryArchive;
   profile: Profile;
   settings?: SettingsAccountData;
@@ -63,6 +67,7 @@ const emptyEnvelope = (): AccountDataEnvelope => ({
 });
 const capture = async (activity?: AccountActivityData): Promise<AccountDataSnapshot> => ({
   conditions: exportConditionsAccountData(),
+  bank: exportBankAccountData(),
   history: exportHistoryAccountData(),
   profile: exportProfileAccountData(),
   settings: exportSettingsAccountData(),
@@ -114,6 +119,7 @@ export function createAccountDataCoordinator(storage: AccountDataStorage, activi
   const resetActive = () => Promise.all([
     resetConditionsAccountData(),
     resetHistoryAccountData(),
+    resetBankAccountData(),
     resetProfileAccountData(),
     resetSettingsAccountData(),
     activity?.reset(),
@@ -122,6 +128,7 @@ export function createAccountDataCoordinator(storage: AccountDataStorage, activi
     ? Promise.all([
         importConditionsAccountData(snapshot.conditions),
         importHistoryAccountData(snapshot.history),
+        importBankAccountData(snapshot.bank),
         importProfileAccountData(snapshot.profile),
         snapshot.settings ? importSettingsAccountData(snapshot.settings) : resetSettingsAccountData(),
         activity?.restore(snapshot.activity),

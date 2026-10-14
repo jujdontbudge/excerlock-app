@@ -53,6 +53,7 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
   if (d.state === 'locked') {
     const hint = d.nextUnlockHint,
       rule = rules.find((r) => r.id === hint.ruleId);
+    if (hint.action === 'shop') return { ...model, title: 'Your Bank is empty', icon: 'lock', unlocked: false, subtitle: 'Earn Points to buy more time' };
     const action =
       hint.action === 'walk'
         ? c.walk
@@ -61,6 +62,7 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
           : `${domainCopy.verbs[rule?.activity ?? 'walking'].toLowerCase()} ${hint.remaining?.toLocaleString('en-US')} ${hint.unit}`;
     return { ...model, title: c.locked, icon: 'lock', unlocked: false, subtitle: c.until(action) };
   }
+  if (d.state === 'unlockedBank') return { ...model, subtitle: 'Bank time opens your Locked apps' };
   if (d.state === 'unlockedMet') return { ...model, title: c.met, subtitle: resume(d.relockAt) };
   if (d.state === 'unlockedAtGym')
     return {

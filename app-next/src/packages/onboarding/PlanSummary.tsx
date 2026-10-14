@@ -7,7 +7,9 @@ import { scheduleLabel } from '../schedule/scheduleLabel';
 import { Rule, Schedule } from '../model/types';
 import { LivingIcon } from '../ui/LivingIcon';
 import { Reveal } from '../ui/Reveal';
-import { RuleDraft, fromRule, toRule } from '../conditions/draft';
+import { BankConditionPreview } from '../conditions/BankConditionPreview';
+import { bankConditionCopy } from '../conditions/bankCopy';
+import { RuleDraft, fromRule, toRule, isBankDraft } from '../conditions/draft';
 import { goalStep } from './lib/plan';
 import { Answers } from '../model/answers';
 import { planGoals } from './lib/planGoals';
@@ -38,7 +40,7 @@ export function PlanSummary({
   if (answers) {
     const goals = planGoals(answers, [draft.activity, ...extras.map((extra) => extra.activity)]);
     return <>
-      <ConditionPreview icon={draft.activity} schedule={schedule} sentence={conditionSentence(answers, draft, { schedule, goalChosen: true })} />
+      {isBankDraft(draft) ? <BankConditionPreview activity={draft.activity} difficulty={draft.difficulty} /> : <ConditionPreview icon={draft.activity} schedule={schedule} sentence={conditionSentence(answers, draft, { schedule, goalChosen: true })} />}
       {extras.map((extra) => {
         const sentence = conditionSentence({}, fromRule(extra), { schedule: extra.schedule, goalChosen: true });
         return <ConditionPreview key={extra.id} caption={false} icon={extra.activity} schedule={extra.schedule} sentence={sentence}
@@ -54,20 +56,20 @@ export function PlanSummary({
           </View>
         </Reveal>)}
       </View>
-      {onAdd ? <Reveal index={goals.length}>
+      {onAdd && !isBankDraft(draft) && !extras.some((rule) => rule.mode.kind === 'bank') ? <Reveal index={goals.length}>
         <SecondaryButton label={c.addCondition} onPress={onAdd}
           leading={<Icon name="plus" variant="utility" tone="accent" size={t.icon.md} />} />
       </Reveal> : null}
     </>;
   }
   const rows = [
-    { label: c.activity, value: ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
-    { label: c.schedule, value: scheduleLabel(schedule), edit: c.editSchedule, step: 'S1' },
+    { label: isBankDraft(draft) ? bankConditionCopy.difficulty : c.activity, value: ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
+    ...(isBankDraft(draft) ? [] : [{ label: c.schedule, value: scheduleLabel(schedule), edit: c.editSchedule, step: 'S1' }]),
   ];
   return (
     <>
       <Heading title={editing ? conditionsCopy.editTitle : c.S3} support={editing ? undefined : c.summaryBody} />
-      {editing ? <Label tone="secondary" style={{ textAlign: 'center' }}>{conditionsCopy.editBody}</Label> : null}
+      {editing ? <Label tone="secondary" style={{ textAlign: 'center' }}>{isBankDraft(draft) ? bankConditionCopy.nextDay : conditionsCopy.editBody}</Label> : null}
       <LivingIcon name="check" />
       <View style={{ gap: t.space.md }}>
         {rows.map((row, index) => (
@@ -103,7 +105,7 @@ export function PlanSummary({
       </View>
       <Reveal index={rows.length + 1}>
         <Label tone="secondary">
-          {draft.activity === 'walking' && draft.walkingMode === 'state' ? c.stateSupport : c.targetSupport}
+          {isBankDraft(draft) ? bankConditionCopy.nextDay : draft.activity === 'walking' && draft.walkingMode === 'state' ? c.stateSupport : c.targetSupport}
         </Label>
       </Reveal>
     </>

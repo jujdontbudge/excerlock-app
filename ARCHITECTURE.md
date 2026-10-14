@@ -49,14 +49,15 @@ A package imports only packages from a lower layer, never from its own layer, so
 | 6 | `journey` (entry and paid account admission), `gyms` (saved gyms, gym picker, place search), `notifications` |
 | 7 | `activity` (walking and gym detection, sensors, location) |
 | 8 | `progress` (daily progress, history, streaks) |
-| 9 | `lock` (lock decision and the selectors screens read) |
-| 10 | `enforcement` (shield and Screen Time enforcement), `insights` (Analytics tab), `unlock` (gym and treadmill unlock) |
-| 11 | `home` (Home tab and tab shell), `support` (incident reports, feedback) |
-| 12 | `onboarding` (profile questions, plan, condition demo), `settings` (Settings tab) |
-| 13 | `editor` (Conditions tab and builder), `launch` (boot and root navigation), `paywall`, `setup` (post-paywall setup flow) |
-| 14 | `dev-harness` (scenarios, fakes, dev menu, previews, diagnostics) |
-| 15 | `runtime` (composition root) |
-| 16 | `research` (Linked Recorder lab builds only) |
+| 9 | `bank` (Points, Bank time, Difficulty and Offers) |
+| 10 | `lock` (lock decision and the selectors screens read) |
+| 11 | `enforcement` (shield and Screen Time enforcement), `insights` (Analytics tab), `unlock` (gym and treadmill unlock) |
+| 12 | `home` (Home tab and tab shell), `shop` (Shop tab), `support` (incident reports, feedback) |
+| 13 | `onboarding` (profile questions, plan, condition demo), `settings` (Settings tab) |
+| 14 | `editor` (Conditions tab and builder), `launch` (boot and root navigation), `paywall`, `setup` (post-paywall setup flow) |
+| 15 | `dev-harness` (scenarios, fakes, dev menu, previews, diagnostics) |
+| 16 | `runtime` (composition root) |
+| 17 | `research` (Linked Recorder lab builds only) |
 
 ## Rules
 

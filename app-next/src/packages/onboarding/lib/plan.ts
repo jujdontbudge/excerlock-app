@@ -1,7 +1,8 @@
 import { draftFromAnswers } from '../../conditions/answersDraft';
 import { Profile, Rule } from '../../model/types';
 import { Answers } from '../../model/answers';
-import { RuleDraft, toRule } from '../../conditions/draft';
+import { assertBankExclusive } from '../../conditions/BankExclusivity';
+import { RuleDraft, toRule, isBankDraft } from '../../conditions/draft';
 import { scheduleDraft, toSchedule } from '../../conditions/scheduleDraft';
 import { rulesStore } from '../../conditions/rulesStore';
 import { profileStore } from '../../preferences/profileStore';
@@ -17,6 +18,7 @@ const proposedPlan = (a: Answers, base?: RuleDraft, extras = onboardingStore.get
 };
 export function stageExtraRule(a: Answers, base: RuleDraft, extra: Rule, context?: SchedulePlanContext) {
   const extras = [...onboardingStore.getState().data.extraRules, extra];
+  assertBankExclusive(proposedPlan(a, base, extras).rules);
   assertScheduleRepresentable(proposedPlan(a, base, extras).rules, context);
   onboardingStore.getState().patch({ extraRules: extras });
 }
@@ -25,6 +27,7 @@ export function removeExtraRule(id: string) {
 }
 export function stagePlan(a: Answers, base?: RuleDraft, context?: SchedulePlanContext) {
   const { rule, rules } = proposedPlan(a, base);
+  assertBankExclusive(rules);
   assertScheduleRepresentable(rules, context);
   onboardingStore.getState().patch({
     answers: {
@@ -40,8 +43,11 @@ export function stagePlan(a: Answers, base?: RuleDraft, context?: SchedulePlanCo
 export function commitStagedPlan(userId: string, unit: 'km' | 'mi', context?: SchedulePlanContext) {
   const a = onboardingStore.getState().data.answers;
   if (!a.ruleId || a.ruleCommitted !== false) return null;
-  const { rule, rules } = proposedPlan(a);
+  const committedAnswers = (a.activity === 'gym' ? a.gymMode === 'bank' : a.walkingMode === 'bank')
+    ? { ...a, ruleCreatedAt: context?.now ?? new Date().toISOString() } : a;
+  const { rule, rules } = proposedPlan(committedAnswers);
   if (a.ruleCommittedFor === userId) return rule;
+  assertBankExclusive(rules);
   assertScheduleRepresentable(rules, context);
   rulesStore.getState().patch({ rules });
   const profile: Partial<Profile> = { units: unit };
@@ -64,6 +70,7 @@ export function commitStagedPlan(userId: string, unit: 'km' | 'mi', context?: Sc
   return rule;
 }
 export function goalStep(d: RuleDraft) {
+  if (isBankDraft(d)) return 'D';
   if (d.activity === 'walking') return d.walkingMode === 'state' ? 'W2' : 'W3';
   return d.gymMode === 'time' ? 'G2' : 'G1';
 }

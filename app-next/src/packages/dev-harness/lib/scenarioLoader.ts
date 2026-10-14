@@ -1,3 +1,6 @@
+import { dayKey } from '../../schedule/calendar';
+import { bankStore } from '../../bank/bankStore';
+import { syncBankCondition } from '../../bank/BankLifecycle';
 import { settingsStore } from '../../preferences/settingsStore';
 import { Scenario } from '../../model/models';
 import { hydrateStores, resetStores } from '../../launch/stores';
@@ -42,6 +45,14 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [], units: scenario.profile?.units ?? settingsStore.getState().data.units, gymAutoDetect: scenario.gym?.autoDetect ?? false, gymBackgroundAsked: scenario.gym?.backgroundAsked ?? false, gymAutoDetectOptOut: scenario.gym?.optOut ?? false });
   profileStore.getState().patch(scenario.profile ?? {});
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });
+  if (scenario.bank) {
+    syncBankCondition(scenario.clock.now, scenario.clock.timezone);
+    const account = bankStore.getState().data.account;
+    if (account) {
+      const day = dayKey(scenario.clock.now, scenario.clock.timezone);
+      bankStore.getState().patch({ account: { ...account, ...scenario.bank, days: { [day]: { difficulty: account.difficulty, amount: scenario.steps.today, points: scenario.bank.pendingPoints, through: Date.parse(scenario.clock.now) } } } });
+    }
+  }
   ruleDaysStore.getState().patch({ days: scenario.ruleDays, gymPresence: null });
   permissionsStore.getState().patch(scenario.permissions);
   sessionStore.getState().patch({ session: scenario.session });

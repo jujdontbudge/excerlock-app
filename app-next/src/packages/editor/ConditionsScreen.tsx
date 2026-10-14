@@ -1,3 +1,5 @@
+import { bankConditionCopy } from '../conditions/bankCopy';
+import { BankConditionConflict } from '../conditions/BankExclusivity';
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { useEffect, useRef, useState } from 'react';
 import { notify } from '../ui/Notice';
@@ -57,7 +59,7 @@ export function ConditionsScreen({
         <ConfirmSheet
           open={deleting !== null}
           title={c.deleteTitle}
-          body={c.deleteBody}
+          body={rules.find((rule) => rule.id === deleting)?.mode.kind === 'bank' ? bankConditionCopy.remove : c.deleteBody}
           confirm={c.delete}
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
@@ -73,7 +75,7 @@ export function ConditionsScreen({
       </>}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
         <View style={{ flex: 1 }}><Heading title={c.title} /></View>
-        {ordered.length ? (
+        {ordered.length && !rules.some((rule) => rule.mode.kind === 'bank') ? (
           <PressableScale label={c.add} onPress={onAdd}
             style={{ minHeight: t.control.inline, paddingHorizontal: t.space.lg,
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
@@ -123,7 +125,7 @@ export function ConditionsScreen({
             <Reveal key={rule.id} index={index}>
               <RuleCard
                 title={ruleName(rule)}
-                schedule={scheduleLabel(rule.schedule)}
+                schedule={rule.mode.kind === 'bank' ? bankConditionCopy.nextDay : scheduleLabel(rule.schedule)}
                 icon={rule.activity}
                 enabled={rule.enabled}
                 onOpen={() => onEdit(rule.id)}
@@ -136,8 +138,8 @@ export function ConditionsScreen({
                     toggled.current = value;
                     if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
                   } catch (error) {
-                    if (!(error instanceof SchedulePlanError)) throw error;
-                    notify(c.scheduleLimit);
+                    if (!(error instanceof SchedulePlanError) && !(error instanceof BankConditionConflict)) throw error;
+                    notify(error instanceof BankConditionConflict ? bankConditionCopy.exclusive : c.scheduleLimit);
                     haptic('error');
                   }
                 }}
