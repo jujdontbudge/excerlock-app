@@ -87,7 +87,7 @@ case "$action" in
     call POST /access/grants "$(json email "$email" note "$note" until "$until")"
     expires="$(field "$BODY" expiresAt)"
     echo "GRANTED: $email has free ExcerLock Premium $(until_text "$expires")."
-    echo "Tell them: download ExcerLock from the App Store, tap \"Already have an account? Sign in\", and sign in with exactly $email (email code, Apple or Google)."
+    echo "Tell them: download ExcerLock from the App Store, tap \"Already have an account? Sign in\", and sign in with exactly $email using \"Continue with Google\" (Gmail) or \"Continue with email\" and the emailed code. The first sign-in creates the account."
     ;;
   check)
     call GET "/access/grants?email=$(osascript -l JavaScript -e 'function run(a){return encodeURIComponent(a[0])}' "$email")"

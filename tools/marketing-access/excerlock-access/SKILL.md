@@ -30,7 +30,9 @@ Each command prints one line that starts with `GRANTED`, `ACTIVE`, `NONE`, `REVO
 
 ## What to tell the creator after `GRANTED`
 
-> Download ExcerLock from the App Store, open it, tap **Already have an account? Sign in**, and sign in with exactly *their email* (an email code, Apple or Google with that same address). Premium unlocks with no payment. If you already have the app, sign out and back in with that email.
+> Download ExcerLock from the App Store, open it, tap **Already have an account? Sign in**, then tap **Continue with Google** if it is a Gmail address, or **Continue with email** and type the code we email you. Use exactly *their email*. Premium unlocks with no payment. If you already have the app, sign out and back in with that email.
+
+There is no separate sign-up: the first sign-in with that email creates the account. Steer creators to Google or the email code, not **Continue with Apple**, which can hide their real address.
 
 `check` also says whether they have signed in and received access yet. Use it to follow up.
 
