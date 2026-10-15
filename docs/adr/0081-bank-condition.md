@@ -14,7 +14,7 @@ Rules:
 - A new Bank Condition starts with 12 hours. Points and the Bank have no cap and never expire; removing the Condition removes both and unlocks everything.
 - Activity counts from the moment the Condition is created; no backfill. Points use the same verified walking and gym evidence as Progress.
 - Difficulty changes apply from the next Day.
-- Earning: Easy 20 steps per Point or 8 Points per gym minute; Medium 33 or 5; Hard 60 or 3. Offers: 25 → 15 min, 100 → 1 h, 250 → 3 h, 450 → 6 h.
+- Earning: one Point per verified step and 165 per verified gym minute at every Difficulty. Difficulty sets the price of an hour: Easy 2,000, Medium 3,300, Hard 6,000 Points; Offers are 15 m, 1 h, 3 h and 6 h at 0.25, 1, 2.5 and 4.5 times that price. (Revised 2026-10-15 from a per-Difficulty earning rate with fixed prices of 25/100/250/450, so balances read big; the trade per step is unchanged, but a Difficulty change now also reprices Points already held.)
 - A Bank Condition Day is met at the Difficulty's daily minimum (Easy 3k steps or 20 gym minutes, Medium 6k or 30, Hard 10k or 45), which feeds the Streak.
 - Onboarding: the Difficulty picker replaces the goal step and the Schedule step is skipped. The imported plan shows the Bank Condition as its steps (or gym minutes) per hour of screen time, alongside the existing plan goals. "Add another Condition" is hidden. The Condition demo's Bank scenario is a walking character on the left captioned "You walk" and a phone on the right buying screen time with the steps.
 - No notifications and no emergency unlock in v1. Analytics carry no Point or minute amounts.

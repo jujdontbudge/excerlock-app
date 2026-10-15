@@ -13,9 +13,9 @@ One word per concept. Code, copy, commits, issues and agent output use these wor
 - **Gym presence**: apps open while the user is at a saved gym (arrival starts it).
 - **Bank** (walking or gym): apps stay locked while the Bank is empty; the activity earns Points, Points buy screen time in the Shop, and using Locked apps spends Bank time. Only one Bank Condition is enabled at a time, and no other Condition can sit next to it.
 
-**Points**: what a Bank Condition's activity earns (steps or gym minutes), at the rate its Difficulty sets. Points never expire while their Bank Condition exists. "Earned" is the right word for Points and only for Points.
+**Points**: what a Bank Condition's activity earns: one per step, a fixed amount per gym minute. Points never expire while their Bank Condition exists. "Earned" is the right word for Points and only for Points.
 
-**Difficulty**: Easy, Medium or Hard. Sets how many Points an activity earns and the daily minimum that keeps the Streak.
+**Difficulty**: Easy, Medium or Hard. Sets what screen time costs in Points and the daily minimum that keeps the Streak.
 
 **Shop**: the tab where Points buy screen time. It exists only while a Bank Condition is enabled. **Offer**: one thing the Shop sells, a price in Points for an amount of screen time.
 

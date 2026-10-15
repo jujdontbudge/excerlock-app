@@ -25,16 +25,16 @@ On the "how does this unlock" step (W2 for walking, G1 for gym) the person can p
 
 ### Economy
 
+**One step is one Point**, at every Difficulty, so balances look big. A gym minute is 165 Points (Medium's 20 gym minutes buy 1 h, like 3,300 steps). **Difficulty sets the prices**, not the earning rate.
+
 | | Easy | Medium | Hard |
 |---|---|---|---|
-| Steps per Point | 20 | 33 | 60 |
-| Points per gym minute | 8 | 5 | 3 |
+| 1 h costs | 2,000 Points | 3,300 Points | 6,000 Points |
+| Offers 15 m · 1 h · 3 h · 6 h | 500 · 2,000 · 5,000 · 9,000 | 825 · 3,300 · 8,250 · 14,850 | 1,500 · 6,000 · 15,000 · 27,000 |
 | Daily minimum (Streak), walking | 3,000 steps | 6,000 steps | 10,000 steps |
 | Daily minimum (Streak), gym | 20 min | 30 min | 45 min |
 
-Offers, the same at every Difficulty: **25 → 15 min · 100 → 1 h · 250 → 3 h · 450 → 6 h**.
-
-Points are whole numbers: `floor(stepsSinceCreation / stepsPerPoint)` accumulated per Day at that Day's Difficulty, so a Difficulty change never revalues Points already earned.
+Points are whole numbers: one per verified step, 165 per verified gym minute. Prices follow the Difficulty in effect today; a Difficulty change applies from the next Day, prices included, so Points already held buy at the new prices from then on.
 
 ### Lock decision
 
@@ -71,7 +71,8 @@ Tabs: **Home · Shop · Conditions · Analytics · Settings**; Shop exists only 
 
 - Points balance as the centred hero with the token.
 - 2×2 grid of the four Offers ("3 h" big, "250" with token small).
-- **Buy**: first tap turns the card into "Buy · 250"; second tap buys. Sequence: Points roll down → a "+3 h" chip flies from the card toward the Home tab → the Home tab icon pulses once → unlock haptic if the Bank was empty (the Shield just lifted), success otherwise.
+- **Bank chip, top right**: the Shop header carries a chip showing the Bank's screen time (e.g. "3 h 12 m"). It is where purchases land.
+- **Buy**: first tap turns the card into "Buy · 8,250"; second tap buys. Sequence: a stream of Points tokens bursts from the Offer card and arcs into the top-right Bank chip while the Points hero rolls down; as they land the chip grows, rolls up to its new time with a "+3 h" chip popping from it, then settles → unlock haptic if the Bank was empty (the Shield just lifted), success otherwise. Big, vivid and filmable; nothing else on the screen moves.
 - **Can't afford**: card dimmed, shows "≈ 1,400 steps to go" (or gym minutes) with a thin progress ring. Tap → gentle shake + warning haptic. No notice, no red text.
 
 ### Onboarding
