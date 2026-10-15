@@ -45,8 +45,9 @@ check_email() {
 }
 
 call() {
-  local method="$1" path="$2" body="${3:-}" response status
-  local args=(-sS -X "$method" -H "Authorization: Bearer $(token)" -w $'\n%{http_code}' "$API$path")
+  local method="$1" path="$2" body="${3:-}" response status secret
+  secret="$(token)" || exit 1
+  local args=(-sS -X "$method" -H "Authorization: Bearer $secret" -w $'\n%{http_code}' "$API$path")
   if [[ -n "$body" ]]; then args+=(-H "Content-Type: application/json" --data-binary "$body"); fi
   response="$(curl "${args[@]}")" || fail "Could not reach $API. Check the internet connection."
   status="${response##*$'\n'}"
