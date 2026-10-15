@@ -6,6 +6,7 @@ export type BankView = {
   difficulty: Difficulty;
   points: number;
   pendingPoints: number;
+  firstCollect: boolean;
   bankMinutes: number;
   today: { amount: number; minimum: number; met: boolean };
 };

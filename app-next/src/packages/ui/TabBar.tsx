@@ -1,4 +1,6 @@
 import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useFlyTarget } from './FlyToTarget';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tabItems, TabId } from './tabsCopy';
 import { Icon } from './Icon';
@@ -8,6 +10,7 @@ import { tokens as t } from './tokens';
 import { LinearGradient } from 'expo-linear-gradient';
 export function TabBar({ selected, onSelect, showShop = false }: { selected: TabId; onSelect: (tab: TabId) => void; showShop?: boolean }) {
   const insets = useSafeAreaInsets();
+  const home = useFlyTarget('home', t.motion.reward.tabPulse);
   return (
     <View
       pointerEvents="box-none"
@@ -24,7 +27,7 @@ export function TabBar({ selected, onSelect, showShop = false }: { selected: Tab
         pointerEvents="none"
         colors={t.surface.tabBarGradient}
         locations={[0, 0.42, 1]}
-        style={{ position: 'absolute', top: -56, bottom: 0, left: 0, right: 0 }}
+        style={{ position: 'absolute', top: -t.layout.dockFade, bottom: 0, left: 0, right: 0 }}
       />
       <View style={{ flexDirection: 'row' }}>
         {tabItems.filter((tab) => tab.id !== 'shop' || showShop).map((tab) => (
@@ -41,12 +44,17 @@ export function TabBar({ selected, onSelect, showShop = false }: { selected: Tab
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon
-                name={tab.icon}
-                variant="utility"
-                size={t.icon.md}
-                tone={selected === tab.id ? 'accent' : 'muted'}
-              />
+              <Animated.View
+                ref={tab.id === 'home' ? home.ref : undefined}
+                collapsable={false}
+                style={tab.id === 'home' ? home.style : undefined}>
+                <Icon
+                  name={tab.icon}
+                  variant="utility"
+                  size={t.icon.md}
+                  tone={selected === tab.id ? 'accent' : 'muted'}
+                />
+              </Animated.View>
               <Label
                 variant="micro"
                 style={{

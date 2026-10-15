@@ -4,7 +4,7 @@ The UI contract is `Bank.ts`. It exports `Difficulty`, `OfferId`, `Offer`, `Bank
 
 `bankStore.ts` alone owns the persisted `excerlock-next.bank.v1` data. `AccountData.ts` joins AccountDataCoordinator; older account snapshots without Bank data restore an empty Bank store. Condition removal clears the account data. Turning a Condition off preserves it and hides Shop.
 
-`BankEvidence.ts` consumes the same exact step measurements and confirmed gym intervals as Progress. Ranges start at Condition creation, then follow local Days. Each Day keeps its Difficulty, amount, total whole Points already projected and measurement cursor. Collect moves pending Points into Points without resetting those cursors. Difficulty changes are pending until the next Day; the Difficulty timeline preserves rates for delayed evidence.
+`BankEvidence.ts` consumes the same exact step measurements and confirmed gym intervals as Progress. Ranges start at Condition creation, then follow local Days. Each Day keeps its Difficulty, amount, total whole Points already projected and measurement cursor. Collect moves pending Points into Points without resetting those cursors. `firstCollect` is derived, not stored: no Points held and no Day's Points beyond those still pending means nothing was ever collected, so Home plays the one confetti burst. Difficulty changes are pending until the next Day; the Difficulty timeline preserves rates for delayed evidence.
 
 `BankLifecycle.ts` owns the drain subscription and monitor arms. Usage is cumulative since the last arm; only its unapplied difference is deducted. Changes to Bank time re-arm the monitor, removal or pausing disarms it. No wall clock drains Bank time.
 

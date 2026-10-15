@@ -1,66 +1,51 @@
-import { useState } from 'react';
 import { View } from 'react-native';
 import { Redirect, useIsFocused } from 'expo-router';
-import { ScreenShell, Heading, Label, SecondaryButton } from '../ui';
+import { ScreenShell, Label } from '../ui';
+import { OfferCard } from '../ui/OfferCard';
+import { PointsPill } from '../ui/PointsPill';
 import { tokens as t } from '../ui/tokens';
-import { useBank, offers, buyOffer, activityToGo, type OfferId } from '../bank/Bank';
-import { bankTime } from '../bank/bankCopy';
+import { useBank, offers, buyOffer, activityToGo } from '../bank/Bank';
 import { shopCopy as c } from './shopCopy';
-import { haptic } from '../ui/haptics';
+const rows = [offers.slice(0, 2), offers.slice(2)];
 export function ShopScreen() {
   const bank = useBank();
   const focused = useIsFocused();
-  const [confirming, setConfirming] = useState<OfferId | null>(null);
   if (!bank) return focused ? <Redirect href="/home" /> : null;
   return (
-    <ScreenShell dock safeBottom={false}>
-      <Heading title={c.title} centered />
-      <Label variant="metric" style={{ textAlign: 'center' }}>
-        {bank.points.toLocaleString('en-US')}
+    <ScreenShell dock safeBottom={false} scrollUnderStatusBar={false}>
+      <Label variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>
+        {c.title}
       </Label>
-      <Label style={{ textAlign: 'center' }}>{c.points}</Label>
-      <View style={{ gap: t.space.md, flexDirection: 'row', flexWrap: 'wrap' }}>
-        {offers.map((offer) => {
-          const affordable = bank.points >= offer.price;
-          return (
-            <View
-              key={offer.id}
-              style={{
-                flexBasis: '45%',
-                flexGrow: 1,
-                gap: t.space.sm,
-                padding: t.space.lg,
-                borderRadius: t.radius.card,
-                backgroundColor: t.surface.softChoice,
-              }}>
-              <SecondaryButton
-                label={
-                  confirming === offer.id && affordable
-                    ? c.confirm(offer.price)
-                    : c.offer(bankTime(offer.minutes), offer.price)
-                }
-                onPress={() => {
-                  if (!affordable) {
-                    haptic('warning');
-                    return;
-                  }
-                  if (confirming !== offer.id) {
-                    setConfirming(offer.id);
-                    return;
-                  }
-                  const wasEmpty = bank.bankMinutes === 0;
-                  if (buyOffer(offer.id) === 'bought') haptic(wasEmpty ? 'unlock' : 'success');
-                  setConfirming(null);
-                }}
+      <View
+        style={{
+          height: t.points.bank,
+          borderRadius: t.radius.card,
+          backgroundColor: t.surface.softChoice,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: t.space.xs,
+        }}>
+        <PointsPill activity={bank.activity} points={bank.points} size="hero" target="shop-points" />
+        <Label variant="support" tone="secondary">
+          {c.points}
+        </Label>
+      </View>
+      <View style={{ gap: t.space.md }}>
+        {rows.map((row) => (
+          <View key={row[0].id} style={{ flexDirection: 'row', gap: t.space.md }}>
+            {row.map((offer) => (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                activity={bank.activity}
+                points={bank.points}
+                toGo={activityToGo(bank, offer)}
+                bankEmpty={bank.bankMinutes <= 0}
+                onBuy={() => buyOffer(offer.id)}
               />
-              {!affordable ? (
-                <Label tone="secondary" style={{ textAlign: 'center' }}>
-                  {c.toGo(activityToGo(bank, offer), bank.activity)}
-                </Label>
-              ) : null}
-            </View>
-          );
-        })}
+            ))}
+          </View>
+        ))}
       </View>
     </ScreenShell>
   );

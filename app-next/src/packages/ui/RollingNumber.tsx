@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleProp, TextStyle, useWindowDimensions, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  FadeOutDown,
+  FadeOutUp,
+  LayoutAnimationConfig,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { useMotion } from './useMotion';
@@ -11,6 +23,17 @@ type Direction = 1 | -1;
 const strip = Array.from({ length: 30 }, (_, i) => i % 10);
 const rollCurve = Easing.bezier(...t.motion.easing.enter);
 const isDigit = (char: string) => char >= '0' && char <= '9';
+const slotDuration = t.motion.reward.roll;
+const slotEnter = (direction: Direction, distance: number) =>
+  (direction > 0 ? FadeInDown : FadeInUp)
+    .withInitialValues({ opacity: 0, translateY: direction * distance })
+    .duration(slotDuration)
+    .easing(rollCurve);
+const slotExit = (direction: Direction) =>
+  (direction > 0 ? FadeOutUp : FadeOutDown)
+    .duration(slotDuration * 0.6)
+    .easing(rollCurve);
+const slotLayout = LinearTransition.duration(slotDuration).easing(rollCurve);
 
 export const formatPoints = (value: number) => Math.max(0, Math.round(value)).toLocaleString('en-US');
 
@@ -42,30 +65,44 @@ export function RollingNumber({
     order: chars.slice(i + 1).filter(isDigit).length,
   }));
   const style: StyleProp<TextStyle> = color ? { color } : undefined;
+  const m = useMotion();
+  const { fontScale } = useWindowDimensions();
+  const distance = t.type[variant].lineHeight * Math.min(fontScale, t.a11y.textScale) * 0.6;
+  const enter = m.reduced ? undefined : slotEnter(direction, distance);
+  const exit = m.reduced ? undefined : slotExit(direction);
+  const layout = m.reduced ? undefined : slotLayout;
   return (
-    <View
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={label ?? text}
-      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {slots.map((slot) =>
-        isDigit(slot.char) ? (
-          <DigitColumn
-            key={`d${slot.fromEnd}`}
-            digit={Number(slot.char)}
-            direction={direction}
-            order={slot.order}
-            variant={variant}
-            tone={tone}
-            style={style}
-          />
-        ) : (
-          <Label key={`c${slot.fromEnd}${slot.char}`} variant={variant} tone={unitTone ?? tone} style={unitTone ? undefined : style}>
-            {slot.char}
-          </Label>
-        ),
-      )}
-    </View>
+    <LayoutAnimationConfig skipEntering>
+      <Animated.View
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={label ?? text}
+        layout={layout}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+        {slots.map((slot) => (
+          <Animated.View
+            key={isDigit(slot.char) ? `d${slot.fromEnd}` : `c${slot.fromEnd}${slot.char}`}
+            entering={enter}
+            exiting={exit}
+            layout={layout}>
+            {isDigit(slot.char) ? (
+              <DigitColumn
+                digit={Number(slot.char)}
+                direction={direction}
+                order={slot.order}
+                variant={variant}
+                tone={tone}
+                style={style}
+              />
+            ) : (
+              <Label variant={variant} tone={unitTone ?? tone} style={unitTone ? undefined : style}>
+                {slot.char}
+              </Label>
+            )}
+          </Animated.View>
+        ))}
+      </Animated.View>
+    </LayoutAnimationConfig>
   );
 }
 
