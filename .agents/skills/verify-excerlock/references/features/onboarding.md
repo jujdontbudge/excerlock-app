@@ -358,7 +358,7 @@ then-tap: Continue
 then-expect: Become the best version of yourself
 ```
 
-The Bank Condition's demo is the same stage with "You walk" (gym: "You go to the gym") over the character and "You buy screen time" over the phone. Points tokens arc into the phone's Points pill, the 3 h Offer is bought, Points roll down, a "+3 h" chip fills the Bank, then the Shop lifts to the open app with one confetti burst and the unlock haptic: 6.4 s per loop. Walking earns only while Hold to walk is held once the person has held it. The onboarding Bank option is not wired yet, so review it at `dev?stage=bank-demo` (`&activity=gym`, `&cast=girl`); `demoTime`/`demoPause` freeze a frame. These proofs freeze the settled reward state, a full Bank after the purchase (ADR 0080). Videos and key frames: `.excer/bank-demo/`.
+The Bank Condition's demo is the same stage with "You walk" (gym: "You go to the gym") over the character and "You buy screen time" over the phone. Points tokens arc into the phone's Points pill, the 3 h Offer is bought, Points roll down, a "+3 h" chip fills the Bank, then the Shop lifts to the open app with one confetti burst and the unlock haptic: 6.4 s per loop. Walking earns only while Hold to walk is held once the person has held it. A Bank plan plays it at S3b in the real flow; for frozen frames use `dev?stage=bank-demo` (`&activity=gym`, `&cast=girl`); `demoTime`/`demoPause` freeze a frame. These proofs freeze the settled reward state, a full Bank after the purchase (ADR 0080). Videos and key frames: `.excer/bank-demo/`.
 
 ```proof
 name: demo-bank-walk

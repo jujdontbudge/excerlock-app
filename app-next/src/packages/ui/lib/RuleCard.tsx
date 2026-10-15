@@ -12,6 +12,7 @@ export function RuleCard({
   title,
   schedule,
   icon,
+  status = 'clock',
   enabled,
   onOpen,
   onToggle,
@@ -20,6 +21,7 @@ export function RuleCard({
   title: string;
   schedule: string;
   icon: IconName;
+  status?: IconName;
   enabled: boolean;
   onOpen: () => void;
   onToggle: (enabled: boolean) => void;
@@ -60,7 +62,7 @@ export function RuleCard({
               justifyContent: 'center',
               backgroundColor: enabled ? t.brand.primary : t.surface.well,
             }}>
-            <Icon name="clock" variant="utility" size={t.icon.md}
+            <Icon name={status} variant="utility" size={t.icon.md}
               tone={enabled ? 'onAccent' : 'muted'} />
           </View>
           <PressableScale

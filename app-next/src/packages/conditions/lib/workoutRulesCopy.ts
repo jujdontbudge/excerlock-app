@@ -5,7 +5,7 @@ export const workoutCopy = {
     gym: [
       { id: 'arrival', title: 'Arrive at the gym' },
       { id: 'presence', title: 'Be at the gym' },
-      { id: 'bank', title: 'Buy screen time', support: 'Earn Points at the gym, then spend them in the Shop' },
+      { id: 'bank', title: 'Buy screen time', support: 'Gym minutes earn Points. Points buy time.' },
       { id: 'time', title: 'Spend time at the gym' },
     ],
   },

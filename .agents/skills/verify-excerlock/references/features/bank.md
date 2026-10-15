@@ -25,7 +25,7 @@ name: onboarding-choice
 scenario: bank-onboarding
 open: /onboarding/W2
 actions: tap Buy screen time | tap Continue
-expect: What should your screen time take? | Easy | Medium | Hard | 3,300 steps = 1 h
+expect: What should an hour of screen time cost? | Easy | Medium | Hard | 3,300 steps = 1 h
 ```
 
 ```proof
@@ -85,7 +85,7 @@ absent: Shop
 name: removal-unlocks
 scenario: bank-empty
 open: /conditions
-actions: tap More actions | tap Delete | tap Delete condition
+actions: tap More actions | tap Delete | expect Delete this Condition and its Bank? | tap Delete condition
 expect: Your first condition starts here
 then-open: /home
 then-expect: Unlocked
@@ -96,7 +96,7 @@ absent: Shop
 name: difficulty-next-day
 scenario: bank-before-midnight
 open: /conditions
-actions: tap Walking · Medium | tap Edit condition | expect Edit condition | tap Edit goal | expect What should your screen time take? | tap Hard | tap Continue | expect Walking · Hard | tap Save condition | open /home | expect 0 / 6,000 steps | open /dev?advance=420000
+actions: tap Walking · Medium | tap Edit condition | expect Edit condition | tap Edit goal | expect What should an hour of screen time cost? | expect Difficulty changes apply from the next Day. | tap Hard | tap Continue | expect 6,000 steps = 1 h | tap Save condition | open /home | expect 0 / 6,000 steps | open /dev?advance=420000
 expect: Bank | 12 h | 0 / 10,000 steps
 ```
 

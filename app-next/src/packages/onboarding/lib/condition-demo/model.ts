@@ -1,6 +1,7 @@
 import { isBankDraft } from '../../../conditions/draft';
 import type { RuleDraft } from '../../../conditions/draft';
-import { bankFrame, bankPhases, bankRestPoint, BankRuleMode } from './bankStory';
+import type { RuleMode } from '../../../model/types';
+import { bankFrame, bankPhases, bankRestPoint } from './bankStory';
 
 export type Scenario = {
   kind: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-presence' | 'gym-minutes' | 'walk-bank' | 'gym-bank';
@@ -42,8 +43,9 @@ export function scenarioFor(draft: RuleDraft, places: string): Scenario {
             : 0,
   };
 }
-export function bankScenarioFor(mode: BankRuleMode): Scenario {
-  return { kind: mode.activity === 'gym' ? 'gym-bank' : 'walk-bank', place: 'outside', goal: 0 };
+export type BankRuleMode = Extract<RuleMode, { kind: 'bank' }>;
+export function bankScenarioFor(activity: BankRuleMode['activity']): Scenario {
+  return { kind: activity === 'gym' ? 'gym-bank' : 'walk-bank', place: 'outside', goal: 0 };
 }
 export function isBank(s: Scenario) {
   'worklet';

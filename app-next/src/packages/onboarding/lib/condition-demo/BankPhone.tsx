@@ -5,7 +5,7 @@ import { DemoState, Scenario, snapshot } from './model';
 import { bankFrame, bankOffers, bankStory, boughtOffer, easeInOut, formatBank, sinceLanding } from './bankStory';
 import { bankPhoneLayout, bankRows } from './layout';
 import { bankPhoneStyles as styles, Feed, MiniText as Text, phoneStyles, Splash } from './Phone';
-import { PointsToken } from './PointsToken';
+import { PointsToken } from '../../../ui/PointsToken';
 
 const pulseLength = 0.24;
 function offerCentre(index: number) {
@@ -73,12 +73,16 @@ export function BankPhone({
   scenario,
   frame,
   top,
+  height,
+  shopOffset,
   reduced,
 }: {
   clock: SharedValue<DemoState>;
   scenario: Scenario;
   frame: ReturnType<typeof snapshot>;
   top: number;
+  height: number;
+  shopOffset: number;
   reduced: boolean;
 }) {
   const activity = scenario.kind === 'gym-bank' ? 'gym' : 'walking';
@@ -90,7 +94,7 @@ export function BankPhone({
     const p = easeInOut(state.local / bankStory.lift);
     return reduced
       ? { opacity: 1 - p, transform: [{ translateY: 0 }] }
-      : { opacity: 1, transform: [{ translateY: -bankRows.phoneHeight * p }] };
+      : { opacity: 1, transform: [{ translateY: -height * p }] };
   });
   const splash = useAnimatedStyle(() => {
     const state = snapshot(clock.value, scenario);
@@ -124,10 +128,11 @@ export function BankPhone({
     };
   });
   return (
-    <View style={[phoneStyles.phone, { top, height: bankRows.phoneHeight }]}>
+    <View style={[phoneStyles.phone, { top, height }]}>
       <Feed />
       <Splash style={splash} />
       <Animated.View style={[StyleSheet.absoluteFill, styles.shop, shop]}>
+        <View style={{ position: 'absolute', left: 0, right: 0, top: shopOffset, height: bankRows.phoneHeight }}>
         <Animated.View style={[styles.pill, pill]}>
           <PointsToken size={18} activity={activity} />
           <Text style={styles.pillText}>{story.points}</Text>
@@ -145,6 +150,7 @@ export function BankPhone({
         <Animated.View style={[styles.chip, chip]}>
           <Text style={styles.chipText}>+3 h</Text>
         </Animated.View>
+        </View>
       </Animated.View>
       <Text style={[phoneStyles.time, { color: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]}>9:41</Text>
       <View style={[phoneStyles.home, { backgroundColor: frame.phone === 'tiktok' ? t.text.onAccent : t.text.primary }]} />

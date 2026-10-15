@@ -8,7 +8,7 @@ import { Rule, Schedule } from '../model/types';
 import { LivingIcon } from '../ui/LivingIcon';
 import { Reveal } from '../ui/Reveal';
 import { BankConditionPreview } from '../conditions/BankConditionPreview';
-import { bankConditionCopy } from '../conditions/bankCopy';
+import { bankConditionCopy, difficultyLabels } from '../conditions/bankCopy';
 import { RuleDraft, fromRule, toRule, isBankDraft } from '../conditions/draft';
 import { goalStep } from './lib/plan';
 import { Answers } from '../model/answers';
@@ -63,14 +63,14 @@ export function PlanSummary({
     </>;
   }
   const rows = [
-    { label: isBankDraft(draft) ? bankConditionCopy.difficulty : c.activity, value: ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
+    { label: isBankDraft(draft) ? bankConditionCopy.difficulty : c.activity, value: isBankDraft(draft) ? difficultyLabels[draft.difficulty] : ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
     ...(isBankDraft(draft) ? [] : [{ label: c.schedule, value: scheduleLabel(schedule), edit: c.editSchedule, step: 'S1' }]),
   ];
   return (
     <>
       <Heading title={editing ? conditionsCopy.editTitle : c.S3} support={editing ? undefined : c.summaryBody} />
-      {editing ? <Label tone="secondary" style={{ textAlign: 'center' }}>{isBankDraft(draft) ? bankConditionCopy.nextDay : conditionsCopy.editBody}</Label> : null}
-      <LivingIcon name="check" />
+      {editing && !isBankDraft(draft) ? <Label tone="secondary" style={{ textAlign: 'center' }}>{conditionsCopy.editBody}</Label> : null}
+      {isBankDraft(draft) ? <BankConditionPreview activity={draft.activity} difficulty={draft.difficulty} caption={false} /> : <LivingIcon name="check" />}
       <View style={{ gap: t.space.md }}>
         {rows.map((row, index) => (
           <Reveal
@@ -104,7 +104,7 @@ export function PlanSummary({
         ))}
       </View>
       <Reveal index={rows.length + 1}>
-        <Label tone="secondary">
+        <Label tone="secondary" style={isBankDraft(draft) ? { textAlign: 'center' } : undefined}>
           {isBankDraft(draft) ? bankConditionCopy.nextDay : draft.activity === 'walking' && draft.walkingMode === 'state' ? c.stateSupport : c.targetSupport}
         </Label>
       </Reveal>

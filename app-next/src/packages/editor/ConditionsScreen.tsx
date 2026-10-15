@@ -1,4 +1,4 @@
-import { bankConditionCopy } from '../conditions/bankCopy';
+import { bankConditionCopy, bankTrade } from '../conditions/bankCopy';
 import { BankConditionConflict } from '../conditions/BankExclusivity';
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
 import { useEffect, useRef, useState } from 'react';
@@ -50,6 +50,7 @@ export function ConditionsScreen({
     toggled.current = null;
     haptic(resumed && decision.state === 'locked' ? 'lock' : 'commit');
   }, [rules, decision.state]);
+  const deletingBank = rules.find((rule) => rule.id === deleting)?.mode.kind === 'bank';
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <ScreenShell dock
@@ -58,8 +59,8 @@ export function ConditionsScreen({
         <ScreenTimePickerHost />
         <ConfirmSheet
           open={deleting !== null}
-          title={c.deleteTitle}
-          body={rules.find((rule) => rule.id === deleting)?.mode.kind === 'bank' ? bankConditionCopy.remove : c.deleteBody}
+          title={deletingBank ? bankConditionCopy.removeTitle : c.deleteTitle}
+          body={deletingBank ? bankConditionCopy.remove : c.deleteBody}
           confirm={c.delete}
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
@@ -124,9 +125,10 @@ export function ConditionsScreen({
           {ordered.map((rule, index) => (
             <Reveal key={rule.id} index={index}>
               <RuleCard
-                title={ruleName(rule)}
-                schedule={rule.mode.kind === 'bank' ? bankConditionCopy.nextDay : scheduleLabel(rule.schedule)}
+                title={rule.mode.kind === 'bank' ? bankConditionCopy.name(rule.mode.activity, rule.mode.difficulty) : ruleName(rule)}
+                schedule={rule.mode.kind === 'bank' ? bankTrade(rule.mode.activity, rule.mode.difficulty) : scheduleLabel(rule.schedule)}
                 icon={rule.activity}
+                status={rule.mode.kind === 'bank' ? (rule.activity === 'gym' ? 'token-gym' : 'token-walking') : undefined}
                 enabled={rule.enabled}
                 onOpen={() => onEdit(rule.id)}
                 onToggle={(value) => {

@@ -11,10 +11,41 @@ export function sceneGeometry(width: number, height: number) {
     height: (height - top) / scale,
   };
 }
-export const bankRows = { phoneHeight: 312, phoneBottom: 120, captionHeight: 30, captionGap: 10 } as const;
+export const bankRows = {
+  phoneHeight: 312,
+  tallPhoneHeight: 420,
+  walkerMaxScale: 1.12,
+  stageWidth: 400,
+  phoneBottom: 120,
+  captionHeight: 30,
+  captionGap: 10,
+  topRoom: 20,
+  walker: { left: 4, bottom: 112, width: 190, height: 283, hand: { x: 0.76, y: 0.61 } },
+} as const;
 export function bankGeometry(height: number) {
-  const phoneTop = height - bankRows.phoneBottom - bankRows.phoneHeight;
-  return { phoneTop, captionTop: phoneTop - bankRows.captionGap - bankRows.captionHeight };
+  const room = height - bankRows.topRoom - bankRows.captionHeight - bankRows.captionGap - bankRows.phoneBottom;
+  const phoneHeight = Math.max(bankRows.phoneHeight, Math.min(bankRows.tallPhoneHeight, room));
+  const phoneTop = height - bankRows.phoneBottom - phoneHeight;
+  const walkerScale = Math.min(bankRows.walkerMaxScale, phoneHeight / bankRows.phoneHeight);
+  const { walker } = bankRows;
+  const origin = { x: walker.left, y: height - walker.bottom };
+  const shift = 1 - walkerScale;
+  return {
+    phoneTop,
+    phoneHeight,
+    shopOffset: (phoneHeight - bankRows.phoneHeight) / 2,
+    captionTop: phoneTop - bankRows.captionGap - bankRows.captionHeight,
+    walkerScale,
+    walkerTransform: [
+      { translateX: shift * (origin.x - bankRows.stageWidth / 2) },
+      { translateY: shift * (origin.y - height / 2) },
+      { scale: walkerScale },
+    ],
+    hand: {
+      x: origin.x + walker.width * walker.hand.x * walkerScale,
+      y: origin.y - walker.height * walker.hand.y * walkerScale,
+    },
+  };
 }
 export const bankPhoneLayout = {
   pill: { top: 30, height: 28 },
