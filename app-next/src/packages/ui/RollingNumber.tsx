@@ -99,9 +99,17 @@ export function RollingNumber({
   unitTone?: keyof typeof t.text;
 }) {
   const text = format(value);
-  const [last, setLast] = useState<{ value: number; direction: Direction }>({ value, direction: 1 });
-  if (last.value !== value) setLast({ value, direction: value > last.value ? 1 : -1 });
-  const direction = last.direction;
+  const [last, setLast] = useState<{ value: number; direction: Direction; at: number; quick: boolean }>({
+    value,
+    direction: 1,
+    at: 0,
+    quick: false,
+  });
+  if (last.value !== value) {
+    const at = Date.now();
+    setLast({ value, direction: value > last.value ? 1 : -1, at, quick: at - last.at < slotDuration });
+  }
+  const { direction, quick } = last;
   const slots = slotsKeptAcrossValues(text);
   const style: StyleProp<TextStyle> = color ? { color } : undefined;
   const m = useMotion();
@@ -128,6 +136,7 @@ export function RollingNumber({
               <DigitColumn
                 digit={Number(slot.char)}
                 direction={direction}
+                quick={quick}
                 order={slot.order}
                 variant={variant}
                 tone={tone}
@@ -145,9 +154,12 @@ export function RollingNumber({
   );
 }
 
+// While a value is counting (changes faster than one roll), each digit snaps to its next value
+// so the number reads as a fast counter instead of a blur of rolling columns.
 function DigitColumn({
   digit,
   direction,
+  quick,
   order,
   variant,
   tone,
@@ -155,6 +167,7 @@ function DigitColumn({
 }: {
   digit: number;
   direction: Direction;
+  quick: boolean;
   order: number;
   variant: Variant;
   tone: keyof typeof t.text;
@@ -181,12 +194,14 @@ function DigitColumn({
         ? from + ((digit - Math.round(from) + 10) % 10 || 10)
         : from - ((Math.round(from) - digit + 10) % 10 || 10);
     position.set(
-      withDelay(
-        order * t.motion.reward.rollStagger,
-        withTiming(Math.round(target), { duration: t.motion.reward.roll, easing: rollCurve }),
-      ),
+      quick
+        ? withTiming(Math.round(target), { duration: t.motion.reward.rollQuick, easing: rollCurve })
+        : withDelay(
+            order * t.motion.reward.rollStagger,
+            withTiming(Math.round(target), { duration: t.motion.reward.roll, easing: rollCurve }),
+          ),
     );
-  }, [digit, direction, order, m.reduced, position]);
+  }, [digit, direction, quick, order, m.reduced, position]);
   const roll = useAnimatedStyle(() => ({ transform: [{ translateY: -position.get() * row }] }));
   return (
     <View style={{ height: row, overflow: 'hidden' }}>

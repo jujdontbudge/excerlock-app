@@ -23,7 +23,7 @@ export function ShopScreen() {
         </View>
       </View>
       <View style={{ paddingVertical: t.space.lg, alignItems: 'center', gap: t.space.xs }}>
-        <PointsPill activity={bank.activity} points={bank.points} size="hero" target="shop-points" follow="shop-bank" />
+        <PointsPill activity={bank.activity} points={bank.points} size="hero" target="shop-points" spentBy="shop-bank" />
         <Label variant="support" tone="secondary">
           {c.points}
         </Label>

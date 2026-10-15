@@ -22,7 +22,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 import { Confetti } from './Confetti';
 import { haptic, HapticIntent } from './haptics';
 import { tokens as t } from './tokens';
@@ -30,7 +29,7 @@ import { useMotion } from './useMotion';
 
 type Point = { x: number; y: number };
 export type Box = Point & { width: number; height: number };
-export type FlightProgress = { landed: number; count: number };
+export type FlightProgress = { landed: number; count: number; launched: boolean };
 export type FlightSource = RefObject<View | null> | Box;
 export type FlightOptions = {
   from: FlightSource;
@@ -107,7 +106,7 @@ export function FlyToTargetProvider({ children }: PropsWithChildren) {
     async (options: FlightOptions) => {
       const count = flightCount(options.count);
       const target = targets.current.get(options.to);
-      publish(options.to, { landed: 0, count });
+      publish(options.to, { landed: 0, count, launched: false });
       const finish = () => {
         target?.settle();
         publish(options.to, null);
@@ -132,7 +131,7 @@ export function FlyToTargetProvider({ children }: PropsWithChildren) {
           landed += 1;
           if (landed < count) {
             target?.pulse();
-            publish(options.to, { landed, count });
+            publish(options.to, { landed, count, launched: true });
             options.onLand?.(landed, count);
             return;
           }
@@ -141,6 +140,7 @@ export function FlyToTargetProvider({ children }: PropsWithChildren) {
           finish();
           resolve();
         };
+        publish(options.to, { landed: 0, count, launched: true });
         setFlights((list) => [
           ...list,
           {
@@ -236,8 +236,8 @@ function fanPath(flight: Flight, index: number) {
 function burstPath(flight: Flight, index: number) {
   const { from, to, reach } = flight;
   const angle = index * 2.39996 + jitter(index, 1) * 0.6;
-  const radius = reach * (0.45 + 0.55 * Math.sqrt(jitter(index, 2)));
-  const start = { x: from.x + Math.cos(angle) * radius, y: from.y + Math.sin(angle) * radius * 0.8 };
+  const radius = reach * (0.3 + 0.7 * jitter(index, 2));
+  const start = { x: from.x + Math.cos(angle) * radius, y: from.y + Math.sin(angle) * radius * 0.75 - reach * 0.15 };
   const dx = to.x - start.x,
     dy = to.y - start.y,
     distance = Math.hypot(dx, dy) || 1;
@@ -254,15 +254,11 @@ function FlightToken({ flight, index }: { flight: Flight; index: number }) {
   const { start, control, appear, pop, depart, total } = path;
   const grow = flight.spread === 'burst' ? 0.78 + 0.44 * jitter(index, 5) : 1;
   const land = flight.land;
+  // Landing is reported a beat before the token arrives, so the target answers as it lands, not after.
   useEffect(() => {
-    elapsed.set(
-      withDelay(
-        flight.delay,
-        withTiming(total, { duration: total, easing: Easing.linear }, (done) => {
-          if (done) scheduleOnRN(land);
-        }),
-      ),
-    );
+    elapsed.set(withDelay(flight.delay, withTiming(total, { duration: total, easing: Easing.linear })));
+    const timer = setTimeout(land, flight.delay + total - r.landLead);
+    return () => clearTimeout(timer);
   }, [elapsed, flight.delay, total, land]);
   const style = useAnimatedStyle(() => {
     const time = elapsed.get();
@@ -345,12 +341,14 @@ export function useFlightProgress(id: string) {
   return useSyncExternalStore(context?.subscribe ?? noSubscription, context ? read : idle);
 }
 
-// 'stream' moves the value with each landing, fastest at first; 'end' holds it until the last token lands.
-export function useLandingValue(id: string, value: number, mode: 'stream' | 'end' = 'stream') {
+// 'stream' moves the value with each landing, fastest at first; 'launch' moves it once as the tokens leave;
+// 'end' holds it until the last token lands.
+export function useLandingValue(id: string, value: number, mode: 'stream' | 'launch' | 'end' = 'stream') {
   const progress = useFlightProgress(id);
   const [base, setBase] = useState(value);
   if (!progress && base !== value) setBase(value);
   if (!progress) return value;
+  if (mode === 'launch') return progress.launched ? value : base;
   if (mode === 'end') return base;
   const landed = progress.landed / progress.count;
   return base + Math.round((value - base) * (1 - (1 - landed) * (1 - landed)));
