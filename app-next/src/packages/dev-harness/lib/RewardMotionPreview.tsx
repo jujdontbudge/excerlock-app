@@ -1,18 +1,18 @@
 import { ReactNode, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Label, PressableScale, SegmentedControl } from '../../ui';
 import { BankHero } from '../../ui/BankHero';
 import { CollectChip } from '../../ui/CollectChip';
 import { DifficultyCards } from '../../ui/DifficultyCards';
-import { FlyToTargetProvider, useFlyTarget, useLandingValue } from '../../ui/FlyToTarget';
+import { FlyToTargetProvider } from '../../ui/FlyToTarget';
+import { BankChip } from '../../ui/BankChip';
 import { Icon } from '../../ui/Icon';
 import { OfferCard } from '../../ui/OfferCard';
 import { PointsPill } from '../../ui/PointsPill';
 import { PointsToken } from '../../ui/PointsToken';
-import { RollingNumber } from '../../ui/RollingNumber';
-import { formatBank, type PointsActivity } from '../../ui/rewardsCopy';
+import { formatPoints, RollingNumber } from '../../ui/RollingNumber';
+import { type PointsActivity } from '../../ui/rewardsCopy';
 import { tokens as t } from '../../ui/tokens';
 import { economy, offers } from '../../model/bankEconomy';
 import { previewBankProgress, previewDifficulties as difficulties } from './previewsCopy';
@@ -90,8 +90,8 @@ function RollingSheet() {
     <View style={{ gap: t.space.md, alignItems: 'center' }}>
       <RollingNumber value={value} />
       <Controls>
-        {[1, 37, 120, -250, 1000].map((delta) => (
-          <DevButton key={delta} title={delta > 0 ? `+${delta}` : `${delta}`} onPress={() => setValue((v) => Math.max(0, v + delta))} />
+        {[1, 37, 3960, -8250, 14850].map((delta) => (
+          <DevButton key={delta} title={delta > 0 ? `+${formatPoints(delta)}` : `−${formatPoints(-delta)}`} onPress={() => setValue((v) => Math.max(0, v + delta))} />
         ))}
       </Controls>
     </View>
@@ -99,8 +99,8 @@ function RollingSheet() {
 }
 
 function HomeSheet({ activity }: { activity: PointsActivity }) {
-  const [points, setPoints] = useState(340);
-  const [pending, setPending] = useState(120);
+  const [points, setPoints] = useState(7010);
+  const [pending, setPending] = useState(4210);
   const [bank, setBank] = useState(192);
   const [collected, setCollected] = useState(false);
   return (
@@ -126,8 +126,8 @@ function HomeSheet({ activity }: { activity: PointsActivity }) {
         {previewBankProgress(activity)}
       </Label>
       <Controls>
-        <DevButton title="Points waiting +120" onPress={() => setPending((value) => value + 120)} />
-        <DevButton title="Waiting +460" onPress={() => setPending((value) => value + 460)} />
+        <DevButton title="Points waiting +240" onPress={() => setPending((value) => value + 240)} />
+        <DevButton title="Waiting +3,960" onPress={() => setPending((value) => value + 3960)} />
         <DevButton title="First collect again" onPress={() => setCollected(false)} />
         <DevButton title="Bank +3 h" onPress={() => setBank((value) => value + 180)} />
         <DevButton title="Drain 45 m" onPress={() => setBank((value) => Math.max(0, value - 45))} />
@@ -138,16 +138,30 @@ function HomeSheet({ activity }: { activity: PointsActivity }) {
   );
 }
 
-function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought: (minutes: number) => void }) {
-  const [points, setPoints] = useState(340);
-  const [bankEmpty, setBankEmpty] = useState(false);
+const balances = {
+  rich: offers[3].price + offers[2].price,
+  some: offers[2].price + offers[1].price - offers[0].price,
+  broke: Math.round(offers[0].price / 5),
+};
+
+function ShopSheet({ activity }: { activity: PointsActivity }) {
+  const [points, setPoints] = useState(balances.some);
+  const [bank, setBank] = useState(192);
   const toGo = (price: number) =>
     activity === 'gym'
       ? (price - points) / economy.medium.pointsPerGymMinute
       : (price - points) * economy.medium.stepsPerPoint;
   return (
     <View style={{ gap: t.space.xl }}>
-      <PointsPill activity={activity} points={points} size="hero" target="shop-points" />
+      <View style={{ justifyContent: 'center', zIndex: 1 }}>
+        <Label variant="display" style={{ textAlign: 'center' }}>
+          Shop
+        </Label>
+        <View style={{ position: 'absolute', right: 0 }}>
+          <BankChip minutes={bank} />
+        </View>
+      </View>
+      <PointsPill activity={activity} points={points} size="hero" target="shop-points" spentBy="shop-bank" />
       <View style={{ gap: t.space.md }}>
         {[offers.slice(0, 2), offers.slice(2)].map((pair, i) => (
           <View key={i} style={{ flexDirection: 'row', gap: t.space.md }}>
@@ -158,12 +172,11 @@ function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought:
                 activity={activity}
                 points={points}
                 toGo={toGo(offer.price)}
-                bankEmpty={bankEmpty}
+                bankEmpty={bank <= 0}
                 onBuy={() => {
                   if (points < offer.price) return 'insufficient';
                   setPoints((value) => value - offer.price);
-                  setBankEmpty(false);
-                  onBought(offer.minutes);
+                  setBank((value) => value + offer.minutes);
                   return 'bought';
                 }}
               />
@@ -172,44 +185,12 @@ function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought:
         ))}
       </View>
       <Controls>
-        <DevButton title="Rich 1,200" onPress={() => setPoints(1200)} />
-        <DevButton title="Some 340" onPress={() => setPoints(340)} />
-        <DevButton title="Broke 12" onPress={() => setPoints(12)} />
-        <DevButton title={bankEmpty ? 'Bank is empty' : 'Make Bank empty'} onPress={() => setBankEmpty(true)} />
+        <DevButton title={`Rich ${formatPoints(balances.rich)}`} onPress={() => setPoints(balances.rich)} />
+        <DevButton title={`Some ${formatPoints(balances.some)}`} onPress={() => setPoints(balances.some)} />
+        <DevButton title={`Broke ${formatPoints(balances.broke)}`} onPress={() => setPoints(balances.broke)} />
+        <DevButton title="Empty Bank" onPress={() => setBank(0)} />
+        <DevButton title="Bank 3 h 12 m" onPress={() => setBank(192)} />
       </Controls>
-    </View>
-  );
-}
-
-function MockTabBar({ bank }: { bank: number }) {
-  const insets = useSafeAreaInsets();
-  const { ref: homeRef, style: homeStyle } = useFlyTarget('home');
-  const shown = useLandingValue('home', bank);
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        paddingBottom: insets.bottom,
-        paddingTop: t.space.sm,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: t.surface.warmCanvas,
-      }}>
-      <Animated.View ref={homeRef} collapsable={false} style={[{ alignItems: 'center' }, homeStyle]}>
-        <Icon name="house" size={t.icon.md} />
-        <Label variant="micro">{formatBank(shown)}</Label>
-      </Animated.View>
-      {(['token-walking', 'list', 'chart', 'gear'] as const).map((name) => (
-        <View key={name} style={{ alignItems: 'center' }}>
-          <Icon name={name} size={t.icon.md} tone="muted" />
-          <Label variant="micro" tone="secondary">
-            {' '}
-          </Label>
-        </View>
-      ))}
     </View>
   );
 }
@@ -219,7 +200,6 @@ export function RewardMotionPreview() {
   const [section, setSection] = useState<Section>('Home');
   const [activity, setActivity] = useState<PointsActivity>('walking');
   const [difficulty, setDifficulty] = useState<(typeof difficulties)[number]['id']>('medium');
-  const [bank, setBank] = useState(192);
   return (
     <FlyToTargetProvider>
       <View style={{ flex: 1, backgroundColor: t.surface.warmCanvas }}>
@@ -235,7 +215,7 @@ export function RewardMotionPreview() {
           {section === 'Token' ? <TokenSheet activity={activity} /> : null}
           {section === 'Home' ? <HomeSheet key={activity} activity={activity} /> : null}
           {section === 'Shop' ? (
-            <ShopSheet key={activity} activity={activity} onBought={(minutes) => setBank((value) => value + minutes)} />
+            <ShopSheet key={activity} activity={activity} />
           ) : null}
           {section === 'Difficulty' ? (
             <View style={{ gap: t.space.lg }}>
@@ -244,7 +224,6 @@ export function RewardMotionPreview() {
             </View>
           ) : null}
         </ScrollView>
-        {section === 'Shop' ? <MockTabBar bank={bank} /> : null}
       </View>
     </FlyToTargetProvider>
   );
