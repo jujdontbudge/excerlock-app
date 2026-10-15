@@ -7,7 +7,7 @@ date: 2026-10-14
 
 ## Decision
 
-A new Condition kind, **Bank**, for walking or gym. It is chosen on the "how does this unlock" step (W2 or G1), takes a Difficulty instead of a goal, and has no Schedule. Activity earns Points at the Difficulty's rate; the Shop tab sells Bank time for Points; Locked apps are open whenever the Bank is above zero and locked when it is empty. The Bank drains only while Locked apps are in use, measured with a DeviceActivity usage-threshold ladder (`includesPastActivity`, minimum iOS 17.4), and re-locks at zero from the monitor extension while ExcerLock is closed.
+A new Condition kind, **Bank**, for walking or gym. It is chosen on the "how does this unlock" step (W2 or G1), takes a Difficulty instead of a goal, and has no Schedule. Activity earns Points at a fixed rate; Difficulty sets Offer prices; the Shop tab sells Bank time for Points; Locked apps are open whenever the Bank is above zero and locked when it is empty. The Bank drains only while Locked apps are in use, measured with a DeviceActivity usage-threshold ladder (`includesPastActivity`, minimum iOS 17.4), and re-locks at zero from the monitor extension while ExcerLock is closed.
 
 Rules:
 - One Bank Condition at a time, and no other Condition beside it, so the Lock decision has a single owner.
@@ -32,7 +32,7 @@ Alternatives: a timed session that counts down whether or not apps are used (sim
 - A device spike on a real iPhone gates the economy: event-ladder ceiling, tick lag, re-lock at zero with the app closed. If 1-minute ticks fail, the ladder uses 5-minute ticks.
 - The simulator cannot produce Locked-app usage; proofs cover the Shop, Home and purchase paths through Demo mode, and drain accuracy needs a device check before release.
 - The unused drain-ladder leftovers in `app-selection` are revived or replaced, not kept beside new code.
-- A new per-account persisted store holds Points and the Bank and joins `AccountDataCoordinator`.
+- A new per-account persisted store holds Points and the Bank and joins `AccountDataCoordinator`. The revised, unreleased economy requires `economyVersion: 2` within the account; old dev Bank data is invalidated safely on hydration or import instead of converting mixed Difficulty history. The persisted storage key is unchanged.
 - Reward motion follows ADR 0080.
 
 ## References

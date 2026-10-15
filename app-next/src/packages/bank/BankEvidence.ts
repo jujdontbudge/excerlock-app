@@ -8,8 +8,9 @@ import {
 import { creditedGymVisit } from '../progress/gymCreditFloor';
 import { addDays, dayKey, localDayStart } from '../schedule/calendar';
 import { bankStore, type BankAccount, type EarningRange } from './bankStore';
-import { dailyMinimum, economy } from '../model/bankEconomy';
+import { dailyMinimum, pointsPerStep, pointsPerGymMinute } from '../model/bankEconomy';
 import { syncBankCondition } from './BankLifecycle';
+import { difficultyForDay } from './lib/difficulty';
 function earningRanges(account: BankAccount, now: string, timezone: string): Record<string, EarningRange> {
   const ranges = { ...account.earningRanges };
   let from = Math.max(Date.parse(account.createdAt), ...Object.values(ranges).map((range) => range.end));
@@ -64,12 +65,7 @@ export function projectBankEvidence(
     const range = { ...frame, to: Math.min(Date.parse(now), frame.end) };
     if (sealedDays.has(range.day) || range.to <= range.from) continue;
     const cursor = days[range.day];
-    const difficulty =
-      cursor?.difficulty ??
-      Object.entries(account.difficultyDays)
-        .filter(([day]) => day <= range.day)
-        .sort(([a], [b]) => b.localeCompare(a))[0]?.[1] ??
-      account.difficulty;
+    const difficulty = difficultyForDay(account, range.day);
     const minimum = dailyMinimum(account.activity, difficulty);
     let measuredAmount = frame.amount;
     let through = frame.through;
@@ -100,11 +96,10 @@ export function projectBankEvidence(
     const accumulated = (cursor?.amount ?? 0) + (measuredAmount - frame.amount);
     const amount = account.activity === 'gym' ? Math.round(accumulated * 60_000) / 60_000 : accumulated;
     ranges[key] = { ...frame, amount: measuredAmount, through };
-    const rate = economy[difficulty];
     const points = Math.floor(
       account.activity === 'walking'
-        ? amount / rate.stepsPerPoint
-        : (Math.round(amount * 60_000) * rate.pointsPerGymMinute) / 60_000,
+        ? amount * pointsPerStep
+        : (Math.round(amount * 60_000) * pointsPerGymMinute) / 60_000,
     );
     pendingPoints += Math.max(0, points - (cursor?.points ?? 0));
     days[range.day] = { difficulty, amount, points, through: Math.max(cursor?.through ?? 0, through) };

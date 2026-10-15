@@ -8,9 +8,9 @@ depends: [conditions, home, onboarding, enforcement]
 ---
 ## Sub-features
 - One walking or gym Bank Condition, with Easy, Medium or Hard Difficulty and no Schedule.
-- Verified steps and confirmed gym minutes after creation earn whole Points per Day at that Day's Difficulty.
+- Verified steps and confirmed gym minutes after creation earn whole Points at 1 per step and 165 per gym minute, at every Difficulty.
 - Home shows Bank time, Points, collect, and today's daily minimum. The Streak uses that minimum.
-- Shop sells the four fixed Offers. Two taps confirm a purchase. Unaffordable Offers show activity to go.
+- Shop sells four Offers priced at today's Difficulty. Two taps confirm a purchase. Unaffordable Offers show activity to go.
 - Bank time starts at 12 h, drains only from the BankDrainPort usage evidence, and persists per account.
 - Editing Difficulty takes effect next Day. Removing the Condition deletes its Points and Bank and opens Locked apps.
 
@@ -25,7 +25,7 @@ name: onboarding-choice
 scenario: bank-onboarding
 open: /onboarding/W2
 actions: tap Buy screen time | tap Continue
-expect: What should an hour of screen time cost? | Easy | Medium | Hard | 3,300 steps = 1 h
+expect: What should an hour of screen time cost? | Easy | Medium | Hard | 2,000 steps = 1 h | 3,300 steps = 1 h | 6,000 steps = 1 h
 ```
 
 ```proof
@@ -50,9 +50,9 @@ absent: Uncaught (in promise | LogBox
 name: collect
 scenario: bank-pending
 open: /home
-tap: Collect 120 Points
-expect: 120 Points | 12 h | 3,960 / 6,000 steps
-absent: Collect 120 Points
+tap: Collect 4,210 Points
+expect: 4,210 Points | 12 h | 4,210 / 6,000 steps
+absent: Collect 4,210 Points
 ```
 
 ```proof
@@ -73,7 +73,7 @@ expect: Shop | Points | 15 m | 1 h | 3 h | 6 h
 name: buy
 scenario: bank-empty
 open: /shop
-tap: 1 h for 100 Points | Buy 1 h for 100 Points
+tap: 1 h for 3,300 Points | Buy 1 h for 3,300 Points
 expect: 0 Points | Shop
 then-open: /home
 then-expect: Bank | 1 h | 0 Points
@@ -83,8 +83,8 @@ then-expect: Bank | 1 h | 0 Points
 name: cant-afford
 scenario: bank-broke
 open: /shop
-tap: 15 min for 25 Points
-expect: 5 Points | ≈ 660 steps to go
+tap: 15 min for 825 Points
+expect: 300 Points | ≈ 530 steps to go
 absent: Buy 15 min
 ```
 
@@ -130,6 +130,6 @@ then-expect: Bank | 11 h 45 m
 ## Gotchas
 - JS-only phase: createRealRuntime uses createNoopBankDrain in runtime/lib/NoopBankDrain.ts. Replace that factory with NativeBankDrain at integration. Native drain accuracy and closed-app re-lock require the physical-iPhone spike in ADR 0081.
 - Bank has an all-week/all-day persisted Schedule for Rule validation and History; no Schedule is presented to the user. Enforcement excludes Bank from weekly windows and watchdogs.
-- Home and Shop use the `ui` reward kit. Labels are accessibility labels ("Collect 120 Points", "1 h for 100 Points", "Buy 1 h for 100 Points"), not the visible chip text. `bank-routine` holds Points and has more waiting, for a routine Collect without confetti.
+- Home and Shop use the `ui` reward kit. Labels are accessibility labels ("Collect 4,210 Points", "1 h for 3,300 Points", "Buy 1 h for 3,300 Points"), not the visible chip text. `bank-pending` has 4,210 waiting. `bank-routine` holds 11,220 Points and has 3,960 waiting, for a routine Collect without confetti. `bank-rich` holds 33,000, enough to buy every Medium Offer; `bank-empty` holds 3,300 and `bank-broke` holds 300.
 - The drain proof reloads the same scenario with edits retained before spending time, so the fake monitor must keep its armed state across that reload.
 - Simulator proofs establish settled state and fake usage, not real Screen Time thresholds, HealthKit delivery or physical activity.
