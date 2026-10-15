@@ -19,7 +19,7 @@ export const unknownPlacement: PlacementEvidence = { state: 'unknown', liveRelie
 export function resolveLock({ now, timezone: tz, rules, ruleDays, detection, placement, gymPresence, bankMinutes = 0 }: LockInput): LockDecision {
   const enabled = rules.filter((r) => r.enabled), today = dayKey(now, tz);
   const bank = enabled.find((rule) => rule.mode.kind === 'bank');
-  if (bank) return bankMinutes > 0 ? { state: 'unlockedBank', ruleId: bank.id } : { state: 'locked', activeRuleIds: [bank.id], nextUnlockHint: { ruleId: bank.id, action: 'shop', remaining: null, unit: null } };
+  if (bank) return Number.isFinite(bankMinutes) && bankMinutes > 0 ? { state: 'unlockedBank', ruleId: bank.id } : { state: 'locked', activeRuleIds: [bank.id], nextUnlockHint: { ruleId: bank.id, action: 'shop', remaining: null, unit: null } };
   const active = enabled.filter((r) => isActiveAt(r, now, tz));
   for (const row of ruleDays.filter((d) => d.day >= addDays(today, -1) && d.day <= today && d.met && d.metAt && Date.parse(d.metAt) <= Date.parse(now)).sort((a, b) => b.day.localeCompare(a.day))) {
     const rule = enabled.find((r) => r.id === row.ruleId && r.mode.kind !== 'state');

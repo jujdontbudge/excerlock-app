@@ -1,3 +1,4 @@
+import { settleBankDrain } from '../bank/BankLifecycle';
 import { startFakeBankEvidence } from './lib/bankEvidence';
 import { createBankDrainFake } from './lib/fakes/BankDrainFake';
 import type { GymLocationFix } from '../ports/GymPort';
@@ -90,6 +91,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         updateAccountDataView();
       },
       beforeAccountSwitch: async () => {
+        await settleBankDrain(bankDrain);
         await accountData.deactivate();
         accountTransitions.push('Preserved while unready');
         updateAccountDataView();

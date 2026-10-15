@@ -1,5 +1,5 @@
 import { AppState } from 'react-native';
-import type { BankDrainPort, BankDrainUsage } from '../ports/BankDrainPort';
+import { BankDrainUsageChanged, type BankDrainPort, type BankDrainUsage } from '../ports/BankDrainPort';
 import type { BankDrainDiagnosticState } from '../ports/BankDrainDiagnosticPort';
 import type { ClockPort } from '../ports/ClockPort';
 import type { BankDrainNativeUsage } from '../../../modules/excerlock-enforcement/src/ExcerlockEnforcementModule';
@@ -32,7 +32,9 @@ export class NativeBankDrain implements BankDrainPort {
 
   disarm(): Promise<void> {
     return this.mutate(async () => {
-      await this.native.disarmBankDrain?.();
+      const receipt = this.receipt;
+      const disarmed = await this.native.disarmBankDrain?.(receipt?.armId ?? null, receipt?.usedMinutes ?? 0);
+      if (disarmed === false) throw new BankDrainUsageChanged();
       this.receipt = null;
       this.spikeReceipt = null;
       this.last = null;
@@ -40,10 +42,14 @@ export class NativeBankDrain implements BankDrainPort {
   }
 
   usage(): Promise<BankDrainUsage> {
+    return this.readUsage(true);
+  }
+
+  private readUsage(booked: boolean): Promise<BankDrainUsage> {
     const reading = this.queued.then(async () => {
       const next = this.native.bankDrainUsage ? await this.native.bankDrainUsage() : { ...emptyUsage(), armId: null };
-      this.receipt = next;
-      return { usedMinutes: next.usedMinutes, observedAt: next.observedAt };
+      if (booked) this.receipt = next;
+      return next;
     });
     this.queued = reading.catch(() => undefined);
     return reading;
@@ -104,9 +110,9 @@ export class NativeBankDrain implements BankDrainPort {
 
   private poll(): void {
     if (this.disposed || !this.listeners.size || this.polling || AppState.currentState !== 'active') return;
-    this.polling = this.usage().then(usage => {
+    this.polling = this.readUsage(false).then(usage => {
       if (this.disposed) return;
-      if (this.last?.usedMinutes === usage.usedMinutes && this.last.observedAt === usage.observedAt) return;
+      if (this.last?.usedMinutes === usage.usedMinutes && this.last.observedAt === usage.observedAt && this.last.armId === usage.armId && this.last.failed === usage.failed) return;
       this.last = usage;
       this.listeners.forEach(listener => listener(usage));
     }).catch(this.reportError).finally(() => { this.polling = null; });

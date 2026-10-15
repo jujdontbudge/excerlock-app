@@ -72,7 +72,7 @@ export function SignInScreen({
       provider,
       surface: purpose === 'signUp' ? 'sign_up' : 'sign_in',
       reason_class: reason,
-      ...(caught instanceof AuthError ? { error_code: caught.code.slice(0, 60) } : {}),
+      ...(caught instanceof AuthError ? { failure_code: caught.code.slice(0, 60) } : {}),
     });
     if (!expectedSignInFailure(reason)) reportError(caught);
   };
