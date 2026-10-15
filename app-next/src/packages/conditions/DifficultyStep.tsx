@@ -26,15 +26,15 @@ export function DifficultyStep({
     id,
     title: difficultyLabels[id],
     trade: bankPrice(activity, id),
-    detail: screenMinutes ? bankDailyCost(activity, id, screenMinutes) : undefined,
   }));
+  const footnote = note ?? (screenMinutes ? bankDailyCost(activity, difficulty, screenMinutes) : undefined);
   return (
     <View style={{ gap: t.space.xl }}>
       <Heading title={title} support={support} centered />
       <DifficultyCards options={options} value={difficulty} onChange={onChange} />
-      {note ? (
-        <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-          {note}
+      {footnote ? (
+        <Label variant={note ? 'support' : 'label'} tone={note ? 'secondary' : 'primary'} style={{ textAlign: 'center' }}>
+          {footnote}
         </Label>
       ) : null}
     </View>

@@ -128,6 +128,7 @@ export function ConditionsScreen({
                 title={rule.mode.kind === 'bank' ? bankConditionCopy.name(rule.mode.activity, rule.mode.difficulty) : ruleName(rule)}
                 schedule={rule.mode.kind === 'bank' ? bankTrade(rule.mode.activity, rule.mode.difficulty) : scheduleLabel(rule.schedule)}
                 icon={rule.activity}
+                status={rule.mode.kind === 'bank' ? (rule.activity === 'gym' ? 'token-gym' : 'token-walking') : undefined}
                 enabled={rule.enabled}
                 onOpen={() => onEdit(rule.id)}
                 onToggle={(value) => {
