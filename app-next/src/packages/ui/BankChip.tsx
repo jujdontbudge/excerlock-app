@@ -23,7 +23,6 @@ const r = t.motion.reward;
 const glyph = t.points.pill;
 const enter = Easing.bezier(...t.motion.easing.enter);
 
-// The Bank's own token: an orange disc with clock hands. The minute hand sweeps once when time arrives.
 function BankGlyph({ turns }: { turns: number }) {
   const m = useMotion();
   const sweep = useSharedValue(turns);

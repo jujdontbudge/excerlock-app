@@ -231,8 +231,6 @@ function fanPath(flight: Flight, index: number) {
   return { start, control, appear, pop, depart: appear + pop * 0.6, total: appear + r.flight };
 }
 
-// A burst spills every token around the source at once, then they leave one by one as a stream,
-// each on its own bow so the stream reads as many Points rather than one shape.
 function burstPath(flight: Flight, index: number) {
   const { from, to, reach } = flight;
   const angle = index * 2.39996 + jitter(index, 1) * 0.6;
@@ -254,7 +252,6 @@ function FlightToken({ flight, index }: { flight: Flight; index: number }) {
   const { start, control, appear, pop, depart, total } = path;
   const grow = flight.spread === 'burst' ? 0.78 + 0.44 * jitter(index, 5) : 1;
   const land = flight.land;
-  // Landing is reported a beat before the token arrives, so the target answers as it lands, not after.
   useEffect(() => {
     elapsed.set(withDelay(flight.delay, withTiming(total, { duration: total, easing: Easing.linear })));
     const timer = setTimeout(land, flight.delay + total - r.landLead);
@@ -341,8 +338,6 @@ export function useFlightProgress(id: string) {
   return useSyncExternalStore(context?.subscribe ?? noSubscription, context ? read : idle);
 }
 
-// 'stream' moves the value with each landing, fastest at first; 'launch' moves it once as the tokens leave;
-// 'end' holds it until the last token lands.
 export function useLandingValue(id: string, value: number, mode: 'stream' | 'launch' | 'end' = 'stream') {
   const progress = useFlightProgress(id);
   const [base, setBase] = useState(value);
