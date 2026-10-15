@@ -96,7 +96,7 @@ function TokenSheet({ activity }: { activity: PointsActivity }) {
 }
 
 function RollingSheet() {
-  const [value, setValue] = useState(340);
+  const [value, setValue] = useState(1000);
   return (
     <View style={{ gap: t.space.md, alignItems: 'center' }}>
       <RollingNumber value={value} />
