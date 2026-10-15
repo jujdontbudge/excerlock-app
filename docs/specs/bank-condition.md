@@ -1,6 +1,6 @@
 # Bank Condition: earn Points, buy screen time
 
-Status: **spec, building**. Decisions: [ADR 0081](../adr/0081-bank-condition.md) (the Condition and its economy), [ADR 0080](../adr/0080-reward-motion.md) (reward motion). Words: `CONTEXT.md` (Bank, Points, Difficulty, Shop, Offer).
+Status: **spec, building**. Decisions: [ADR 0081](../adr/0081-bank-condition.md) (the Condition and its economy), [ADR 0082](../adr/0080-reward-motion.md) (reward motion). Words: `CONTEXT.md` (Bank, Points, Difficulty, Shop, Offer).
 
 ## The product in one paragraph
 
@@ -48,7 +48,7 @@ When a Bank Condition is enabled it is the only Condition, and the decision is:
 
 ## Screens
 
-Read `app-next/src/packages/ui/UI-STYLE.md` first. Everything centred by construction (ADR 0065). No emoji. Reward motion only where a value moves (ADR 0080); everything else is still (ADR 0053).
+Read `app-next/src/packages/ui/UI-STYLE.md` first. Everything centred by construction (ADR 0065). No emoji. Reward motion only where a value moves (ADR 0082); everything else is still (ADR 0053).
 
 ### Points token
 

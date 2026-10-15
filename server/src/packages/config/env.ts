@@ -36,6 +36,21 @@ const acceptedStoreEnvironments = z.preprocess(
   }),
 );
 
+const accessGrantTokenHashes = z.preprocess(
+  blankToUndefined,
+  z.string().default("").transform((value, context) => {
+    const entries = value.split(",").map((item) => item.trim()).filter(Boolean).map((item) => {
+      const [label, hash, ...extra] = item.split(":");
+      return { label: label ?? "", hash: (hash ?? "").toLowerCase(), extra };
+    });
+    if (entries.some((entry) => !/^[a-z0-9-]{1,40}$/.test(entry.label) || !/^[0-9a-f]{64}$/.test(entry.hash) || entry.extra.length)) {
+      context.addIssue({ code: "custom", message: "access grant tokens must be label:sha256hex pairs" });
+      return z.NEVER;
+    }
+    return entries.map(({ label, hash }) => ({ label, hash }));
+  }),
+);
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -55,6 +70,7 @@ const envSchema = z.object({
   ADAPTY_API_URL: z.preprocess(blankToUndefined, z.string().url().default(DEFAULT_ADAPTY_API_URL)),
   ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: acceptedStoreEnvironments,
   SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: z.enum(["production", "sandbox"]).default("production"),
+  ACCESS_GRANT_TOKEN_HASHES: accessGrantTokenHashes,
   XCODE_STOREKIT_ROOT_SHA256: z.preprocess(blankToUndefined, z.string().regex(/^[0-9a-f]{64}$/).optional()),
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
@@ -183,6 +199,7 @@ export interface Environment {
   adaptyWebhookAcceptedStoreEnvironments: readonly ("production" | "sandbox")[];
   subscriptionAuthorizationStoreEnvironment: "production" | "sandbox";
   xcodeStoreKitRootSha256: string | undefined;
+  accessGrantTokenHashes: readonly { label: string; hash: string }[];
   posthogApiKey: string | undefined;
   posthogHost: string;
   posthogPersonalApiKey: string | undefined;
@@ -236,6 +253,7 @@ export function parseEnv(
     adaptyWebhookAcceptedStoreEnvironments: parsed.ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS,
     subscriptionAuthorizationStoreEnvironment: parsed.SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT,
     xcodeStoreKitRootSha256: parsed.SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT === "sandbox" ? parsed.XCODE_STOREKIT_ROOT_SHA256 : undefined,
+    accessGrantTokenHashes: parsed.ACCESS_GRANT_TOKEN_HASHES,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
     posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,

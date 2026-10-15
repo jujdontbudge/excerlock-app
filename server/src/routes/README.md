@@ -141,3 +141,7 @@ Vendor route boundaries:
 configured Authorization value is compared through fixed-width SHA-256 digests
 before an empty verification request or subscription event is accepted. The
 route never logs the header, customer id, or payload.
+
+## Complimentary access
+
+`POST /v1/access/grants`, `POST /v1/access/revocations` and `GET /v1/access/grants?email=` use `Authorization: Bearer` tokens whose SHA-256 hashes are listed in `ACCESS_GRANT_TOKEN_HASHES` (`label:sha256hex`, comma-separated). They are not Supabase-authenticated, and with no hashes configured they are not registered. The audit actor is `token:<label>`. A lookup returns one email's state only. See [ADR 0082](../../../docs/adr/0082-scoped-access-grant-tokens.md).

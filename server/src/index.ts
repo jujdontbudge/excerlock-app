@@ -8,6 +8,7 @@ import Fastify, {
 } from "fastify";
 import { pathToFileURL } from "node:url";
 import { requireAuth } from "./packages/auth/auth.js";
+import { accessRoutes } from "./routes/access.js";
 import { adaptyWebhookRoutes } from "./routes/adaptyWebhook.js";
 import { config } from "./packages/config/config.js";
 import { healthRoutes } from "./routes/health.js";
@@ -80,6 +81,7 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
   });
   void app.register(healthRoutes, { prefix: "/v1" });
   void app.register(adaptyWebhookRoutes, { prefix: "/v1" });
+  void app.register(accessRoutes, { prefix: "/v1" });
   void app.register(vendorPublicRoutes, { prefix: "/v1" });
   void app.register(vendorWebhookRoutes, { prefix: "/v1" });
   void app.register(

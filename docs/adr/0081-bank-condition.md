@@ -33,7 +33,7 @@ Alternatives: a timed session that counts down whether or not apps are used (sim
 - The simulator cannot produce Locked-app usage; proofs cover the Shop, Home and purchase paths through Demo mode, and drain accuracy needs a device check before release.
 - The unused drain-ladder leftovers in `app-selection` are revived or replaced, not kept beside new code.
 - A new per-account persisted store holds Points and the Bank and joins `AccountDataCoordinator`.
-- Reward motion follows ADR 0080.
+- Reward motion follows ADR 0082.
 
 ## References
 
