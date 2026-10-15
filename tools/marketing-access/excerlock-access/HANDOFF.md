@@ -22,7 +22,7 @@ This folder lets the marketing agent give creators free ExcerLock Premium by ema
    ```sh
    excerlock-access setup marketing-air
    ```
-   It saves a secret token in this Mac's Keychain and prints one line like `marketing-air:3f9a…`. That line is **not** the secret. Send it to Johan.
+   It saves a secret token in `~/.config/excerlock-access/token` (readable only by you) and prints one line like `marketing-air:3f9a…`. That line is **not** the secret. Send it to Johan.
 4. Wait for Johan to say it is switched on, then run:
    ```sh
    excerlock-access test

@@ -25,7 +25,7 @@ Each command prints one line that starts with `GRANTED`, `ACTIVE`, `NONE`, `REVO
 3. **`--until` is optional.** Without it, access never ends. The date is when access stops (start of that day, UTC). Use it for fixed-length deals.
 4. **Granting again replaces the previous grant**, including its end date. Run `check` first if you are unsure what they have.
 5. **Grant once.** If the result is unclear (network error or server error), run `check` before trying again.
-6. **Never** share, print or move the access token. It lives in this Mac's Keychain. Never run `setup` yourself: that is for a human, once.
+6. **Never** share, print, copy or move the access token. It lives in `~/.config/excerlock-access/token`, readable only by this Mac user, and survives restarts and screen locks. Run `setup` only when the human asks you to (for example after `access token was rejected`), then give them the `label:hash` line it prints for Johan. Running `setup` replaces the old token, so the old line stops working once Johan swaps it.
 7. **Do not use this for paying customers' billing problems or refunds.** Revoke never cancels or refunds a paid subscription.
 
 ## What to tell the creator after `GRANTED`
@@ -40,7 +40,7 @@ There is no separate sign-up: the first sign-in with that email creates the acco
 
 | Output | Meaning | Do |
 |---|---|---|
-| `No access token on this Mac` | Setup not done | Ask the human to run setup (see HANDOFF.md) |
+| `No access token on this Mac` | Setup not done | Run `excerlock-access setup marketing-air` and give the human the line for Johan |
 | `access token was rejected` | Token switched off or replaced | Ask Johan |
 | `access service is not switched on yet` | Server not configured | Ask Johan |
 | `Too many requests` | More than 20 per minute | Wait a minute |

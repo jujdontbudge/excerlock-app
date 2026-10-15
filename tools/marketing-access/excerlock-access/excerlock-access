@@ -15,7 +15,7 @@ excerlock-access test
 grant   Gives the email free ExcerLock Premium. Re-granting replaces the old grant.
 check   Shows whether the email has free Premium and whether they have signed in.
 revoke  Ends free Premium for the email (never touches paid subscriptions).
-setup   One time, by a human: creates the access token in this Mac's Keychain.
+setup   One time: creates the access token file on this Mac.
 test    Confirms the token works without changing anything.
 USAGE
 }
@@ -34,8 +34,11 @@ until_text() {
   if [[ -n "$1" ]]; then echo "until $1"; else echo "with no end date"; fi
 }
 
+TOKEN_FILE="${EXCERLOCK_ACCESS_TOKEN_FILE:-$HOME/.config/excerlock-access/token}"
+
 token() {
-  security find-generic-password -s "$SERVICE" -w 2>/dev/null || fail "No access token on this Mac. A human must run: excerlock-access setup <label>"
+  if [[ -r "$TOKEN_FILE" ]]; then tr -d '[:space:]' < "$TOKEN_FILE"; return; fi
+  security find-generic-password -s "$SERVICE" -w 2>/dev/null || fail "No access token on this Mac. Run: excerlock-access setup <label>"
 }
 
 check_email() {
@@ -110,10 +113,12 @@ case "$action" in
     label="${1:-}"
     [[ "$label" =~ ^[a-z0-9-]{1,40}$ ]] || fail "setup needs a lowercase label, for example: excerlock-access setup marketing-air"
     secret="exa_$(openssl rand -hex 32)"
-    security add-generic-password -U -s "$SERVICE" -a "$label" -w "$secret"
+    mkdir -p "$(dirname "$TOKEN_FILE")"
+    chmod 700 "$(dirname "$TOKEN_FILE")"
+    (umask 077; printf '%s\n' "$secret" > "$TOKEN_FILE")
     hash="$(printf '%s' "$secret" | shasum -a 256 | cut -d' ' -f1)"
     unset secret
-    echo "Token saved in this Mac's Keychain. Send Johan this line (it is safe to share, it is not the token):"
+    echo "Token saved in $TOKEN_FILE (only this Mac user can read it). Send Johan this line (it is safe to share, it is not the token):"
     echo
     echo "    $label:$hash"
     ;;
