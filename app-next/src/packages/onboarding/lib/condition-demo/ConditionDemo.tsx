@@ -27,8 +27,7 @@ import { Answers } from '../../../model/answers';
 import { profileStore as useProfileStore } from '../../../preferences/profileStore';
 import { settingsStore as useSettingsStore } from '../../../preferences/settingsStore';
 import type { DemoState } from './model';
-import { advanceDemo, bankScenarioFor, beginHold, endHold, initialDemo, isBank, phasesFor, readyAfter, Scenario, scenarioFor, snapshot } from './model';
-import { BankRuleMode } from './bankStory';
+import { advanceDemo, BankRuleMode, bankScenarioFor, beginHold, endHold, initialDemo, isBank, phasesFor, readyAfter, Scenario, scenarioFor, snapshot } from './model';
 import { BankPhone } from './BankPhone';
 import { BankFlight } from './BankFlight';
 import { Cast, Character } from './Character';
@@ -60,7 +59,11 @@ export function ConditionDemo({
   bank?: BankRuleMode;
 }) {
   const places = useProfileStore((s) => s.data.walkPlaces.join(','));
-  const scenario = useMemo(() => (bank ? bankScenarioFor(bank) : scenarioFor(draft, places)), [bank, draft, places]);
+  const bankActivity = bank?.activity;
+  const scenario = useMemo(
+    () => (bankActivity ? bankScenarioFor(bankActivity) : scenarioFor(draft, places)),
+    [bankActivity, draft, places],
+  );
   return <ScenarioDemo {...{ scenario, onBack, onReady }} cast={answers.gender === 'female' ? 'girl' : 'boy'} />;
 }
 export function BankConditionDemo({
@@ -74,7 +77,7 @@ export function BankConditionDemo({
   onBack: () => void;
   onReady: () => void;
 }) {
-  const scenario = useMemo(() => bankScenarioFor(mode), [mode]);
+  const scenario = useMemo(() => bankScenarioFor(mode.activity), [mode.activity]);
   return <ScenarioDemo {...{ scenario, cast, onBack, onReady }} />;
 }
 function ScenarioDemo({
@@ -317,18 +320,20 @@ function BankStage({
   height: number;
 }) {
   const gym = scenario.kind === 'gym-bank';
-  const { phoneTop, captionTop } = bankGeometry(height);
-  const from = gym ? { x: 132, y: phoneTop + 202 } : { x: 4 + 190 * 0.76, y: height - 112 - 283 * 0.61 };
-  const to = { x: 288, y: phoneTop + 44 };
+  const { phoneTop, phoneHeight, shopOffset, captionTop, walkerScale, walkerOrigin, hand } = bankGeometry(height);
+  const from = gym ? { x: 132, y: phoneTop + phoneHeight / 2 + 46 } : hand;
+  const to = { x: 288, y: phoneTop + shopOffset + 44 };
   const bend = gym ? { x: 215, y: phoneTop + 10 } : { x: 175, y: phoneTop + 10 };
   return (
     <>
       {gym ? (
-        <GymMap {...{ clock, scenario }} box={{ top: phoneTop, height: bankRows.phoneHeight }} />
+        <GymMap {...{ clock, scenario }} box={{ top: phoneTop, height: phoneHeight }} />
       ) : (
-        <Character {...{ clock, scenario, reduced, cast }} />
+        <View style={[StyleSheet.absoluteFill, { transformOrigin: walkerOrigin, transform: [{ scale: walkerScale }] }]}>
+          <Character {...{ clock, scenario, reduced, cast }} />
+        </View>
       )}
-      <BankPhone {...{ clock, scenario, frame, reduced }} top={phoneTop} />
+      <BankPhone {...{ clock, scenario, frame, reduced, shopOffset }} top={phoneTop} height={phoneHeight} />
       <View style={[styles.sceneCaption, { top: captionTop, left: 14 }]}>
         <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>{gym ? 'You go to the gym' : 'You walk'}</Text>
       </View>

@@ -3,7 +3,7 @@ import { bankConditionCopy } from '../conditions/bankCopy';
 import { useIsFocused } from 'expo-router';
 import { notify } from '../ui/Notice';
 import { ReactNode, useCallback, useMemo, useRef, useState } from 'react';
-import { Rule } from '../model/types';
+import { Rule, RuleMode } from '../model/types';
 import { View } from 'react-native';
 import { OnboardingShell } from './lib/OnboardingShell';
 import { useOnboarding } from './lib/useOnboarding';
@@ -30,6 +30,9 @@ import { useRuntime } from '../ports/useRuntime';
 import { SchedulePlanError } from '../schedule/scheduleRepresentability';
 import { haptic } from '../ui/haptics';
 import { tokens as t } from '../ui/tokens';
+function bankMode(mode: RuleMode) {
+  return mode.kind === 'bank' ? mode : undefined;
+}
 export type StagingBuilder = (props: { onClose: () => void; onStage: (rule: Rule) => void }) => ReactNode;
 export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBuilder }) {
   const focused = useIsFocused();
@@ -121,7 +124,7 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
     );
   if (flow.step === 'S4') body = <ResearchScreen />;
   if (flow.step === 'S5') body = <RatingScreen onPrompted={onRatingPrompted} />;
-  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
+  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} bank={bankMode(toRule(draft, toSchedule(schedule)).mode)} onReady={onDemoReady} onBack={() => { setDemoReady(false); flow.back(); }} />;
   if (flow.step === 'S3e') body = <BeforeAfter answers={flow.answers} onBack={flow.back} />;
   if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} onBack={flow.back} offer={flow.offer} />;
   if (flow.step === 'S3d') body = <TrialReminder offer={flow.offer} />;

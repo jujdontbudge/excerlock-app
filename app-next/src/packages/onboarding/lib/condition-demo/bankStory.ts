@@ -1,4 +1,3 @@
-export type BankRuleMode = { kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' };
 export const bankOffers = [
   { label: '15 m', price: 25 },
   { label: '1 h', price: 100 },

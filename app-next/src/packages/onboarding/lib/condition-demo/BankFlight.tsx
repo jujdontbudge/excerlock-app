@@ -1,7 +1,7 @@
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { DemoState, Scenario, snapshot } from './model';
 import { bankStory, tokenFlight } from './bankStory';
-import { PointsToken } from './PointsToken';
+import { PointsToken } from '../../../ui/PointsToken';
 
 type Point = { x: number; y: number };
 const size = 26;
@@ -42,7 +42,7 @@ function Token({
   });
   return (
     <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, style]}>
-      <PointsToken size={size} rim activity={scenario.kind === 'gym-bank' ? 'gym' : 'walking'} />
+      <PointsToken size={size} activity={scenario.kind === 'gym-bank' ? 'gym' : 'walking'} />
     </Animated.View>
   );
 }

@@ -92,7 +92,7 @@ export function ChoiceRow({
           </Label>
 
           {support ? (
-            <Label variant="support" tone="secondary" style={solid ? { color: t.text.onAccent } : undefined}>
+            <Label variant="support" tone="secondary" style={[solid && { color: t.text.onAccent }, soft && { textAlign: 'left' }]}>
               {support}
             </Label>
           ) : null}
