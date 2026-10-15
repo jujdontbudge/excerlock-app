@@ -90,7 +90,7 @@ export function BankHero({
           <Surface animatedProps={front} fill={t.brand.light} />
         </Svg>
       ) : null}
-      <View style={{ alignItems: 'center', gap: t.space.xs }}>
+      <View style={{ alignItems: 'center', gap: t.space.xs, paddingBottom: t.space.sm }}>
         <RollingNumber value={shown} format={formatBank} variant="metric" unitTone="secondary" />
         <Label variant="support" tone="secondary">
           {rewards.bank}
