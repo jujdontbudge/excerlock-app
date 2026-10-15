@@ -18,7 +18,7 @@ export async function applyDevControls(dev: RuntimeControls, p: DevParams) {
   if (p.restore === 'restored' || p.restore === 'notFound') dev.setRestoreOutcome(p.restore);
   if (p.outcome === 'success' || p.outcome === 'cancel' || p.outcome === 'error') dev.setOutcome(p.outcome);
   if (p.prompt === 'grant' || p.prompt === 'deny' || p.prompt === 'ask') dev.setPromptMode(p.prompt);
-  if (p.notification === 'home' || p.notification === 'unlock') dev.deliverNotification(p.notification);
+  if (p.notification === 'home' || p.notification === 'shop' || p.notification === 'unlock') dev.deliverNotification(p.notification);
   if (p.lab === 'lifecycle-revocation') await dev.runLabLifecycleRevocation();
   if (p.lab === 'onboarding-path') dev.runOnboardingPathDiagnostics();
   for (let left = Number(p.advance ?? 0); left > 0; left -= ADVANCE_STEP_MS) {

@@ -1,7 +1,7 @@
 
 export const SHIELD_COPY_OVERRIDES_KEY = 'excerlock.shield.copy-overrides.v1';
 
-export const SHIELD_COPY_CAUSES = ['balanceEmpty', 'fullLock', 'lockWindow', 'walkAndScrollEnded'] as const;
+export const SHIELD_COPY_CAUSES = ['balanceEmpty', 'bankEmpty', 'fullLock', 'lockWindow', 'walkAndScrollEnded'] as const;
 
 export type ShieldCopyCause = (typeof SHIELD_COPY_CAUSES)[number];
 

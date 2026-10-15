@@ -3,7 +3,7 @@ import { TRIAL_REMINDER_DAYS_BEFORE } from '../subscription/trialOffer';
 export type LocalNotificationId = 'trial_ending' | 'open_to_unlock' | 'background_check' | 'shield_open';
 export const BACKGROUND_CHECK_MS = 3 * 60_000;
 export const BACKGROUND_CHECK_RENEW_MS = 60_000;
-export type NotificationLanding = 'excerlock://home' | 'excerlock://unlock/propped' | 'excerlock://paywall';
+export type NotificationLanding = 'excerlock://home' | 'excerlock://shop' | 'excerlock://unlock/propped' | 'excerlock://paywall';
 export type LocalNotificationPlan = { id: Exclude<LocalNotificationId, 'shield_open'>; at: number; title: string; body: string; url: NotificationLanding };
 export function trialReminderPlan(entitlement: Entitlement, now: number): LocalNotificationPlan | null {
   if (entitlement.status !== 'trial' || !entitlement.accessExpiresAt) return null;
@@ -22,9 +22,10 @@ export function backgroundCheckPlan(now: number): LocalNotificationPlan | null {
   if (!Number.isFinite(now)) return null;
   return { id: 'background_check', at: now + BACKGROUND_CHECK_MS, title: 'ExcerLock stopped in the background', body: 'iOS closed ExcerLock, so walking can no longer lock or unlock your apps. Tap to turn it back on.', url: 'excerlock://home' };
 }
-export function notificationLanding(value: unknown): '/home' | '/unlock/treadmill' | '/paywall' | null {
+export function notificationLanding(value: unknown): '/home' | '/shop' | '/unlock/treadmill' | '/paywall' | null {
   switch (value) {
     case 'excerlock://home': return '/home';
+    case 'excerlock://shop': return '/shop';
     case 'excerlock://unlock/propped': return '/unlock/treadmill';
     case 'excerlock://paywall': return '/paywall';
     default: return null;

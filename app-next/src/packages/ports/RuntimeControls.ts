@@ -52,7 +52,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
   remoteFlags?: string;
   onboardingPath?: string;
   trialReminder?: string;
-  notificationResponses: { delivered: ('home' | 'unlock')[]; handled: number };
+  notificationResponses: { delivered: ('home' | 'shop' | 'unlock')[]; handled: number };
   otaResume: { route: string; outcome: 'denied' | 'restored' } | null;
 };
 export interface RuntimeControls extends RuntimeStatusPort {
@@ -90,7 +90,7 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runSubscriptionLeaseDiagnostics(): Promise<void>;
   runLabLifecycleRevocation(): Promise<void>;
   runOnboardingPathDiagnostics(): void;
-  deliverNotification(destination: 'home' | 'unlock'): void;
+  deliverNotification(destination: 'home' | 'shop' | 'unlock'): void;
   recordOtaResume(route: string, outcome: 'denied' | 'restored'): void;
   recordProtectedRouteMount(route: string): void;
   resolvePrompt(result: boolean | LockedApps): void;

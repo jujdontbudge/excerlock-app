@@ -1,2 +1,3 @@
 */generated.entitlements
 DeviceActivityMonitorExtension/*.generated.swift
+ShieldConfiguration/BankShieldContent.generated.json

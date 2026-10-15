@@ -82,6 +82,14 @@ final class BankDrainStore {
 
   private func shieldLocked(_ record: BankDrainRecord) throws {
     let selected = try selection(record)
+    if record.usedMinutes >= record.bankMinutes {
+      let defaults = UserDefaults(suiteName: excerlockAppGroup)
+      defaults?.set("bankEmpty", forKey: "excerlock.shield.current-cause.v1")
+      defaults?.set(["cause": "bankEmpty", "routeHomeAvailable": true],
+                    forKey: "excerlock.shield.runtime-context.v1")
+    } else {
+      clearBankShieldContextLocked()
+    }
     managed.shield.applications = selected.applicationTokens
     managed.shield.webDomains = selected.webDomainTokens
     managed.shield.applicationCategories = selected.categoryTokens.isEmpty ? nil : .specific(selected.categoryTokens)
@@ -109,6 +117,17 @@ final class BankDrainStore {
     if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
     DeviceActivityCenter().stopMonitoring(monitorNames())
     managed.clearAllSettings()
+    clearBankShieldContextLocked()
+  }
+
+  private func clearBankShieldContextLocked() {
+    let defaults = UserDefaults(suiteName: excerlockAppGroup)
+    if defaults?.string(forKey: "excerlock.shield.current-cause.v1") == "bankEmpty" {
+      defaults?.removeObject(forKey: "excerlock.shield.current-cause.v1")
+    }
+    if defaults?.dictionary(forKey: "excerlock.shield.runtime-context.v1")?["cause"] as? String == "bankEmpty" {
+      defaults?.removeObject(forKey: "excerlock.shield.runtime-context.v1")
+    }
   }
 
   func arm(_ bankMinutes: Double, tickMinutes: Int = excerlockBankDrainTickMinutes, baselineArmId: String? = nil, bookedMinutes: Double = 0) throws {
@@ -153,6 +172,7 @@ final class BankDrainStore {
       do {
         try startLocked(record)
         managed.clearAllSettings()
+        clearBankShieldContextLocked()
       } catch {
         try failLocked(&record, error: error)
         throw error

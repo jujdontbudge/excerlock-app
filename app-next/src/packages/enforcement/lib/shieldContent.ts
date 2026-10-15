@@ -1,7 +1,14 @@
+import bankCopy from '../bankShieldCopy.json';
 import { UnlockHint } from '../../model/types';
 import { sessionCopy as c } from '../sessionsCopy';
 export function shieldContent(cause: 'locked' | 'lockWindow' | 'walkingEnded', hint?: UnlockHint) {
-  if (hint?.action === 'shop') return { title: 'Your Bank is empty', subtitle: 'Earn Points to buy more time', primary: 'Open Shop', secondary: c.shieldOkay };
+  if (hint?.action === 'shop')
+    return {
+      title: bankCopy.title,
+      subtitle: bankCopy.subtitle,
+      primary: bankCopy.primaryActionLabel,
+      secondary: bankCopy.secondaryActionLabel,
+    };
   const walking = cause === 'walkingEnded' || hint?.action === 'walk';
   const subtitle =
     cause === 'walkingEnded'

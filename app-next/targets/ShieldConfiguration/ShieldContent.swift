@@ -2,6 +2,7 @@ import Foundation
 
 enum ShieldCause: String, CaseIterable {
   case balanceEmpty
+  case bankEmpty
   case fullLock
   case lockWindow
   case walkAndScrollEnded
@@ -35,13 +36,19 @@ struct ShieldContentCatalog {
   private let sharedDefaults: UserDefaults?
 
   init(bundle: Bundle = .main, sharedDefaults: UserDefaults? = Self.appGroupDefaults()) {
-    defaults = Self.loadDefaults(from: bundle)
+    var catalog = Self.loadDefaults(from: bundle)
+    if let url = bundle.url(forResource: "BankShieldContent.generated", withExtension: "json"),
+       let data = try? Data(contentsOf: url),
+       let bank = try? JSONDecoder().decode(ShieldVariant.self, from: data) {
+      catalog[ShieldCause.bankEmpty.rawValue] = bank
+    }
+    defaults = catalog
     self.sharedDefaults = sharedDefaults
   }
 
   func current() -> ResolvedShieldContent {
     let cause = currentCause()
-    let fallback = defaults[cause.rawValue] ?? Self.emergencyDefaults[cause.rawValue]!
+    let fallback = defaults[cause.rawValue] ?? Self.emergencyDefaults[cause.rawValue] ?? Self.emergencyDefaults[ShieldCause.balanceEmpty.rawValue]!
     let contextual = applyingRuntimeContext(to: fallback, cause: cause)
     let copyOverridden = applyingCopyOverride(to: contextual, cause: cause)
     return ResolvedShieldContent(
