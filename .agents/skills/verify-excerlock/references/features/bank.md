@@ -43,6 +43,7 @@ name: home-bank
 scenario: bank-fresh
 open: /home
 expect: Bank | 12 h | 0 Points | 0 / 6,000 steps | Shop
+absent: Uncaught (in promise | LogBox
 ```
 
 ```proof
@@ -103,7 +104,7 @@ actions: tap More actions | tap Delete | expect Delete this Condition and its Ba
 expect: Your first condition starts here
 then-open: /home
 then-expect: Unlocked
-absent: Shop
+absent: Shop | Uncaught (in promise | LogBox
 ```
 
 ```proof

@@ -366,6 +366,7 @@ scenario: fresh-install
 open: dev?stage=bank-demo&demoTime=4.2&demoPause=1
 open-wait: 2.5
 expect: Your steps earn Points. Points buy screen time. | Hold to walk
+absent: Uncaught (in promise | LogBox
 ```
 
 ```proof

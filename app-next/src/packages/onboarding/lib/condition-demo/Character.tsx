@@ -1,9 +1,12 @@
-import { ImageSourcePropType, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Asset } from 'expo-asset';
+import { Image, StyleSheet } from 'react-native';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { reportRuntimeError } from '../../../telemetry/reportRuntimeError';
 import { DemoState, Scenario, snapshot, stride } from './model';
 
 export type Cast = 'boy' | 'girl';
-const frames: Record<Cast, Record<'phone' | 'free', ImageSourcePropType[]>> = {
+const frames: Record<Cast, Record<'phone' | 'free', number[]>> = {
   boy: {
     phone: [
       require('../../../../../assets/condition-demo/frames/walk-1.png'),
@@ -56,12 +59,21 @@ function Frame({
   scenario,
   reduced,
 }: {
-  source: ImageSourcePropType;
+  source: number;
   index: number;
   clock: SharedValue<DemoState>;
   scenario: Scenario;
   reduced: boolean;
 }) {
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void Asset.fromModule(source).downloadAsync().then((asset) => {
+      if (!asset.localUri) throw new Error('Condition demo frame has no local file');
+      if (live) setUri(asset.localUri);
+    }).catch(reportRuntimeError);
+    return () => { live = false; };
+  }, [source]);
   const style = useAnimatedStyle(() => {
     const state = snapshot(clock.value, scenario);
     if (!state.walking) return { opacity: index === (state.phase === 'blocked' ? 7 : 6) ? 1 : 0 };
@@ -72,13 +84,18 @@ function Frame({
     };
   });
   return (
-    <Animated.Image
+    <Animated.View
       testID={`condition-demo-frame-${index}`}
-      source={source}
-      resizeMode="contain"
-      fadeDuration={0}
-      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, style]}
-    />
+      style={[StyleSheet.absoluteFill, style]}>
+      {uri ? (
+        <Image
+          source={{ uri }}
+          resizeMode="contain"
+          fadeDuration={0}
+          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+        />
+      ) : null}
+    </Animated.View>
   );
 }
 export function Character({
@@ -119,7 +136,7 @@ export function Character({
         bob,
       ]}>
       {sources.map((source, index) => (
-        <Frame key={index} {...{ source, index, clock, scenario, reduced }} />
+        <Frame key={source} {...{ source, index, clock, scenario, reduced }} />
       ))}
     </Animated.View>
   );
