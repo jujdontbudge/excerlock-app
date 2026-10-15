@@ -12,6 +12,7 @@ export type EarningRange = {
 };
 export type EarningDay = { difficulty: Difficulty; amount: number; points: number; through: number };
 export type BankAccount = {
+  economyVersion: 2;
   conditionId: string;
   activity: 'walking' | 'gym';
   createdAt: string;
@@ -44,6 +45,7 @@ export const bankStore = createPersistedStore<BankData>(
   {
     account: v.nullable(
       v.shape({
+        economyVersion: v.oneOf([2]),
         conditionId: v.text,
         activity: v.oneOf(['walking', 'gym']),
         createdAt: v.iso,

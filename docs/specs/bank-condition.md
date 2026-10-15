@@ -58,8 +58,8 @@ Our own SVG icon in the `ui` icon set: a round token with the walking or gym gly
 
 Top to bottom, centred:
 1. **Bank hero card**: the Bank as the one hero number ("3 h 12 m"), rolling digits, over a calm liquid level in a borderless soft grey card.
-2. **Points pill** with the Points token, e.g. "340". Tapping opens the Shop.
-3. **Collect chip** "+120" when Points are waiting. Tapping plays the arc: 5–8 tokens arc into the Points pill, each landing ticks the number and pulses the pill, one haptic at the end. Routine collect gets this and nothing more; the first collect ever gets one confetti burst.
+2. **Points pill** with the Points token, e.g. "11,220". Tapping opens the Shop.
+3. **Collect chip** "+4,210" when Points are waiting. Tapping plays the arc: 5–8 tokens arc into the Points pill, each landing ticks the number and pulses the pill, one haptic at the end. Routine collect gets this and nothing more; the first collect ever gets one confetti burst.
 4. **Today line**: "4,210 / 6,000 steps" toward the Difficulty's daily minimum (gym: minutes).
 5. The **Locked apps** row.
 
@@ -70,7 +70,7 @@ The Condition cards are replaced by this; Streak badge stays.
 Tabs: **Home · Shop · Conditions · Analytics · Settings**; Shop exists only while a Bank Condition is enabled.
 
 - Points balance as the centred hero with the token.
-- 2×2 grid of the four Offers ("3 h" big, "250" with token small).
+- 2×2 grid of the four Offers ("3 h" big, "8,250" with token small).
 - **Bank chip, top right**: the Shop header carries a chip showing the Bank's screen time (e.g. "3 h 12 m"). It is where purchases land.
 - **Buy**: first tap turns the card into "Buy · 8,250"; second tap buys. Sequence: a stream of Points tokens bursts from the Offer card and arcs into the top-right Bank chip while the Points hero rolls down; as they land the chip grows, rolls up to its new time with a "+3 h" chip popping from it, then settles → unlock haptic if the Bank was empty (the Shield just lifted), success otherwise. Big, vivid and filmable; nothing else on the screen moves.
 - **Can't afford**: card dimmed, shows "≈ 1,400 steps to go" (or gym minutes) with a thin progress ring. Tap → gentle shake + warning haptic. No notice, no red text.
@@ -98,7 +98,7 @@ Bank empty: title "Your Bank is empty", subtitle "Earn Points to buy more time",
 
 Follow `ARCHITECTURE.md`. Suggested placement; the implementer may adjust if `./excer check` demands it:
 
-- `model`: `RuleMode` gains `{ kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' }`; `LockDecision` gains `unlockedBank`. `bankEconomy.ts` owns the shared Difficulty rates, daily minimums and Offers, including the values used by Conditions copy and demos.
+- `model`: `RuleMode` gains `{ kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' }`; `LockDecision` gains `unlockedBank`. `bankEconomy.ts` owns the fixed earning rates, Difficulty prices, daily minimums and Offers, including the values used by Conditions copy and demos.
 - New package **`bank`**, layer between `progress` and `lock`: the persisted Points/Bank store (per-account through `AccountDataCoordinator`), earning projection, `collectPoints`, `buyOffer`, drain application, and hooks. Only `bank` writes its store.
 - `lock`: `resolveLock` handles the Bank Condition.
 - `enforcement` + native: the drain ladder through `ports/BankDrainPort.ts`.
@@ -116,18 +116,22 @@ export type Offer = { id: OfferId; price: number; minutes: number };
 export type BankView = {
   activity: 'walking' | 'gym';
   difficulty: Difficulty;
+  offers: readonly Offer[];
   points: number;
   pendingPoints: number;
   firstCollect: boolean;
   bankMinutes: number;
   today: { amount: number; minimum: number; met: boolean };
 };
+export function offersFor(difficulty: Difficulty): readonly Offer[];
 export const offers: readonly Offer[];
 export function useBank(): BankView | null;
 export function collectPoints(): number;
 export function buyOffer(id: OfferId): 'bought' | 'insufficient';
 export function activityToGo(view: BankView, offer: Offer): number;
 ```
+
+`BankView.offers` contains the prices for the Difficulty in effect today. `buyOffer(id)` resolves those same prices at purchase time. `offersFor(difficulty)` is the pure price table. The legacy `offers` export contains Medium prices solely for the designer-owned Shop's API transition; switch Shop to `bank.offers` and remove that export when integrating.
 
 ### `ports/BankDrainPort.ts` (byte-for-byte; whoever lands first creates it)
 
@@ -146,7 +150,7 @@ export interface BankDrainPort {
 
 ## Demo scenarios (dev-harness)
 
-`bank-fresh` (just created, 12 h, 0 Points), `bank-pending` (Points waiting to collect), `bank-rich` (enough for every Offer), `bank-empty` (Bank 0, Shield up, some Points), `bank-broke` (Bank 0, too few Points for any Offer). Each opens Home and the Shop in a known state.
+`bank-fresh` (just created, 12 h, 0 Points), `bank-pending` (4,210 Points waiting, 12 h), `bank-routine` (11,220 Points held, 3,960 waiting, 3 h 12 m), `bank-rich` (33,000 Points, enough to buy all four Medium Offers, 12 h), `bank-empty` (Bank 0, Shield up, 3,300 Points), `bank-broke` (Bank 0, 300 Points, too few for any Medium Offer). Each opens Home and the Shop in a known state.
 
 ## Verification
 

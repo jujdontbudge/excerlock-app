@@ -4,9 +4,12 @@ import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { dayKey } from '../schedule/calendar';
 import { bankStore as useBankStore, type BankAccount } from './bankStore';
 import { bankRuntime } from './lib/session';
-import { offers, dailyMinimum, type OfferId } from '../model/bankEconomy';
+import { offersFor, dailyMinimum, type OfferId } from '../model/bankEconomy';
 import type { BankView } from './economy';
-export { offers } from '../model/bankEconomy';
+import { syncBankCondition } from './BankLifecycle';
+import { difficultyForDay } from './lib/difficulty';
+export { offersFor } from '../model/bankEconomy';
+export const offers = offersFor('medium');
 export { activityToGo } from './economy';
 export type { Difficulty, OfferId, Offer } from '../model/bankEconomy';
 export type { BankView } from './economy';
@@ -22,11 +25,12 @@ export function useBank(): BankView | null {
   if (!account || !enabled) return null;
   const day = dayKey(now, runtime.clock.timezone());
   const today = account.days[day];
-  const difficulty = today?.difficulty ?? account.difficulty;
+  const difficulty = difficultyForDay(account, day);
   const minimum = dailyMinimum(account.activity, difficulty);
   return {
     activity: account.activity,
     difficulty,
+    offers: offersFor(difficulty),
     points: account.points,
     pendingPoints: account.pendingPoints,
     firstCollect: neverCollected(account),
@@ -61,9 +65,15 @@ export function collectPoints(): number {
   return collected;
 }
 export function buyOffer(id: OfferId): 'bought' | 'insufficient' {
-  const offer = offers.find((candidate) => candidate.id === id);
+  const activeAccount = useBankStore.getState().data.account;
+  if (!bankRuntime || !activeAccount || !canUseBank(activeAccount.conditionId)) return 'insufficient';
+  const now = bankRuntime.clock.now();
+  const timezone = bankRuntime.clock.timezone();
+  syncBankCondition(now, timezone);
   const account = useBankStore.getState().data.account;
-  if (!offer || !account || !canUseBank(account.conditionId) || account.points < offer.price) return 'insufficient';
+  if (!account || !canUseBank(account.conditionId)) return 'insufficient';
+  const offer = offersFor(difficultyForDay(account, dayKey(now, timezone))).find((candidate) => candidate.id === id);
+  if (!offer || account.points < offer.price) return 'insufficient';
   useBankStore.getState().patch({
     account: { ...account, points: account.points - offer.price, bankMinutes: account.bankMinutes + offer.minutes },
   });

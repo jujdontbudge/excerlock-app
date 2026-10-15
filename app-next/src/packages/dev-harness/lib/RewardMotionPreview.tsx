@@ -14,9 +14,10 @@ import { PointsToken } from '../../ui/PointsToken';
 import { RollingNumber } from '../../ui/RollingNumber';
 import { formatBank, type PointsActivity } from '../../ui/rewardsCopy';
 import { tokens as t } from '../../ui/tokens';
-import { economy, offers } from '../../model/bankEconomy';
+import { offersFor, pointsPerGymMinute } from '../../model/bankEconomy';
 import { previewBankProgress, previewDifficulties as difficulties } from './previewsCopy';
 
+const offers = offersFor('medium');
 const sections = ['Token', 'Home', 'Shop', 'Difficulty'] as const;
 type Section = (typeof sections)[number];
 
@@ -91,7 +92,7 @@ function RollingSheet() {
       <RollingNumber value={value} />
       <Controls>
         {[1, 37, 120, -250, 1000].map((delta) => (
-          <DevButton key={delta} title={delta > 0 ? `+${delta}` : `${delta}`} onPress={() => setValue((v) => Math.max(0, v + delta))} />
+          <DevButton key={delta} title={delta > 0 ? `+${delta.toLocaleString('en-US')}` : delta.toLocaleString('en-US')} onPress={() => setValue((v) => Math.max(0, v + delta))} />
         ))}
       </Controls>
     </View>
@@ -99,8 +100,8 @@ function RollingSheet() {
 }
 
 function HomeSheet({ activity }: { activity: PointsActivity }) {
-  const [points, setPoints] = useState(340);
-  const [pending, setPending] = useState(120);
+  const [points, setPoints] = useState(11220);
+  const [pending, setPending] = useState(3960);
   const [bank, setBank] = useState(192);
   const [collected, setCollected] = useState(false);
   return (
@@ -126,8 +127,8 @@ function HomeSheet({ activity }: { activity: PointsActivity }) {
         {previewBankProgress(activity)}
       </Label>
       <Controls>
-        <DevButton title="Points waiting +120" onPress={() => setPending((value) => value + 120)} />
-        <DevButton title="Waiting +460" onPress={() => setPending((value) => value + 460)} />
+        <DevButton title="Points waiting +3,960" onPress={() => setPending((value) => value + 3960)} />
+        <DevButton title="Waiting +15,180" onPress={() => setPending((value) => value + 15180)} />
         <DevButton title="First collect again" onPress={() => setCollected(false)} />
         <DevButton title="Bank +3 h" onPress={() => setBank((value) => value + 180)} />
         <DevButton title="Drain 45 m" onPress={() => setBank((value) => Math.max(0, value - 45))} />
@@ -139,12 +140,12 @@ function HomeSheet({ activity }: { activity: PointsActivity }) {
 }
 
 function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought: (minutes: number) => void }) {
-  const [points, setPoints] = useState(340);
+  const [points, setPoints] = useState(11220);
   const [bankEmpty, setBankEmpty] = useState(false);
-  const toGo = (price: number) =>
-    activity === 'gym'
-      ? (price - points) / economy.medium.pointsPerGymMinute
-      : (price - points) * economy.medium.stepsPerPoint;
+  const toGo = (price: number) => {
+    const short = Math.max(0, price - points);
+    return activity === 'gym' ? Math.ceil(short / pointsPerGymMinute) : short;
+  };
   return (
     <View style={{ gap: t.space.xl }}>
       <PointsPill activity={activity} points={points} size="hero" target="shop-points" />
@@ -172,9 +173,9 @@ function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought:
         ))}
       </View>
       <Controls>
-        <DevButton title="Rich 1,200" onPress={() => setPoints(1200)} />
-        <DevButton title="Some 340" onPress={() => setPoints(340)} />
-        <DevButton title="Broke 12" onPress={() => setPoints(12)} />
+        <DevButton title="Rich 33,000" onPress={() => setPoints(33000)} />
+        <DevButton title="Some 11,220" onPress={() => setPoints(11220)} />
+        <DevButton title="Broke 300" onPress={() => setPoints(300)} />
         <DevButton title={bankEmpty ? 'Bank is empty' : 'Make Bank empty'} onPress={() => setBankEmpty(true)} />
       </Controls>
     </View>

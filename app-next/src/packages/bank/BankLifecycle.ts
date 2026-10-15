@@ -19,6 +19,7 @@ export function syncBankCondition(now: string, timezone: string): void {
   if (!account || account.conditionId !== condition.id) {
     bankStore.getState().patch({
       account: {
+        economyVersion: 2,
         conditionId: condition.id,
         activity: condition.activity,
         createdAt: condition.createdAt,

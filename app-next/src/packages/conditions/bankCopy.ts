@@ -1,9 +1,8 @@
-import { economy, offers } from '../model/bankEconomy';
+import { economy, pointsPerGymMinute } from '../model/bankEconomy';
 import type { RuleDraft } from './draft';
 type Difficulty = RuleDraft['difficulty'];
 type BankActivity = RuleDraft['activity'];
 export const difficultyLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' } as const;
-const hourOffer = offers.find((offer) => offer.id === 'h1')!;
 const number = (value: number) => value.toLocaleString('en-US');
 const duration = (minutes: number) => {
   const hours = Math.floor(minutes / 60),
@@ -11,11 +10,10 @@ const duration = (minutes: number) => {
   return hours === 0 ? `${rest} min` : rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 };
 export function bankCost(activity: BankActivity, difficulty: Difficulty, screenMinutes: number): string {
-  const points = (hourOffer.price * screenMinutes) / hourOffer.minutes;
-  const rate = economy[difficulty];
+  const points = (economy[difficulty].hourlyPrice * screenMinutes) / 60;
   return activity === 'walking'
-    ? `${number(Math.ceil(points * rate.stepsPerPoint))} steps`
-    : `${duration(Math.ceil(points / rate.pointsPerGymMinute))} at the gym`;
+    ? `${number(Math.ceil(points))} steps`
+    : `${number(Math.ceil(points / pointsPerGymMinute))} gym minutes`;
 }
 export function bankPrice(activity: BankActivity, difficulty: Difficulty): string {
   return `${bankCost(activity, difficulty, 60)} = 1 h`;
