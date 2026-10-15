@@ -14,9 +14,7 @@ const settle = LinearTransition.springify()
   .stiffness(t.motion.spring.settle.stiffness)
   .damping(t.motion.spring.settle.damping);
 
-// The bars' ink reaches the top of their box, while the last line keeps line-box space under its capitals.
-// Matching that space above the bars centres the card's ink by construction (ADR 0065).
-const capSlack = (variant: keyof typeof t.type, scale: number) =>
+const spaceUnderLastCapitals = (variant: keyof typeof t.type, scale: number) =>
   ((t.type[variant].lineHeight - t.fontMetrics.capHeight * t.type[variant].fontSize) / 2) * scale;
 
 function TierBars({ tier, solid }: { tier: number; solid: boolean }) {
@@ -74,7 +72,7 @@ export function DifficultyCards<Id extends string>({
                   gap: t.space.xs,
                   ...m.transition(['backgroundColor', 'paddingVertical'], 'standard'),
                 }}>
-                <View style={{ paddingTop: capSlack(last, scale) }}>
+                <View style={{ paddingTop: spaceUnderLastCapitals(last, scale) }}>
                   <TierBars tier={tier} solid={selected} />
                 </View>
                 <Label variant="section" tone={tone}>

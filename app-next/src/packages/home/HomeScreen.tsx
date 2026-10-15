@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ScreenShell,
   SettingsRow,
@@ -42,6 +43,7 @@ export function HomeScreen() {
   useDemoProgress();
   useLapsedWinbackOffer();
   const bank = useBank();
+  const insets = useSafeAreaInsets();
   const runtime = useRuntime(),
     router = useRouter(),
     homeClock = useHomeClock(),
@@ -115,7 +117,11 @@ export function HomeScreen() {
   return (
     <ScreenShell dock
       overlay={<><ScreenTimePickerHost /><GymBackgroundSetup /></>}
-      contentStyle={bank?.pendingPoints ? { paddingBottom: t.layout.tabHeight + t.points.chip + t.space.xxl * 2 + t.space.sm } : undefined}
+      contentStyle={
+        bank?.pendingPoints
+          ? { paddingBottom: t.layout.tabHeight + insets.bottom + t.space.sm + t.points.chip + t.space.xl }
+          : undefined
+      }
       onLayout={markHomeLayout}
       orangeBackground
       safeBottom={false}
