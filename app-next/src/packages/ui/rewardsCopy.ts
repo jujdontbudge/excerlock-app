@@ -6,14 +6,18 @@ const roundToGo = (activity: PointsActivity, amount: number) =>
     ? Math.ceil(amount)
     : Math.ceil(amount / (amount >= 1000 ? 100 : 10)) * (amount >= 1000 ? 100 : 10);
 
-export const formatBank = (minutes: number) => {
+const duration = (minutes: number, minuteUnit: string) => {
   const whole = Math.max(0, Math.floor(minutes)),
     hours = Math.floor(whole / 60),
     rest = whole % 60;
-  return hours ? `${hours} h ${rest} m` : `${rest} m`;
+  return hours ? `${hours} h${rest ? ` ${rest} ${minuteUnit}` : ''}` : `${rest} ${minuteUnit}`;
 };
 
-export const formatOffer = (minutes: number) => (minutes % 60 ? `${minutes} min` : `${minutes / 60} h`);
+export const formatBank = (minutes: number) => duration(minutes, 'm');
+
+export const formatOffer = (minutes: number) => duration(minutes, 'm');
+
+const spokenDuration = (minutes: number) => duration(minutes, 'min');
 
 export const rewards = {
   points: (value: number) => `${number(value)} Points`,
@@ -21,11 +25,11 @@ export const rewards = {
   collect: (amount: number) => `Collect ${number(amount)} Points`,
   collectChip: (amount: number) => `+${number(amount)}`,
   bank: 'in your Bank',
-  bankLabel: (minutes: number) => `${formatBank(minutes)} in your Bank`,
+  bankLabel: (minutes: number) => `${spokenDuration(minutes)} in your Bank`,
   buy: 'Buy',
   buyPrice: (price: number) => `Buy · ${number(price)}`,
-  offerLabel: (minutes: number, price: number) => `${formatOffer(minutes)} for ${number(price)} Points`,
-  confirmLabel: (minutes: number, price: number) => `Buy ${formatOffer(minutes)} for ${number(price)} Points`,
+  offerLabel: (minutes: number, price: number) => `${spokenDuration(minutes)} for ${number(price)} Points`,
+  confirmLabel: (minutes: number, price: number) => `Buy ${spokenDuration(minutes)} for ${number(price)} Points`,
   bought: (minutes: number) => `+${formatOffer(minutes)}`,
   toGo: (activity: PointsActivity, amount: number) =>
     amount <= 0

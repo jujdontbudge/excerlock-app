@@ -16,15 +16,7 @@ export function ShopScreen() {
       <Label variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>
         {c.title}
       </Label>
-      <View
-        style={{
-          height: t.points.bank,
-          borderRadius: t.radius.card,
-          backgroundColor: t.surface.softChoice,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: t.space.xs,
-        }}>
+      <View style={{ paddingVertical: t.space.lg, alignItems: 'center', gap: t.space.xs }}>
         <PointsPill activity={bank.activity} points={bank.points} size="hero" target="shop-points" />
         <Label variant="support" tone="secondary">
           {c.points}

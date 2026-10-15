@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
@@ -13,6 +13,9 @@ const settle = LinearTransition.springify()
   .mass(t.motion.spring.settle.mass)
   .stiffness(t.motion.spring.settle.stiffness)
   .damping(t.motion.spring.settle.damping);
+
+const spaceUnderLastCapitals = (variant: keyof typeof t.type, scale: number) =>
+  ((t.type[variant].lineHeight - t.fontMetrics.capHeight * t.type[variant].fontSize) / 2) * scale;
 
 function TierBars({ tier, solid }: { tier: number; solid: boolean }) {
   return (
@@ -43,11 +46,14 @@ export function DifficultyCards<Id extends string>({
   onChange: (id: Id) => void;
 }) {
   const m = useMotion();
+  const { fontScale } = useWindowDimensions();
+  const scale = Math.min(fontScale, t.a11y.textScale);
   return (
     <View accessibilityRole="radiogroup" style={{ gap: t.space.md }}>
       {options.map((option, tier) => {
         const selected = option.id === value;
         const tone = selected ? 'onAccent' : 'primary';
+        const last = selected && option.detail ? 'support' : 'label';
         return (
           <Animated.View key={option.id} layout={m.reduced ? undefined : settle}>
             <PressableScale
@@ -66,7 +72,9 @@ export function DifficultyCards<Id extends string>({
                   gap: t.space.xs,
                   ...m.transition(['backgroundColor', 'paddingVertical'], 'standard'),
                 }}>
-                <TierBars tier={tier} solid={selected} />
+                <View style={{ paddingTop: spaceUnderLastCapitals(last, scale) }}>
+                  <TierBars tier={tier} solid={selected} />
+                </View>
                 <Label variant="section" tone={tone}>
                   {option.title}
                 </Label>

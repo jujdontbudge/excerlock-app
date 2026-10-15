@@ -66,5 +66,9 @@ export const solidGlyphs: Partial<Record<IconName, string>> = {
   mail: fill('M4 2.5h16a3 3 0 0 1 3 3v13a3 3 0 0 1 -3 3H4a3 3 0 0 1 -3 -3V5.5a3 3 0 0 1 3 -3Zm0 3v3l8 6 8 -6V5.5l-8 6Z'),
   'token-walking': token('token-walking', tokenWalking()),
   'token-gym': token('token-gym', `<g transform="translate(12 12) scale(0.58) translate(-12 -12)">${gymGlyph('black')}</g>`),
+  bag:
+    fill(
+      'M6.5 7h11a2 2 0 0 1 2 1.85l.95 10.6A2.4 2.4 0 0 1 18.05 22H5.95a2.4 2.4 0 0 1 -2.4 -2.55L4.5 8.85A2 2 0 0 1 6.5 7ZM8.3 10.3a1.2 1.2 0 0 0 -1.15 1.5 5 5 0 0 0 9.7 0 1.2 1.2 0 0 0 -2.33 -.6 2.6 2.6 0 0 1 -5.04 0A1.2 1.2 0 0 0 8.3 10.3Z',
+    ) + fill('M7.9 7V6.1a4.1 4.1 0 0 1 8.2 0V7h-2.4v-.9a1.7 1.7 0 0 0 -3.4 0V7Z'),
   info: fill('M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22Zm-1.5 5v3h3V6Zm0 5v7h3v-7Z'),
 };

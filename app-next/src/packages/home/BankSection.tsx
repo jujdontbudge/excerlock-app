@@ -12,12 +12,14 @@ export function BankSection({ onShop }: { onShop: () => void }) {
   const points = useShownWhileFocused(bank?.points ?? 0);
   if (!bank) return null;
   return (
-    <View style={{ gap: t.space.lg }}>
+    <View style={{ gap: t.space.xl }}>
       <BankHero minutes={minutes} />
-      <PointsPill activity={bank.activity} points={points} onPress={onShop} />
-      <Label tone="secondary" style={{ textAlign: 'center' }}>
-        {c.today(bank.today.amount, bank.today.minimum, bank.activity)}
-      </Label>
+      <View style={{ gap: t.space.md }}>
+        <PointsPill activity={bank.activity} points={points} onPress={onShop} />
+        <Label tone="secondary" style={{ textAlign: 'center' }}>
+          {c.today(bank.today.amount, bank.today.minimum, bank.activity)}
+        </Label>
+      </View>
     </View>
   );
 }

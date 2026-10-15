@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleProp, TextStyle, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
+  FadeOut,
   FadeInUp,
   FadeOutDown,
   FadeOutUp,
@@ -23,6 +25,7 @@ type Direction = 1 | -1;
 const strip = Array.from({ length: 30 }, (_, i) => i % 10);
 const rollCurve = Easing.bezier(...t.motion.easing.enter);
 const isDigit = (char: string) => char >= '0' && char <= '9';
+const isLetter = (char: string) => char.toLowerCase() !== char.toUpperCase();
 const slotDuration = t.motion.reward.roll;
 const slotEnter = (direction: Direction, distance: number) =>
   (direction > 0 ? FadeInDown : FadeInUp)
@@ -34,6 +37,47 @@ const slotExit = (direction: Direction) =>
     .duration(slotDuration * 0.35)
     .easing(rollCurve);
 const slotLayout = LinearTransition.duration(slotDuration).easing(rollCurve);
+const unitEnter = FadeIn.duration(slotDuration).easing(rollCurve);
+const unitExit = FadeOut.duration(slotDuration * 0.35).easing(rollCurve);
+
+type Slot = { char: string; key: string; kind: 'digit' | 'unit' | 'separator'; order: number };
+
+function slotsKeptAcrossValues(text: string): Slot[] {
+  const chars = [...text];
+  const unitAfter = (from: number) => chars.slice(from).find(isLetter) ?? '';
+  const slots: Slot[] = [];
+  for (let i = 0; i < chars.length; i += 1) {
+    const char = chars[i];
+    if (isLetter(char)) {
+      slots.push({ char, key: `u${char}`, kind: 'unit', order: 0 });
+      continue;
+    }
+    let end = i;
+    while (end + 1 < chars.length && (isDigit(chars[end + 1]) || (chars[end + 1] === ',' && isDigit(chars[end + 2] ?? ''))))
+      end += 1;
+    if (isDigit(char)) {
+      const unit = unitAfter(end + 1);
+      for (let j = i; j <= end; j += 1) {
+        const place = chars.slice(j + 1, end + 1).filter(isDigit).length;
+        slots.push(
+          isDigit(chars[j])
+            ? { char: chars[j], key: `d${unit}${place}`, kind: 'digit', order: place }
+            : { char: chars[j], key: `s${unit}${place}${chars[j]}`, kind: 'separator', order: 0 },
+        );
+      }
+      i = end;
+      continue;
+    }
+    const before = chars.slice(0, i).reverse().find((c) => c !== ' ') ?? '';
+    slots.push({
+      char,
+      key: isLetter(before) ? `s${before}>${char}` : `s${unitAfter(i)}${char}`,
+      kind: 'separator',
+      order: 0,
+    });
+  }
+  return slots;
+}
 
 export const formatPoints = (value: number) => Math.max(0, Math.round(value)).toLocaleString('en-US');
 
@@ -58,12 +102,7 @@ export function RollingNumber({
   const [last, setLast] = useState<{ value: number; direction: Direction }>({ value, direction: 1 });
   if (last.value !== value) setLast({ value, direction: value > last.value ? 1 : -1 });
   const direction = last.direction;
-  const chars = [...text];
-  const slots = chars.map((char, i) => ({
-    char,
-    fromEnd: chars.length - 1 - i,
-    order: chars.slice(i + 1).filter(isDigit).length,
-  }));
+  const slots = slotsKeptAcrossValues(text);
   const style: StyleProp<TextStyle> = color ? { color } : undefined;
   const m = useMotion();
   const { fontScale } = useWindowDimensions();
@@ -81,11 +120,11 @@ export function RollingNumber({
         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
         {slots.map((slot) => (
           <Animated.View
-            key={isDigit(slot.char) ? `d${slot.fromEnd}` : `c${slot.fromEnd}${slot.char}`}
-            entering={enter}
-            exiting={exit}
+            key={slot.key}
+            entering={slot.kind === 'digit' ? enter : slot.kind === 'unit' && !m.reduced ? unitEnter : undefined}
+            exiting={slot.kind === 'digit' ? exit : slot.kind === 'unit' && !m.reduced ? unitExit : undefined}
             layout={layout}>
-            {isDigit(slot.char) ? (
+            {slot.kind === 'digit' ? (
               <DigitColumn
                 digit={Number(slot.char)}
                 direction={direction}
