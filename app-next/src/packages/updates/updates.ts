@@ -340,6 +340,14 @@ export type OtaObservabilityContext = {
   is_embedded: boolean | null;
 };
 
+export function embeddedRuntimeVersion(): string | null {
+  try {
+    return Updates.runtimeVersion ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function getOtaObservabilityContext(client?: Pick<OtaUpdatesClient, 'currentlyRunningUpdateId' | 'runtimeVersion'>): OtaObservabilityContext {
   if (!client) {
     try {

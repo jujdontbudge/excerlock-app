@@ -10,7 +10,7 @@ depends: [conditions]
 - Welcome (the Introduction pager with Get started and Sign in).
 - Profile questions `O01`–`O24`, in the order given by `app-next/src/packages/onboarding/lib/flow.ts` `preBranch`. `O23` and `O24` ask for a target in pounds only when the corresponding body goal was chosen.
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
-- Research `S4` and rating `S5` immediately follow Import on `S3`, before the Condition demo `S3b`. Rating asks for the review prompt one second into every visit and keeps Continue locked until that request finishes; demo `--prompt ask` forwards to the real StoreKit prompt.
+- Research `S4` immediately follows Import on `S3`, before the Condition demo `S3b`. Rating `S5` follows research only on runtimes 4 and 5; runtime 6 and later skip it and never ask for a review in onboarding. On runtimes 4 and 5, rating asks for the review prompt one second into every visit and keeps Continue locked until that request finishes; demo `--prompt ask` forwards to the real StoreKit prompt.
 - Tail steps `S1`–`S3d`: summary, plan build, the Condition demo `S3b`, Before and After `S3e`, the trial preview `S3c` and reminder `S3d` (which asks for notifications) in A, then `P`, the paywall. Adapty arm B skips exactly `S3c` and `S3d`. A with a known unavailable intro offer skips their promises while remaining A.
 - Before and After `S3e` follows the Condition demo and remains in both offer arms, even when trial screens are skipped. Two overlapping cards: a grey Before card under a rain cloud (the character slumped on a sofa, scrolling; a girl with a ponytail when the gender answer is Female, otherwise the boy) and a peach After card under a sun with sparkles (flexing with a dumbbell for gym, walking with a thumbs up for walking). The first Before line follows the body goal: lose weight, build muscle, get in shape (both) or hit fitness goals (maintain or none); the second After line follows the activity. The Before card and its lines slide in, the arrow and After card pop in about a second later, then its lines follow with a light tick each. Reduce Motion fades everything in and keeps the cloud, sun and sparkles still. The art is generated, see `app-next/assets/onboarding/before-after/provenance/PROVENANCE.md`.
 - The PostHog `onboarding_variant` payload may reorder or drop other bundled steps. Adapty owns `S3c`/`S3d` inclusion and retains `S3e`; it never changes the Condition branch.
@@ -385,17 +385,7 @@ open: /onboarding/S3
 tap: Import
 expect: ExcerLock is built on research | HACK | University of Oxford | Harvard University | University of Cambridge | No shame, no punishment | Continue
 then-tap: Continue
-then-expect: Give us a rating | 50K+ ExcerLock users | ExcerLock was made for
-```
-
-```proof
-name: rating-back-reentry
-scenario: fresh-install
-open: /onboarding/S4
-tap: Continue | Back | Continue
-expect: Give us a rating | 4.7 | 50K+ ExcerLock users | Maya | Daniel
-then-open: /dev
-then-expect: rating | research
+then-expect: Once you hit 10,000 steps
 ```
 
 
@@ -405,7 +395,7 @@ The offer proofs use the real Adapty adapter over the scripted SDK. They start a
 name: offer-a-three-days
 scenario: onboarding-offer-a
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"a","source":"adapty","intro_offer":"available","variation_id":"offer-a"} | lab_offer_audience {"version":1} | lab_paywall_shown {"variation":"offer-a"}
@@ -416,7 +406,7 @@ wait: 20
 name: offer-b-no-trial
 scenario: onboarding-offer-b
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
 expect: Billed as $49.99/year | Continue | Yearly $49.99 · $0.96 / week | Monthly $9.99 · $2.31 / week
 absent: Free trial | Enable free trial | free trial | trial ends | No payment due now
 then-open: /dev
@@ -428,7 +418,7 @@ wait: 20
 name: offer-b-killed-shows-a
 scenario: onboarding-offer-b-killed
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"b","source":"adapty","intro_offer":"available","variation_id":"offer-a"} | lab_paywall_shown {"variation":"offer-a"}
@@ -439,7 +429,7 @@ wait: 20
 name: offer-a-intro-ineligible
 scenario: onboarding-offer-ineligible
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
 expect: Billed as $49.99/year | Continue
 absent: Free trial | Enable free trial | free trial | trial ends
 then-open: /dev
@@ -451,7 +441,7 @@ wait: 20
 name: offer-unknown-falls-back
 scenario: onboarding-offer-unknown
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"a","source":"fallback","intro_offer":"unknown"} | lab_paywall_shown {"variation":"offer-fallback"}
@@ -462,7 +452,7 @@ wait: 20
 name: offer-late-falls-back
 scenario: onboarding-offer-late
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"b","source":"fallback","intro_offer":"unknown"} | lab_paywall_shown {"variation":"offer-fallback"} | lab_late_offer_returned {"arm":"b"}
@@ -473,7 +463,7 @@ wait: 20
 name: offer-error-falls-back
 scenario: onboarding-offer-error
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"a","source":"fallback","intro_offer":"unknown"} | lab_paywall_shown {"variation":"offer-fallback"}
@@ -484,7 +474,7 @@ wait: 20
 name: offer-malformed-falls-back
 scenario: onboarding-offer-malformed
 open: /onboarding/S3
-actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"a","source":"fallback","intro_offer":"unknown"} | lab_paywall_shown {"variation":"offer-fallback"}
@@ -514,7 +504,7 @@ The complete-onboarding proofs start at Welcome with scripted answers, then driv
 name: offer-a-complete-onboarding
 scenario: onboarding-offer-a-full
 open: /onboarding/O01
-actions: tap Get started | tap Get started | tap Get started | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect quick math | expect quick math | tap Continue | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect What exercise do you want to do more of? | tap Continue | expect How many steps do you walk per day currently? | tap Continue | tap Continue | tap Continue | tap Continue | expect When should blocking be active? | tap Continue | expect Import | tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
+actions: tap Get started | tap Get started | tap Get started | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect quick math | expect quick math | tap Continue | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect What exercise do you want to do more of? | tap Continue | expect How many steps do you walk per day currently? | tap Continue | tap Continue | tap Continue | tap Continue | expect When should blocking be active? | tap Continue | expect Import | tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect 3-day free trial | tap Continue | expect 1 day before your trial ends | expect Day 2 · Reminder | expect Day 3 · Billing begins | tap Continue
 expect: 3-day free trial, then $49.99/year | Continue
 then-open: /dev
 then-expect: onboarding_offer_exposed {"arm":"a","assigned_arm":"a","source":"adapty","intro_offer":"available","variation_id":"offer-a"} | lab_offer_audience {"version":1} | lab_paywall_shown {"variation":"offer-a"}
@@ -525,7 +515,7 @@ wait: 20
 name: offer-b-complete-onboarding
 scenario: onboarding-offer-b-full
 open: /onboarding/O01
-actions: tap Get started | tap Get started | tap Get started | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect quick math | expect quick math | tap Continue | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect What exercise do you want to do more of? | tap Continue | expect How many steps do you walk per day currently? | tap Continue | tap Continue | tap Continue | tap Continue | expect When should blocking be active? | tap Continue | expect Import | tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
+actions: tap Get started | tap Get started | tap Get started | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect quick math | expect quick math | tap Continue | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | expect This is how much time you spend scrolling | tap Continue | tap Continue | tap Continue | tap Continue | tap Continue | expect What exercise do you want to do more of? | tap Continue | expect How many steps do you walk per day currently? | tap Continue | tap Continue | tap Continue | tap Continue | expect When should blocking be active? | tap Continue | expect Import | tap Import | expect ExcerLock is built on research | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
 expect: Billed as $49.99/year | Continue | Yearly $49.99 · $0.96 / week | Monthly $9.99 · $2.31 / week
 absent: Free trial | Enable free trial | free trial | trial ends | No payment due now
 then-open: /dev
@@ -534,7 +524,7 @@ wait: 20
 ```
 
 ## Gotchas
-- The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
+- Rating `S5` exists only on runtimes 4 and 5; development builds and runtime 6 skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
 - The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
 - Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
 - The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).

@@ -1,6 +1,7 @@
 import { Answers, bodyGoals, FlowState } from '../../model/answers';
 
 import type { FlowOrder } from '../../ports/OnboardingFlowPort';
+import { ratingStepShown } from './ratingStep';
 export const preBranch = [
   'O01',
   'O02',
@@ -50,7 +51,7 @@ export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
   const tailOrder = order?.tail ?? tail;
   const beforeAfterAnchor = tailOrder.includes('S3b') ? 'S3b' : tailOrder.includes('S3c') ? 'S3c' : 'P';
   const orderedTail = tailOrder.filter((step) => !['S4', 'S5', 'S3e'].includes(step))
-    .flatMap((step) => step === 'S3' ? [step, 'S4', 'S5'] : step === beforeAfterAnchor
+    .flatMap((step) => step === 'S3' ? [step, 'S4', ...(ratingStepShown ? ['S5'] : [])] : step === beforeAfterAnchor
       ? step === 'S3b' ? [step, 'S3e'] : ['S3e', step]
       : [step]);
   return [...pre, ...branchFor(answers), ...orderedTail.filter((step) => step !== 'S1' || (answers.activity === 'gym' ? answers.gymMode !== 'bank' : answers.walkingMode !== 'bank'))];
