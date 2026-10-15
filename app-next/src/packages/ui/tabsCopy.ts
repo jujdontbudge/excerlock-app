@@ -1,6 +1,6 @@
 export const tabItems = [
   { id: 'home', title: 'Home', icon: 'house' },
-  { id: 'shop', title: 'Shop', icon: 'clock' },
+  { id: 'shop', title: 'Shop', icon: 'bag' },
   { id: 'conditions', title: 'Conditions', icon: 'list' },
   { id: 'analytics', title: 'Analytics', icon: 'chart' },
   { id: 'settings', title: 'Settings', icon: 'gear' },
