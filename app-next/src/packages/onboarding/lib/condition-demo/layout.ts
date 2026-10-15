@@ -33,7 +33,6 @@ export function bankGeometry(height: number) {
   return {
     phoneTop,
     phoneHeight,
-    shopOffset: (phoneHeight - bankRows.phoneHeight) / 2,
     captionTop: phoneTop - bankRows.captionGap - bankRows.captionHeight,
     walkerScale,
     walkerTransform: [
@@ -48,7 +47,21 @@ export function bankGeometry(height: number) {
   };
 }
 export const bankPhoneLayout = {
-  pill: { top: 30, height: 28 },
-  bank: { top: 70, height: 66, inset: 10 },
-  grid: { top: 146, card: 72, height: 64, gap: 6 },
+  header: { top: 28, height: 22, inset: 8 },
+  chip: { width: 54, glyph: 14, pad: 4 },
+  hero: { top: 64, height: 30, token: 24, gap: 5, number: 56 },
+  caption: { top: 94 },
+  grid: { top: 126, card: 72, height: 64, gap: 6, inset: 10 },
+  stream: { count: 12, reach: 26 },
 } as const;
+export const bankPhoneWidth = 170;
+export const bankChipGlyph = {
+  x: bankPhoneWidth - bankPhoneLayout.header.inset - bankPhoneLayout.chip.width + bankPhoneLayout.chip.pad + bankPhoneLayout.chip.glyph / 2,
+  y: bankPhoneLayout.header.top + bankPhoneLayout.header.height / 2,
+};
+export const bankHeroToken = {
+  x:
+    (bankPhoneWidth - bankPhoneLayout.hero.token - bankPhoneLayout.hero.gap - bankPhoneLayout.hero.number) / 2 +
+    bankPhoneLayout.hero.token / 2,
+  y: bankPhoneLayout.hero.top + bankPhoneLayout.hero.height / 2,
+};
