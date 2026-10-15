@@ -1,23 +1,20 @@
-export const bankOffers = [
-  { label: '15 m', price: 25 },
-  { label: '1 h', price: 100 },
-  { label: '3 h', price: 250 },
-  { label: '6 h', price: 450 },
-] as const;
-export const boughtOffer = 2;
+import { bankDemoOffers } from '../bankOnboardingCopy';
+export { bankDemoOffers as bankOffers, bankDuration as formatBank } from '../bankOnboardingCopy';
+export const boughtOffer = bankDemoOffers.findIndex((offer) => offer.id === 'h3');
+const demoOffer = bankDemoOffers[boughtOffer];
 export const bankStory = {
   tokens: 5,
   firstEmit: 0.2,
   emitEvery: 0.52,
   flight: 0.48,
-  pointsPerToken: 50,
+  pointsPerToken: demoOffer.price / 5,
   pressAt: 0.12,
   press: 0.26,
   rollDown: 0.45,
   chip: { start: 0.08, duration: 0.52 },
   fill: { start: 0.5, duration: 0.4 },
   lift: 0.45,
-  boughtMinutes: 180,
+  boughtMinutes: demoOffer.minutes,
 } as const;
 export const bankPhases = [
   { name: 'earning', duration: 2.85 },
@@ -80,9 +77,4 @@ export function bankFrame(phase: string, local: number) {
           ? Math.round((full * (1 - easeInOut(local / bankStory.rollDown))) / 5) * 5
           : 0;
   return { points, fill, bankMinutes: Math.round(bankStory.boughtMinutes * fill) };
-}
-export function formatBank(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return hours === 0 ? `${rest} m` : rest === 0 ? `${hours} h` : `${hours} h ${rest} m`;
 }

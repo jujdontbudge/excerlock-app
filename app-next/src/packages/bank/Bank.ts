@@ -4,9 +4,12 @@ import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { dayKey } from '../schedule/calendar';
 import { bankStore as useBankStore, type BankAccount } from './bankStore';
 import { bankRuntime } from './lib/session';
-import { offers, dailyMinimum, type OfferId, type BankView } from './economy';
-export { offers, activityToGo } from './economy';
-export type { Difficulty, OfferId, Offer, BankView } from './economy';
+import { offers, dailyMinimum, type OfferId } from '../model/bankEconomy';
+import type { BankView } from './economy';
+export { offers } from '../model/bankEconomy';
+export { activityToGo } from './economy';
+export type { Difficulty, OfferId, Offer } from '../model/bankEconomy';
+export type { BankView } from './economy';
 export function useBank(): BankView | null {
   const runtime = useRuntime();
   const subscribe = useCallback((notify: () => void) => runtime.clock.subscribe(notify), [runtime]);

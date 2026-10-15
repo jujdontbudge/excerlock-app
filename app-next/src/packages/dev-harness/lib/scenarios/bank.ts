@@ -1,5 +1,6 @@
 import { base, makeRule } from './base';
 import type { Scenario } from '../../../model/models';
+import { economy } from '../../../model/bankEconomy';
 const condition = {
   ...makeRule('bank', { kind: 'bank', activity: 'walking', difficulty: 'medium' }),
   createdAt: '2026-09-07T04:00:00.000Z',
@@ -10,7 +11,7 @@ function bankState(points: number, pendingPoints: number, bankMinutes: number): 
     rules: [condition],
     ruleDays: [],
     history: [],
-    steps: { today: pendingPoints * 33 },
+    steps: { today: pendingPoints * economy.medium.stepsPerPoint },
     bank: { points, pendingPoints, bankMinutes },
     fakeSystemPrompts: 'grant',
   };
