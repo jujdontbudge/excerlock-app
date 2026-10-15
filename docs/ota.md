@@ -149,8 +149,10 @@ a runtime that still has installs. Version bumps never change
 `runtimeVersion`.
 
 Publish to the older runtime with `./excer ota --message "<what changed>" --runtime 4 --publish`
-from the same `origin/main` commit. The flag sets `EXCERLOCK_OTA_RUNTIME=4`, which is the only
-way `app.config.ts` reports runtime 4, and the gate refuses unless the simulator's installed app
+from the same `origin/main` commit. The flag sets `EXCERLOCK_OTA_RUNTIME=4` (or `5`), which is the only
+way `app.config.ts` reports an older runtime, and the gate refuses unless the simulator's installed app
 is a runtime 4 build, so the ship proofs run on that binary. The JavaScript stays runtime-4 safe
 through optional native module lookups (ADR 0076); a commit that needs runtime 5 native code
 must not be published with `--runtime 4`.
+
+Runtime 6 (build 20) adds the Bank drain. `--runtime 4` and `--runtime 5` publish the same JavaScript to older binaries, where the Bank choice stays hidden because `armBankDrain` is missing.

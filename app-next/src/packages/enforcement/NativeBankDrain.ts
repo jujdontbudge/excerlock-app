@@ -18,6 +18,10 @@ export class NativeBankDrain implements BankDrainPort {
   private foreground: { remove(): void } | null = null;
   private disposed = false;
 
+  get available(): boolean {
+    return Boolean(this.native.armBankDrain);
+  }
+
   constructor(private readonly clock: ClockPort, private readonly reportError: (error: unknown) => void) {}
 
   arm(bankMinutes: number): Promise<void> {

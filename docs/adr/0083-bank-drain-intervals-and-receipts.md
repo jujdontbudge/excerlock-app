@@ -3,7 +3,7 @@ status: proposed
 date: 2026-10-14
 ---
 
-# 0082: Bank drain carries usage through bounded native intervals and re-arm receipts
+# 0083: Bank drain carries usage through bounded native intervals and re-arm receipts
 
 ## Decision
 

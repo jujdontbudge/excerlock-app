@@ -1,6 +1,7 @@
 import { Unsubscribe } from '../model/models';
 export type BankDrainUsage = { usedMinutes: number; observedAt: string; armId?: string | null; failed?: boolean };
 export interface BankDrainPort {
+  readonly available: boolean;
   arm(bankMinutes: number): Promise<void>;
   disarm(): Promise<void>;
   usage(): Promise<BankDrainUsage>;

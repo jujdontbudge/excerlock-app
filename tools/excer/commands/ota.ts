@@ -3,7 +3,7 @@ import { appRoot, fromRoot, repoRoot } from '../lib/paths.ts';
 import { flag, must, option, out, run, UsageError } from '../lib/shell.ts';
 import { bundleId, ownedDevice, simctlArgs } from '../lib/sim.ts';
 
-const runtimes = ['4', '5'];
+const runtimes = ['4', '5', '6'];
 
 export const shipProofs = [
   ['launch', 'first-launch-welcome'],
@@ -11,7 +11,7 @@ export const shipProofs = [
   ['launch', 'every-tab-opens'],
 ] as const;
 
-export const help = `excer ota --message "<what changed>" [--runtime 4|5] [--publish]
+export const help = `excer ota --message "<what changed>" [--runtime 4|5|6] [--publish]
 
 The only way to publish a production OTA update (docs/ota.md). Refuses unless:
   1. nothing that goes into the bundle is uncommitted, and HEAD is origin/main;
@@ -22,7 +22,7 @@ The only way to publish a production OTA update (docs/ota.md). Refuses unless:
      for a signed-in account. The dev fakes for class-backed ports (auth,
      subscription) throw on detached method calls, as the device does.
 Without --publish it stops after the gate. With --publish it publishes under the
-release lock and tags ota-runtime<version>-<date>-<sha>. --runtime (default 5)
+release lock and tags ota-runtime<version>-<date>-<sha>. --runtime (default 6)
 publishes the same commit to that runtime; the ship proofs then require the
 simulator's installed app to be a build of that runtime, so install one first.
 Publishing still needs the owner's go-ahead in the conversation.`;
@@ -49,7 +49,7 @@ const step = (command: string, args: string[], cwd = repoRoot) => spawnSync(comm
 export async function otaCommand(args: string[]): Promise<number> {
   const publish = flag(args, 'publish');
   const message = option(args, 'message');
-  const runtime = option(args, 'runtime') ?? '5';
+  const runtime = option(args, 'runtime') ?? '6';
   if (!runtimes.includes(runtime)) throw new UsageError(`--runtime must be one of ${runtimes.join(', ')}`);
   if (args.length > 0) throw new UsageError(`unexpected arguments: ${args.join(' ')}`);
   if (!message) throw new UsageError('--message is required');

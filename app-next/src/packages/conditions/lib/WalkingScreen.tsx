@@ -60,7 +60,7 @@ export function WalkingScreen({
           })
         : null}
       {step === 'W2'
-        ? c.modes.map((m, index) => (
+        ? c.modes.filter((m) => m.id !== 'bank' || runtime?.bankDrain.available).map((m, index) => (
             <Reveal key={m.id} index={index + 1}>
               <ChoiceRow
                 emphasis="solid"

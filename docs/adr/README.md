@@ -2,6 +2,8 @@
 
 ## Index
 
+- [0083: Bank drain carries usage through bounded native intervals and re-arm receipts](0083-bank-drain-intervals-and-receipts.md) — **proposed**.
+- [0082: Scoped bearer tokens grant complimentary access over HTTPS](0082-scoped-access-grant-tokens.md) — **accepted**.
 - [0081: The Bank Condition sells screen time that drains only while Locked apps are used](0081-bank-condition.md) — **proposed**.
 - [0080: Reward motion is the one exception to still screens](0080-reward-motion.md) — **proposed**.
 - [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **accepted**.

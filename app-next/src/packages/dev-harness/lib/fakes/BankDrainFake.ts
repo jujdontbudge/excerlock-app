@@ -10,6 +10,7 @@ export function createBankDrainFake(
   const listeners = new Set<(usage: BankDrainUsage) => void>();
   const usage = () => ({ usedMinutes, observedAt: now(), armId, failed: false });
   return {
+    available: true,
     arm: async (minutes) => {
       bankMinutes = minutes;
       armId = `fake-bank-${++generation}`;

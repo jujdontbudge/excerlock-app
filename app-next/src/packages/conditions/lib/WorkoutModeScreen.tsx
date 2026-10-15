@@ -4,6 +4,7 @@ import { tokens as t } from '../../ui/tokens';
 import { Reveal } from '../../ui/Reveal';
 import { workoutCopy as c } from './workoutRulesCopy';
 import { RuleDraft, DraftAction } from '../draft';
+import { useOptionalRuntime } from '../../ports/useRuntime';
 export function WorkoutModeScreen({
   draft: d,
   onAction,
@@ -12,9 +13,10 @@ export function WorkoutModeScreen({
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
 }) {
+  const runtime = useOptionalRuntime();
   return (
     <View style={{ gap: t.space.md }}>
-      {c.modes.gym.map((mode, index) => (
+      {c.modes.gym.filter((mode) => mode.id !== 'bank' || runtime?.bankDrain.available).map((mode, index) => (
         <Reveal key={mode.id} index={index + 1}>
           <ChoiceRow
             emphasis="solid"

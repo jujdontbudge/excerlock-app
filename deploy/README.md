@@ -81,6 +81,7 @@ POSTHOG_HOST=https://us.i.posthog.com
 POSTHOG_PERSONAL_API_KEY=
 POSTHOG_PROJECT_ID=
 POSTHOG_API_HOST=https://us.posthog.com
+ACCESS_GRANT_TOKEN_HASHES=
 ```
 
 ## 2. Deploy
