@@ -25,7 +25,7 @@ const screens = { O01, O02, O03, O04, O05, O06, O08, O10, O11, O15, O20 };
 export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string; back?: () => void }) {
   if (step === 'D') {
     const draft = draftFromAnswers(props.answers);
-    return <DifficultyStep {...bankOnboardingCopy} activity={draft.activity} difficulty={draft.difficulty} screenMinutes={Number(props.answers.estimatedDailyMinutes ?? 180)} onChange={(value) => props.setAnswer('difficulty', value)} />;
+    return <DifficultyStep {...bankOnboardingCopy} activity={draft.activity} difficulty={draft.difficulty} screenMinutes={props.answers.estimatedDailyMinutes === undefined ? undefined : Number(props.answers.estimatedDailyMinutes)} onChange={(value) => props.setAnswer('difficulty', value)} />;
   }
   if (['O07', 'O22', 'O25'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
   if (step === 'O23' || step === 'O24') return <BodyTarget step={step} {...props} />;

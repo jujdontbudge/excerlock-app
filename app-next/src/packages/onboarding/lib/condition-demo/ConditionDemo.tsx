@@ -320,7 +320,7 @@ function BankStage({
   height: number;
 }) {
   const gym = scenario.kind === 'gym-bank';
-  const { phoneTop, phoneHeight, shopOffset, captionTop, walkerScale, walkerOrigin, hand } = bankGeometry(height);
+  const { phoneTop, phoneHeight, shopOffset, captionTop, walkerTransform, hand } = bankGeometry(height);
   const from = gym ? { x: 132, y: phoneTop + phoneHeight / 2 + 46 } : hand;
   const to = { x: 288, y: phoneTop + shopOffset + 44 };
   const bend = gym ? { x: 215, y: phoneTop + 10 } : { x: 175, y: phoneTop + 10 };
@@ -329,7 +329,7 @@ function BankStage({
       {gym ? (
         <GymMap {...{ clock, scenario }} box={{ top: phoneTop, height: phoneHeight }} />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { transformOrigin: walkerOrigin, transform: [{ scale: walkerScale }] }]}>
+        <View style={[StyleSheet.absoluteFill, { transform: walkerTransform }]}>
           <Character {...{ clock, scenario, reduced, cast }} />
         </View>
       )}
