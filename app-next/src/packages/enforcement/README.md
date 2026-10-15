@@ -16,7 +16,19 @@ generated copies are not source inputs. Ordinary builds use
 - UserDefaults `familyActivitySelectionIds`, opaque handle
   `excerlock.selection.locked.v1`: the native-only FamilyActivitySelection payload.
 - UserDefaults `excerlock.shield.copy-overrides.v1`: canonical remote shield copy,
-  shared with ShieldConfiguration. The existing causes are unchanged.
+  shared with ShieldConfiguration. The existing causes are unchanged; `bankEmpty`
+  is additive and accepts the same title/subtitle overrides.
+- `excerlock.shield.current-cause.v1` and `excerlock.shield.runtime-context.v1`:
+  Bank drain publishes `bankEmpty` with `routeHomeAvailable: true` before applying
+  an exhausted Bank shield. Successful re-arm/disarm clears only Bank-owned
+  context. ShieldAction sends the existing `shield_open` notification with
+  `excerlock://shop`, and the notification landing opens the Shop tab. Existing
+  causes, routes and notification identifiers retain their meaning.
+
+Bank copy has one bundled source, `bankShieldCopy.json`. The ShieldConfiguration
+Expo target config copies it to the generated JSON resource the extension reads;
+the simulator preview imports the same source. App Group copy overrides apply
+on top through `ShieldCopyPort`. The legacy `ShieldContent.plist` is unchanged.
 
 ## Additive Bank schema (ADRs 0081, 0082)
 

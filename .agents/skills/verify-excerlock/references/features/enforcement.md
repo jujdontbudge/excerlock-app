@@ -2,7 +2,7 @@
 id: enforcement
 title: Screen Time enforcement and shields
 routes: [diagnostics/bank-drain]
-scenarios: [home-locked-walking, trial-active]
+scenarios: [home-locked-walking, trial-active, bank-empty]
 events: [shields_applied, shields_lifted, unlock_completed]
 depends: [home]
 ---
@@ -23,6 +23,15 @@ name: shield-preview
 scenario: trial-active
 open: dev?stage=shield
 expect: Blocked by ExcerLock | steps to go to open your apps. | Open ExcerLock
+```
+
+```proof
+name: bank-shield-preview
+scenario: bank-empty
+open: /dev?stage=shield
+expect: Your Bank is empty | Earn Points to buy more time | Open Shop
+then-tap: Open Shop
+then-expect: Shop | Points | 15 m | 1 h | 3 h | 6 h
 ```
 
 ```proof

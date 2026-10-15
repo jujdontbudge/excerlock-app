@@ -2,16 +2,16 @@ import type { NotificationResponse, NotificationResponsesPort } from '../../../p
 import type { NotificationLanding } from '../../../notifications/notificationPlan';
 
 export type FakeNotificationResponses = NotificationResponsesPort & {
-  deliver(destination: 'home' | 'unlock'): void;
+  deliver(destination: 'home' | 'shop' | 'unlock'): void;
   reset(): void;
 };
 
 export function NotificationResponsesFake(
-  update: (snapshot: { delivered: ('home' | 'unlock')[]; handled: number }) => void,
+  update: (snapshot: { delivered: ('home' | 'shop' | 'unlock')[]; handled: number }) => void,
 ): FakeNotificationResponses {
   let count = 0;
   let latest: NotificationResponse | null = null;
-  let delivered: ('home' | 'unlock')[] = [];
+  let delivered: ('home' | 'shop' | 'unlock')[] = [];
   let handled = 0;
   const listeners = new Set<(response: NotificationResponse) => void>();
   return {
@@ -26,7 +26,12 @@ export function NotificationResponsesFake(
       update({ delivered, handled });
     },
     deliver(destination) {
-      const url: NotificationLanding = destination === 'home' ? 'excerlock://home' : 'excerlock://unlock/propped';
+      const url: NotificationLanding =
+        destination === 'home'
+          ? 'excerlock://home'
+          : destination === 'shop'
+            ? 'excerlock://shop'
+            : 'excerlock://unlock/propped';
       delivered = [...delivered, destination];
       latest = {
         id: `fake-response-${++count}`,

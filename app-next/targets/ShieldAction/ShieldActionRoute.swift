@@ -36,7 +36,7 @@ struct ShieldActionRoute {
 
   private static func normalizedCause(_ value: String?) -> String {
     switch value {
-    case "balanceEmpty", "fullLock", "lockWindow", "walkAndScrollEnded":
+    case "balanceEmpty", "bankEmpty", "fullLock", "lockWindow", "walkAndScrollEnded":
       return value!
     default:
       return "balanceEmpty"
@@ -45,6 +45,8 @@ struct ShieldActionRoute {
 
   private static func defaultDeepLink(for cause: String) -> String {
     switch cause {
+    case "bankEmpty":
+      return "excerlock://shop"
     case "fullLock", "lockWindow":
       return "excerlock://home"
     default:

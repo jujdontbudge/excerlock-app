@@ -55,6 +55,20 @@ absent: Collect +120
 ```
 
 ```proof
+name: shield-shop-link
+scenario: bank-empty
+open: excerlock://shop
+expect: Shop | Points | 15 m | 1 h | 3 h | 6 h
+```
+
+```proof
+name: shield-shop-notification
+scenario: bank-empty
+open: /dev?notification=shop
+expect: Shop | Points | 15 m | 1 h | 3 h | 6 h
+```
+
+```proof
 name: buy
 scenario: bank-empty
 open: /shop
