@@ -13,7 +13,7 @@ import { syncBankCondition } from './BankLifecycle';
 function earningRanges(account: BankAccount, now: string, timezone: string): Record<string, EarningRange> {
   const ranges = { ...account.earningRanges };
   let from = Math.max(Date.parse(account.createdAt), ...Object.values(ranges).map((range) => range.end));
-  if (!account.earningRanges) from = Math.max(from, ...Object.values(account.days).map((row) => row.through));
+  if (!Object.keys(ranges).length) from = Math.max(from, ...Object.values(account.days).map((row) => row.through));
   while (from < Date.parse(now)) {
     const day = dayKey(new Date(from).toISOString(), timezone);
     const end = Date.parse(localDayStart(addDays(day, 1), timezone));

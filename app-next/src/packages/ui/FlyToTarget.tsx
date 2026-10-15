@@ -201,14 +201,15 @@ export function FlyToTargetProvider({ children }: PropsWithChildren) {
 function FlightToken({ flight, index }: { flight: Flight; index: number }) {
   const elapsed = useSharedValue(0);
   const { from, to, size, count } = flight;
-  const spread = count > 1 ? (index / (count - 1)) * 2 - 1 : 0;
+  const side = index % 2 ? 1 : -1;
+  const spread = count > 1 ? side * (1 - Math.floor(index / 2) / Math.ceil(count / 2)) : 0;
   const angle = -Math.PI / 2 + spread * (Math.PI * 0.55) + (index % 2 ? 0.18 : -0.18);
   const scatter = count > 1 ? r.scatter * (0.75 + ((index * 37) % 10) / 20) : 0;
   const start = { x: from.x + Math.cos(angle) * scatter, y: from.y + Math.sin(angle) * scatter };
   const distance = Math.hypot(to.x - start.x, to.y - start.y);
   const lift = distance * r.lift * (1 + spread * 0.18);
   const control = {
-    x: (start.x + to.x) / 2 + spread * distance * 0.12,
+    x: (start.x + to.x) / 2 + spread * Math.max(distance * 0.12, r.fan),
     y: Math.min(start.y, to.y) - lift,
   };
   const burst = count > 1 ? 0.22 : 0.12;

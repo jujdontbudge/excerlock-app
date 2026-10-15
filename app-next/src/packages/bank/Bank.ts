@@ -2,7 +2,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { useRuntime } from '../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { dayKey } from '../schedule/calendar';
-import { bankStore as useBankStore } from './bankStore';
+import { bankStore as useBankStore, type BankAccount } from './bankStore';
 import { bankRuntime } from './lib/session';
 import { offers, dailyMinimum, type OfferId, type BankView } from './economy';
 export { offers, activityToGo } from './economy';
@@ -26,9 +26,15 @@ export function useBank(): BankView | null {
     difficulty,
     points: account.points,
     pendingPoints: account.pendingPoints,
+    firstCollect: neverCollected(account),
     bankMinutes: account.bankMinutes,
     today: { amount: today?.amount ?? 0, minimum, met: (today?.amount ?? 0) >= minimum },
   };
+}
+function neverCollected(account: BankAccount) {
+  if (account.collectedOnce) return false;
+  const earned = Object.values(account.days).reduce((sum, day) => sum + day.points, 0);
+  return account.points === 0 && earned <= account.pendingPoints;
 }
 function canUseBank(conditionId: string): boolean {
   const identity = bankRuntime?.auth.identity();
@@ -47,7 +53,7 @@ export function collectPoints(): number {
   const account = useBankStore.getState().data.account;
   if (!account || !canUseBank(account.conditionId) || account.pendingPoints <= 0) return 0;
   const collected = account.pendingPoints;
-  useBankStore.getState().patch({ account: { ...account, points: account.points + collected, pendingPoints: 0 } });
+  useBankStore.getState().patch({ account: { ...account, points: account.points + collected, pendingPoints: 0, collectedOnce: true } });
   bankRuntime?.analytics.track('points_collected');
   return collected;
 }

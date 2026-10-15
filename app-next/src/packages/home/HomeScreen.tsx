@@ -115,6 +115,7 @@ export function HomeScreen() {
   return (
     <ScreenShell dock
       overlay={<><ScreenTimePickerHost /><GymBackgroundSetup /></>}
+      contentStyle={bank?.pendingPoints ? { paddingBottom: t.layout.tabHeight + t.points.chip + t.space.xxl * 2 + t.space.sm } : undefined}
       onLayout={markHomeLayout}
       orangeBackground
       safeBottom={false}

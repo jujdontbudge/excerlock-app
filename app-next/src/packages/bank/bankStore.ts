@@ -20,6 +20,7 @@ export type BankAccount = {
   pendingDifficulty: { difficulty: Difficulty; effectiveDay: string } | null;
   points: number;
   pendingPoints: number;
+  collectedOnce?: boolean;
   bankMinutes: number;
   drainUsedMinutes: number;
   drainArmId?: string | null;
@@ -52,6 +53,7 @@ export const bankStore = createPersistedStore<BankData>(
         pendingDifficulty: v.nullable(v.shape({ difficulty, effectiveDay: day })),
         points: whole,
         pendingPoints: whole,
+        collectedOnce: optional(v.bool),
         bankMinutes: v.number(),
         drainUsedMinutes: v.number(),
         drainArmId: optional(v.nullable(v.text)),
