@@ -26,6 +26,7 @@ import type { ActivityAccountData } from '../activity/ActivityAccountData';
 
 import { exportBankAccountData, importBankAccountData, resetBankAccountData } from '../bank/AccountData';
 import type { BankData } from '../bank/bankStore';
+import { assertBankExclusive } from '../conditions/BankExclusivity';
 
 const STORAGE_KEY = 'excerlock-next.account-data.v1';
 
@@ -65,14 +66,18 @@ const emptyEnvelope = (): AccountDataEnvelope => ({
   accounts: {},
   legacy: null,
 });
-const capture = async (activity?: AccountActivityData): Promise<AccountDataSnapshot> => ({
-  conditions: exportConditionsAccountData(),
-  bank: exportBankAccountData(),
-  history: exportHistoryAccountData(),
-  profile: exportProfileAccountData(),
-  settings: exportSettingsAccountData(),
-  activity: await activity?.capture(),
-});
+const capture = async (activity?: AccountActivityData): Promise<AccountDataSnapshot> => {
+  const conditions = exportConditionsAccountData();
+  assertBankExclusive(conditions.rules);
+  return {
+    conditions,
+    bank: exportBankAccountData(),
+    history: exportHistoryAccountData(),
+    profile: exportProfileAccountData(),
+    settings: exportSettingsAccountData(),
+    activity: await activity?.capture(),
+  };
+};
 const hasLegacyData = (snapshot: AccountDataSnapshot, activity?: AccountActivityData): boolean =>
   snapshot.conditions.rules.length > 0 ||
   !snapshot.conditions.lockedApps.isEmpty ||
@@ -124,16 +129,18 @@ export function createAccountDataCoordinator(storage: AccountDataStorage, activi
     resetSettingsAccountData(),
     activity?.reset(),
   ]).then(() => undefined);
-  const restore = (snapshot: AccountDataSnapshot | undefined) => snapshot
-    ? Promise.all([
-        importConditionsAccountData(snapshot.conditions),
-        importHistoryAccountData(snapshot.history),
-        importBankAccountData(snapshot.bank),
-        importProfileAccountData(snapshot.profile),
-        snapshot.settings ? importSettingsAccountData(snapshot.settings) : resetSettingsAccountData(),
-        activity?.restore(snapshot.activity),
-      ]).then(() => undefined)
-    : resetActive();
+  const restore = (snapshot: AccountDataSnapshot | undefined) => {
+    if (!snapshot) return resetActive();
+    assertBankExclusive(snapshot.conditions.rules);
+    return Promise.all([
+      importConditionsAccountData(snapshot.conditions),
+      importHistoryAccountData(snapshot.history),
+      importBankAccountData(snapshot.bank),
+      importProfileAccountData(snapshot.profile),
+      snapshot.settings ? importSettingsAccountData(snapshot.settings) : resetSettingsAccountData(),
+      activity?.restore(snapshot.activity),
+    ]).then(() => undefined);
+  };
   return {
     prepare: () => run(async () => {
       if (envelope) return;
