@@ -2,7 +2,9 @@ export type PointsActivity = 'walking' | 'gym';
 
 const number = (value: number) => Math.max(0, Math.round(value)).toLocaleString('en-US');
 const roundToGo = (activity: PointsActivity, amount: number) =>
-  activity === 'gym' ? Math.ceil(amount) : Math.ceil(amount / (amount >= 1000 ? 100 : 10)) * (amount >= 1000 ? 100 : 10);
+  activity === 'gym'
+    ? Math.ceil(amount)
+    : Math.ceil(amount / (amount >= 1000 ? 100 : 10)) * (amount >= 1000 ? 100 : 10);
 
 export const formatBank = (minutes: number) => {
   const whole = Math.max(0, Math.floor(minutes)),
@@ -26,8 +28,10 @@ export const rewards = {
   confirmLabel: (minutes: number, price: number) => `Buy ${formatOffer(minutes)} for ${number(price)} Points`,
   bought: (minutes: number) => `+${formatOffer(minutes)}`,
   toGo: (activity: PointsActivity, amount: number) =>
-    activity === 'gym'
-      ? `≈ ${number(roundToGo(activity, amount))} gym min to go`
-      : `≈ ${number(roundToGo(activity, amount))} steps to go`,
+    amount <= 0
+      ? 'Collect on Home to buy'
+      : activity === 'gym'
+        ? `≈ ${number(roundToGo(activity, amount))} gym min to go`
+        : `≈ ${number(roundToGo(activity, amount))} steps to go`,
   difficulty: (title: string, trade: string) => `${title}, ${trade}`,
 };

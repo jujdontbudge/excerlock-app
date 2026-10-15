@@ -1,5 +1,4 @@
 import { BankSection } from './BankSection';
-import { BankCollect } from './lib/BankCollect';
 import { useBank } from '../bank/Bank';
 import { GymBackgroundSetup } from '../gyms/GymBackgroundSetup';
 import { ScreenTimePickerHost } from '../app-selection/ScreenTimePickerHost';
@@ -115,7 +114,7 @@ export function HomeScreen() {
   });
   return (
     <ScreenShell dock
-      overlay={<><BankCollect /><ScreenTimePickerHost /><GymBackgroundSetup /></>}
+      overlay={<><ScreenTimePickerHost /><GymBackgroundSetup /></>}
       contentStyle={bank?.pendingPoints ? { paddingBottom: t.layout.tabHeight + t.points.chip + t.space.xxl * 2 + t.space.sm } : undefined}
       onLayout={markHomeLayout}
       orangeBackground

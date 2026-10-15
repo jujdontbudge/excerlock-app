@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedProps, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { useFlyTarget, useLandingValue } from './FlyToTarget';
@@ -42,7 +42,8 @@ export function BankHero({
   const { ref, style } = useFlyTarget(target, t.motion.scale.selected);
   const shown = useLandingValue(target, minutes);
   const [width, setWidth] = useState(0);
-  const height = t.points.bank;
+  const screen = useWindowDimensions();
+  const height = Math.min(t.points.bank, Math.round(screen.height * t.points.bankShare));
   const level = useSharedValue(bankLevel(shown, fullMinutes));
   const slosh = useSharedValue(0);
   const goal = bankLevel(shown, fullMinutes);

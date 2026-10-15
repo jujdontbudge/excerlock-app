@@ -91,7 +91,7 @@ export const tokens = {
   radius: { card: 20, field: 16, choice: 12, sheet: 28, pill: 999 },
   control: { full: 56, inline: 44, indicator: 32, row: 68, softRow: 61 },
   icon: { sm: 16, md: 24, lg: 36 },
-  points: { card: 16, pill: 20, flight: 26, hero: 40, ring: 24, ringStroke: 2, chip: 40, bank: 184 },
+  points: { card: 16, pill: 20, flight: 26, hero: 40, ring: 24, ringStroke: 2, chip: 40, bank: 184, bankShare: 0.24 },
   stroke: { hairline: 1, selected: 1.5, chart: 3, glyph: 3 },
   layout: {
     page: 24,
