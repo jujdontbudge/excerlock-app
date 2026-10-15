@@ -11,11 +11,7 @@ export function useBank(): BankView | null {
   const runtime = useRuntime();
   const subscribe = useCallback((notify: () => void) => runtime.clock.subscribe(notify), [runtime]);
   const read = useCallback(() => runtime.clock.now(), [runtime]);
-  const now = useSyncExternalStore(
-    subscribe,
-    read,
-    read,
-  );
+  const now = useSyncExternalStore(subscribe, read, read);
   const account = useBankStore((state) => state.data.account);
   const enabled = useRulesStore((state) =>
     state.data.rules.some((rule) => rule.enabled && rule.mode.kind === 'bank' && rule.id === account?.conditionId),
@@ -34,9 +30,22 @@ export function useBank(): BankView | null {
     today: { amount: today?.amount ?? 0, minimum, met: (today?.amount ?? 0) >= minimum },
   };
 }
+function canUseBank(conditionId: string): boolean {
+  const identity = bankRuntime?.auth.identity();
+  const status = bankRuntime?.status.snapshot();
+  return (
+    !!status?.hydrated &&
+    !status.loading &&
+    identity?.kind === 'canonical' &&
+    identity.ready &&
+    useRulesStore
+      .getState()
+      .data.rules.some((rule) => rule.id === conditionId && rule.enabled && rule.mode.kind === 'bank')
+  );
+}
 export function collectPoints(): number {
   const account = useBankStore.getState().data.account;
-  if (!account || account.pendingPoints <= 0) return 0;
+  if (!account || !canUseBank(account.conditionId) || account.pendingPoints <= 0) return 0;
   const collected = account.pendingPoints;
   useBankStore.getState().patch({ account: { ...account, points: account.points + collected, pendingPoints: 0 } });
   bankRuntime?.analytics.track('points_collected');
@@ -45,12 +54,10 @@ export function collectPoints(): number {
 export function buyOffer(id: OfferId): 'bought' | 'insufficient' {
   const offer = offers.find((candidate) => candidate.id === id);
   const account = useBankStore.getState().data.account;
-  if (!offer || !account || account.points < offer.price) return 'insufficient';
-  useBankStore
-    .getState()
-    .patch({
-      account: { ...account, points: account.points - offer.price, bankMinutes: account.bankMinutes + offer.minutes },
-    });
+  if (!offer || !account || !canUseBank(account.conditionId) || account.points < offer.price) return 'insufficient';
+  useBankStore.getState().patch({
+    account: { ...account, points: account.points - offer.price, bankMinutes: account.bankMinutes + offer.minutes },
+  });
   bankRuntime?.analytics.track('offer_bought', { offer_id: id });
   return 'bought';
 }

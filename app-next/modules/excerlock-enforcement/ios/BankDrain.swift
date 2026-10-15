@@ -71,7 +71,11 @@ final class BankDrainStore {
   }
 
   private func selection(_ record: BankDrainRecord) throws -> FamilyActivitySelection {
-    guard let data = FamilyActivitySelectionCodec.jsonData(fromPersistedPayload: record.selectionPayload)
+    try selection(record.selectionPayload)
+  }
+
+  private func selection(_ payload: String) throws -> FamilyActivitySelection {
+    guard let data = FamilyActivitySelectionCodec.jsonData(fromPersistedPayload: payload)
     else { throw ExcerlockPolicyError.missingSelection }
     return try JSONDecoder().decode(FamilyActivitySelection.self, from: data)
   }
@@ -88,8 +92,15 @@ final class BankDrainStore {
     DeviceActivityCenter().activities.filter { $0.rawValue.hasPrefix(excerlockBankDrainPrefix) }
   }
 
-  func disarm() throws {
-    try policy.locked { try disarmLocked() }
+  func disarm(baselineArmId: String? = nil, bookedMinutes: Double = 0) throws -> Bool {
+    try policy.locked {
+      if let baselineArmId, let record = try readLocked() {
+        guard record.armId == baselineArmId, bookedMinutes.isFinite,
+              bookedMinutes + 0.000_000_1 >= record.usedMinutes else { return false }
+      }
+      try disarmLocked()
+      return true
+    }
   }
 
   private func disarmLocked() throws {
@@ -106,8 +117,9 @@ final class BankDrainStore {
     else { throw BankDrainError.invalidTick }
     guard AuthorizationCenter.shared.authorizationStatus == .approved else { throw BankDrainError.authorization }
     try policy.locked {
-      guard let payload = policy.currentSelectionPayload(), let selected = policy.currentSelection(),
-            !selected.applicationTokens.isEmpty || !selected.categoryTokens.isEmpty || !selected.webDomainTokens.isEmpty
+      guard let payload = policy.currentSelectionPayload() else { throw ExcerlockPolicyError.missingSelection }
+      let selected = try selection(payload)
+      guard !selected.applicationTokens.isEmpty || !selected.categoryTokens.isEmpty || !selected.webDomainTokens.isEmpty
       else { throw ExcerlockPolicyError.missingSelection }
       let now = Date().timeIntervalSince1970
       let previous = try readLocked()
@@ -244,7 +256,7 @@ final class BankDrainStore {
   func usage() throws -> [String: Any] {
     try policy.locked {
       let record = try readLocked()
-      return ["usedMinutes": record?.usedMinutes ?? 0, "observedAt": iso(record?.observedAt ?? 0), "armId": record?.armId as Any? ?? NSNull()]
+      return ["usedMinutes": record?.usedMinutes ?? 0, "observedAt": iso(record?.observedAt ?? 0), "armId": record?.armId as Any? ?? NSNull(), "failed": record?.phase == "failed"]
     }
   }
 

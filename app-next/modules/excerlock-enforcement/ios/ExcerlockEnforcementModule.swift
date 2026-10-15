@@ -43,7 +43,9 @@ public final class ExcerlockEnforcementModule: Module {
     AsyncFunction("armBankDrain") { (minutes: Double, baselineArmId: String?, bookedMinutes: Double) throws -> Void in
       try BankDrainStore.shared.arm(minutes, baselineArmId: baselineArmId, bookedMinutes: bookedMinutes)
     }
-    AsyncFunction("disarmBankDrain") { () throws -> Void in try BankDrainStore.shared.disarm() }
+    AsyncFunction("disarmBankDrain") { (baselineArmId: String?, bookedMinutes: Double) throws -> Bool in
+      try BankDrainStore.shared.disarm(baselineArmId: baselineArmId, bookedMinutes: bookedMinutes)
+    }
     AsyncFunction("bankDrainUsage") { () throws -> [String: Any] in try BankDrainStore.shared.usage() }
     #if DEBUG
     AsyncFunction("bankDrainDiagnostics") { () throws -> [String: Any] in try BankDrainStore.shared.diagnostics() }

@@ -3,16 +3,22 @@ export function createBankDrainFake(
   now: () => string,
 ): BankDrainPort & { advance(minutes: number): void; reset(): void } {
   let usedMinutes = 0,
-    armed = false;
+    armed = false,
+    bankMinutes = 0,
+    generation = 0,
+    armId: string | null = null;
   const listeners = new Set<(usage: BankDrainUsage) => void>();
-  const usage = () => ({ usedMinutes, observedAt: now() });
+  const usage = () => ({ usedMinutes, observedAt: now(), armId, failed: false });
   return {
-    arm: async () => {
+    arm: async (minutes) => {
+      bankMinutes = minutes;
+      armId = `fake-bank-${++generation}`;
       usedMinutes = 0;
       armed = true;
     },
     disarm: async () => {
       armed = false;
+      armId = null;
       usedMinutes = 0;
     },
     usage: async () => usage(),
@@ -24,11 +30,13 @@ export function createBankDrainFake(
     },
     advance: (minutes) => {
       if (!armed || !Number.isFinite(minutes) || minutes < 0) return;
-      usedMinutes += minutes;
+      usedMinutes = Math.min(bankMinutes, usedMinutes + minutes);
       const sample = usage();
       listeners.forEach((listener) => listener(sample));
     },
     reset: () => {
+      armed = false;
+      armId = null;
       usedMinutes = 0;
     },
   };

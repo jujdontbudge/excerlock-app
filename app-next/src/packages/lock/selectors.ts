@@ -36,7 +36,7 @@ export function useRuntimeStatus() {
 }
 export function useLockDecision(suppliedNow?: string) {
   const runtime = useRuntime(),
-    bankMinutes = useBankStore((state) => state.data.account?.bankMinutes ?? 0),
+    bank = useBankStore((state) => state.data.account),
     now = useClockValue(suppliedNow),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
@@ -44,12 +44,12 @@ export function useLockDecision(suppliedNow?: string) {
     walking = useSyncExternalStore((notify) => runtime.walking.observe(notify), () => runtime.walking.snapshot(), () => inactiveWalkingStatus);
   return useMemo(
     () => resolveLock({
-      now, timezone, rules, ruleDays: days, bankMinutes,
+      now, timezone, rules, ruleDays: days, bankMinutes: bank && !bank.drainFailed && rules.some((rule) => rule.enabled && rule.mode.kind === 'bank' && rule.id === bank.conditionId) ? bank.bankMinutes : 0,
       detection: { state: walking.phase === 'active' || walking.phase === 'grace' ? 'active' : walking.phase === 'unknown' ? 'unknown' : 'inactive', since: walking.since },
       placement: { state: walking.placement, liveRelief: walking.proppedVerified, since: walking.proppedSince },
       gymPresence,
     }),
-    [now, timezone, rules, days, walking, gymPresence, bankMinutes],
+    [now, timezone, rules, days, walking, gymPresence, bank],
   );
 }
 export function useWalkingStatus() {

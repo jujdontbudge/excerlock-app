@@ -12,7 +12,7 @@ export class ExcerlockEnforcementModule extends NativeModule {
   getPolicyRevision!: () => number;
   watchdogWarning?: boolean;
   armBankDrain?: (minutes: number, baselineArmId: string | null, bookedMinutes: number) => Promise<void>;
-  disarmBankDrain?: () => Promise<void>;
+  disarmBankDrain?: (baselineArmId: string | null, bookedMinutes: number) => Promise<boolean>;
   bankDrainUsage?: () => Promise<BankDrainNativeUsage>;
   bankDrainDiagnostics?: () => Promise<BankDrainNativeDiagnostic>;
   armBankDrainSpike?: (minutes: number, tickMinutes: 1 | 5, baselineArmId: string | null, bookedMinutes: number) => Promise<void>;

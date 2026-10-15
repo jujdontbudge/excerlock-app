@@ -50,7 +50,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
     const account = exportBankAccountData().account;
     if (account) {
       const day = dayKey(scenario.clock.now, scenario.clock.timezone);
-      await importBankAccountData({ account: { ...account, ...scenario.bank, days: { [day]: { difficulty: account.difficulty, amount: scenario.steps.today, points: scenario.bank.pendingPoints, through: Date.parse(scenario.clock.now) } } } });
+      await importBankAccountData({ account: { ...account, ...scenario.bank, earningRanges: undefined, days: { [day]: { difficulty: account.difficulty, amount: scenario.steps.today, points: scenario.bank.pendingPoints, through: Date.parse(scenario.clock.now) } } } });
     }
   }
   ruleDaysStore.getState().patch({ days: scenario.ruleDays, gymPresence: null });
