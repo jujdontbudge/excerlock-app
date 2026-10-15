@@ -34,7 +34,7 @@ import { Cast, Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
-import { bankGeometry, bankRows, demoRows, promiseCard, sceneGeometry } from './layout';
+import { bankGeometry, bankHeroToken, bankPhoneWidth, bankRows, demoRows, promiseCard, sceneGeometry } from './layout';
 
 function Text(props: TextProps) {
   const { fontScale } = useWindowDimensions();
@@ -320,9 +320,9 @@ function BankStage({
   height: number;
 }) {
   const gym = scenario.kind === 'gym-bank';
-  const { phoneTop, phoneHeight, shopOffset, captionTop, walkerTransform, hand } = bankGeometry(height);
+  const { phoneTop, phoneHeight, captionTop, walkerTransform, hand } = bankGeometry(height);
   const from = gym ? { x: 132, y: phoneTop + phoneHeight / 2 + 46 } : hand;
-  const to = { x: 288, y: phoneTop + shopOffset + 44 };
+  const to = { x: bankRows.stageWidth - 14 - bankPhoneWidth + bankHeroToken.x, y: phoneTop + bankHeroToken.y };
   const bend = gym ? { x: 215, y: phoneTop + 10 } : { x: 175, y: phoneTop + 10 };
   return (
     <>
@@ -333,7 +333,7 @@ function BankStage({
           <Character {...{ clock, scenario, reduced, cast }} />
         </View>
       )}
-      <BankPhone {...{ clock, scenario, frame, reduced, shopOffset }} top={phoneTop} height={phoneHeight} />
+      <BankPhone {...{ clock, scenario, frame, reduced }} top={phoneTop} height={phoneHeight} />
       <View style={[styles.sceneCaption, { top: captionTop, left: 14 }]}>
         <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>{gym ? 'You go to the gym' : 'You walk'}</Text>
       </View>

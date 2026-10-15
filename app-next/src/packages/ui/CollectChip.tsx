@@ -10,7 +10,7 @@ import { rewards, type PointsActivity } from './rewardsCopy';
 import { tokens as t } from './tokens';
 import { useMotion } from './useMotion';
 
-export const collectFlightCount = (amount: number) => (amount < 50 ? 5 : amount < 200 ? 6 : amount < 500 ? 7 : 8);
+export const collectFlightCount = (amount: number) => (amount < 300 ? 8 : amount < 1500 ? 12 : amount < 4000 ? 16 : 20);
 
 export function CollectChip({
   activity,
@@ -39,6 +39,7 @@ export function CollectChip({
       from: from ?? ref,
       to: target,
       count: collectFlightCount(amount),
+      spread: 'burst',
       size: t.points.flight,
       celebrate: first,
       haptic: 'success',

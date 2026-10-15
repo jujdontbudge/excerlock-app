@@ -124,7 +124,6 @@ export type BankView = {
   today: { amount: number; minimum: number; met: boolean };
 };
 export function offersFor(difficulty: Difficulty): readonly Offer[];
-export const offers: readonly Offer[];
 export function useBank(): BankView | null;
 export function collectPoints(): number;
 export function buyOffer(id: OfferId): 'bought' | 'insufficient';

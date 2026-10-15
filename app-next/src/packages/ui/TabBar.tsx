@@ -1,7 +1,5 @@
 import { ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { useFlyTarget } from './FlyToTarget';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tabItems, TabId } from './tabsCopy';
 import { Icon } from './Icon';
@@ -21,7 +19,6 @@ export function TabBar({
   accessory?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
-  const home = useFlyTarget('home', t.motion.reward.tabPulse);
   return (
     <View
       pointerEvents="box-none"
@@ -68,17 +65,12 @@ export function TabBar({
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Animated.View
-                ref={tab.id === 'home' ? home.ref : undefined}
-                collapsable={false}
-                style={tab.id === 'home' ? home.style : undefined}>
-                <Icon
-                  name={tab.icon}
-                  variant="utility"
-                  size={t.icon.md}
-                  tone={selected === tab.id ? 'accent' : 'muted'}
-                />
-              </Animated.View>
+              <Icon
+                name={tab.icon}
+                variant="utility"
+                size={t.icon.md}
+                tone={selected === tab.id ? 'accent' : 'muted'}
+              />
               <Label
                 variant="micro"
                 style={{

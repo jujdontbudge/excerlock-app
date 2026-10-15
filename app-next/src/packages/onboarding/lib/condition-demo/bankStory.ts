@@ -1,4 +1,5 @@
 import { bankDemoOffers } from '../bankOnboardingCopy';
+import { bankPhoneLayout } from './layout';
 export { bankDemoOffers as bankOffers, bankDuration as formatBank } from '../bankOnboardingCopy';
 export const boughtOffer = bankDemoOffers.findIndex((offer) => offer.id === 'h3');
 const demoOffer = bankDemoOffers[boughtOffer];
@@ -8,19 +9,21 @@ export const bankStory = {
   emitEvery: 0.52,
   flight: 0.48,
   pointsPerToken: demoOffer.price / 5,
-  pressAt: 0.12,
-  press: 0.26,
-  rollDown: 0.45,
-  chip: { start: 0.08, duration: 0.52 },
-  fill: { start: 0.5, duration: 0.4 },
+  pressAt: 0.08,
+  confirmAt: 0.42,
+  press: 0.2,
+  stream: { depart: 0.14, every: 0.034, flight: 0.42, spill: 0.14 },
+  rollDown: { start: 0.06, duration: 0.5 },
+  pulse: 0.16,
+  gain: 0.42,
   lift: 0.45,
   boughtMinutes: demoOffer.minutes,
 } as const;
 export const bankPhases = [
   { name: 'earning', duration: 2.85 },
-  { name: 'buying', duration: 0.45 },
-  { name: 'spending', duration: 1 },
-  { name: 'unlocked', duration: 1.75 },
+  { name: 'buying', duration: 0.6 },
+  { name: 'spending', duration: 1.35 },
+  { name: 'unlocked', duration: 1.5 },
   { name: 'reset', duration: 0.35 },
 ];
 export function easeInOut(p: number) {
@@ -64,17 +67,33 @@ export function bankRestPoint(local: number) {
   }
   return local;
 }
+export function streamDepart(index: number) {
+  'worklet';
+  return bankStory.stream.depart + index * bankStory.stream.every;
+}
+export const streamLanded = streamDepart(bankPhoneLayout.stream.count - 1) + bankStory.stream.flight;
+export function sinceStreamLanding(phase: string, local: number) {
+  'worklet';
+  if (phase !== 'spending') return Infinity;
+  let since = Infinity;
+  for (let index = 0; index < bankPhoneLayout.stream.count; index++) {
+    const landing = streamDepart(index) + bankStory.stream.flight;
+    if (local >= landing) since = local - landing;
+  }
+  return since;
+}
 export function bankFrame(phase: string, local: number) {
   'worklet';
   const full = bankStory.tokens * bankStory.pointsPerToken;
-  const fill = phase === 'spending' ? easeInOut((local - bankStory.fill.start) / bankStory.fill.duration) : phase === 'unlocked' ? 1 : 0;
+  const spent = phase === 'spending' ? easeInOut((local - bankStory.rollDown.start) / bankStory.rollDown.duration) : 0;
   const points =
     phase === 'earning'
       ? tokensLanded(phase, local) * bankStory.pointsPerToken
       : phase === 'buying'
         ? full
         : phase === 'spending'
-          ? Math.round((full * (1 - easeInOut(local / bankStory.rollDown))) / 5) * 5
+          ? Math.round((full * (1 - spent)) / 5) * 5
           : 0;
-  return { points, fill, bankMinutes: Math.round(bankStory.boughtMinutes * fill) };
+  const bought = (phase === 'spending' && local >= streamLanded) || phase === 'unlocked';
+  return { points, bankMinutes: bought ? bankStory.boughtMinutes : 0 };
 }

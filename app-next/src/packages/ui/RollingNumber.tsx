@@ -165,9 +165,13 @@ function DigitColumn({
   const row = t.type[variant].lineHeight * Math.min(fontScale, t.a11y.textScale);
   const position = useSharedValue(10 + digit);
   const shown = useRef(digit);
+  const changedAt = useRef(0);
   useEffect(() => {
     if (shown.current === digit) return;
     shown.current = digit;
+    const now = Date.now();
+    const counting = now - changedAt.current < t.motion.reward.roll;
+    changedAt.current = now;
     if (m.reduced) {
       position.set(10 + digit);
       return;
@@ -181,10 +185,12 @@ function DigitColumn({
         ? from + ((digit - Math.round(from) + 10) % 10 || 10)
         : from - ((Math.round(from) - digit + 10) % 10 || 10);
     position.set(
-      withDelay(
-        order * t.motion.reward.rollStagger,
-        withTiming(Math.round(target), { duration: t.motion.reward.roll, easing: rollCurve }),
-      ),
+      counting
+        ? withTiming(Math.round(target), { duration: t.motion.reward.rollQuick, easing: rollCurve })
+        : withDelay(
+            order * t.motion.reward.rollStagger,
+            withTiming(Math.round(target), { duration: t.motion.reward.roll, easing: rollCurve }),
+          ),
     );
   }, [digit, direction, order, m.reduced, position]);
   const roll = useAnimatedStyle(() => ({ transform: [{ translateY: -position.get() * row }] }));

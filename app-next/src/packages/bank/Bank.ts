@@ -9,7 +9,6 @@ import type { BankView } from './economy';
 import { syncBankCondition } from './BankLifecycle';
 import { difficultyForDay } from './lib/difficulty';
 export { offersFor } from '../model/bankEconomy';
-export const offers = offersFor('medium');
 export { activityToGo } from './economy';
 export type { Difficulty, OfferId, Offer } from '../model/bankEconomy';
 export type { BankView } from './economy';
