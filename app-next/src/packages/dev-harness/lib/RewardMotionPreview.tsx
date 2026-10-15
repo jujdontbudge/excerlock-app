@@ -14,22 +14,11 @@ import { PointsToken } from '../../ui/PointsToken';
 import { RollingNumber } from '../../ui/RollingNumber';
 import { formatBank, type PointsActivity } from '../../ui/rewardsCopy';
 import { tokens as t } from '../../ui/tokens';
+import { economy, offers } from '../../model/bankEconomy';
+import { previewBankProgress, previewDifficulties as difficulties } from './previewsCopy';
 
 const sections = ['Token', 'Home', 'Shop', 'Difficulty'] as const;
 type Section = (typeof sections)[number];
-const offers = [
-  { id: 'm15', price: 25, minutes: 15 },
-  { id: 'h1', price: 100, minutes: 60 },
-  { id: 'h3', price: 250, minutes: 180 },
-  { id: 'h6', price: 450, minutes: 360 },
-] as const;
-const stepsPerPoint = 33;
-const gymPointsPerMinute = 5;
-const difficulties = [
-  { id: 'easy', title: 'Easy', trade: '2,000 steps = 1 h', detail: 'Keep your Streak with 3,000 steps a day' },
-  { id: 'medium', title: 'Medium', trade: '3,300 steps = 1 h', detail: 'Keep your Streak with 6,000 steps a day' },
-  { id: 'hard', title: 'Hard', trade: '6,000 steps = 1 h', detail: 'Keep your Streak with 10,000 steps a day' },
-] as const;
 
 function DevButton({ title, onPress }: { title: string; onPress: () => void }) {
   return (
@@ -134,7 +123,7 @@ function HomeSheet({ activity }: { activity: PointsActivity }) {
         ) : null}
       </View>
       <Label tone="secondary" style={{ textAlign: 'center' }}>
-        {activity === 'gym' ? '22 / 30 min at the gym' : '4,210 / 6,000 steps'}
+        {previewBankProgress(activity)}
       </Label>
       <Controls>
         <DevButton title="Points waiting +120" onPress={() => setPending((value) => value + 120)} />
@@ -153,7 +142,9 @@ function ShopSheet({ activity, onBought }: { activity: PointsActivity; onBought:
   const [points, setPoints] = useState(340);
   const [bankEmpty, setBankEmpty] = useState(false);
   const toGo = (price: number) =>
-    activity === 'gym' ? (price - points) / gymPointsPerMinute : (price - points) * stepsPerPoint;
+    activity === 'gym'
+      ? (price - points) / economy.medium.pointsPerGymMinute
+      : (price - points) * economy.medium.stepsPerPoint;
   return (
     <View style={{ gap: t.space.xl }}>
       <PointsPill activity={activity} points={points} size="hero" target="shop-points" />

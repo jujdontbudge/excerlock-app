@@ -97,8 +97,8 @@ Bank empty: title "Your Bank is empty", subtitle "Earn Points to buy more time",
 
 Follow `ARCHITECTURE.md`. Suggested placement; the implementer may adjust if `./excer check` demands it:
 
-- `model`: `RuleMode` gains `{ kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' }`; `LockDecision` gains `unlockedBank`.
-- New package **`bank`**, layer between `progress` and `lock`: the persisted Points/Bank store (per-account through `AccountDataCoordinator`), the economy tables, earning projection, `collectPoints`, `buyOffer`, drain application, and hooks. Only `bank` writes its store.
+- `model`: `RuleMode` gains `{ kind: 'bank'; activity: 'walking' | 'gym'; difficulty: 'easy' | 'medium' | 'hard' }`; `LockDecision` gains `unlockedBank`. `bankEconomy.ts` owns the shared Difficulty rates, daily minimums and Offers, including the values used by Conditions copy and demos.
+- New package **`bank`**, layer between `progress` and `lock`: the persisted Points/Bank store (per-account through `AccountDataCoordinator`), earning projection, `collectPoints`, `buyOffer`, drain application, and hooks. Only `bank` writes its store.
 - `lock`: `resolveLock` handles the Bank Condition.
 - `enforcement` + native: the drain ladder through `ports/BankDrainPort.ts`.
 - `ui`: Points token icon and reward-motion primitives.

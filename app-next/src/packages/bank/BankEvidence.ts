@@ -8,7 +8,7 @@ import {
 import { creditedGymVisit } from '../progress/gymCreditFloor';
 import { addDays, dayKey, localDayStart } from '../schedule/calendar';
 import { bankStore, type BankAccount, type EarningRange } from './bankStore';
-import { dailyMinimum, economy } from './economy';
+import { dailyMinimum, economy } from '../model/bankEconomy';
 import { syncBankCondition } from './BankLifecycle';
 function earningRanges(account: BankAccount, now: string, timezone: string): Record<string, EarningRange> {
   const ranges = { ...account.earningRanges };

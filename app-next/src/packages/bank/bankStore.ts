@@ -1,7 +1,7 @@
 import { createPersistedStore } from '../persistence/createPersistedStore';
 import * as v from '../persistence/validation';
 import type { Rule } from '../model/types';
-import type { Difficulty } from './economy';
+import type { Difficulty } from '../model/bankEconomy';
 export type EarningRange = {
   day: string;
   timezone: string;

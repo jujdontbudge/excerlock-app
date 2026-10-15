@@ -1,4 +1,18 @@
 import { subscriptionCopy } from '../../subscription/subscriptionCopy';
+import { bankPrice, difficultyLabels } from '../../conditions/bankCopy';
+import { dailyMinimum, economy, type Difficulty } from '../../model/bankEconomy';
+
+export const previewDifficulties = (Object.keys(economy) as Difficulty[]).map((difficulty) => ({
+  id: difficulty,
+  title: difficultyLabels[difficulty],
+  trade: bankPrice('walking', difficulty),
+  detail: `Keep your Streak with ${dailyMinimum('walking', difficulty).toLocaleString('en-US')} steps a day`,
+}));
+export function previewBankProgress(activity: 'walking' | 'gym'): string {
+  return activity === 'gym'
+    ? `22 / ${dailyMinimum(activity, 'medium')} min at the gym`
+    : `4,210 / ${dailyMinimum(activity, 'medium').toLocaleString('en-US')} steps`;
+}
 
 export const previewCopy = {
   gallery: 'Component gallery',
