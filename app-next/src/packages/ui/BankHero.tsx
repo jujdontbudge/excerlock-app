@@ -20,7 +20,7 @@ export const bankLevel = (minutes: number, fullMinutes: number) =>
 
 function wavePath(width: number, height: number, level: number, amplitude: number, phase: number, cycles: number) {
   'worklet';
-  const surface = height * (1 - level);
+  const surface = height * (1 - Math.max(0, level));
   const depth = height - surface;
   const swell = Math.min(Math.abs(amplitude), depth * 0.4) * Math.sign(amplitude);
   const y = (i: number) => surface + swell * Math.sin(phase + (i / segments) * Math.PI * 2 * cycles);
@@ -61,7 +61,7 @@ export function BankHero({
     );
   }, [goal, level, slosh, m.reduced]);
   const back = useAnimatedProps(() => ({
-    d: wavePath(width, height, level.get() + 0.03, restingSwell * 0.8 + slosh.get() * 0.7, Math.PI * 0.85, 0.7),
+    d: wavePath(width, height, level.get() + 0.03 * Math.min(1, level.get() / minimumLevel), restingSwell * 0.8 + slosh.get() * 0.7, Math.PI * 0.85, 0.7),
   }));
   const front = useAnimatedProps(() => ({
     d: wavePath(width, height, level.get(), restingSwell - slosh.get(), Math.PI * 0.15, 0.85),

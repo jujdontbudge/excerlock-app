@@ -31,7 +31,7 @@ const slotEnter = (direction: Direction, distance: number) =>
     .easing(rollCurve);
 const slotExit = (direction: Direction) =>
   (direction > 0 ? FadeOutUp : FadeOutDown)
-    .duration(slotDuration * 0.6)
+    .duration(slotDuration * 0.35)
     .easing(rollCurve);
 const slotLayout = LinearTransition.duration(slotDuration).easing(rollCurve);
 

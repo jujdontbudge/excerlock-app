@@ -2,7 +2,7 @@
 id: bank
 title: Bank Conditions and Shop
 routes: [(tabs)/shop]
-scenarios: [bank-fresh, bank-pending, bank-rich, bank-empty, bank-broke, bank-before-midnight, bank-onboarding, home-no-rules]
+scenarios: [bank-fresh, bank-pending, bank-routine, bank-rich, bank-empty, bank-broke, bank-before-midnight, bank-onboarding, home-no-rules]
 events: [bank_condition_created, offer_bought, points_collected, bank_emptied]
 depends: [conditions, home, onboarding, enforcement]
 ---
@@ -49,17 +49,17 @@ expect: Bank | 12 h | 0 Points | 0 / 6,000 steps | Shop
 name: collect
 scenario: bank-pending
 open: /home
-tap: Collect +120
+tap: Collect 120 Points
 expect: 120 Points | 12 h | 3,960 / 6,000 steps
-absent: Collect +120
+absent: Collect 120 Points
 ```
 
 ```proof
 name: buy
 scenario: bank-empty
 open: /shop
-tap: 1 h · 100 Points | Buy · 100
-expect: 0 | Points | Shop
+tap: 1 h for 100 Points | Buy 1 h for 100 Points
+expect: 0 Points | Shop
 then-open: /home
 then-expect: Bank | 1 h | 0 Points
 ```
@@ -68,9 +68,9 @@ then-expect: Bank | 1 h | 0 Points
 name: cant-afford
 scenario: bank-broke
 open: /shop
-tap: 15 m · 25 Points
-expect: 5 | Points | ≈ 660 steps to go
-absent: Buy · 25
+tap: 15 min for 25 Points
+expect: 5 Points | ≈ 660 steps to go
+absent: Buy 15 min
 ```
 
 ```proof
@@ -115,6 +115,6 @@ then-expect: Bank | 11 h 45 m
 ## Gotchas
 - JS-only phase: createRealRuntime uses createNoopBankDrain in runtime/lib/NoopBankDrain.ts. Replace that factory with NativeBankDrain at integration. Native drain accuracy and closed-app re-lock require the physical-iPhone spike in ADR 0081.
 - Bank has an all-week/all-day persisted Schedule for Rule validation and History; no Schedule is presented to the user. Enforcement excludes Bank from weekly windows and watchdogs.
-- UI here is a functional handoff. Reward motion, the Points token and the Bank Condition demo artwork are owned by the visual-design workers.
+- Home and Shop use the `ui` reward kit. Labels are accessibility labels ("Collect 120 Points", "1 h for 100 Points", "Buy 1 h for 100 Points"), not the visible chip text. `bank-routine` holds Points and has more waiting, for a routine Collect without confetti.
 - The drain proof reloads the same scenario with edits retained before spending time, so the fake monitor must keep its armed state across that reload.
 - Simulator proofs establish settled state and fake usage, not real Screen Time thresholds, HealthKit delivery or physical activity.
