@@ -23,6 +23,7 @@ const Arc = Animated.createAnimatedComponent(Circle);
 const r = t.motion.reward;
 
 export type OfferCardOffer = { id: string; price: number; minutes: number };
+export const buyFlightCount = (minutes: number) => (minutes < 60 ? 10 : minutes < 180 ? 14 : minutes < 360 ? 18 : 22);
 export type OfferPurchase = 'bought' | 'insufficient';
 
 export function RewardChip({ text }: { text: string }) {
@@ -85,7 +86,7 @@ export function OfferCard({
   activity,
   points,
   toGo,
-  target = 'home',
+  target = 'shop-bank',
   bankEmpty = false,
   onBuy,
 }: {
@@ -133,14 +134,14 @@ export function OfferCard({
     }
     setConfirming(false);
     if (onBuy() === 'insufficient') return refuse();
+    haptic('commit');
     return fly({
       from: ref,
       to: target,
-      count: 1,
-      size: t.points.chip,
-      delay: r.roll,
+      count: buyFlightCount(offer.minutes),
+      spread: 'burst',
       haptic: bankEmpty ? 'unlock' : 'success',
-      token: () => <RewardChip text={rewards.bought(offer.minutes)} />,
+      token: () => <PointsToken activity={activity} size={t.points.flight} />,
     });
   };
   const shaking = useAnimatedStyle(() => ({ transform: [{ translateX: shake.get() }] }));

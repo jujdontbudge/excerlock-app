@@ -12,17 +12,19 @@ export function PointsPill({
   activity,
   points,
   target = 'points',
+  follow,
   size = 'pill',
   onPress,
 }: {
   activity: PointsActivity;
   points: number;
   target?: string;
+  follow?: string;
   size?: 'pill' | 'hero';
   onPress?: () => void;
 }) {
   const { ref, anchor, style } = useFlyTarget(target);
-  const shown = useLandingValue(target, points);
+  const shown = useLandingValue(follow ?? target, points);
   const hero = size === 'hero';
   const content = (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: hero ? t.space.md : t.space.sm }}>
