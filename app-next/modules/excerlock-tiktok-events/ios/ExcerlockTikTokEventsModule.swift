@@ -26,8 +26,8 @@ public final class ExcerlockTikTokEventsModule: Module {
       TikTokBusiness.initializeSdk(config) { success, error in
         if success {
           self.started = true
-          #if DEBUG
-          NSLog("[ExcerLockAds] tiktok started testMode=%@", String(testMode))
+          #if DEBUG || EXCER_DEVICE_PROOF
+          NSLog("[ExcerLockAds] tiktok started testMode=%@", String(config.debugModeEnabled))
           #endif
           self.guardPaymentTracking()
           promise.resolve(true)
@@ -43,7 +43,7 @@ public final class ExcerlockTikTokEventsModule: Module {
       if let value { event.addProperty(withKey: "value", value: NSNumber(value: value)) }
       if let currency { event.addProperty(withKey: "currency", value: currency) }
       TikTokBusiness.trackTTEvent(event)
-      #if DEBUG
+      #if DEBUG || EXCER_DEVICE_PROOF
       NSLog("[ExcerLockAds] tiktok event=%@ value=%@ currency=%@", name, value.map(String.init(describing:)) ?? "none", currency ?? "none")
       #endif
       if flush { TikTokBusiness.explicitlyFlush() }

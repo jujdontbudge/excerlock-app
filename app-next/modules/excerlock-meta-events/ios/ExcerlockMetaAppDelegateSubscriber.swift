@@ -12,7 +12,7 @@ public final class ExcerlockMetaAppDelegateSubscriber: ExpoAppDelegateSubscriber
     Settings.shared.isMetaDataCollectionEnabled = false
     Settings.shared.isAutoLogProductImprovementEnabled = false
     Settings.shared.isSKAdNetworkReportEnabled = false
-    #if DEBUG
+    #if DEBUG || EXCER_DEVICE_PROOF
     Settings.shared.enableLoggingBehavior(.appEvents)
     NSLog("[ExcerLockAds] meta configured; app-event diagnostics enabled")
     NSLog("[ExcerLockAds] meta privacy metadata=%@ productImprovement=%@ skan=%@", String(Settings.shared.isMetaDataCollectionEnabled), String(Settings.shared.isAutoLogProductImprovementEnabled), String(Settings.shared.isSKAdNetworkReportEnabled))

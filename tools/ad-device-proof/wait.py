@@ -31,6 +31,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--hours', type=float, default=4)
     parser.add_argument('--until', help='Original UTC deadline when resuming, ISO 8601')
+    parser.add_argument('--human', action='store_true', help='Wait for an answer even while the phone is unlocked')
+    parser.add_argument('--otp', action='store_true', help='Wait for a protected six-digit email-code relay file')
     args = parser.parse_args()
     if not 0 < args.hours <= 4:
         parser.error('Polling is limited to four hours')
@@ -42,7 +44,8 @@ def main():
             parser.error('--until must include a UTC offset')
         remaining = min(remaining, max(0, (until - datetime.datetime.now(datetime.timezone.utc)).total_seconds()))
     deadline = time.monotonic() + remaining
-    status('Waiting on iPhone Il unlock; polling every 60 seconds; GUI-session signing/account prerequisites are recorded in NEED.txt.')
+    waiting = 'email-code relay (otp-request.txt)' if args.otp else ('human answer (NEED.txt)' if args.human else 'iPhone Il unlock')
+    status('Waiting on ' + waiting + '; polling every 60 seconds.')
     while time.monotonic() < deadline:
         started = time.monotonic()
         answer = ROOT / 'answer.txt'
@@ -53,6 +56,18 @@ def main():
             target.touch(mode=0o600)
             target.write_text(contents)
             print(utc(), 'Human answer received; saved privately for agent review.', flush=True)
+            if args.human:
+                status('Human answer received; saved privately for review. Device work resumes after review.')
+                return 0
+        if args.otp:
+            try:
+                code = (ROOT / 'otp.txt').read_text().strip()
+                if len(code) == 6 and code.isdigit():
+                    status('Email-code relay received; protected file is ready for agent consumption.')
+                    print(utc(), 'Email-code relay received; no code logged.', flush=True)
+                    return 0
+            except OSError:
+                pass
         stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
         target = ROOT / ('lock-' + stamp + '.json')
         try:
@@ -64,14 +79,14 @@ def main():
             with (ROOT / 'wait.ndjson').open('a') as log:
                 log.write(json.dumps(row) + '\n')
             print(json.dumps(row), flush=True)
-            if unlocked:
+            if unlocked and not args.human and not args.otp:
                 status('iPhone Il unlocked; resuming device inspection. No app/container deletion permitted.')
                 return 0
         except (OSError, ValueError, subprocess.TimeoutExpired) as error:
             print(utc(), 'Poll unavailable:', type(error).__name__, flush=True)
-        status('Waiting on iPhone Il unlock; last poll locked/unavailable. Sandbox signing prerequisites are recorded in NEED.txt.')
+        status('Waiting on ' + waiting + '; see NEED.txt. Lock evidence is in wait.ndjson.')
         time.sleep(min(max(0, 60 - (time.monotonic() - started)), max(0, deadline - time.monotonic())))
-    status('Blocked: four-hour phone-unlock wait expired. No device run started by this watcher.')
+    status('Blocked: original waiting deadline expired for ' + waiting + '. See device-test-report.md for completed device work.')
     return 3
 
 
