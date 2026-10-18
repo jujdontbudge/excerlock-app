@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
 ---
 
@@ -62,7 +62,8 @@ Facebook iOS SDK 19.0.0 shipped on 2026-10-16. It turns on screen-title and scre
 - **Accepted residuals:**
   - A purchase interrupted on one phone and completed for the same account on another phone before the first reopens can count twice.
   - Ask to Buy approvals are not counted.
-  - Meta TestFlight events are not marked as tests. Lack of an ad click does not isolate production ingestion; this fails A14 and remains a release gate.
+  - Meta sandbox/development/TestFlight events are not marked as tests and can land in the live Meta dataset. Lack of an ad click does not isolate ingestion. Accepted by owner on 2026-10-18 (A14); no isolation release gate remains.
+- **Owner acceptance (2026-10-18).** A3/A9/B9 accept the documented at-most-once policy and residuals: cross-device duplicates, Ask to Buy drops, ambiguous interrupted paid-access drops, and the claim-before-send crash window. This is not an exactly-once guarantee. A14 accepts sandbox events reaching Meta. B7 accepts TikTok debug/test mode in development, preview and TestFlight, including Release builds; verified production must keep it off. These policy decisions do not establish device emissions, dashboard receipt or purchase verification.
 - **Device verification** needs a keyed development/preview build on a physical iPhone (TestFlight is not required): Meta Events Manager → Test events, TikTok Events Manager → Test events, Adapty Event Feed (sandbox), and a proxy capture of Meta and TikTok traffic.
 
 ## References

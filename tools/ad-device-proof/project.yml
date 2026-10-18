@@ -1,0 +1,28 @@
+name: AdDeviceProof
+options:
+  deploymentTarget:
+    iOS: '17.0'
+settings:
+  base:
+    DEVELOPMENT_TEAM: AX3C2B78YD
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: Apple Development
+    PROVISIONING_PROFILE_SPECIFIER: 'iOS Team Provisioning Profile: *'
+    SWIFT_VERSION: '5.0'
+    GENERATE_INFOPLIST_FILE: YES
+    TARGETED_DEVICE_FAMILY: '1'
+targets:
+  AdDeviceProof:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Driver.swift]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.deviceproof
+schemes:
+  AdDeviceProof:
+    build:
+      targets:
+        AdDeviceProof: [test]
+    test:
+      targets: [AdDeviceProof]

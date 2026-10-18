@@ -2,7 +2,7 @@
 
 Native runtime: 7 (new Meta/TikTok/ATT modules); this source refuses OTA targets for older binaries.
 
-Status: local static checks and 19 focused simulator proofs passed; release is blocked by the remaining gates below. Keyed Debug and Release simulator artifacts built as 1.0.1 (21), runtime 7. Locally signed Debug initializes both real SDKs against the preview configuration, then the real runtime stops because simulator Core Motion is unavailable. No financial events or dashboard receipts were verified. No upload or dashboard mutation.
+Status: local static checks and 19 focused simulator proofs passed; physical-device and dashboard proof remains outstanding. The owner accepted the delivery and test-mode residuals on 2026-10-18 (ADR 0084). Keyed Debug and Release simulator artifacts built as 1.0.1 (21), runtime 7. Locally signed Debug initializes both real SDKs against the preview configuration, then the real runtime stops because simulator Core Motion is unavailable. No financial events or dashboard receipts were verified. No upload or dashboard mutation.
 
 ## TikTok SKAN manual table
 
@@ -110,7 +110,7 @@ The app privacy manifest declares the SDK source's default tracking endpoint `an
 
 App Store privacy label: Device ID, Product Interaction and Purchase History are collected, linked to the user and used for tracking and Third-Party Advertising. Retain existing declarations for other features. Advertising SDKs also automatically attach device/network metadata; the app-property allow-list does not prove the complete network payload. Owner must reconcile the final archive privacy report with both SDK manifests and the existing label. No health, location, step, gym or Screen Time information may be added to ad events.
 
-Unresolved release gates: Meta has no SDK sandbox/test isolation equivalent in this implementation (lack of an ad click does not establish test-only ingestion); local keychain dedupe cannot guarantee cross-device exactly-once; Ask to Buy is knowingly dropped. Interrupted paid access without a signed transaction is also knowingly dropped: it could be a trial that converted while the app was closed, so it must not fabricate Subscribe. Active confirmed free trials still recover. A crash after ledger claim knowingly drops the event. These limits must not be represented as complete attribution.
+Accepted by owner on 2026-10-18: Meta sandbox events may reach the live dataset (A14); the documented at-most-once policy and its residuals are accepted (A3/A9/B9). Local keychain dedupe cannot guarantee cross-device exactly-once; Ask to Buy is knowingly dropped. Interrupted paid access without a signed transaction is also knowingly dropped: it could be a trial that converted while the app was closed, so it must not fabricate Subscribe. Active confirmed free trials still recover. A crash after ledger claim knowingly drops the event. These limits must not be represented as complete attribution.
 
 
 ## Local verification evidence
@@ -122,4 +122,8 @@ Unresolved release gates: Meta has no SDK sandbox/test isolation equivalent in t
 - `.excer/ad-setup/native-sdk.log`: credential-redacted SDK initialization diagnostics. `.excer/ad-setup/native-blocker.json` and `native-signed.png`: real runtime blocked by unavailable simulator Core Motion.
 - No connected physical iPhone was available (`devices.log`). No Events Manager or Adapty receipt is claimed.
 
-B7 differs from the strict brief: TikTok intentionally enables SDK debug/test mode in non-production Store environments, including a Release preview/TestFlight build, to keep its sandbox events marked as tests. It is off only for a verified production App Store environment. Meta app-event diagnostic logging compiles only in DEBUG. Confirm token-based test routing and resolve the release/test-mode policy before release; lack of an ad click does not make Meta sandbox events test-only.
+B7 differs from the strict brief: TikTok intentionally enables SDK debug/test mode in non-production Store environments, including a Release preview/TestFlight build, to keep its sandbox events marked as tests. It is off only for a verified production App Store environment. Meta app-event diagnostic logging compiles only in DEBUG. The owner accepted this preview/TestFlight test-mode policy on 2026-10-18 (B7); verified production must keep TikTok test mode off. Confirm token-based test routing with device/dashboard evidence. Lack of an ad click does not make Meta sandbox events test-only, which the owner also accepts (A14).
+
+## Physical-device verification safety
+
+The 2026-10-18 owner-device run uses iPhone 13 “Il”. An App Store installation with existing data was found; never delete its app or container. A development build may replace the binary while retaining data. Fresh-install/reinstall proofs that require erasure must be blocked when owner data exists. The separate research bundle deliberately strips client configuration (`app.config.ts`), including advertising and Adapty credentials, and runs lab-local identity; it cannot prove attribution or real StoreKit purchases for these registered apps. Use only the dedicated sandbox tester, never the owner’s Apple Account or real-money purchases. Device evidence, event UTC timestamps, dashboard checklist and B1–B10 outcomes belong in `~/device-test-report.md`; live status is `~/device-test/STATUS.txt`. SDK calls alone do not prove platform receipt.
