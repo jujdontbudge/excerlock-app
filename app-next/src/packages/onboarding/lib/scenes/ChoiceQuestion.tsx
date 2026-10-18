@@ -13,13 +13,18 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
   if (step === 'O05' || step === 'O06') return <ProfileQuestion step={step} answers={answers} setAnswer={setAnswer} />;
   const copy = onboardingCopy[step as keyof typeof onboardingCopy],
     question = choiceQuestions[step],
-    options = step === 'O25' ? question.options.filter((option) => bodyGoals(answers).some((goal) => goal === option.id)) : question.options,
+    options = step === 'O25' ? question.options.filter((option) => option.exclusive || bodyGoals(answers).some((goal) => goal === option.id)) : question.options,
     current = answers[question.key],
     picked: string[] = Array.isArray(current) ? current.map(String) : typeof current === 'string' ? [current] : [],
     isSelected = (id: string) => (question.multiple ? picked.includes(id) : current === id),
     choose = (id: string) => {
       if (!question.multiple) return setAnswer(question.key, id);
-      const next = picked.includes(id) ? picked.filter((value) => value !== id) : [...picked, id];
+      const exclusive = question.options.filter((option) => option.exclusive).map((option) => option.id),
+        next = picked.includes(id)
+          ? picked.filter((value) => value !== id)
+          : exclusive.includes(id)
+            ? [id]
+            : [...picked.filter((value) => !exclusive.includes(value)), id];
       setAnswer(question.key, question.options.map((option) => option.id).filter((value) => next.includes(value)));
     };
   return (
