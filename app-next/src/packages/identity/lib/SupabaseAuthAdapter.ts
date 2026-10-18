@@ -6,13 +6,14 @@ import {
   AuthPort,
   AuthRecoveryRequiredError,
   isAuthCancelled,
+  isAuthRateLimited,
 } from '../../ports/AuthPort';
 import type { Session } from '../../model/types';
 import type { Unsubscribe } from '../../model/models';
 import { sessionStore } from '../sessionStore';
 import { requestAppleCredential, type AppleNativeDeps } from './providerApple';
 import { requestGoogleCredential, type GoogleAuthDeps } from './providerGoogle';
-import { isLinkConflictError, isExistingAccountError, normalizeEmail, validateEmail, validateOtpCode, type EmailFlowKind } from './emailFlow';
+import { emailSendError, isLinkConflictError, isExistingAccountError, normalizeEmail, validateEmail, validateOtpCode, type EmailFlowKind } from './emailFlow';
 import type { RunIdentityOperation } from '../identityBarrier';
 
 export type AuthAdapterDeps = {
@@ -608,25 +609,33 @@ export class SupabaseAuthAdapter implements AuthPort {
   }
 
 
-  async sendEmailCode(email: string): Promise<void> {
+  async sendEmailCode(email: string, options?: { existingAccountOnly?: boolean }): Promise<void> {
     const normalized = validateEmail(email);
     const expected = this.captureCanonicalIdentity();
-    return this.runIdentityOperation(() => this.sendEmailCodeCanonical(normalized, expected));
+    return this.runIdentityOperation(() => this.sendEmailCodeCanonical(normalized, expected, options?.existingAccountOnly === true));
   }
 
-  private async sendEmailCodeCanonical(normalized: string, expected: { userId: string; generation: number }): Promise<void> {
+  private async sendRecoveryCode(normalized: string, expected: { userId: string; generation: number }, existingAccountOnly: boolean): Promise<void> {
+    const { error } = await this.runSdk(() => this.supabase.auth.signInWithOtp({
+      email: normalized,
+      options: { shouldCreateUser: !existingAccountOnly },
+    }));
+    this.assertCanonicalIdentity(expected);
+    const failure = error ? emailSendError(error) : null;
+    if (failure && !isAuthRateLimited(failure)) throw failure;
+    this.pendingEmail = normalized;
+    this.pendingFlow = 'recovery';
+    if (failure) throw failure;
+  }
+
+  private async sendEmailCodeCanonical(
+    normalized: string,
+    expected: { userId: string; generation: number },
+    existingAccountOnly: boolean,
+  ): Promise<void> {
     this.assertCanonicalIdentity(expected);
     const identity = this.currentIdentity;
-    if (!identity.isAnonymous) {
-      const { error } = await this.runSdk(() => this.supabase.auth.signInWithOtp({ email: normalized }));
-      this.assertCanonicalIdentity(expected);
-      if (error) {
-        throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
-      }
-      this.pendingEmail = normalized;
-      this.pendingFlow = 'recovery';
-      return;
-    }
+    if (existingAccountOnly || !identity.isAnonymous) return this.sendRecoveryCode(normalized, expected, existingAccountOnly);
     const { error } = await this.runSdk(() => this.supabase.auth.updateUser({ email: normalized }));
     this.assertCanonicalIdentity(expected);
     if (!error) {
@@ -635,16 +644,15 @@ export class SupabaseAuthAdapter implements AuthPort {
       return;
     }
     if (isExistingAccountError(error) || isLinkConflictError(error)) {
-      const { error: otpError } = await this.runSdk(() => this.supabase.auth.signInWithOtp({ email: normalized }));
-      this.assertCanonicalIdentity(expected);
-      if (otpError) {
-        throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
-      }
-      this.pendingEmail = normalized;
-      this.pendingFlow = 'recovery';
+      await this.sendRecoveryCode(normalized, expected, false);
       throw new AuthRecoveryRequiredError('email');
     }
-    throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
+    const failure = emailSendError(error);
+    if (isAuthRateLimited(failure)) {
+      this.pendingEmail = normalized;
+      this.pendingFlow = 'conversion';
+    }
+    throw failure;
   }
 
   async verifyEmailCode(code: string): Promise<Session> {

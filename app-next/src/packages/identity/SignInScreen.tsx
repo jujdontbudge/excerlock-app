@@ -10,7 +10,7 @@ import { notify } from '../ui/Notice';
 import { useRuntime } from '../ports/useRuntime';
 import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
-import { AuthError, isAuthCancelled, isAuthRecoveryRequired } from '../ports/AuthPort';
+import { AuthError, isAuthCancelled, isAuthNoAccount, isAuthRateLimited, isAuthRecoveryRequired } from '../ports/AuthPort';
 import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
 import { rememberSignIn } from './rememberedSignIn';
 import { haptic } from '../ui/haptics';
@@ -25,6 +25,8 @@ export function SignInScreen({
   signInRequired,
   onExit,
   requireFreshSignIn = false,
+  onCreateAccount,
+  firstVisit = false,
 }: {
   purpose: SignInPurpose;
   reportError: (error: unknown) => void;
@@ -32,10 +34,12 @@ export function SignInScreen({
   signInRequired?: SignInRequiredSource;
   onExit?: () => void;
   requireFreshSignIn?: boolean;
+  onCreateAccount?: () => void;
+  firstVisit?: boolean;
 }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
-    [phase, setPhase] = useState<'options' | 'email' | 'code'>('options'),
+    [phase, setPhase] = useState<'options' | 'email' | 'code' | 'noAccount'>('options'),
     [email, setEmail] = useState(''),
     [code, setCode] = useState(''),
     [busy, setBusy] = useState(false),
@@ -43,7 +47,15 @@ export function SignInScreen({
       signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
     ),
     [flagAttempt, setFlagAttempt] = useState(0),
-    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | 'email' | null>(null);
+    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | 'email' | null>(null),
+    [cooldownUntil, setCooldownUntil] = useState(0),
+    [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (cooldownUntil <= now) return;
+    const tick = setTimeout(() => setNow(Date.now()), 1000);
+    return () => clearTimeout(tick);
+  }, [cooldownUntil, now]);
+  const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
   useEffect(() => {
     let active = true,
       retry: ReturnType<typeof setTimeout> | undefined;
@@ -65,7 +77,7 @@ export function SignInScreen({
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const words = c[purpose];
   const title = words.title;
-  const support = purpose === 'signIn' && requireFreshSignIn && session.kind === 'signedIn' ? c.returningBody : words.body;
+  const support = purpose === 'signIn' && requireFreshSignIn && !firstVisit && session.kind === 'signedIn' ? c.returningBody : words.body;
   const failed = (provider: 'apple' | 'google' | 'email', caught: unknown) => {
     const reason = signInFailureClass(caught);
     runtime.analytics.track('sign_in_failed', {
@@ -76,7 +88,7 @@ export function SignInScreen({
     });
     if (!expectedSignInFailure(reason)) reportError(caught);
   };
-  const signIn = async (provider: 'apple' | 'google' | 'email') => {
+  const signIn = async (provider: 'apple' | 'google' | 'email', typed = code) => {
     if (busy) return;
     setBusy(true);
     setRecoveryProvider(null);
@@ -86,7 +98,7 @@ export function SignInScreen({
           ? await runtime.auth.signInWithApple()
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
-            : await runtime.auth.verifyEmailCode(code);
+            : await runtime.auth.verifyEmailCode(typed);
       if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) {
         haptic('success');
         onContinue();
@@ -120,11 +132,11 @@ export function SignInScreen({
     }
   };
   const send = async () => {
-    if (busy || !validEmail) return;
+    if (busy || !validEmail || cooldown > 0) return;
     setBusy(true);
     setRecoveryProvider(null);
     try {
-      await runtime.auth.sendEmailCode(email.trim());
+      await runtime.auth.sendEmailCode(email.trim(), { existingAccountOnly: purpose === 'signIn' });
       setCode('');
       if (phase === 'code') notify(c.resent);
       setPhase('code');
@@ -132,6 +144,16 @@ export function SignInScreen({
       if (isAuthRecoveryRequired(caught) && caught.provider === 'email') {
         setPhase('code');
         notify(c.codeSent);
+      } else if (isAuthNoAccount(caught)) {
+        haptic('warning');
+        failed('email', caught);
+        setPhase('noAccount');
+      } else if (isAuthRateLimited(caught)) {
+        failed('email', caught);
+        setCooldownUntil(Date.now() + caught.retryAfterSeconds * 1000);
+        setNow(Date.now());
+        setPhase('code');
+        notify(c.alreadySent);
       } else {
         haptic('error');
         notify(c.authError);
@@ -167,12 +189,36 @@ export function SignInScreen({
       {phase === 'code' ? (
         <EmailCodeScreen
           code={code}
-          onCode={setCode}
+          email={email.trim()}
+          onCode={(value) => {
+            setCode(value);
+            if (value.length === 6 && value !== code) void signIn('email', value);
+          }}
           onVerify={() => signIn('email')}
           onResend={send}
+          onChangeEmail={() => {
+            if (busy) return;
+            setCode('');
+            setPhase('email');
+          }}
           busy={busy}
-          body={words.codeBody}
+          resendIn={cooldown}
         />
+      ) : phase === 'noAccount' ? (
+        <>
+          <View style={{ alignItems: 'center', gap: t.space.md }}>
+            <LivingIcon name="mail" />
+            <Heading title={c.noAccountTitle} centered />
+            <Label tone="secondary" style={{ textAlign: 'center' }}>
+              {c.noAccountBody(email.trim())}
+            </Label>
+          </View>
+          <View style={{ gap: t.space.md }}>
+            <PrimaryButton label={c.tryAnotherEmail} onPress={() => setPhase('email')} />
+            <SecondaryButton label={c.otherWays} onPress={() => setPhase('options')} />
+            {onCreateAccount ? <SecondaryButton label={c.createAccount} variant="tertiary" onPress={onCreateAccount} /> : null}
+          </View>
+        </>
       ) : (
         <>
           {phase === 'options' ? (

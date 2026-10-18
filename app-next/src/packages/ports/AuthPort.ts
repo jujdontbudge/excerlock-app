@@ -45,6 +45,25 @@ export class AuthRecoveryRequiredError extends AuthError {
   }
 }
 
+export class AuthNoAccountError extends AuthError {
+  constructor(message = 'There is no ExcerLock account for this email.') {
+    super(message, { code: 'EMAIL_NO_ACCOUNT', retryable: false });
+    this.name = 'AuthNoAccountError';
+  }
+}
+
+export class AuthRateLimitedError extends AuthError {
+  readonly retryAfterSeconds: number;
+  constructor(retryAfterSeconds: number, message = 'Please wait before requesting another code.') {
+    super(message, { code: 'EMAIL_RATE_LIMITED', retryable: true });
+    this.name = 'AuthRateLimitedError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+export const isAuthNoAccount = (error: unknown): error is AuthNoAccountError => error instanceof AuthNoAccountError;
+export const isAuthRateLimited = (error: unknown): error is AuthRateLimitedError => error instanceof AuthRateLimitedError;
+
 export class AuthPendingDeletionError extends AuthError {
   constructor(message = 'Deletion is pending. Please retry; your sign-in is kept until the server confirms.') {
     super(message, { code: 'AUTH_DELETION_PENDING', retryable: true });
@@ -71,7 +90,7 @@ export interface AuthPort {
   linkWithGoogle(): Promise<Session>;
   recoverWithApple(): Promise<Session>;
   recoverWithGoogle(): Promise<Session>;
-  sendEmailCode(email: string): Promise<void>;
+  sendEmailCode(email: string, options?: { existingAccountOnly?: boolean }): Promise<void>;
   verifyEmailCode(code: string): Promise<Session>;
   recoverWithEmailCode(code: string): Promise<Session>;
   signOut(): Promise<void>;

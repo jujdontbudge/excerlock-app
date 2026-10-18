@@ -1,4 +1,4 @@
-import { AuthError } from '../../ports/AuthPort';
+import { AuthError, AuthNoAccountError, AuthRateLimitedError } from '../../ports/AuthPort';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export type EmailFlowKind = 'conversion' | 'recovery';
@@ -55,4 +55,17 @@ export function isLinkConflictError(error: unknown): boolean {
     status === 422 ||
     status === 409
   );
+}
+
+export function emailSendError(error: unknown): AuthError {
+  const message = ((error as { message?: unknown })?.message ?? '').toString();
+  const code = ((error as { code?: unknown })?.code ?? '').toString();
+  const status = (error as { status?: unknown })?.status;
+  if (code === 'otp_disabled' || code === 'user_not_found' || code === 'signup_disabled' || /signups not allowed/i.test(message))
+    return new AuthNoAccountError();
+  if (status === 429 || (code.startsWith('over_') && code.endsWith('_rate_limit'))) {
+    const seconds = Number(/after (\d+) seconds?/i.exec(message)?.[1]);
+    return new AuthRateLimitedError(Number.isFinite(seconds) && seconds > 0 ? seconds : 60);
+  }
+  return new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
 }

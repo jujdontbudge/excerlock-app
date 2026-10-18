@@ -34,9 +34,9 @@ then-expect: Journey paywall · paid no · admitted no | Active account Checkout
 name: email-code-failures-use-only-current-challenge
 scenario: identity-lab-email-challenges
 open: dev?journey=signIn
-actions: tap Continue with email | type a@b.co | tap Send code | tap Verification code | type 111111 | tap Verify code | tap Verification code | type 222222 | tap Verify code | tap Resend code | tap Verification code | type 333333 | tap Verify code | tap Verification code | type 444444 | tap Verify code
+actions: tap Continue with email | type a@b.co | tap Send code | tap Verification code | type 111111 | tap Verification code | type 222222 | tap Resend code | tap Verification code | type 333333 | tap Verification code | type 444444
 wait: 30
-expect: Become ADDICTED to exercise
+expect: become ADDICTED to exercise
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Email challenges invalid · expired · superseded · success · account lab-checkout-1 · grants 0 | lab_email_challenge {"challenge":1,"result":"invalid","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"expired","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"superseded","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":2,"result":"success","account":"lab-checkout-1","grants":0} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
 ```
@@ -60,6 +60,43 @@ expect: Please use the account you signed up with. | Recover with Apple
 absent: already on this device
 then-open: /dev
 then-expect: Journey signIn · paid no · admitted no | Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Provider conflict B preserved Apple owner lab-user-a links 0 session restores 1 Entitlement none data account-b/1/Account B/Gym B | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_session_restored {"user":"lab-user-b"}
+```
+
+Welcome's Sign in opens the full-screen sign-in, never a sheet. Signing in sends a code only to an existing account: in the fake, an email starting with `new` has no account, and a second code to the same address within 60 seconds is rate limited, as Supabase does.
+
+```proof
+name: welcome-sign-in-no-account
+scenario: fresh-install
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with email | type new@a.co | tap Send code
+expect: No account found | There's no ExcerLock account for new@a.co | Try another email | Sign in another way | New here? Create an account
+absent: That didn't work | Check your email | Sign in again
+```
+
+```proof
+name: welcome-no-account-creates-account
+scenario: fresh-install
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with email | type new@a.co | tap Send code | expect No account found | tap New here? Create an account
+expect: What should we call you?
+```
+
+```proof
+name: welcome-sign-in-code-rate-limited
+scenario: fresh-install
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with email | type me@a.co | tap Send code | expect Check your email | tap Use a different email | tap Send code
+expect: Check your email | We sent a six-digit code to me@a.co | Resend code in
+absent: That didn't work
+```
+
+```proof
+name: welcome-sign-in-code-verifies-itself
+scenario: fresh-install
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with email | type me@a.co | tap Send code | expect Check your email | tap Verification code | type 123456
+expect: Restore purchases
+absent: That code didn't work | That didn't work
 ```
 
 ```proof
