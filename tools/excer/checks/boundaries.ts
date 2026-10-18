@@ -214,10 +214,15 @@ export const adAttribution: Check = {
     const tiktok = read(fromRoot('app-next/modules/excerlock-tiktok-events/ios/ExcerlockTikTokEventsModule.swift'));
     const meta = read(fromRoot('app-next/modules/excerlock-meta-events/ios/ExcerlockMetaEventsModule.swift'));
     const plugin = read(fromRoot('app-next/plugins/withAdAttribution.js'));
+    const tiktokPatch = read(fromRoot('app-next/modules/excerlock-tiktok-events/ios/disable-payment-tracking.rb'));
     const keys = [...tiktok.matchAll(/addProperty\(withKey: "(\w+)"/g)].map((match) => match[1]).sort().join(',');
     if (keys !== 'currency,value') problems.push(`TikTok events carry [${keys}]; only value and currency are reviewed`);
     if ([...meta.matchAll(/parameters\[\.(\w+)\]/g)].map((match) => match[1]).join(',') !== 'currency') problems.push('Meta events carry parameters beyond fb_currency');
     if (!/config\.disablePaymentTracking\(\)/.test(tiktok)) problems.push('TikTok payment tracking must stay disabled: Adapty owns StoreKit transactions');
+    if (!tiktok.includes('config.disableAutoEnhancedDataPostbackEvent()')) problems.push('TikTok enhanced data postback must stay disabled: screen and interaction capture is not reviewed');
+    if (!plugin.includes('excerlock_disable_tiktok_payment_tracking(installer)')) problems.push('TikTok remote config must respect disabled automatic payment tracking before StoreKit starts');
+    if (!tiktokPatch.includes('tiktokConfig.paymentTrackingStatus != TikTokPaymentTrackStatus_disabled && globalConfigPaymentTrackingEnabled')) problems.push('TikTok pinned source patch must respect explicit payment disable');
+    if (!tiktokPatch.includes('self.screenshotEnabled = NO; /* ExcerLock:')) problems.push('TikTok remote screenshot capture must stay disabled');
     if (/setTrackingEnabled|disableSKAdNetworkSupport/.test(tiktok)) problems.push('TikTok setTrackingEnabled stops every event and TikTok owns SKAdNetwork; neither may be called');
     if (!/if testMode \{ config\.enableDebugMode\(\) \}/.test(tiktok)) problems.push('TikTok debug mode must stay behind testMode');
     for (const key of ['FacebookSKAdNetworkReportEnabled: false', 'FBSDKAutoLogMetaDataEnabled: false', 'FBSDKAutoLogProductImprovementEnabled: false'])

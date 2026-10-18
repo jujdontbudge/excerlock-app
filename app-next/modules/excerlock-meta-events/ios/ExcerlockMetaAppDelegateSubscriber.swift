@@ -9,6 +9,10 @@ public final class ExcerlockMetaAppDelegateSubscriber: ExpoAppDelegateSubscriber
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     guard ExcerlockMetaConfiguration.isConfigured else { return false }
+    #if DEBUG
+    Settings.shared.enableLoggingBehavior(.appEvents)
+    NSLog("[ExcerLockAds] meta configured; app-event diagnostics enabled")
+    #endif
     _ = ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
     return false
   }

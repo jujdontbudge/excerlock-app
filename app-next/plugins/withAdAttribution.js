@@ -1,8 +1,17 @@
-const { withInfoPlist } = require("expo/config-plugins");
+const { withInfoPlist, withPodfile } = require("expo/config-plugins");
 
 const META_SKADNETWORK_IDS = ["v9wttpbfk9.skadnetwork", "n38lu8286q.skadnetwork"];
 
 function withAdAttribution(config, { meta } = {}) {
+  config = withPodfile(config, (mod) => {
+    const hook = "require_relative '../modules/excerlock-tiktok-events/ios/disable-payment-tracking'";
+    if (!mod.modResults.contents.includes(hook)) {
+      const anchor = 'post_install do |installer|';
+      if (!mod.modResults.contents.includes(anchor)) throw new Error('TikTok payment safety patch needs the CocoaPods post_install hook');
+      mod.modResults.contents = mod.modResults.contents.replace(anchor, `${anchor}\n    ${hook}\n    excerlock_disable_tiktok_payment_tracking(installer)`);
+    }
+    return mod;
+  });
   return withInfoPlist(config, (mod) => {
     const plist = mod.modResults;
     if (!meta) return mod;

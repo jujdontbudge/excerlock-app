@@ -9,6 +9,6 @@ export const TRACKING_PERMISSION = 'Lets us see which ads brought you to ExcerLo
 export function adPlugins(ad: AdAttributionExtra | undefined): ExpoPlugin[] {
   return [
     ['expo-tracking-transparency', { userTrackingPermission: TRACKING_PERMISSION }],
-    ...(ad?.meta ? [['./plugins/withAdAttribution', { meta: ad.meta }] as ExpoPlugin] : []),
+    ['./plugins/withAdAttribution', { meta: ad?.meta ?? null }],
   ];
 }

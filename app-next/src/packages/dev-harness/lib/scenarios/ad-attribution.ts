@@ -29,6 +29,9 @@ export const adAttributionScenarios = [
   }),
   base('ads-trial-denied', 'Ads · trial, tracking denied', { ...trialOffer, ads: { answer: 'denied' } }),
   base('ads-paid-no-trial', 'Ads · paid start without a trial', { ...paidOffer, ads: { answer: 'granted' } }),
+  base('ads-paid-after-trial', 'Ads · paid re-purchase after an already counted trial', {
+    ...paidOffer, ads: { answer: 'granted', sentBefore: [['start_trial', 'transaction', 'lab-original-1']] },
+  }),
   base('ads-trial-ineligible', 'Ads · trial already used, pays', { ...onboarding, identityLab: {}, onboardingOffer: { arm: 'a', introEligible: false }, ads: { answer: 'granted' } }),
   base('ads-trial-sent-before', 'Ads · same store subscription already counted', {
     ...trialOffer, ads: { answer: 'granted', sentBefore: [['start_trial', 'transaction', 'lab-original-1']] },
@@ -58,6 +61,12 @@ export const adAttributionScenarios = [
   base('ads-interrupted-trial', 'Ads · app killed while the trial purchase completed', {
     ...atPaywall,
     identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'trial' } },
+    purchaseRecovery: 'pending',
+    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 49.99, currency: 'USD' } },
+  }),
+  base('ads-interrupted-paid', 'Ads · interrupted purchase without a provable trial is dropped', {
+    ...atPaywall,
+    identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'active' } },
     purchaseRecovery: 'pending',
     ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 49.99, currency: 'USD' } },
   }),

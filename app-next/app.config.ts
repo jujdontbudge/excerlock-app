@@ -31,6 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const linkedRecorderStandalone = linkedRecorderConfig.standaloneEnabled(process.env);
   const linkedIdentifiers = linkedRecorderConfig.identifiers(process.env);
   const environment = resolveBuildEnvironment(process.env);
+  if (process.env.EXCERLOCK_OTA_RUNTIME && process.env.EXCERLOCK_OTA_RUNTIME !== '7') throw new Error('Ad attribution requires native runtime 7; use an older source revision for older binaries');
   const values = loadBuildEnvironment();
   const extra = buildClientExtra(values, environment, { requireUploadToken: process.env.EAS_BUILD === 'true' });
   // A research bundle (Metro dev or standalone lab) runs the lab-local identity
@@ -66,9 +67,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: linkedRecorderResearch ? [linkedRecorderConfig.URL_SCHEME] : ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    // 5: the residency module and the watchdog warning are new native code (ADR 0076);
-    // EXCERLOCK_OTA_RUNTIME=4 is set only by `excer ota --runtime 4`, after the ship proofs passed on a runtime-4 build.
-    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : process.env.EXCERLOCK_OTA_RUNTIME === '4' || process.env.EXCERLOCK_OTA_RUNTIME === '5' ? process.env.EXCERLOCK_OTA_RUNTIME : '6',
+    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '7',
     ios: {
       ...config.ios,
       ...(linkedRecorderResearch ? researchIos(nativeConfig.ios, linkedIdentifiers) : nativeConfig.ios),

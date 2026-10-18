@@ -54,7 +54,8 @@ export function ownedDevice(): Device {
   const wanted = process.env.EXCER_SIM ?? defaultSimName;
   const device = devices().find((candidate) => candidate.udid === wanted || candidate.name === wanted);
   if (!device) throw new Error(`No simulator named or with UDID "${wanted}". Set EXCER_SIM, or create one: xcrun simctl create ${defaultSimName} "iPhone 17 Pro"`);
-  if (!isMainCheckout() && device.set !== workerSimSet)
+  const leadSimulatorAuthorized = process.env.EXCER_USE_LEAD_SIM === '1' && device.name === defaultSimName;
+  if (!isMainCheckout() && device.set !== workerSimSet && !leadSimulatorAuthorized)
     throw new Error(`${device.name} is not a worker simulator. A worktree must set EXCER_SIM to its own simulator in ${workerSimSet} (see AGENTS.md "Spawning workers"); ${defaultSimName} belongs to the lead session.`);
   return device;
 }

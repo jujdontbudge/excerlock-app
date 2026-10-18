@@ -30,7 +30,7 @@ ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must b
 
 Work headless. Keep Simulator.app closed. `./excer sim` drives one simulator (`ExcerLock-Next` by default, or `EXCER_SIM`) through `xcrun simctl` and `idb`, and starts that simulator's `idb_companion` when needed. Metro serves on `EXCER_METRO_PORT` (default 8091). Reuse the installed app or an existing build. Build only when the binary is missing or native code changed, and keep caches. Shut down only simulators you booted. Headless Xcode commands: `~/.local/share/agent-ios/GUIDE.md`.
 
-`ExcerLock-Next` on port 8091 belongs to the lead session in the main checkout, where the user watches it. Workers never use it.
+`ExcerLock-Next` on port 8091 belongs to the lead session in the main checkout, where the user watches it. Workers never use it. When the user explicitly requests lead-simulator verification from a worktree, `EXCER_USE_LEAD_SIM=1` permits that simulator only; use a separate free Metro port for the worktree bundle.
 
 ### Spawning workers
 

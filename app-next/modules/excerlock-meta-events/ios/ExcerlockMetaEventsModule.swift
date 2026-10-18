@@ -23,6 +23,9 @@ public final class ExcerlockMetaEventsModule: Module {
         AppEvents.shared.logEvent(AppEvents.Name(rawValue: name), parameters: parameters)
       }
       if flush { AppEvents.shared.flush() }
+      #if DEBUG
+      NSLog("[ExcerLockAds] meta event=%@ value=%@ currency=%@", name, value.map(String.init(describing:)) ?? "none", currency ?? "none")
+      #endif
     }.runOnQueue(.main)
   }
 }

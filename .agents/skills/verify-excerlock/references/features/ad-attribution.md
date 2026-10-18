@@ -2,7 +2,7 @@
 id: ad-attribution
 title: Meta and TikTok ad events and App Tracking Transparency
 routes: []
-scenarios: [ads-trial-allowed, ads-registration-sent-before, ads-trial-denied, ads-paid-no-trial, ads-trial-ineligible, ads-trial-sent-before, ads-other-account-sent, ads-xcode-purchase, ads-duplicate-callbacks, ads-sdk-start-fails, ads-sdk-log-fails, ads-unconfigured, ads-restore, ads-purchase-cancelled, ads-purchase-pending, ads-purchase-error, ads-interrupted-trial]
+scenarios: [ads-interrupted-paid, ads-paid-after-trial, ads-trial-allowed, ads-registration-sent-before, ads-trial-denied, ads-paid-no-trial, ads-trial-ineligible, ads-trial-sent-before, ads-other-account-sent, ads-xcode-purchase, ads-duplicate-callbacks, ads-sdk-start-fails, ads-sdk-log-fails, ads-unconfigured, ads-restore, ads-purchase-cancelled, ads-purchase-pending, ads-purchase-error, ads-interrupted-trial]
 depends: [onboarding, paywall]
 ---
 ## Sub-features
@@ -203,7 +203,28 @@ wait: 30
 expect: Meta events registration 0 view 0 trial 1 subscribe 0 | TikTok events registration 0 view 0 trial 1 subscribe 0
 ```
 
+```proof
+name: paid-after-trial-does-not-send-second-conversion
+scenario: ads-paid-after-trial
+open: dev?journey=paywall
+tap: Continue
+expect: Continue with Apple
+wait: 30
+then-open: /dev
+then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | TikTok events registration 0 view 1 trial 0 subscribe 0 | lab_offer_purchase
+```
+
+```proof
+name: interrupted-paid-without-transaction-is-dropped
+scenario: ads-interrupted-paid
+open: /dev
+wait: 30
+expect: Meta events registration 0 view 0 trial 0 subscribe 0 | TikTok events registration 0 view 0 trial 0 subscribe 0
+```
+
 ## Gotchas
 - The fake counts live in memory, so a cold relaunch resets them to 0. `ads-interrupted-trial` therefore reads `/dev` in the launch that loads it: its seeded purchase intent is tagged as coming from an earlier launch, which is what the recovery path keys on. A scenario's ledger (`ads.sentBefore`) stands in for what an earlier launch, install or account already sent; the real ledger is the keychain, which survives a reinstall.
-- The real SDKs, the real ATT dialog, Meta Events Manager, TikTok Events Manager and Adapty's Event Feed cannot be proven here. They need a TestFlight build with real credentials on a phone (ADR 0084, "Device verification").
-- In a TestFlight build (sandbox App Store environment) TikTok runs in debug mode, so its events arrive as test events and never reach TikTok reporting. Meta has no SDK test mode; a TestFlight install has no ad click, so Meta cannot attribute its events to an ad.
+- The real SDKs, the real ATT dialog, Meta Events Manager, TikTok Events Manager and Adapty's Event Feed cannot be proven here. They need a keyed development/preview build on a physical phone (TestFlight is not required) (ADR 0084, "Device verification").
+- In a TestFlight build (sandbox App Store environment) TikTok runs in debug mode, so its events arrive as test events and never reach TikTok reporting. Meta has no SDK test mode in this implementation; lack of an ad click does not isolate production ingestion, so A14 remains a release gate.
+
+- A keyed real-runtime simulator run initialized both SDKs, then failed because Core Motion activity, live cadence and step counting are unavailable. Fakes do not establish platform receipts, physical ATT, StoreKit sandbox behavior or network payload privacy. Evidence: `.excer/ad-setup/native-blocker.json`.

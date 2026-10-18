@@ -17,10 +17,18 @@ public final class ExcerlockTikTokEventsModule: Module {
       }
       // Adapty owns every StoreKit transaction; TikTok's observer would log trials and renewals a second time.
       config.disablePaymentTracking()
+      // Prevent remote configuration from enabling screen and interaction capture.
+      config.disableAutoEnhancedDataPostbackEvent()
+      config.setDelayForATTUserAuthorizationInSeconds(120)
+      // SKAN stays enabled. SDK 1.7.2 loads data.skan4_event_config from TikTok's
+      // remote response and matches the uploaded Events Manager rules; no local CV overrides.
       if testMode { config.enableDebugMode() }
       TikTokBusiness.initializeSdk(config) { success, error in
         if success {
           self.started = true
+          #if DEBUG
+          NSLog("[ExcerLockAds] tiktok started testMode=%@", String(testMode))
+          #endif
           self.guardPaymentTracking()
           promise.resolve(true)
         } else {
@@ -35,6 +43,9 @@ public final class ExcerlockTikTokEventsModule: Module {
       if let value { event.addProperty(withKey: "value", value: NSNumber(value: value)) }
       if let currency { event.addProperty(withKey: "currency", value: currency) }
       TikTokBusiness.trackTTEvent(event)
+      #if DEBUG
+      NSLog("[ExcerLockAds] tiktok event=%@ value=%@ currency=%@", name, value.map(String.init(describing:)) ?? "none", currency ?? "none")
+      #endif
       if flush { TikTokBusiness.explicitlyFlush() }
     }.runOnQueue(.main)
   }

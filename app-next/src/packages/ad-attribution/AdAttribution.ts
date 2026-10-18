@@ -99,8 +99,10 @@ export function createAdAttribution(deps: AdAttributionDeps): AdAttributionPort 
     timeout(ledger.claim(keys), limits.ledgerMs, () => false).catch((error: unknown) => { report(error); return false; });
   const conversion = async (name: 'start_trial' | 'subscribe', input: AdConversion) => {
     if (!states.length || !input.account || !deps.acceptsConversion(input.storeEnvironment)) return;
-    const keys = [ledgerKey(name, 'account', input.account)];
-    if (input.originalTransaction) keys.push(ledgerKey(name, 'transaction', input.originalTransaction));
+    const keys = (['start_trial', 'subscribe'] as const).flatMap((event) => [
+      ledgerKey(event, 'account', input.account),
+      ...(input.originalTransaction ? [ledgerKey(event, 'transaction', input.originalTransaction)] : []),
+    ]);
     if (!(await claim(durable, keys))) return;
     dispatch(name === 'start_trial' ? { name } : { name, value: input.value, currency: input.currency });
   };

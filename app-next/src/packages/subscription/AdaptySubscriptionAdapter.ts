@@ -415,6 +415,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       }
       const access = profile.accessLevels?.premium;
       if (profile.customerUserId !== intent.account || !access?.isActive) return;
+      if (access.activeIntroductoryOfferType !== 'free_trial') {
+        await this.dropIntent();
+        return;
+      }
       await this.reportConversion(intent.account, access, null, {
         vendorProductId: intent.vendorProductId, amount: intent.amount ?? undefined, currency: intent.currency ?? undefined,
       }, intent.hadAccessBefore);
