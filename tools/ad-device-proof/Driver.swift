@@ -122,7 +122,7 @@ final class DeviceDriver: XCTestCase {
 
   func confirmSandboxSheet() throws {
     let store = XCUIApplication(bundleIdentifier: "com.apple.AppStore")
-    let sandbox = NSPredicate(format: "label CONTAINS[c] %@", "Sandbox")
+    let sandbox = NSPredicate(format: "label CONTAINS[c] %@", "Environment: Sandbox")
     let deadline = Date().addingTimeInterval(30)
     while Date() < deadline {
       if springboard.descendants(matching: .any).matching(sandbox).firstMatch.exists ||

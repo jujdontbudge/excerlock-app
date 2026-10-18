@@ -213,6 +213,14 @@ export const adAttribution: Check = {
     }
     const tiktok = read(fromRoot('app-next/modules/excerlock-tiktok-events/ios/ExcerlockTikTokEventsModule.swift'));
     const meta = read(fromRoot('app-next/modules/excerlock-meta-events/ios/ExcerlockMetaEventsModule.swift'));
+    const metaStartup = read(fromRoot('app-next/modules/excerlock-meta-events/ios/ExcerlockMetaAppDelegateSubscriber.swift'));
+    const metaSpec = read(fromRoot('app-next/modules/excerlock-meta-events/ios/ExcerlockMetaEvents.podspec'));
+    if (!metaSpec.includes("'FBSDKCoreKit', '19.0.0'")) problems.push('Meta SDK must stay pinned to the reviewed 19.0.0 release');
+    const metaInitialization = metaStartup.indexOf('ApplicationDelegate.shared.application');
+    for (const setting of ['isMetaDataCollectionEnabled', 'isAutoLogProductImprovementEnabled', 'isSKAdNetworkReportEnabled']) {
+      const assignment = metaStartup.indexOf(`Settings.shared.${setting} = false`);
+      if (assignment < 0 || assignment > metaInitialization) problems.push(`Meta ${setting} must be disabled before SDK initialization`);
+    }
     const plugin = read(fromRoot('app-next/plugins/withAdAttribution.js'));
     const tiktokPatch = read(fromRoot('app-next/modules/excerlock-tiktok-events/ios/disable-payment-tracking.rb'));
     const keys = [...tiktok.matchAll(/addProperty\(withKey: "(\w+)"/g)].map((match) => match[1]).sort().join(',');

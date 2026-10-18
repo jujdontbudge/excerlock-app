@@ -9,9 +9,13 @@ public final class ExcerlockMetaAppDelegateSubscriber: ExpoAppDelegateSubscriber
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     guard ExcerlockMetaConfiguration.isConfigured else { return false }
+    Settings.shared.isMetaDataCollectionEnabled = false
+    Settings.shared.isAutoLogProductImprovementEnabled = false
+    Settings.shared.isSKAdNetworkReportEnabled = false
     #if DEBUG
     Settings.shared.enableLoggingBehavior(.appEvents)
     NSLog("[ExcerLockAds] meta configured; app-event diagnostics enabled")
+    NSLog("[ExcerLockAds] meta privacy metadata=%@ productImprovement=%@ skan=%@", String(Settings.shared.isMetaDataCollectionEnabled), String(Settings.shared.isAutoLogProductImprovementEnabled), String(Settings.shared.isSKAdNetworkReportEnabled))
     #endif
     _ = ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
     return false

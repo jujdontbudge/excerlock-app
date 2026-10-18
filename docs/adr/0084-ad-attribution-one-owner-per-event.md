@@ -26,10 +26,10 @@ date: 2026-10-17
 - **App Tracking Transparency.** One system prompt, when onboarding hands off to the paywall, and only in builds with real credentials. The answer is re-read on every foreground. Saying no changes nothing in the app, and both SDKs still receive every event:
   - Meta gets `isAdvertiserIDCollectionEnabled = granted`. Since SDK 17 the SDK reads the ATT status itself, so `setAdvertiserTrackingEnabled` is not called.
   - TikTok gets nothing. Its `setTrackingEnabled(false)` would stop **every** event, so it is never called.
-- **Meta SDK.** A small Expo module (`modules/excerlock-meta-events`) wraps `FBSDKCoreKit` 18.1.1, not `react-native-fbsdk-next`. Its app delegate subscriber starts the SDK at launch and forwards URLs and Universal Links (AEM), but only when `Info.plist` carries a real `FacebookAppID`. Settings in `plugins/withAdAttribution.js`:
+- **Meta SDK.** A small Expo module (`modules/excerlock-meta-events`) wraps `FBSDKCoreKit` 19.0.0, not `react-native-fbsdk-next`. Its app delegate subscriber starts the SDK at launch and forwards URLs and Universal Links (AEM), but only when `Info.plist` carries a real `FacebookAppID`. Settings in `plugins/withAdAttribution.js`:
   - `FacebookSKAdNetworkReportEnabled` false, because TikTok owns SKAdNetwork conversion values.
   - Auto-logging stays on for install and activate events.
-  - `FBSDKAutoLogMetaDataEnabled` and `FBSDKAutoLogProductImprovementEnabled` false, so an upgrade to SDK 19 keeps screen titles and layouts off.
+  - `FBSDKAutoLogMetaDataEnabled` and `FBSDKAutoLogProductImprovementEnabled` false. Before SDK initialization, the subscriber also sets `isMetaDataCollectionEnabled`, `isAutoLogProductImprovementEnabled` and `isSKAdNetworkReportEnabled` false, overriding persisted SDK preferences. Screen-title/AppLink metadata and product-improvement collection remain disabled; TikTok remains the sole SKAdNetwork owner.
 - **TikTok SDK.** `modules/excerlock-tiktok-events` wraps `TikTokBusinessSDK` 1.7.2.
   - `disablePaymentTracking`, because Adapty owns StoreKit.
   - SKAdNetwork support stays on: TikTok owns conversion values.
@@ -49,7 +49,7 @@ Adapty forwards to Meta only for users who allowed tracking, and Meta's measurem
 - Its app delegate subscriber always starts the SDK, so a placeholder build would call Meta.
 - It does not forward Universal Links. It also pins `FBSDKCoreKit ~> 18.0`.
 
-Facebook iOS SDK 19.0.0 shipped on 2026-10-16. It turns on screen-title and screen-layout collection by default. 18.1.1 is the stable choice; adopt 19 deliberately later.
+Facebook iOS SDK 19.0.0 was published as a stable release on 2026-10-16. On 2026-10-18 the owner’s marketing follow-up requested the current stable SDK because Events Manager reports the app as out of date. The published CocoaPods release supports iOS 15+, below this module’s iOS 17.4 floor. Adopt 19.0.0 with both plist opt-outs and explicit runtime opt-outs before initialization. The release adds screen-title/AppLink metadata collection controls and a separate product-improvement control; its changelog says product-improvement data collection is not yet implemented. Device/network proof remains a separate gate. Release source: https://github.com/facebook/facebook-ios-sdk/releases/tag/v19.0.0.
 
 ## Consequences
 

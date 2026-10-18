@@ -8,7 +8,6 @@ import time
 
 DEVICE = 'F4E839C0-3F05-5BF8-BA31-12949B2B83AB'
 ROOT = Path.home() / 'device-test'
-IDENTITY = 'ED2ADFC5F61CC2E39AC84D3F90C8C5C1E13189C0'
 
 
 def utc():
@@ -20,25 +19,30 @@ def status(message):
 
 
 def credentials():
-    result = subprocess.run(['security', 'find-generic-password', '-s', 'excer-sandbox-tester', '-w'], capture_output=True, timeout=10)
-    if result.returncode == 0:
-        target = ROOT / 'sandbox-account.json'
-        target.touch(mode=0o600, exist_ok=True)
-        target.chmod(0o600)
-        target.write_text(json.dumps(dict(email='johansardar77+excersbx1@gmail.com', password=result.stdout.decode().strip())))
-        return True
-    return False
+    target = ROOT / 'sandbox-account.json'
+    try:
+        account = json.loads(target.read_text())
+        return account.get('email') == 'johansardar77+excersbx1@gmail.com' and bool(account.get('password'))
+    except (OSError, ValueError):
+        return False
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--hours', type=float, default=4)
+    parser.add_argument('--until', help='Original UTC deadline when resuming, ISO 8601')
     args = parser.parse_args()
     if not 0 < args.hours <= 4:
         parser.error('Polling is limited to four hours')
     ROOT.mkdir(mode=0o700, exist_ok=True)
-    deadline = time.monotonic() + args.hours * 3600
-    status('Waiting on iPhone Il unlock; polling every 60 seconds; Keychain access also required for signing.')
+    remaining = args.hours * 3600
+    if args.until:
+        until = datetime.datetime.fromisoformat(args.until)
+        if until.tzinfo is None:
+            parser.error('--until must include a UTC offset')
+        remaining = min(remaining, max(0, (until - datetime.datetime.now(datetime.timezone.utc)).total_seconds()))
+    deadline = time.monotonic() + remaining
+    status('Waiting on iPhone Il unlock; polling every 60 seconds; GUI-session signing/account prerequisites are recorded in NEED.txt.')
     while time.monotonic() < deadline:
         started = time.monotonic()
         answer = ROOT / 'answer.txt'
