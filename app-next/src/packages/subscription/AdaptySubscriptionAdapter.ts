@@ -21,6 +21,11 @@ import { weeklyPrice } from './lib/weeklyPrice';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 import { PurchaseRecoveryJournal } from './PurchaseRecoveryJournal';
 import { trialOffer } from './trialOffer';
+import type { AdAttributionPort } from '../ports/AdAttributionPort';
+import { classifyPurchase, decodeStoreTransaction, type PremiumAccess } from './lib/purchaseConversion';
+import type { PurchaseIntentStore } from './lib/purchaseIntent';
+
+export { PurchaseIntentStore, PURCHASE_INTENT_KEY } from './lib/purchaseIntent';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
 type Loaded = {
@@ -86,8 +91,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       openSubscriptionManagement(): Promise<void>;
       recoveryJournal: PurchaseRecoveryJournal;
       now(): string;
+      adAttribution?: Pick<AdAttributionPort, 'trialStarted' | 'subscriptionStarted'>;
+      purchaseIntents?: PurchaseIntentStore;
+      adIntegrationIdentifiers?(): Promise<Record<string, string>>;
     },
   ) {}
+  private recoveringIntent = false;
 
   private ensureActivated(): Promise<void> {
     if (this.disposed) throw new Error('Subscription adapter disposed');
@@ -150,6 +159,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     if (after.kind !== 'canonical' || after.userId !== userId || after.generation !== identity.generation)
       throw new Error('Identity changed during Adapty identify');
     this.expected = { userId, generation: identity.generation };
+    void this.attachAdIdentifiers();
     forgetObservedEntitlement();
     this.observedEntitlement = { status: 'unknown', renewsAt: null };
     this.publishEntitlement();
@@ -239,11 +249,21 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         const recovery = await this.deps.recoveryJournal.begin('purchase', ready.userId!, this.deps.now());
         if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
           throw new Error('Finish connecting the existing purchase before starting another.');
+        const hadAccessBefore = this.observedEntitlement.status === 'active' || this.observedEntitlement.status === 'trial';
+        await this.saveIntent({
+          operationId: recovery.operationId,
+          account: ready.userId!,
+          vendorProductId: product.vendorProductId,
+          amount: product.price?.amount ?? null,
+          currency: product.price?.currencyCode ?? null,
+          hadAccessBefore,
+        });
         let result;
         try {
           await this.attachIntegration(ready);
           result = await this.deps.sdk.makePurchase(product);
         } catch (error) {
+          void this.dropIntent();
           const current = this.deps.recoveryJournal.snapshot();
           if (current.type === 'pending' && current.operationId === recovery.operationId)
             await this.deps.recoveryJournal.clear();
@@ -253,6 +273,11 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           }
           throw error;
         }
+        if (result.type === 'success')
+          await this.reportConversion(ready.userId!, result.profile.accessLevels?.premium, decodeStoreTransaction(result.ios?.jwsTransaction), {
+            vendorProductId: product.vendorProductId, amount: product.price?.amount, currency: product.price?.currencyCode,
+          }, hadAccessBefore);
+        else void this.dropIntent();
         this.assertIdentity(ready);
         if (result.type !== 'success') {
           if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };
@@ -342,6 +367,63 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     await this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id);
     this.assertIdentity(identity);
   }
+  private async attachAdIdentifiers(): Promise<void> {
+    try {
+      const identifiers = (await this.deps.adIntegrationIdentifiers?.()) ?? {};
+      for (const [key, value] of Object.entries(identifiers)) await this.deps.sdk.setIntegrationIdentifier(key, value);
+    } catch (error) {
+      this.deps.reportError(error);
+    }
+  }
+  private async saveIntent(intent: Parameters<PurchaseIntentStore['save']>[0]): Promise<void> {
+    try { await this.deps.purchaseIntents?.save(intent); }
+    catch (error) { this.deps.reportError(error); }
+  }
+  private async dropIntent(): Promise<void> {
+    try { await this.deps.purchaseIntents?.take(); }
+    catch (error) { this.deps.reportError(error); }
+  }
+  private async reportConversion(
+    account: string,
+    access: PremiumAccess | undefined,
+    transaction: ReturnType<typeof decodeStoreTransaction>,
+    product: { vendorProductId: string; amount: number | undefined; currency: string | undefined },
+    hadAccessBefore: boolean,
+  ): Promise<void> {
+    try {
+      await this.dropIntent();
+      const purchase = classifyPurchase({ account, access, transaction, product, hadAccessBefore });
+      if (!purchase || !this.deps.adAttribution) return;
+      if (purchase.kind === 'trial') await this.deps.adAttribution.trialStarted(purchase.conversion);
+      else await this.deps.adAttribution.subscriptionStarted(purchase.conversion);
+    } catch (error) {
+      this.deps.reportError(error);
+    }
+  }
+  private async recoverInterruptedPurchase(profile: AdaptyProfile): Promise<void> {
+    const intents = this.deps.purchaseIntents;
+    if (!intents || this.recoveringIntent) return;
+    this.recoveringIntent = true;
+    try {
+      const intent = await intents.current();
+      if (!intent || intent.launch === intents.launch) return;
+      await this.deps.recoveryJournal.ready();
+      const journal = this.deps.recoveryJournal.snapshot();
+      if (journal.type === 'none' || journal.operation !== 'purchase' || journal.operationId !== intent.operationId) {
+        await this.dropIntent();
+        return;
+      }
+      const access = profile.accessLevels?.premium;
+      if (profile.customerUserId !== intent.account || !access?.isActive) return;
+      await this.reportConversion(intent.account, access, null, {
+        vendorProductId: intent.vendorProductId, amount: intent.amount ?? undefined, currency: intent.currency ?? undefined,
+      }, intent.hadAccessBefore);
+    } catch (error) {
+      this.deps.reportError(error);
+    } finally {
+      this.recoveringIntent = false;
+    }
+  }
   private publishProfile(profile: AdaptyProfile, source: ProfileSource): Entitlement {
     if (this.disposed) return entitlementStore.getState().data.entitlement;
     const expected = this.expected;
@@ -351,6 +433,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       this.deps.getIdentity().generation !== expected.generation
     )
       return entitlementStore.getState().data.entitlement;
+    if (source === 'listener' || source === 'refresh' || source === 'restore-return' || source === 'restore-callback')
+      void this.recoverInterruptedPurchase(profile);
     const next = reduceEntitlement(this.observedEntitlement, mapEntitlement(profile), source);
     this.observedEntitlement = next;
     this.publishEntitlement();

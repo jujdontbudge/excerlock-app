@@ -72,6 +72,7 @@ export function PaywallScreen({
           variation_id: next.flowVariationId || undefined,
           ...(placement === 'onboarding' ? { offer_arm: runtime.onboardingOffer?.snapshot().arm ?? 'a', offer_source: runtime.onboardingOffer?.snapshot().source ?? 'fallback' } : {}),
         });
+        runtime.adAttribution.paywallViewed();
         break;
       } catch (error) {
         reportError(error, 'load');

@@ -51,6 +51,14 @@ export type Scenario = {
   identityLab?: IdentityLabScript;
   onboardingOffer?: { arm: 'a' | 'b' | 'unknown' | 'late' | 'error' | 'malformed'; assigned?: 'a' | 'b'; introEligible?: boolean; trialDays?: number; fallbackError?: boolean };
   purchaseRecovery?: 'pending' | 'accountConnection';
+  ads?: {
+    tracking?: 'granted' | 'denied' | 'undetermined';
+    answer?: 'granted' | 'denied';
+    failure?: 'start' | 'send';
+    unconfigured?: boolean;
+    sentBefore?: string[][];
+    interruptedPurchase?: { vendorProductId: string; amount: number; currency: string };
+  };
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;
@@ -78,6 +86,9 @@ export type IdentityLabScript = {
   providerAttempts?: boolean;
   emailChallenges?: boolean;
   staleProductHandle?: boolean;
+  storeGrant?: { owner: string; status: 'trial' | 'active' };
+  storeTransaction?: { originalTransactionId: string; environment: 'Sandbox' | 'Production' | 'Xcode' };
+  duplicatePurchaseCallback?: boolean;
   wrongStoreAccount?: boolean;
   independentRestore?: boolean;
   passiveEntry?: boolean;

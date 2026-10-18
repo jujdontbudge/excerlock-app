@@ -11,6 +11,7 @@ import { GymPort } from './GymPort';
 import { AuthPort } from './AuthPort';
 import { SubscriptionAdmissionPort, SubscriptionPort } from './SubscriptionPort';
 import { AnalyticsPort } from './AnalyticsPort';
+import type { AdAttributionPort } from './AdAttributionPort';
 import { NotificationsPort } from './NotificationsPort';
 import { SyncPort } from './SyncPort';
 import { ClockPort } from './ClockPort';
@@ -40,6 +41,7 @@ export type Runtime = {
   subscription: SubscriptionPort;
   subscriptionAdmission: SubscriptionAdmissionPort;
   analytics: AnalyticsPort;
+  adAttribution: AdAttributionPort;
   notifications: NotificationsPort;
   notificationResponses: NotificationResponsesPort;
   sync: SyncPort;

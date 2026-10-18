@@ -29,6 +29,7 @@ import { SubscriptionFake } from './lib/fakes/SubscriptionFake';
 import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
 import { trialReminderPlan } from '../notifications/notificationPlan';
 import { AnalyticsFake } from './lib/fakes/AnalyticsFake';
+import { AdAttributionFake } from './lib/fakes/AdAttributionFake';
 import { NotificationsFake } from './lib/fakes/NotificationsFake';
 import { SyncFake } from './lib/fakes/SyncFake';
 import { identityLabHost } from './lib/fakes/identityLabHost';
@@ -64,6 +65,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let accountData = options.createAccountData();
   let accountTransitions: string[] = [];
   const ctx = new FakeContext(scenarios[0]),
+    adAttribution = AdAttributionFake(ctx),
     bankDrain = createBankDrainFake(() => ctx.clock.now()),
     notificationResponses = NotificationResponsesFake((snapshot) => ctx.update({ notificationResponses: snapshot })),
     walking = WalkingFake(ctx),
@@ -109,6 +111,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       seedAccount: (account) => seedAccount(account),
       accountCheckpoint,
+      adAttribution,
     }),
     ready = persistence.ready.then(async () => {
       await Promise.all(
@@ -128,6 +131,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       walking.resume();
       gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
+      adAttribution.reset();
       identityLab.start();
       launchEntitlements = (ctx.scenario.entitlementTimeline ?? []).map(({ status, afterMs }) =>
         setTimeout(() => dev.setEntitlement(status), afterMs),
@@ -207,6 +211,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
         onboardingOffer.reset();
+        adAttribution.reset();
         identityLab.start();
         gait.set(scenario.gait ?? 'none');
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
@@ -643,6 +648,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     subscription,
     subscriptionAdmission,
     analytics,
+    adAttribution,
     onboardingOffer,
     reviewPreset: {
       isEnabled: async () => ctx.scenario.remoteFlags?.reviewPreset ?? false,

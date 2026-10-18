@@ -1,3 +1,4 @@
+import { inactiveAdAttribution } from '../ad-attribution/AdAttribution';
 import { createAccountBoundExport } from '../runtime/AccountBoundExport';
 import { createNativeNotifications } from '../notifications/createNativeNotifications';
 import { createNativeJsonExport } from '../runtime/NativeJsonExport';
@@ -100,6 +101,7 @@ export async function createClientServices(options: {
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
   reportError(error: unknown): void;
+  promptSystem?<T>(run: () => Promise<T>): Promise<T>;
 }) {
   void options.beforeDelete;
   void options.afterDelete;
@@ -120,6 +122,7 @@ export async function createClientServices(options: {
     auth,
     subscription,
     analytics: telemetry.analytics,
+    adAttribution: inactiveAdAttribution,
     incidentReports: { post: async () => { throw new LabIdentityUnavailableError(); } },
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),

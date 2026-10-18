@@ -5,7 +5,16 @@ export type ClientConfiguration = {
   adaptyPublicKey: string;
   posthog: { apiKey: string; host: string };
   sentryDsn: string;
+  adAttribution: { tiktok: { appId: string; tiktokAppId: string; appSecret: string } | null };
 };
+function readTikTok(group: unknown): ClientConfiguration['adAttribution']['tiktok'] {
+  const tiktok = group && typeof group === 'object' ? (group as Record<string, unknown>).tiktok : null;
+  if (!tiktok || typeof tiktok !== 'object') return null;
+  const { appId, tiktokAppId, appSecret } = tiktok as Record<string, unknown>;
+  return typeof appId === 'string' && typeof tiktokAppId === 'string' && typeof appSecret === 'string' && appId && tiktokAppId && appSecret
+    ? { appId, tiktokAppId, appSecret }
+    : null;
+}
 export function readClientConfiguration(extra: unknown): ClientConfiguration {
   if (!extra || typeof extra !== 'object') throw new Error('Client configuration is unavailable');
   const root = extra as Record<string, unknown>;
@@ -27,6 +36,7 @@ export function readClientConfiguration(extra: unknown): ClientConfiguration {
     adaptyPublicKey: text('clientSubscription', 'adaptyKey'),
     posthog: { apiKey: text('clientObservability', 'posthogApiKey'), host: text('clientObservability', 'posthogHost') },
     sentryDsn: text('clientObservability', 'sentryDsn'),
+    adAttribution: { tiktok: readTikTok(root.clientAdAttribution) },
   };
   for (const value of [config.auth.supabaseUrl, config.auth.apiBaseUrl, config.posthog.host, config.sentryDsn]) {
     const url = new URL(value);

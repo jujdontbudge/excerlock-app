@@ -26,6 +26,7 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     switchOrdering?: string;
     activityCheckpoints?: string;
   };
+  adEvents?: { meta: string; tiktok: string; consent: string };
   subscriptionLab?: {
     purchases: number;
     restores: number;

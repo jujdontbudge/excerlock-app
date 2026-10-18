@@ -130,8 +130,8 @@ export const nativeConfig: {
       // flagging the build with MISSING_EXPORT_COMPLIANCE.
       ITSAppUsesNonExemptEncryption: false,
       // Single-place strings with no owning plugin (never duplicate a
-      // plugin-owned NS*UsageDescription here). No NSUserTrackingUsageDescription:
-      // v1 shows no ATT prompt and declares NSPrivacyTracking=false.
+      // plugin-owned NS*UsageDescription here). NSUserTrackingUsageDescription is owned by
+      // expo-tracking-transparency through config/adAttribution.ts (ADR 0084).
       // No CFBundleAlternateIcons: v1 bundles no alternate icon assets, so any
       // declaration would be a phantom reference. Primary icon stays Expo-owned.
       NSLocationAlwaysUsageDescription:

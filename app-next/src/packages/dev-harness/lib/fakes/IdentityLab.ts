@@ -1,5 +1,6 @@
 import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../../identity/createAuthServices';
-import { AdaptySubscriptionAdapter } from '../../../subscription/AdaptySubscriptionAdapter';
+import { AdaptySubscriptionAdapter, PurchaseIntentStore } from '../../../subscription/AdaptySubscriptionAdapter';
+import type { AdAttributionPort } from '../../../ports/AdAttributionPort';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptySdkPort } from '../../../subscription/adaptySdk';
 import type { AuthIdentity, AuthPort } from '../../../ports/AuthPort';
 import type { SubscriptionPort } from '../../../ports/SubscriptionPort';
@@ -167,7 +168,22 @@ export type IdentityLabAccountHooks = {
   afterDelete(): Promise<void>;
   seedAccount?(account: 'A' | 'B'): Promise<void>;
   accountCheckpoint?(): string;
+  adAttribution?: Pick<AdAttributionPort, 'trialStarted' | 'subscriptionStarted'>;
 };
+
+const base64Url = (value: string) => btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+function labStoreTransaction(product: AdaptyPaywallProduct, trial: boolean, script: IdentityLabScript): string {
+  const payload = {
+    originalTransactionId: script.storeTransaction?.originalTransactionId ?? 'lab-original-1',
+    productId: product.vendorProductId,
+    transactionReason: 'PURCHASE',
+    environment: script.storeTransaction?.environment ?? 'Sandbox',
+    price: trial ? 0 : Math.round((product.price?.amount ?? 0) * 1000),
+    currency: product.price?.currencyCode ?? 'USD',
+    ...(trial ? { offerType: 1, offerDiscountType: 'FREE_TRIAL' } : {}),
+  };
+  return `${base64Url('{"alg":"none"}')}.${base64Url(JSON.stringify(payload))}.lab`;
+}
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -216,6 +232,7 @@ export async function createIdentityLab(
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
   if (script.purchase === 'alreadyOwned') grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
   if (script.wrongStoreAccount) grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
+  if (script.storeGrant) grants.set(STORE_SUBSCRIPTION_ID, script.storeGrant);
   const tombstones = new Set<string>();
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
   let transfers = 0;
@@ -608,7 +625,11 @@ export async function createIdentityLab(
         return { type: 'pending' } as AdaptyPurchaseResult;
       }
       updateSubscriptionLab();
-      return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
+      if (script.duplicatePurchaseCallback) {
+        profileListener?.(purchased);
+        setTimeout(() => profileListener?.(purchased), 0);
+      }
+      return { type: 'success', profile: purchased, ios: { jwsTransaction: labStoreTransaction(product, trial, script) } } as unknown as AdaptyPurchaseResult;
     },
     restorePurchases: async () => {
       const configured = script.restore ?? ctx.snapshot().restoreOutcome;
@@ -658,6 +679,9 @@ export async function createIdentityLab(
     openSubscriptionManagement: async () => undefined,
     recoveryJournal: new PurchaseRecoveryJournal(AsyncStorage),
     now: () => ctx.clock.now(),
+    adAttribution: accountHooks?.adAttribution,
+    purchaseIntents: new PurchaseIntentStore(AsyncStorage),
+    adIntegrationIdentifiers: async () => ({ facebook_anonymous_id: 'lab-meta-anonymous-id' }),
   });
   services = await createAuthServices({
     supabaseUrl: LAB_URL,

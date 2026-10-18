@@ -73,7 +73,15 @@ export function useOnboarding() {
     Keyboard.dismiss();
     setDirection(back ? 'back' : 'forward');
     useOnboardingStore.getState().patch({ step: next });
-    if (next === 'P') { beginPaywall(); router.replace('/paywall'); }
+    if (next === 'P') {
+      runtime.adAttribution.onboardingFinished();
+      const epoch = advanceEpoch.current;
+      void runtime.adAttribution.requestTrackingConsent().finally(() => {
+        if (!mounted.current || advanceEpoch.current !== epoch) return;
+        beginPaywall();
+        router.replace('/paywall');
+      });
+    }
     else router.setParams({ step: next });
   };
   return {

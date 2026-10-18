@@ -24,6 +24,7 @@ import { createServerSubscriptionAdmission } from '../subscription/ServerSubscri
 import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
 import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
+import { createNativeAdAttribution } from '../ad-attribution/NativeAdAttribution';
 
 export async function createClientServices(options: {
   extra: unknown;
@@ -32,13 +33,29 @@ export async function createClientServices(options: {
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
   reportError(error: unknown): void;
+  promptSystem<T>(run: () => Promise<T>): Promise<T>;
   beforeAccountSwitch?(): Promise<void>;
   prepareAccount?(identity: AuthIdentity): Promise<void>;
 }) {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
+  let verifiedStore: Promise<'production' | 'sandbox' | null> | null = config.environment === 'prod' ? verifiedStoreEnvironment() : null;
+  const adAttribution = createNativeAdAttribution({
+    tiktok: config.adAttribution.tiktok,
+    productionStore: async () => {
+      if (config.environment !== 'prod') return false;
+      let store = await verifiedStore;
+      if (store === null) store = await (verifiedStore = verifiedStoreEnvironment());
+      if (store === null) throw new Error('App Store environment unverified; TikTok waits for the next launch');
+      return store === 'production';
+    },
+    prompt: (run) => options.promptSystem(run),
+    reportError: (error) => options.reportError(error),
+  });
+  adAttribution.start();
   const identity = await createIdentityServices({
+    adAttribution,
     config: config.auth, adaptyPublicKey: config.adaptyPublicKey, reportError: options.reportError, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
     beforeAccountSwitch: options.beforeAccountSwitch,
     prepareAccount: options.prepareAccount,
@@ -70,7 +87,7 @@ export async function createClientServices(options: {
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
   const backend = subscriptionBackend(
     config,
-    config.environment === 'prod' ? await verifiedStoreEnvironment() : config.storeEnvironment,
+    config.environment === 'prod' ? await verifiedStore : config.storeEnvironment,
   );
   const subscriptionAdmission = backend
     ? rememberAdmission(
@@ -97,7 +114,7 @@ export async function createClientServices(options: {
     () => disposed,
   );
   return {
-    auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics,
+    auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics, adAttribution,
     onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation, installId: () => telemetry.getDeviceId() }),
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),

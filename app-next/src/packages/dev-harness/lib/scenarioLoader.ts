@@ -15,6 +15,8 @@ import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
 import { beginLaunch } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
+import { PURCHASE_INTENT_KEY } from '../../subscription/AdaptySubscriptionAdapter';
+import { LEDGER_PREFIX, ledgerKey } from '../../ad-attribution/AdAttribution';
 import { createAsyncStorageOtaStorage } from '../../updates/updates';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
@@ -41,6 +43,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
       ...(scenario.purchaseRecovery === 'accountConnection' ? { confirmedAt: startedAt } : {}),
     }));
   } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
+  await seedAdAttribution(scenario);
   resetStores();
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [], units: scenario.profile?.units ?? settingsStore.getState().data.units, gymAutoDetect: scenario.gym?.autoDetect ?? false, gymBackgroundAsked: scenario.gym?.backgroundAsked ?? false, gymAutoDetectOptOut: scenario.gym?.optOut ?? false });
   profileStore.getState().patch(scenario.profile ?? {});
@@ -66,4 +69,23 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
       ? { activity: 'walking', walkingMode: 'steps', goal: 5000, ...scenario.onboardingAnswers }
       : {},
   });
+}
+
+async function seedAdAttribution(scenario: Scenario) {
+  const keys = await AsyncStorage.getAllKeys();
+  await AsyncStorage.multiRemove([...keys.filter((key) => key.startsWith(LEDGER_PREFIX)), PURCHASE_INTENT_KEY]);
+  for (const parts of scenario.ads?.sentBefore ?? []) await AsyncStorage.setItem(ledgerKey(...parts), 'sent');
+  const interrupted = scenario.ads?.interruptedPurchase;
+  if (interrupted) {
+    await AsyncStorage.setItem(PURCHASE_INTENT_KEY, JSON.stringify({
+      version: 1,
+      operationId: `purchase:lab-checkout-1:${scenario.clock.now}`,
+      account: 'lab-checkout-1',
+      vendorProductId: interrupted.vendorProductId,
+      amount: interrupted.amount,
+      currency: interrupted.currency,
+      hadAccessBefore: false,
+      launch: 'previous-launch',
+    }));
+  }
 }

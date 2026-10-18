@@ -1,12 +1,13 @@
 import { Linking } from 'react-native';
 import type { AuthIdentity } from '../../ports/AuthPort';
 import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../identity/createAuthServices';
-import { AdaptySubscriptionAdapter } from '../../subscription/AdaptySubscriptionAdapter';
+import { AdaptySubscriptionAdapter, PurchaseIntentStore } from '../../subscription/AdaptySubscriptionAdapter';
 import { nativeAdaptySdk } from '../../subscription/nativeAdaptySdk';
 import type { AdaptySdkPort } from '../../subscription/adaptySdk';
 import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PurchaseRecoveryJournal } from '../../subscription/PurchaseRecoveryJournal';
+import type { AdAttributionPort } from '../../ports/AdAttributionPort';
 
 type AnalyticsIdentityHooks = {
   identify(id: string): Promise<void>;
@@ -25,6 +26,7 @@ export async function createIdentityServices(options: {
   beforeAccountSwitch?(): Promise<void>;
   prepareAccount?(identity: AuthIdentity): Promise<void>;
   sdk?: AdaptySdkPort;
+  adAttribution?: AdAttributionPort & { metaAnonymousId(): Promise<string | null> };
   secureBackend?: AuthServiceConfig['secureBackend'];
 }) {
   let authServices: AuthServices | undefined;
@@ -49,6 +51,12 @@ export async function createIdentityServices(options: {
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
     recoveryJournal,
     now: () => new Date().toISOString(),
+    adAttribution: options.adAttribution,
+    purchaseIntents: new PurchaseIntentStore(AsyncStorage),
+    adIntegrationIdentifiers: async (): Promise<Record<string, string>> => {
+      const id = await options.adAttribution?.metaAnonymousId();
+      return id ? { facebook_anonymous_id: id } : {};
+    },
   });
   try {
     authServices = await createAuthServices({

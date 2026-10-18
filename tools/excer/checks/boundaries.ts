@@ -184,3 +184,44 @@ export const agentLayout: Check = {
     return verdict(problems);
   },
 };
+
+const reviewedAdEvents = 'registration:|view_content:|start_trial:|subscribe:value,currency';
+
+export const adAttribution: Check = {
+  name: 'ad-attribution',
+  why: 'Only the reviewed events and properties reach Meta and TikTok, never health, motion, place or gym data (App Review 5.1.3, ADR 0084).',
+  tier: 'static',
+  run() {
+    const pkg = 'app-next/src/packages/ad-attribution';
+    const problems = [
+      ...onlyOwners(appSources(), /excerlock-meta-events/, [`${pkg}/lib/native/metaSink.ts`]),
+      ...onlyOwners(appSources(), /excerlock-tiktok-events/, [`${pkg}/lib/native/tiktokSink.ts`]),
+      ...onlyOwners(appSources(), /expo-tracking-transparency/, [`${pkg}/lib/native/trackingConsent.ts`]),
+      ...onlyOwners(appSources(), /react-native-fbsdk-next/, []),
+    ];
+    const events = read(fromRoot(pkg, 'lib', 'adEvents.ts'));
+    const table = /AD_EVENT_PROPERTIES = \{([^}]+)\}/.exec(events)?.[1] ?? '';
+    const declared = [...table.matchAll(/(\w+): \[([^\]]*)\]/g)]
+      .map(([, name, props]) => `${name}:${[...(props ?? '').matchAll(/'(\w+)'/g)].map((match) => match[1]).join(',')}`)
+      .join('|');
+    if (declared !== reviewedAdEvents)
+      problems.push(`ad event allow-list is [${declared}], reviewed set is [${reviewedAdEvents}]; a new property needs a privacy review and ADR 0084`);
+    for (const file of walk(fromRoot(pkg))) {
+      const source = read(file);
+      const imports = [...source.matchAll(/from '\.\.\/([a-z-]+)\//g)].map((match) => match[1]);
+      for (const name of imports) if (name !== 'ports') problems.push(`${rel(file)} imports ${name}; ad-attribution reads only ports`);
+    }
+    const tiktok = read(fromRoot('app-next/modules/excerlock-tiktok-events/ios/ExcerlockTikTokEventsModule.swift'));
+    const meta = read(fromRoot('app-next/modules/excerlock-meta-events/ios/ExcerlockMetaEventsModule.swift'));
+    const plugin = read(fromRoot('app-next/plugins/withAdAttribution.js'));
+    const keys = [...tiktok.matchAll(/addProperty\(withKey: "(\w+)"/g)].map((match) => match[1]).sort().join(',');
+    if (keys !== 'currency,value') problems.push(`TikTok events carry [${keys}]; only value and currency are reviewed`);
+    if ([...meta.matchAll(/parameters\[\.(\w+)\]/g)].map((match) => match[1]).join(',') !== 'currency') problems.push('Meta events carry parameters beyond fb_currency');
+    if (!/config\.disablePaymentTracking\(\)/.test(tiktok)) problems.push('TikTok payment tracking must stay disabled: Adapty owns StoreKit transactions');
+    if (/setTrackingEnabled|disableSKAdNetworkSupport/.test(tiktok)) problems.push('TikTok setTrackingEnabled stops every event and TikTok owns SKAdNetwork; neither may be called');
+    if (!/if testMode \{ config\.enableDebugMode\(\) \}/.test(tiktok)) problems.push('TikTok debug mode must stay behind testMode');
+    for (const key of ['FacebookSKAdNetworkReportEnabled: false', 'FBSDKAutoLogMetaDataEnabled: false', 'FBSDKAutoLogProductImprovementEnabled: false'])
+      if (!plugin.includes(key)) problems.push(`withAdAttribution must set ${key}`);
+    return verdict(problems);
+  },
+};

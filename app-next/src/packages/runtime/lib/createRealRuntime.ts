@@ -226,6 +226,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       version: Constants.expoConfig?.version ?? '1.0.0',
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',
       reportError: options.reportError,
+      promptSystem: (run) => safety.prompt(run),
       beforeAccountSwitch: async () => {
         await queue;
         walking.stop();
@@ -747,6 +748,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       subscription: client.subscription,
       subscriptionAdmission: client.subscriptionAdmission,
       analytics: client.analytics,
+      adAttribution: client.adAttribution,
       reviewPreset: client.reviewPreset,
       experiments: client.experiments,
       signInRequired: client.signInRequired,

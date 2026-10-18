@@ -2,7 +2,7 @@ const layers = [
   ['model', 'persistence', 'platform', 'trace', 'ui', 'updates'],
   ['preferences', 'schedule'],
   ['ports'],
-  ['conditions', 'identity', 'telemetry'],
+  ['ad-attribution', 'conditions', 'identity', 'telemetry'],
   ['app-selection', 'permissions', 'subscription'],
   ['journey', 'gyms', 'notifications'],
   ['activity'],

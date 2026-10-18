@@ -18,6 +18,13 @@ export const CLIENT_ENV_NAMES = [
   'EXPO_PUBLIC_API_URL',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
 ] as const;
+export const AD_ENV_NAMES = [
+  'EXPO_PUBLIC_META_APP_ID',
+  'EXPO_PUBLIC_META_CLIENT_TOKEN',
+  'EXPO_PUBLIC_TIKTOK_APP_ID',
+  'EXPO_PUBLIC_TIKTOK_APP_SECRET',
+] as const;
+export const APP_STORE_ID = '6787265352';
 const aliases: Partial<Record<(typeof CLIENT_ENV_NAMES)[number], string[]>> = {
   EXPO_PUBLIC_POSTHOG_HOST: ['POSTHOG_HOST'],
   SENTRY_DSN: ['SENTRY_DSN_MOBILE'],
@@ -66,8 +73,8 @@ export function resolveBuildEnvironment(env: EnvironmentValues): BuildEnvironmen
 }
 
 export function resolveClientEnvironment(processValues: EnvironmentValues, localValues: EnvironmentValues = {}): Record<string, string | undefined> {
-  return Object.fromEntries(CLIENT_ENV_NAMES.map((key) => {
-    const names = [key, ...(aliases[key] ?? [])];
+  return Object.fromEntries([...CLIENT_ENV_NAMES, ...AD_ENV_NAMES].map((key) => {
+    const names = [key, ...(aliases[key as (typeof CLIENT_ENV_NAMES)[number]] ?? [])];
     // Explicit empty process values must fail validation, not revive stale local credentials.
     const source = names.some((name) => processValues[name] !== undefined) ? processValues : localValues;
     return [key, names.map((name) => source[name]).find((value) => value !== undefined)];
@@ -80,7 +87,24 @@ export type ClientExtra = {
   clientObservability?: { posthogApiKey: string | undefined; posthogHost: string | undefined; sentryDsn: string | undefined };
   clientAuth?: { supabaseUrl: string | undefined; supabaseAnonKey: string | undefined; googleIosClientId: string | undefined };
   clientApi?: { url: string | undefined };
+  clientAdAttribution?: AdAttributionExtra;
 };
+export type AdAttributionExtra = {
+  meta: { appId: string; clientToken: string } | null;
+  tiktok: { appId: string; tiktokAppId: string; appSecret: string } | null;
+};
+
+/** Placeholders, blanks and malformed values leave that platform out of the build entirely. */
+export function adAttributionExtra(values: EnvironmentValues): AdAttributionExtra | undefined {
+  const value = (key: (typeof AD_ENV_NAMES)[number]) => values[key]?.trim() ?? '';
+  const metaAppId = value('EXPO_PUBLIC_META_APP_ID'), metaToken = value('EXPO_PUBLIC_META_CLIENT_TOKEN');
+  const tiktokAppId = value('EXPO_PUBLIC_TIKTOK_APP_ID'), tiktokSecret = value('EXPO_PUBLIC_TIKTOK_APP_SECRET');
+  const meta = /^[0-9]{5,20}$/.test(metaAppId) && /^[0-9a-f]{32}$/i.test(metaToken) ? { appId: metaAppId, clientToken: metaToken } : null;
+  const tiktok = /^[0-9]{5,25}$/.test(tiktokAppId) && /^[A-Za-z0-9_-]{16,128}$/.test(tiktokSecret) && !/placeholder/i.test(tiktokSecret)
+    ? { appId: APP_STORE_ID, tiktokAppId, appSecret: tiktokSecret }
+    : null;
+  return meta || tiktok ? { meta, tiktok } : undefined;
+}
 
 export function buildClientExtra(values: EnvironmentValues, environment: BuildEnvironment, options: { requireUploadToken?: boolean } = {}): ClientExtra {
   // The standalone research lab embeds no client identity group at all: the lab
@@ -115,5 +139,6 @@ export function buildClientExtra(values: EnvironmentValues, environment: BuildEn
     clientObservability: { posthogApiKey: values.EXPO_PUBLIC_POSTHOG_KEY, posthogHost: values.EXPO_PUBLIC_POSTHOG_HOST, sentryDsn: values.SENTRY_DSN },
     clientAuth: { supabaseUrl: values.EXPO_PUBLIC_SUPABASE_URL, supabaseAnonKey: values.EXPO_PUBLIC_SUPABASE_ANON_KEY, googleIosClientId: values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID },
     clientApi: { url: values.EXPO_PUBLIC_API_URL },
+    ...(adAttributionExtra(values) ? { clientAdAttribution: adAttributionExtra(values) } : {}),
   };
 }

@@ -84,6 +84,9 @@ export function DevControls() {
         <SettingsRow title="Conditions" value={String(conditionCount)} />
         <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
         <SettingsRow title={`Purchase recovery ${runtime.subscription.recovery().type}`} />
+        <SettingsRow title={`Meta events ${view.adEvents?.meta ?? 'none'}`} />
+        <SettingsRow title={`TikTok events ${view.adEvents?.tiktok ?? 'none'}`} />
+        <SettingsRow title={`Ad tracking ${view.adEvents?.consent ?? 'not started'}`} />
         <SettingsRow title={`Purchase operations ${String(view.subscriptionLab?.purchases ?? 0)}`} />
         <SettingsRow title={`Restore operations ${String(view.subscriptionLab?.restores ?? 0)}`} />
         <SettingsRow title={`Delayed callbacks ${String(view.subscriptionLab?.queued ?? 0)}/${String(view.subscriptionLab?.delivered ?? 0)}`} />

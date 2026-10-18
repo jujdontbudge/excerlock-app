@@ -5,6 +5,7 @@ import { buildClientExtra, resolveBuildEnvironment, updateChannel } from './conf
 import { loadBuildEnvironment } from './config/loadEnvironment';
 import { nativeConfig } from './config/native';
 import { googleOAuthRedirect } from './config/googleOAuth';
+import { adPlugins } from './config/adAttribution';
 // CommonJS is the single executable owner used by Expo config, target configs,
 // Babel, and Metro so research identifiers and opt-in parsing cannot drift.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -77,7 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ...(linkedRecorderResearch ? { CFBundleDisplayName: 'ExcerLock Trace Lab' } : {}),
       },
     },
-    plugins: [...plugins],
+    plugins: [...plugins, ...(linkedRecorderResearch ? [] : adPlugins(extra.clientAdAttribution))],
     extra: {
       ...config.extra,
       ...clientExtra,
