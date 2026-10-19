@@ -14,7 +14,7 @@ import { openSupportEmail } from '../support/SupportDelivery';
 import { useRuntime } from '../ports/useRuntime';
 import { haptic } from '../ui/haptics';
 import { toggleFilmingMode, useFilmingModeActive } from '../activity/filmingModeStore';
-import { toggleShowcaseMode, useShowcaseMode } from '../progress/showcaseModeStore';
+import { setShowcaseMode, toggleShowcaseMode, useShowcaseMode } from '../progress/showcaseModeStore';
 
 export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev?: () => void }) {
   const name = useProfileStore((s) => s.data.name),
@@ -35,6 +35,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
   };
   const toggleFilming = () => {
     const on = toggleFilmingMode(Date.now());
+    setShowcaseMode(runtime.auth, on);
     haptic(on ? 'success' : 'tap');
     notify(on ? c.filmingOn : c.filmingOff);
   };

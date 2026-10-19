@@ -4,7 +4,12 @@ import * as v from '../persistence/validation';
 import type { AuthPort } from '../ports/AuthPort';
 import { useRuntime } from '../ports/useRuntime';
 export const SHOWCASE_OWNER_ACCOUNT_IDS: readonly string[] = ['06035ee9-1f8e-4eb7-a209-5445093e5e97'];
-export const showcaseModeStore = createPersistedStore<{ on: boolean }>('showcase-mode', { on: false }, { on: v.bool });
+export const SHOWCASE_POINTS = 48_000;
+export const showcaseModeStore = createPersistedStore<{ on: boolean; spent: number }>(
+  'showcase-mode',
+  { on: false, spent: 0 },
+  { on: v.bool, spent: v.number() },
+);
 const useShowcaseModeStore = showcaseModeStore;
 const accountId = (auth: AuthPort) => {
   const identity = auth.identity();
@@ -13,10 +18,19 @@ const accountId = (auth: AuthPort) => {
 const showcaseAllowed = (userId: string | null) =>
   __DEV__ || (userId !== null && SHOWCASE_OWNER_ACCOUNT_IDS.includes(userId));
 export function toggleShowcaseMode(auth: AuthPort): boolean | null {
+  return setShowcaseMode(auth, !showcaseModeStore.getState().data.on);
+}
+export function setShowcaseMode(auth: AuthPort, on: boolean): boolean | null {
   if (!showcaseAllowed(accountId(auth))) return null;
-  const on = !showcaseModeStore.getState().data.on;
-  showcaseModeStore.getState().patch({ on });
+  showcaseModeStore.getState().patch(on ? { on, spent: 0 } : { on });
   return on;
+}
+export function showcaseModeActive(auth: AuthPort): boolean {
+  return showcaseModeStore.getState().data.on && showcaseAllowed(accountId(auth));
+}
+export const showcasePoints = (spent: number) => Math.max(0, SHOWCASE_POINTS - spent);
+export function useShowcasePoints(): number {
+  return showcasePoints(useShowcaseModeStore((s) => s.data.spent));
 }
 export function useShowcaseMode(): boolean {
   const { auth } = useRuntime(),
