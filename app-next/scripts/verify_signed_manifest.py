@@ -24,7 +24,7 @@ EXTENSIONS = {
 USAGE_KEYS = ['NSMotionUsageDescription', 'NSCameraUsageDescription', 'NSLocationWhenInUseUsageDescription',
               'NSLocationAlwaysAndWhenInUseUsageDescription', 'NSLocationAlwaysUsageDescription',
               'NSFaceIDUsageDescription',
-              'NSPhotoLibraryUsageDescription']
+              'NSPhotoLibraryUsageDescription', 'NSUserTrackingUsageDescription']
 
 def require(condition, message):
     if not condition: raise ValueError(message)
@@ -34,7 +34,6 @@ def verify_info(info):
         require(isinstance(info.get(key), str) and bool(info[key].strip()), 'Missing/nonempty usage description: ' + key)
     require(set(info.get('UIBackgroundModes', [])) == {'location', 'fetch'}, 'Incorrect background modes')
     require('en' in info.get('CFBundleLocalizations', []), 'Missing English localization')
-    require('NSUserTrackingUsageDescription' not in info, 'Unexpected ATT declaration')
     require('CFBundleAlternateIcons' not in info, 'Unexpected alternate icons')
     # No HealthKit (Guideline 2.5.1, ADR 0048): no Health purpose strings.
     for key in ['NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription', 'NSHealthClinicalHealthRecordsShareUsageDescription']:
@@ -107,7 +106,15 @@ def verify_payload(app, distribution=False):
     info = verify_bundle(app, BUNDLE, main=True, distribution=distribution)
     verify_info(info)
     privacy = load(app / 'PrivacyInfo.xcprivacy')
-    require(privacy.get('NSPrivacyTracking') is False, 'Tracking must be false')
+    require(privacy.get('NSPrivacyTracking') is True, 'Ad attribution tracking must be declared')
+    require({'ep1.facebook.com', 'analytics.us.tiktok.com'} <= set(privacy.get('NSPrivacyTrackingDomains', [])),
+            'Missing ad attribution tracking domains')
+    tracking = {row.get('NSPrivacyCollectedDataType'): row for row in privacy.get('NSPrivacyCollectedDataTypes', [])}
+    for kind in ['ProductInteraction', 'DeviceID', 'PurchaseHistory']:
+        row = tracking.get('NSPrivacyCollectedDataType' + kind, {})
+        require(row.get('NSPrivacyCollectedDataTypeTracking') is True, 'Missing tracking declaration: ' + kind)
+        require('NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising' in row.get('NSPrivacyCollectedDataTypePurposes', []),
+                'Missing advertising purpose: ' + kind)
     types = {row.get('NSPrivacyCollectedDataType') for row in privacy.get('NSPrivacyCollectedDataTypes', [])}
     require({'NSPrivacyCollectedDataTypeProductInteraction', 'NSPrivacyCollectedDataTypePurchaseHistory',
              'NSPrivacyCollectedDataTypeUserID'} <= types, 'Missing privacy declarations')

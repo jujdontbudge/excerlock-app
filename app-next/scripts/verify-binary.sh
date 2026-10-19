@@ -38,13 +38,12 @@ node "$(cd "$(dirname "$0")" && pwd)/verify-no-linked-trace.cjs" \
 pass "ordinary prebuild excludes Linked Recorder research markers"
 
 # Info.plist keys (§3 step 3) from the generated plist, not app.json.
-# No NSUserTrackingUsageDescription (no ATT prompt) and no
-# CFBundleAlternateIcons (no alternate assets) — their absence is asserted.
-for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
+# ATT is required by native runtime 7 (ADR 0084); alternate icons remain absent.
+for key in NSUserTrackingUsageDescription NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
   count=$(grep -c "<key>$key</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "1" ]] || fail "Info.plist key $key count=$count (want 1)"
 done
-for absent in NSUserTrackingUsageDescription CFBundleAlternateIcons NSHealthShareUsageDescription NSHealthUpdateUsageDescription; do
+for absent in CFBundleAlternateIcons NSHealthShareUsageDescription NSHealthUpdateUsageDescription; do
   count=$(grep -c "<key>$absent</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "0" ]] || fail "Info.plist key $absent count=$count (want 0)"
 done
@@ -52,7 +51,7 @@ for mode in location fetch; do
   grep -q "<string>$mode</string>" "$IOS_DIR/ExcerLock/Info.plist" || fail "UIBackgroundModes missing $mode"
 done
 grep -q "<string>processing</string>" "$IOS_DIR/ExcerLock/Info.plist" && fail "UIBackgroundModes must not contain processing (no BGProcessingTask)"
-pass "Info.plist keys present once with location/fetch (no tracking, no alternate icons, no processing)"
+pass "Info.plist keys present once with location/fetch (ATT declared, no alternate icons, no processing)"
 
 # Privacy manifest (§3 step 4): non-empty collected types.
 grep -q "NSPrivacyCollectedDataTypes" "$IOS_DIR/ExcerLock/PrivacyInfo.xcprivacy" || fail "privacy manifest missing collected types"
