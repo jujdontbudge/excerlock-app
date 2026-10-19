@@ -8,6 +8,8 @@ import { offersFor, dailyMinimum, type OfferId } from '../model/bankEconomy';
 import type { BankView } from './economy';
 import { syncBankCondition } from './BankLifecycle';
 import { difficultyForDay } from './lib/difficulty';
+import { showcaseModeActive, showcaseModeStore, showcasePoints, useShowcaseMode, useShowcasePoints } from '../progress/showcaseModeStore';
+import { showcaseHistory } from '../progress/showcaseHistory';
 export { offersFor } from '../model/bankEconomy';
 export { activityToGo } from './economy';
 export type { Difficulty, OfferId, Offer } from '../model/bankEconomy';
@@ -18,6 +20,8 @@ export function useBank(): BankView | null {
   const read = useCallback(() => runtime.clock.now(), [runtime]);
   const now = useSyncExternalStore(subscribe, read, read);
   const account = useBankStore((state) => state.data.account);
+  const showcase = useShowcaseMode();
+  const showcaseBalance = useShowcasePoints();
   const enabled = useRulesStore((state) =>
     state.data.rules.some((rule) => rule.enabled && rule.mode.kind === 'bank' && rule.id === account?.conditionId),
   );
@@ -26,6 +30,19 @@ export function useBank(): BankView | null {
   const today = account.days[day];
   const difficulty = difficultyForDay(account, day);
   const minimum = dailyMinimum(account.activity, difficulty);
+  if (showcase) {
+    const amount = showcaseHistory(day).at(-1)?.activity[account.activity] ?? 0;
+    return {
+      activity: account.activity,
+      difficulty,
+      offers: offersFor(difficulty),
+      points: showcaseBalance,
+      pendingPoints: 0,
+      firstCollect: false,
+      bankMinutes: account.bankMinutes,
+      today: { amount, minimum, met: amount >= minimum },
+    };
+  }
   return {
     activity: account.activity,
     difficulty,
@@ -72,6 +89,13 @@ export function buyOffer(id: OfferId): 'bought' | 'insufficient' {
   const account = useBankStore.getState().data.account;
   if (!account || !canUseBank(account.conditionId)) return 'insufficient';
   const offer = offersFor(difficultyForDay(account, dayKey(now, timezone))).find((candidate) => candidate.id === id);
+  if (offer && showcaseModeActive(bankRuntime.auth)) {
+    const spent = showcaseModeStore.getState().data.spent;
+    if (showcasePoints(spent) < offer.price) return 'insufficient';
+    showcaseModeStore.getState().patch({ spent: spent + offer.price });
+    useBankStore.getState().patch({ account: { ...account, bankMinutes: account.bankMinutes + offer.minutes } });
+    return 'bought';
+  }
   if (!offer || account.points < offer.price) return 'insufficient';
   useBankStore.getState().patch({
     account: { ...account, points: account.points - offer.price, bankMinutes: account.bankMinutes + offer.minutes },

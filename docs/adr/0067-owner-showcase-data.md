@@ -16,7 +16,9 @@ A hidden showcase switch makes Analytics and the Home streak show two full month
   - `useHistory` returns `showcaseHistory(today)` instead of the measured history: 61 days ending today, 13,000–22,000 steps and 60–120 gym minutes a day, every day scheduled and met. Each date's values come from a hash of the date, so a day keeps its numbers from one launch to the next.
   - `useAppleSteps` skips Core Motion and uses those steps, with distance, floors and active time derived from them.
   - Analytics offers both Steps and Time in gym, whatever Conditions exist.
-- **Scope.** It is display only. It writes nothing to the history, ledger, detection or Condition stores, and the lock decision, enforcement, Conditions progress and analytics events never read it. Turning it off shows the measured data again at once.
+- **Bank (2026-10-19).** With a Bank Condition, the Shop and Home show a showcase balance of 48,000 Points (`SHOWCASE_POINTS`) instead of the real Points, and Home's today line shows the showcase steps (or gym minutes) for today. Buying an Offer spends the showcase balance and adds the Offer's minutes to the real Bank, so purchases can be filmed. Turning showcase on refills the balance. The owner's real Points are untouched.
+- **Filming mode turns it on.** The seven-tap filming toggle (ADR 0064) also turns showcase data on or off for the owner's account, so one gesture fills everything for a video.
+- **Scope.** Apart from Bank minutes bought with showcase Points, it is display only. It writes nothing to the history, ledger, detection or Condition stores, and the lock decision, enforcement, Conditions progress and analytics events never read it. Turning it off shows the measured data again at once.
 - **Delivery.** It ships to App Store build 17 by OTA. The owner chose this on 2026-10-08, knowing it is an exception to the rule in `docs/ota.md` that an OTA never changes what users can reach; the account gate keeps it out of every other user's reach.
 
 ## Context
