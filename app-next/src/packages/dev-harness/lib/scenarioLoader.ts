@@ -18,6 +18,7 @@ import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJourna
 import { PURCHASE_INTENT_KEY } from '../../subscription/AdaptySubscriptionAdapter';
 import { LEDGER_PREFIX, ledgerKey } from '../../ad-attribution/AdAttribution';
 import { createAsyncStorageOtaStorage } from '../../updates/updates';
+import { showcaseModeStore } from '../../progress/showcaseModeStore';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
   beginLaunch();
@@ -45,6 +46,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
   await seedAdAttribution(scenario);
   resetStores();
+  if (scenario.showcase) showcaseModeStore.getState().patch({ on: true });
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [], units: scenario.profile?.units ?? settingsStore.getState().data.units, gymAutoDetect: scenario.gym?.autoDetect ?? false, gymBackgroundAsked: scenario.gym?.backgroundAsked ?? false, gymAutoDetectOptOut: scenario.gym?.optOut ?? false });
   profileStore.getState().patch(scenario.profile ?? {});
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });

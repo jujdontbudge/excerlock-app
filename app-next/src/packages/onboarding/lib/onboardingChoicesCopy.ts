@@ -1,5 +1,5 @@
 import { IconName } from '../../ui/paths';
-export type OnboardingChoice = { id: string; title: string; icon?: IconName };
+export type OnboardingChoice = { id: string; title: string; icon?: IconName; exclusive?: boolean };
 export const choiceQuestions: { [step: string]: { key: string; options: OnboardingChoice[]; multiple?: boolean } } = {
   O05: {
     key: 'referralSource',
@@ -50,6 +50,7 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
       { id: 'gain', title: 'Gaining muscle', icon: 'gym' },
       { id: 'lose', title: 'Losing fat', icon: 'flame' },
       { id: 'maintain', title: 'Maintaining my weight', icon: 'heart' },
+      { id: 'none', title: 'None', icon: 'close', exclusive: true },
     ],
   },
 };

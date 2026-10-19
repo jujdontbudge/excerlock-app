@@ -15,6 +15,11 @@ const duration = (minutes: number, minuteUnit: string) => {
 
 export const formatBank = (minutes: number) => duration(minutes, 'm');
 
+export const formatBankLeft = (minutes: number) => {
+  const whole = Math.max(0, Math.floor(minutes));
+  return `${Math.floor(whole / 60)} h ${whole % 60} m`;
+};
+
 export const formatOffer = (minutes: number) => duration(minutes, 'm');
 
 const spokenDuration = (minutes: number) => duration(minutes, 'min');
@@ -25,6 +30,8 @@ export const rewards = {
   collect: (amount: number) => `Collect ${number(amount)} Points`,
   collectChip: (amount: number) => `+${number(amount)}`,
   bank: 'in your Bank',
+  bankLeft: 'left',
+  bankLeftLabel: (minutes: number) => `${spokenDuration(minutes)} left in your Bank`,
   bankLabel: (minutes: number) => `${spokenDuration(minutes)} in your Bank`,
   buy: 'Buy',
   buyPrice: (price: number) => `Buy · ${number(price)}`,

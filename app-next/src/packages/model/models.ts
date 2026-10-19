@@ -26,6 +26,7 @@ export type HistoryDay = {
 };
 export type Scenario = {
   bank?: { points: number; pendingPoints: number; bankMinutes: number };
+  showcase?: boolean;
   gait?: 'none' | 'walking' | 'still' | 'walking-then-still';
   motion?: 'walking' | 'still';
   id: string;

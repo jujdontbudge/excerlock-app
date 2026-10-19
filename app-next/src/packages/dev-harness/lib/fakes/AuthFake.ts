@@ -1,4 +1,4 @@
-import { AuthCancelledError, AuthIdentity, AuthPort } from '../../../ports/AuthPort';
+import { AuthCancelledError, AuthIdentity, AuthNoAccountError, AuthPort, AuthRateLimitedError } from '../../../ports/AuthPort';
 import { Session } from '../../../model/types';
 import { sessionStore } from '../../../identity/sessionStore';
 import { FakeContext } from '../FakeContext';
@@ -6,6 +6,7 @@ import { FakeContext } from '../FakeContext';
 export function AuthFake(ctx: FakeContext): AuthPort {
   let email = 'alex@example.test';
   let generation = 0;
+  let lastSend: { email: string; at: number } | null = null;
   const listeners = new Set<(identity: AuthIdentity) => void>();
   const session = () => sessionStore.getState().data.session;
   const identity = (): AuthIdentity => {
@@ -36,9 +37,13 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     linkWithGoogle: () => signIn('google'),
     recoverWithApple: () => signIn('apple'),
     recoverWithGoogle: () => signIn('google'),
-    sendEmailCode: async (value) => {
+    sendEmailCode: async (value, options) => {
       ctx.result();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error('Invalid email');
+      if (options?.existingAccountOnly && /^new/i.test(value)) throw new AuthNoAccountError();
+      const waited = lastSend?.email === value ? (Date.now() - lastSend.at) / 1000 : Infinity;
+      if (waited < 60) throw new AuthRateLimitedError(Math.ceil(60 - waited));
+      lastSend = { email: value, at: Date.now() };
       email = value;
       ctx.log('email_code_sent');
     },

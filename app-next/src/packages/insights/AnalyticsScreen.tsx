@@ -1,7 +1,7 @@
 import { useBank } from '../bank/Bank';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BottomSheet, ChoiceRow, Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
+import { BottomSheet, BrandMark, ChoiceRow, Label, PressableScale, ScreenShell, SegmentedControl } from '../ui';
 import { Icon } from '../ui/Icon';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -182,6 +182,7 @@ export function AnalyticsScreen() {
   const title = <Label accessibilityRole="header" variant="display" style={{ flexShrink: 1 }}>{metricTitle}</Label>;
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
+      {showcase ? <BrandMark name={c.appName} /> : null}
       <View style={s.header}>
         <View style={{ flex: 1, alignItems: 'flex-start' }}>
           {canSwitchActivity ? (
@@ -240,6 +241,7 @@ export function AnalyticsScreen() {
               </Animated.View>
             </View>
           </GestureDetector>
+          {showcase ? <BrandMark name={c.appName} /> : null}
           <ActivityStats stats={stats} />
           <ActivityTrend
             label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
