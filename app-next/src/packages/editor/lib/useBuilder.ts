@@ -13,6 +13,7 @@ import { createRuleDraftStore } from '../../conditions/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../../conditions/scheduleDraft';
 import { builderPath, builderValid } from './builderFlow';
 import { saveRule } from './mutations';
+import { requestReviewAfterCreate } from './requestReviewAfterCreate';
 import { useRuntime } from '../../ports/useRuntime';
 import { SchedulePlanError } from '../../schedule/scheduleRepresentability';
 import { ruleNeedsSetup } from '../../permissions/useSetupNeeds';
@@ -102,6 +103,7 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
           });
           runtime.analytics.track(saved === 'created' ? 'condition_created' : 'condition_edited');
           haptic('commit');
+          if (saved === 'created') requestReviewAfterCreate(runtime.review);
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();
         } catch (error) {
