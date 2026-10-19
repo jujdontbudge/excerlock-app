@@ -41,3 +41,4 @@ export { FakeSystemPrompt } from './lib/FakeSystemPrompt';
 export { SystemAlert, type SystemAlertCopy } from './SystemAlert';
 export { Label } from './Label';
 export { Pictogram } from './Pictogram';
+export { BrandMark } from './BrandMark';

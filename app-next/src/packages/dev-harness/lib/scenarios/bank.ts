@@ -20,6 +20,7 @@ export const bankScenarios = [
   base('bank-pending', 'Points waiting to collect', bankState(0, 4210, 720)),
   base('bank-routine', 'Points waiting after an earlier Collect', bankState(11220, 3960, 192)),
   base('bank-rich', 'Points for every Offer', bankState(33000, 0, 720)),
+  base('bank-showcase', 'Showcase account with 17 m left', { ...bankState(12000, 0, 17), showcase: true }),
   base('bank-empty', 'Empty Bank with Points', bankState(3300, 0, 0)),
   base('bank-broke', 'Empty Bank with too few Points', bankState(300, 0, 0)),
   base('bank-before-midnight', 'Bank before a new Day', {

@@ -2,7 +2,7 @@
 id: bank
 title: Bank Conditions and Shop
 routes: [(tabs)/shop]
-scenarios: [bank-fresh, bank-pending, bank-routine, bank-rich, bank-empty, bank-broke, bank-before-midnight, bank-onboarding, home-no-rules]
+scenarios: [bank-fresh, bank-pending, bank-routine, bank-rich, bank-showcase, bank-empty, bank-broke, bank-before-midnight, bank-onboarding, home-no-rules]
 events: [bank_condition_created, offer_bought, points_collected, bank_emptied]
 depends: [conditions, home, onboarding, enforcement]
 ---
