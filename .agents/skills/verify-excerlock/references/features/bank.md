@@ -84,9 +84,9 @@ name: showcase-buy
 scenario: bank-showcase
 open: /shop
 tap: 1 h for 3,300 Points | Buy 1 h for 3,300 Points
-expect: 44,700 Points | Shop
+expect: 8,700 Points | 1 h 17 min | Shop
 then-open: /home
-then-expect: 61 day streak | 44,700 Points | / 6,000 steps
+then-expect: 61 day streak | 8,700 Points | 1 h 17 min | / 6,000 steps
 ```
 
 ```proof
@@ -143,5 +143,5 @@ then-expect: Bank | 11 h 45 m
 - Home and Shop use the `ui` reward kit. Labels are accessibility labels ("Collect 4,210 Points", "1 h for 3,300 Points", "Buy 1 h for 3,300 Points"), not the visible chip text. `bank-pending` has 4,210 waiting. `bank-routine` holds 11,220 Points and has 3,960 waiting, for a routine Collect without confetti. `bank-rich` holds 33,000, enough to buy every Medium Offer; `bank-empty` holds 3,300 and `bank-broke` holds 300.
 - The drain proof reloads the same scenario with edits retained before spending time, so the fake monitor must keep its armed state across that reload.
 - Simulator proofs establish settled state and fake usage, not real Screen Time thresholds, HealthKit delivery or physical activity.
-- `bank-showcase` shows the showcase balance (48,000 Points, ADR 0067) instead of its stored 12,000; `showcase-buy` spends it and adds real Bank minutes.
+- `bank-showcase` starts from the showcase balance (12,000 Points and 17 min, ADR 0067); `showcase-buy` spends it and adds real Bank minutes.
 - A freshly booted simulator has no location. The location lookup then fails and the scenario deep link never loads, so every proof shows the previous state. Run `xcrun simctl location booted set 40.7128,-74.0060` first.

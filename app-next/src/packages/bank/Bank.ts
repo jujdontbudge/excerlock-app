@@ -8,7 +8,7 @@ import { offersFor, dailyMinimum, type OfferId } from '../model/bankEconomy';
 import type { BankView } from './economy';
 import { syncBankCondition } from './BankLifecycle';
 import { difficultyForDay } from './lib/difficulty';
-import { showcaseModeActive, showcaseModeStore, showcasePoints, useShowcaseMode, useShowcasePoints } from '../progress/showcaseModeStore';
+import { showcaseModeActive, showcaseModeStore, showcasePoints, useShowcaseBankMinutes, useShowcaseMode, useShowcasePoints } from '../progress/showcaseModeStore';
 import { showcaseHistory } from '../progress/showcaseHistory';
 export { offersFor } from '../model/bankEconomy';
 export { activityToGo } from './economy';
@@ -22,6 +22,7 @@ export function useBank(): BankView | null {
   const account = useBankStore((state) => state.data.account);
   const showcase = useShowcaseMode();
   const showcaseBalance = useShowcasePoints();
+  const showcaseMinutes = useShowcaseBankMinutes();
   const enabled = useRulesStore((state) =>
     state.data.rules.some((rule) => rule.enabled && rule.mode.kind === 'bank' && rule.id === account?.conditionId),
   );
@@ -39,7 +40,7 @@ export function useBank(): BankView | null {
       points: showcaseBalance,
       pendingPoints: 0,
       firstCollect: false,
-      bankMinutes: account.bankMinutes,
+      bankMinutes: showcaseMinutes,
       today: { amount, minimum, met: amount >= minimum },
     };
   }
@@ -90,9 +91,9 @@ export function buyOffer(id: OfferId): 'bought' | 'insufficient' {
   if (!account || !canUseBank(account.conditionId)) return 'insufficient';
   const offer = offersFor(difficultyForDay(account, dayKey(now, timezone))).find((candidate) => candidate.id === id);
   if (offer && showcaseModeActive(bankRuntime.auth)) {
-    const spent = showcaseModeStore.getState().data.spent;
+    const { spent, bought } = showcaseModeStore.getState().data;
     if (showcasePoints(spent) < offer.price) return 'insufficient';
-    showcaseModeStore.getState().patch({ spent: spent + offer.price });
+    showcaseModeStore.getState().patch({ spent: spent + offer.price, bought: bought + offer.minutes });
     useBankStore.getState().patch({ account: { ...account, bankMinutes: account.bankMinutes + offer.minutes } });
     return 'bought';
   }
