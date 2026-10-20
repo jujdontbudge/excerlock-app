@@ -82,7 +82,11 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
     locked.current = true;
     setBusy(true);
     try {
-      if (settings) { await Linking.openSettings(); return; }
+      if (settings) {
+        if (need === 'screenTime' && await runtime.screenTime.requestAuthorization() === 'granted') { track('screen_time', true); pass('screenTime'); }
+        else await Linking.openSettings();
+        return;
+      }
       if (need === 'gym') { router.push('/gym-picker'); return; }
       if (need === 'screenTime') {
         const status = await runtime.screenTime.requestAuthorization();
@@ -112,6 +116,7 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
         track('screen_time', false);
         pass('screenTime', 'apps');
       } else {
+        reportRuntimeError(caught);
         notify(c.retry);
         haptic('error');
       }

@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0085: Refusing Screen Time asks again instead of sending people to Settings](0085-screen-time-refusal-asks-again.md) — **accepted**.
 - [0084: Meta and TikTok ad events, one owner per event](0084-ad-attribution-one-owner-per-event.md) — **proposed**.
 - [0083: Bank drain carries usage through bounded native intervals and re-arm receipts](0083-bank-drain-intervals-and-receipts.md) — **proposed**.
 - [0082: Scoped bearer tokens grant complimentary access over HTTPS](0082-scoped-access-grant-tokens.md) — **accepted**.
@@ -14,7 +15,7 @@
 - [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **accepted**.
 - [0059: Paid admission renews in place before its five-minute lease ends](0059-admission-renews-in-place.md) — **accepted**.
 - [0058: Research and rating after the imported plan](0058-onboarding-research-rating.md) — **accepted**.
-- [0057: Permission answers precede Setup advancement; Screen Time and Locked apps have separate pages](0057-permission-answers-before-setup-advances.md) — **accepted**.
+- [0057: Permission answers precede Setup advancement; Screen Time and Locked apps have separate pages](0057-permission-answers-before-setup-advances.md) — **accepted**; its persisted Screen Time denial is superseded by 0085.
 - [0056: One semantic haptics language in `ui/haptics`](0056-semantic-haptics-language.md) — **proposed**.
 - [0055: The Sandbox API accepts pinned Xcode StoreKit test purchases](0055-sandbox-api-accepts-xcode-storekit-test-purchases.md) — **accepted**.
 - [0054: Screens scroll as one piece](0054-screens-scroll-as-one-piece.md) — **accepted**.

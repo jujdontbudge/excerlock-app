@@ -115,6 +115,7 @@ expect: Walk 10,000 steps | Walk 5,000 steps | Home
 - `excer` pre-grants simulator location, motion, camera and photos, so real iOS alerts do not block the screen. To see a real alert, run `xcrun simctl privacy <udid> reset all com.johansardar.excerlock`.
 - iOS offers the upgrade from While Using to Always location only once. After a refusal, the flow sends the user to Settings.
 - Setup steps `X3`–`X5` exist only so older saved installs can resume.
+- Don't Allow on Apple's Screen Time prompt leaves iOS at `notDetermined`, and Settings has no Screen Time switch for an app iOS never approved. The next Allow Screen Time page asks again rather than offering Open Settings (ADR 0085).
 
 ```proof
 name: screen-time-separate-page
@@ -142,6 +143,25 @@ prompt: deny
 tap: Continue
 expect: Count your steps | Allow
 absent: Choose apps to lock
+```
+
+```proof
+name: screen-time-denial-asks-again
+scenario: permission-journey
+open: /permissions/apps
+prompt: deny
+actions: tap Continue | expect Count your steps | open /permissions/apps
+expect: Allow Screen Time | Tap “Continue” | Don’t Allow
+absent: Open Settings | Screen Time is off
+```
+
+```proof
+name: screen-time-off-asks-before-settings
+scenario: home-permission-needed
+open: /permissions/apps
+prompt: grant
+tap: Open Settings
+expect: Choose apps to lock | Choose apps
 ```
 
 ```proof

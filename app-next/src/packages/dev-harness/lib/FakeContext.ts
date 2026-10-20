@@ -60,7 +60,7 @@ export class FakeContext {
   request = async (name: keyof Permissions): Promise<PermissionStatus> => {
     const mode = this.view.promptMode;
     const granted = mode === 'ask' ? (await this.prompt({ kind: 'permission', name })) === true : mode === 'grant';
-    const status = granted ? 'granted' : 'denied';
+    const status = granted ? 'granted' : name === 'screenTime' ? 'notDetermined' : 'denied';
     permissionsStore.getState().patch({ [name]: name === 'location' && granted ? 'whenInUse' : status });
     this.log('permission_result', { name, status });
     return status;
