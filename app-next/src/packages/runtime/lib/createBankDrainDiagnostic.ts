@@ -8,7 +8,7 @@ export function createBankDrainDiagnostic(drain: NativeBankDrain, screenTime?: S
     applyLock: async () => ({ applied: false }),
     registerWatchdog: async plan => plan,
     cancelWatchdog: async () => undefined,
-  }, { isDenied: () => false, remember: () => undefined });
+  });
   return {
     snapshot: () => drain.diagnostics(),
     arm: (minutes, tickMinutes) => drain.armSpike(minutes, tickMinutes),

@@ -18,26 +18,19 @@ export type NativeScreenTimePort = ScreenTimePort & {
 };
 const mapAuthorization = (value: 0 | 1 | 2): PermissionStatus => value === 2 ? 'granted' : value === 1 ? 'denied' : 'notDetermined';
 
-export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler, denial: Readonly<{ isDenied(): boolean; remember(): void }>): NativeScreenTimePort {
+export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler): NativeScreenTimePort {
   let authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
   let authorizationPromptBusy = false;
   let pickerBusy = false;
-  const readAuthorization = () => {
-    const status = mapAuthorization(deviceActivityApi.authorizationStatus());
-    authorization = status === 'notDetermined' && denial.isDenied() ? 'denied' : status;
-    return authorization;
-  };
+  const readAuthorization = () => (authorization = mapAuthorization(deviceActivityApi.authorizationStatus()));
   const requestAuthorization = async () => {
     if (authorizationPromptBusy) return authorization;
     authorizationPromptBusy = true;
     try {
-      if (readAuthorization() === 'notDetermined') await deviceActivityApi.requestAuthorization('individual');
+      if (readAuthorization() !== 'granted') await deviceActivityApi.requestAuthorization('individual');
       return readAuthorization();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Family Controls authorization canceled.')) {
-        denial.remember();
-        return readAuthorization();
-      }
+      if (error instanceof Error && error.message.includes('Family Controls authorization canceled.')) return readAuthorization();
       if (readAuthorization() === 'denied') return authorization;
       throw error;
     } finally { authorizationPromptBusy = false; }
@@ -48,7 +41,7 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
     requestAuthorization,
     presentAppPicker: async () => {
       if (pickerBusy) throw new Error('A Screen Time picker request is already active');
-      if (readAuthorization() === 'notDetermined') await requestAuthorization();
+      if (readAuthorization() !== 'granted') await requestAuthorization();
       if (authorization !== 'granted') throw new ScreenTimeAuthorizationError(authorization);
       pickerBusy = true;
       try {

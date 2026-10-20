@@ -199,9 +199,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       cancelWatchdog: async () => {
         await host.reconcile(true);
       },
-    }, {
-      isDenied: () => permissionsStore.getState().data.screenTime === 'denied',
-      remember: () => permissionsStore.getState().patch({ screenTime: 'denied' }),
     });
     const activateAccount = async (identity: AuthIdentity) => {
       if (!identity.userId) throw new Error('Canonical account is missing its user ID');

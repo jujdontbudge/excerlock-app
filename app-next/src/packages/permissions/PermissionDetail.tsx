@@ -10,6 +10,7 @@ import { settingsStore } from '../preferences/settingsStore';
 import { Permissions } from '../model/types';
 import { LivingIcon } from '../ui/LivingIcon';
 import { IconName } from '../ui/Icon';
+import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 export const permissionIcons: Record<keyof Permissions, IconName> = {
   screenTime: 'shield',
   motion: 'walking',
@@ -33,7 +34,11 @@ export function PermissionDetail({ name, onDone }: { name: keyof Permissions; on
     locked.current = true;
     setBusy(true);
     try {
-      if (settings) { await Linking.openSettings(); return; }
+      if (settings) {
+        if (name === 'screenTime' && await runtime.screenTime.requestAuthorization() === 'granted') onDone();
+        else await Linking.openSettings();
+        return;
+      }
       if (unanswered) {
         if (name === 'screenTime') await runtime.screenTime.requestAuthorization();
         else if (name === 'motion') await runtime.steps.request();
@@ -46,7 +51,8 @@ export function PermissionDetail({ name, onDone }: { name: keyof Permissions; on
         else usePermissionsStore.getState().patch({ camera: await runtime.gait.permission() });
       }
       onDone();
-    } catch {
+    } catch (error) {
+      reportRuntimeError(error);
       if (usePermissionsStore.getState().data[name] === 'denied') onDone();
       else notify(c.retry);
     } finally {

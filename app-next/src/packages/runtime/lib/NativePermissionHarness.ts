@@ -15,9 +15,6 @@ export function attachNativePermissionHarness(runtime: Runtime) {
     applyLock: async () => ({ applied: false }),
     registerWatchdog: async (plan) => plan,
     cancelWatchdog: async () => undefined,
-  }, {
-    isDenied: () => permissionsStore.getState().data.screenTime === 'denied',
-    remember: () => permissionsStore.getState().patch({ screenTime: 'denied' }),
   });
   runtime.screenTime = {
     ...screenTime,

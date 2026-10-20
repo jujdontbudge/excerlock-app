@@ -11,7 +11,7 @@ Setup, Home reminders and Condition editing use the same permission flow. Allow 
 
 The flow retains its current page until the awaited OS request completes. A synchronous guard suppresses repeated requests and navigation while the prompt or picker is open. Permission grants cannot remove the page underneath a pending prompt. While Using and the Always upgrade are distinct Location pages. A refused Always upgrade retains foreground Location access, advances, records `locationAlwaysAsked` in the existing Settings store, and subsequent attempts offer Settings instead of repeating a prompt iOS may no longer show. This additive field defaults to false on older installs; existing storage keys and versions remain unchanged.
 
-Apple's Family Controls authorization cancellation is an answered refusal even when the native status remains notDetermined. The composition root supplies persisted denial memory to the Screen Time adapter; a later native grant takes precedence. Other request failures remain retryable errors. Gym selection is accessible during verified paid Setup as well as the main app.
+Apple's Family Controls authorization cancellation is an answered refusal even when the native status remains notDetermined. The composition root supplies persisted denial memory to the Screen Time adapter; a later native grant takes precedence. (Superseded by [ADR 0085](0085-screen-time-refusal-asks-again.md): a cancellation no longer becomes a stored `denied`, and the next request shows Apple's prompt again.) Other request failures remain retryable errors. Gym selection is accessible during verified paid Setup as well as the main app.
 
 ## Context
 
