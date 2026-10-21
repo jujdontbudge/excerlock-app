@@ -1,6 +1,20 @@
 # App Review reply draft — 1.0.2 (22)
 
-Owner draft only. **Do not send as a claim about the currently embedded build-22 bundle.** First deliver the fix through an approved route, verify the signed artifact on affected physical devices, and update the review notes. No reply or submission was sent from this worktree.
+Sent on 2026-10-21 with the 1.0.2 (23) resubmission ([record](../releases/2026-10-21-appstore-1.0.2-build23-resubmission.md)). Sent text:
+
+```text
+Thank you for the screenshot and device details. We reproduced the subscription-verification error shown after sign-in: authentication could succeed while a temporarily unavailable store-environment or subscription check stopped the app from continuing.
+
+Build 1.0.2 (23) corrects that recovery path. Verification now retries the step that failed. A newly signed-in account without a purchase continues to the subscription options. An unfinished purchase stays in recovery with Try again, Restore purchases and Account and help, and retrying never starts another purchase. Protected app access still requires verified subscription status.
+
+We also made the subscription disclosures clearer: each plan shows its full price and billing period, and the trial length, renewal and cancellation terms appear above Continue, with Terms of Use, Restore purchases and Privacy Policy on the same screen.
+
+Our previous review notes incorrectly described sign-in as optional. Onboarding and the subscription options are available before sign-in, but an Apple, Google or email-code sign-in is required before Setup and Home, so the subscription can be restored to the account. The updated review notes describe this path. No demo credentials are needed.
+
+To review: start at Welcome and choose Sign in, or tap Get started and continue to the subscription options. Continue with Apple, Google or a six-digit email code. An account without a purchase opens the subscription options; an account with a subscription continues to Setup or Home.
+```
+
+The original draft follows.
 
 ```text
 Thank you for the screenshot and device details. We reproduced the subscription-verification error shown after sign-in. Authentication could succeed while a temporarily unavailable store-environment or subscription check prevented the app from continuing.
