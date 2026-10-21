@@ -130,6 +130,14 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', establishedTransfer: true, secondSubscription: true },
   }),
+  base('identity-lab-integration-failed', 'Identity lab · attribution identifier fails before checkout', {
+    ...atOnboardingPaywall,
+    identityLab: { integrationIdentifier: 'networkFailed' },
+  }),
+  base('identity-lab-integration-hangs', 'Identity lab · attribution identifier never answers', {
+    ...atOnboardingPaywall,
+    identityLab: { integrationIdentifier: 'hang' },
+  }),
   base('identity-lab-concurrent-restore', 'Identity lab · concurrent established account restores', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', concurrentRestore: true },

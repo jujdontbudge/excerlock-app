@@ -663,7 +663,17 @@ export async function createIdentityLab(
       updateSubscriptionLab();
       return restored;
     },
-    setIntegrationIdentifier: async () => undefined,
+    setIntegrationIdentifier: async (key: string) => {
+      if (key !== 'posthog_distinct_user_id') return;
+      if (script.integrationIdentifier === 'networkFailed') {
+        ctx.log('lab_integration', { result: 'networkFailed' });
+        throw networkError('Adapty networkFailed 2005');
+      }
+      if (script.integrationIdentifier === 'hang') {
+        ctx.log('lab_integration', { result: 'hang' });
+        await new Promise(() => undefined);
+      }
+    },
   };
 
   const provisional: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };

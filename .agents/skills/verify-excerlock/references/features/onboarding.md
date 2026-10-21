@@ -523,6 +523,30 @@ then-expect: onboarding_offer_exposed {"arm":"b","assigned_arm":"b","source":"ad
 wait: 20
 ```
 
+Closing the onboarding Paywall returns to the step before it with every answer kept, never to Welcome.
+
+```proof
+name: offer-a-paywall-close-returns-reminder
+scenario: onboarding-offer-a-full
+open: /onboarding/S3d
+actions: expect 1 day before your trial ends | tap Continue | expect 3-day free trial, then $39.99/year | tap Close
+expect: 1 day before your trial ends | Continue
+absent: Get started
+then-open: /dev
+then-expect: Journey onboarding | Protected route mounts | None
+```
+
+```proof
+name: offer-b-paywall-close-returns-before-after
+scenario: onboarding-offer-b-full
+open: /onboarding/S3e
+actions: expect Become the best version of yourself | tap Continue | expect Billed as $39.99/year | tap Close
+expect: Become the best version of yourself | Continue
+absent: Get started
+then-open: /dev
+then-expect: Journey onboarding | Protected route mounts | None
+```
+
 ## Gotchas
 - Rating `S5` exists only on runtimes 4 and 5; development builds and runtime 6 skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
 - The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.

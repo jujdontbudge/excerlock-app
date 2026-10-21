@@ -24,6 +24,7 @@ import { trialOffer } from './trialOffer';
 import { profileContainsPurchase, storePurchaseForProfile } from './lib/storePurchase';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
+const INTEGRATION_TIMEOUT_MS = 3000;
 type Loaded = {
   generation: number;
   identityGeneration: number;
@@ -258,7 +259,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           throw new Error('Finish connecting the existing purchase before starting another.');
         let result;
         try {
-          await this.attachIntegration(ready);
+          await this.attachIntegrationBestEffort(ready);
           result = await this.deps.sdk.makePurchase(product);
         } catch (error) {
           const current = this.deps.recoveryJournal.snapshot();
@@ -305,7 +306,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           throw new Error('Sign in to connect your purchase.');
         let profile;
         try {
-          await this.attachIntegration(ready);
+          await this.attachIntegrationBestEffort(ready);
           profile = await this.deps.sdk.restorePurchases();
         } catch (error) {
           const current = this.deps.recoveryJournal.snapshot();
@@ -362,12 +363,25 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       throw new Error('Canonical subscription identity unavailable');
     return identity;
   }
-  private async attachIntegration(identity: AuthIdentity) {
+  private async attachIntegrationBestEffort(identity: AuthIdentity) {
     const current = this.requireExpected();
     if (current.generation !== identity.generation) throw new Error('Identity changed');
     const id = this.deps.getPosthogDistinctId();
-    if (!id) throw new Error('PostHog identity unavailable');
-    await this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id);
+    if (!id) {
+      this.deps.reportError(new Error('PostHog identity unavailable'));
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Integration identifier timed out')), INTEGRATION_TIMEOUT_MS); }),
+      ]);
+    } catch (error) {
+      this.deps.reportError(error);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
     this.assertIdentity(identity);
   }
   private publishProfile(profile: AdaptyProfile, source: ProfileSource): Entitlement {

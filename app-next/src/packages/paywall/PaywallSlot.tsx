@@ -7,7 +7,7 @@ import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
 import { useRouter } from 'expo-router';
 import { useSignedIn } from '../identity/rememberedSignIn';
-import { beginSignIn, beginWelcome, checkoutNeedsVerification, notePurchaseRecovery, useJourney, verifySelectedAccount } from '../journey/index';
+import { beginOnboarding, beginSignIn, beginWelcome, checkoutNeedsVerification, notePurchaseRecovery, useJourney, verifySelectedAccount } from '../journey/index';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
@@ -69,8 +69,16 @@ export function PaywallSlot() {
     else router.replace('/sign-in');
   };
   const back = () => {
-    beginWelcome();
-    router.replace('/onboarding/O01');
+    const answeredOnboarding = Object.keys(useOnboardingStore.getState().data.answers).length > 0;
+    if ((setupComplete && signedIn) || !answeredOnboarding) {
+      beginWelcome();
+      router.replace('/onboarding/O01');
+      return;
+    }
+    const step = runtime.onboardingOffer?.snapshot().trialAvailable === false ? 'S3e' : 'S3d';
+    useOnboardingStore.getState().patch({ step, complete: false });
+    beginOnboarding();
+    router.replace(`/onboarding/${step}`);
   };
   return (
     <PaywallScreen

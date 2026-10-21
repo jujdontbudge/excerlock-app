@@ -25,6 +25,7 @@ export type AuthServiceConfig = {
   subscriptionReset: () => Promise<void>;
   getPosthogDistinctId: () => string | null;
   setIntegrationIdentifier: (key: string, value: string) => Promise<void>;
+  reportError?: (error: unknown) => void;
   onBeforeDelete: () => Promise<void>;
   onAfterDelete: () => Promise<void>;
   beforeAccountSwitch?: () => Promise<void>;
@@ -186,11 +187,24 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     }
   };
 
-  const attachIntegration = async (userId: string) => {
+  const attachIntegrationBestEffort = async (userId: string) => {
     void userId;
     const distinctId = getPosthogDistinctId();
-    if (!distinctId) throw new Error('PostHog distinct ID unavailable; identity spine remains unready');
-    await setIntegrationIdentifier('posthog_distinct_user_id', distinctId);
+    if (!distinctId) {
+      config.reportError?.(new Error('PostHog distinct ID unavailable for Adapty attribution'));
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        setIntegrationIdentifier('posthog_distinct_user_id', distinctId),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Adapty attribution timed out')), 3000); }),
+      ]);
+    } catch (error) {
+      config.reportError?.(error);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   };
 
   coordinator = new IdentityCoordinator({
@@ -200,7 +214,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     putUser,
     analyticsIdentify,
     subscriptionIdentify,
-    attachIntegration,
+    attachIntegration: attachIntegrationBestEffort,
     prepareAccount: config.prepareAccount,
     onTombstone: async () => {
       await auth.handleTombstone();
