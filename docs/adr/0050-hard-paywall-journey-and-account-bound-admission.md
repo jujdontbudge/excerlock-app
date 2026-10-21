@@ -9,6 +9,8 @@ Purchase recovery metadata is extended by [ADR 0086](0086-verified-account-recov
 
 Partly superseded by [ADR 0061](0061-stay-signed-in-and-admitted-across-launches.md): cold launches resume a remembered account, and the last server-verified admission is remembered on the device.
 
+Unknown verification may navigate to a recoverable Paywall under [ADR 0087](0087-recoverable-subscription-verification.md), without granting admission; Paywall exits return to Welcome.
+
 ## Decision
 
 Every cold app launch starts a new Journey at the first Onboarding page, including an admitted subscriber reopening after force quit. A user chooses the entire Onboarding → Paywall → purchase/restore → authentication → needed Setup path, or explicitly signs in from Welcome. An existing subscriber may use Sign in from Welcome; only that explicit authentication plus verified eligible account-bound subscription may enter the app. Saved Setup, local session labels, a cached Entitlement, and a paid receipt on the same phone are not admission by themselves. Cold-launch reset clears only process-local Journey admission and does not erase accounts, Conditions, History, profile, saved permissions, native schedules, or unfinished transaction recovery. Account deletion, purchase restoration, support and legal access remain outside the paid routes.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore, useState } from 'react';
+import { useCallback, useEffect, useSyncExternalStore, useRef, useState } from 'react';
 import { onboardingStore as useOnboardingStore } from '../onboarding/onboardingStore';
 import { useRuntime } from '../ports/useRuntime';
 import { reportPaywallError, type PaywallErrorOperation } from './lib/paywallErrors';
@@ -7,11 +7,14 @@ import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
 import { useRouter } from 'expo-router';
 import { useSignedIn } from '../identity/rememberedSignIn';
-import { beginOnboarding, beginSignIn, beginWelcome, notePurchaseRecovery, verifySelectedAccount } from '../journey/index';
+import { beginSignIn, beginWelcome, checkoutNeedsVerification, notePurchaseRecovery, useJourney, verifySelectedAccount } from '../journey/index';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
   const signedIn = useSignedIn(runtime.auth);
+  const journey = useJourney(runtime);
+  const [retrying, setRetrying] = useState(false);
+  const retryInFlight = useRef(false);
   const setupComplete = useOnboardingStore((state) => state.data.setupComplete);
   const placement: SubscriptionPaywall['placement'] = setupComplete && signedIn ? 'winback' : 'onboarding';
   const experiments = runtime.experiments;
@@ -55,7 +58,10 @@ export function PaywallSlot() {
       router.replace('/sign-in');
       return;
     }
-    const result = await verifySelectedAccount(runtime);
+    if (retryInFlight.current) return;
+    retryInFlight.current = true;
+    setRetrying(true);
+    const result = await verifySelectedAccount(runtime).finally(() => { retryInFlight.current = false; setRetrying(false); });
     if (result === 'paid') {
       router.replace('/setup/X1');
     }
@@ -63,15 +69,8 @@ export function PaywallSlot() {
     else router.replace('/sign-in');
   };
   const back = () => {
-    if (setupComplete && signedIn) {
-      beginWelcome();
-      router.replace('/onboarding/O01');
-    } else {
-      const step = runtime.onboardingOffer?.snapshot().trialAvailable === false ? 'S3e' : 'S3d';
-      useOnboardingStore.getState().patch({ step, complete: false });
-      beginOnboarding();
-      router.replace(`/onboarding/${step}`);
-    }
+    beginWelcome();
+    router.replace('/onboarding/O01');
   };
   return (
     <PaywallScreen
@@ -81,9 +80,11 @@ export function PaywallSlot() {
       reportError={reportError}
       onAccess={() => void onAccess()}
       recovery={recovery}
-      onClose={setupComplete && signedIn ? back : undefined}
-      onAccount={setupComplete && signedIn ? () => router.push('/recovery') : undefined}
-      onBack={setupComplete && signedIn ? undefined : back}
+      onClose={back}
+      onAccount={() => router.push('/recovery')}
+      onRetryVerification={journey.error ? () => void onAccess() : undefined}
+      verificationRequired={Boolean(journey.error) && checkoutNeedsVerification(runtime)}
+      verifying={retrying}
     />
   );
 }

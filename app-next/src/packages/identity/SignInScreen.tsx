@@ -33,7 +33,7 @@ export function SignInScreen({
 }: {
   purpose: SignInPurpose;
   reportError: (error: unknown) => void;
-  onContinue: () => void;
+  onContinue: () => void | Promise<void>;
   signInRequired?: SignInRequiredSource;
   onExit?: () => void;
   requireFreshSignIn?: boolean;
@@ -105,7 +105,7 @@ export function SignInScreen({
             : await runtime.auth.verifyEmailCode(typed);
       if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) {
         haptic('success');
-        onContinue();
+        await onContinue();
       } else {
         haptic('error');
         notify(c.authError);

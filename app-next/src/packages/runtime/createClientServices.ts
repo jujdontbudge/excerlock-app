@@ -21,7 +21,7 @@ import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
-import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
+import { resolvingSubscriptionAdmission } from '../subscription/ResolvingSubscriptionAdmission';
 import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
 import { createNativeAdAttribution } from '../ad-attribution/NativeAdAttribution';
@@ -40,13 +40,20 @@ export async function createClientServices(options: {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
-  let verifiedStore: Promise<'production' | 'sandbox' | null> | null = config.environment === 'prod' ? verifiedStoreEnvironment() : null;
+  let verifiedStore: 'production' | 'sandbox' | null = null;
+  let resolvingStore: Promise<'production' | 'sandbox' | null> | null = null;
+  const readVerifiedEnvironment = () => {
+    if (verifiedStore) return Promise.resolve(verifiedStore);
+    if (!resolvingStore) resolvingStore = verifiedStoreEnvironment()
+      .then((value) => { verifiedStore = value; return value; })
+      .finally(() => { resolvingStore = null; });
+    return resolvingStore;
+  };
   const adAttribution = createNativeAdAttribution({
     tiktok: config.adAttribution.tiktok,
     productionStore: async () => {
       if (config.environment !== 'prod') return false;
-      let store = await verifiedStore;
-      if (store === null) store = await (verifiedStore = verifiedStoreEnvironment());
+      const store = await readVerifiedEnvironment();
       if (store === null) throw new Error('App Store environment unverified; TikTok waits for the next launch');
       return store === 'production';
     },
@@ -85,12 +92,9 @@ export async function createClientServices(options: {
     return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
-  const backend = subscriptionBackend(
-    config,
-    config.environment === 'prod' ? await verifiedStore : config.storeEnvironment,
-  );
-  const subscriptionAdmission = backend
-    ? rememberAdmission(
+  const subscriptionAdmission = resolvingSubscriptionAdmission({
+    resolveBackend: async () => subscriptionBackend(config, config.environment === 'prod' ? await readVerifiedEnvironment() : config.storeEnvironment),
+    createAdmission: (backend) => rememberAdmission(
         createServerSubscriptionAdmission({
           apiBaseUrl: backend.apiBaseUrl,
           environment: backend.environment,
@@ -99,8 +103,8 @@ export async function createClientServices(options: {
           storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
         }),
         { environment: backend.environment, now: Date.now, identity: () => identity.auth.identity() },
-      )
-    : unavailableSubscriptionAdmission();
+      ),
+  });
   identity.subscription.bindAdmission(subscriptionAdmission);
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),

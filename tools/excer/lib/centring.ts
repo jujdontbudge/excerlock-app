@@ -2,10 +2,11 @@ import { unlinkSync } from 'node:fs';
 import { readPng, type Raster } from './png.ts';
 import { screenshot, tree, type AxNode } from './sim.ts';
 import { sleep } from './shell.ts';
+import { fitViewport } from './viewport.ts';
 
 export type Frame = AxNode['frame'];
 export type CentringFinding = { label: string; type: string; frame: Frame; problem: string };
-export type CentringReport = { checked: number; unmeasured: number; moving: number; findings: CentringFinding[] };
+export type CentringReport = { checked: number; unmeasured: number; moving: number; findings: CentringFinding[]; viewport?: ReturnType<typeof fitViewport> };
 
 export const centringTolerance = 1;
 const stackTolerance = 1.5;
@@ -282,13 +283,28 @@ function moved(a: Raster, b: Raster, scale: number, f: Frame): boolean {
   return changed > motionShare * (x1 - x0) * (y1 - y0);
 }
 
+function applicationRaster(raster: Raster, screen: Frame): Raster {
+  const viewport = fitViewport(screen, raster);
+  const x = Math.round(viewport.x), y = Math.round(viewport.y), width = Math.round(viewport.width), height = Math.round(viewport.height);
+  if (x === 0 && y === 0) return raster;
+  const rgb = new Uint8Array(width * height * 3);
+  for (let row = 0; row < height; row += 1) {
+    const start = ((row + y) * raster.width + x) * 3;
+    rgb.set(raster.rgb.subarray(start, start + width * 3), row * width * 3);
+  }
+  return { width, height, rgb };
+}
+
 export function analyseCentring(raster: Raster, nodes: AxNode[], ignore: string[] = [], still?: Raster): CentringReport {
   const app = nodes.find((node) => node.type === 'Application');
   if (!app) throw new Error('accessibility tree has no Application node');
   const screen = app.frame;
+  const viewport = fitViewport(screen, raster);
+  raster = applicationRaster(raster, screen);
+  if (still) still = applicationRaster(still, screen);
   const scale = raster.width / screen.width;
   const blocked = masks(nodes, screen);
-  const report: CentringReport = { checked: 0, unmeasured: 0, moving: 0, findings: [] };
+  const report: CentringReport = { checked: 0, unmeasured: 0, moving: 0, findings: [], ...(Math.round(viewport.x) || Math.round(viewport.y) ? { viewport } : {}) };
   for (const node of nodes) {
     const f = node.frame;
     const label = (node.AXLabel ?? '').replace(/\s+/g, ' ').trim();

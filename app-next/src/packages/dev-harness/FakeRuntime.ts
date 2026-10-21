@@ -147,7 +147,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     identityGeneration: () => auth.identity().generation,
     installId: () => labInstallArm(ctx.scenario.onboardingOffer) === 'b' ? 'lab-install-1' : 'lab-install-4',
   });
-  const subscriptionAdmission = rememberAdmission(SubscriptionAdmissionFake(ctx, auth, subscription), {
+  const scriptedAdmission = SubscriptionAdmissionFake(ctx, auth, subscription);
+  const subscriptionAdmission = rememberAdmission(scriptedAdmission, {
     environment: 'sandbox',
     now: () => Date.parse(ctx.clock.now()),
     identity: () => auth.identity(),
@@ -226,6 +227,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
             : undefined,
           otaResume: null,
         });
+        scriptedAdmission.prepare();
         void onboardingOffer.prefetch();
         const trialReminder = trialReminderPlan(scenario.entitlement, Date.parse(ctx.clock.now()));
         ctx.update({ trialReminder: trialReminder ? `${trialReminder.title} · ${new Date(trialReminder.at).toISOString()} · ${Math.round((Date.parse(scenario.entitlement.accessExpiresAt!) - trialReminder.at) / 3600000)} hours before expiry` : 'None' });
