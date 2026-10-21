@@ -11,7 +11,7 @@ export function PaywallReview() {
       <View style={{ alignItems: 'center', gap: t.space.sm }}>
         <View accessible accessibilityLabel={c.review.stars} style={{ flexDirection: 'row', gap: t.space.xs }}>
           {Array.from({ length: 5 }, (_, index) => (
-            <Icon key={index} name="star" size={t.icon.md} />
+            <Icon key={index} name="star" size={t.icon.lg} />
           ))}
         </View>
         <Label variant="label" style={{ textAlign: 'center', fontFamily: t.font.bold }}>

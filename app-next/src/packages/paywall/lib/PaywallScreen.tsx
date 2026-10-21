@@ -166,7 +166,7 @@ export function PaywallScreen({
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      contentStyle={{ gap: t.space.lg, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
+      contentStyle={{ gap: t.space.xl, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
       header={
         onClose ? (
           <View
@@ -207,7 +207,7 @@ export function PaywallScreen({
             })}
           </View>
           {product ? (
-            <Label variant="support" style={{ textAlign: 'center' }}>
+            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
               {product.offerLabel
                 ? copy.trialThenBilled(trialLength(product), perPeriod(product))
                 : copy.billedAs(perPeriod(product))}
@@ -215,7 +215,6 @@ export function PaywallScreen({
           ) : null}
           {verificationRequired ? <Label variant="support" style={{ textAlign: 'center' }}>{copy.verifyBeforePurchase}</Label> : null}
           </View>
-          <Label variant="micro" tone="secondary" style={{ textAlign: 'center' }}>{copy.renewal}</Label>
           <PrimaryButton
             label={
               recovery.type === 'accountConnection'
@@ -260,14 +259,9 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <View style={{ gap: t.space.lg }}>
-        <PaywallHeadline />
-        <PaywallReview />
-        <View style={{ gap: t.space.sm }}>
-          <PaywallTagline />
-          <Label variant="support" style={{ textAlign: 'center' }}>{copy.premium}</Label>
-        </View>
-      </View>
+      <PaywallHeadline />
+      <PaywallReview />
+      <PaywallTagline />
     </ScreenShell>
   );
 }
