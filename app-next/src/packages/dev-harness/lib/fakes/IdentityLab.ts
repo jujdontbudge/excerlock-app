@@ -597,15 +597,15 @@ export async function createIdentityLab(
         if (offer.arm === 'late' && !fallback) await new Promise<void>((resolve) => { finishLateProducts = resolve; });
         const eligible = fallback || offer.introEligible !== false;
         const plans = [
-          labProduct('com.johansardar.excerlock.premium.a.annual', 'Annual', 49.99, 'year', eligible, offer.trialDays),
+          labProduct('com.johansardar.excerlock.premium.a.annual', 'Annual', 39.99, 'year', eligible, offer.trialDays),
           labProduct('com.johansardar.excerlock.premium.a.monthly', 'Monthly', 9.99, 'month', eligible, offer.trialDays),
-          labProduct('com.johansardar.excerlock.premium.a.annual.notrial', 'Annual', 49.99, 'year', false),
+          labProduct('com.johansardar.excerlock.premium.a.annual.notrial', 'Annual', 39.99, 'year', false),
           labProduct('com.johansardar.excerlock.premium.a.monthly.notrial', 'Monthly', 9.99, 'month', false),
         ];
         return noTrial ? plans.slice(2) : plans;
       }
       return script.plans === 'empty' ? [] : [
-            labProduct('lab.annual', 'Lab annual', 49.99, 'year', script.purchase !== 'alreadyOwned'),
+            labProduct('lab.annual', 'Lab annual', 39.99, 'year', script.purchase !== 'alreadyOwned'),
             labProduct('lab.monthly', 'Lab monthly', 9.99, 'month', script.purchase !== 'alreadyOwned'),
           ];
     },

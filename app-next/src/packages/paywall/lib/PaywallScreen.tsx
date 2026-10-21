@@ -328,7 +328,7 @@ function PlanRow({
         <Label variant="label" style={[tint, { flexShrink: 1, textAlign: 'left' }]}>
           {name}
         </Label>
-        <Label variant="support" style={[tint, { textAlign: 'right' }]}>
+        <Label variant="label" style={[tint, { textAlign: 'right' }]}>
           {price}
         </Label>
       </Animated.View>

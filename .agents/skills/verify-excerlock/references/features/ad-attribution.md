@@ -23,7 +23,7 @@ The `ads-*` scenarios run the real `ad-attribution` core, the real `AdaptySubscr
 name: trial-sends-each-event-once
 scenario: ads-trial-allowed
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Continue
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -34,7 +34,7 @@ then-expect: Meta events registration 1 view 1 trial 1 subscribe 0 | TikTok even
 name: registration-once-per-install
 scenario: ads-registration-sent-before
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week
 expect: Continue
 wait: 30
 then-open: /dev
@@ -45,7 +45,7 @@ then-expect: Meta events registration 0 view 1 | TikTok events registration 0 vi
 name: denied-tracking-still-sends
 scenario: ads-trial-denied
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Continue
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -56,7 +56,7 @@ then-expect: Ad tracking meta denied tiktok denied | Meta events registration 1 
 name: paid-start-sends-subscribe-with-price
 scenario: ads-paid-no-trial
 open: /onboarding/S3b
-actions: expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Monthly $9.99/month · $2.31 / week | expect Billed as $9.99/month | tap Continue
+actions: expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Monthly $9.99/month · $2.31 / week | expect Billed as $9.99/month | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -71,7 +71,7 @@ tap: Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
-then-expect: Meta events registration 0 view 1 trial 0 subscribe 1 | ad_meta {"name":"subscribe","value":49.99,"currency":"USD"}
+then-expect: Meta events registration 0 view 1 trial 0 subscribe 1 | ad_meta {"name":"subscribe","value":39.99,"currency":"USD"}
 ```
 
 ```proof
@@ -122,7 +122,7 @@ then-expect: Meta events registration 0 view 1 trial 1 subscribe 0 | TikTok even
 name: sdk-start-failure-keeps-purchase
 scenario: ads-sdk-start-fails
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Continue
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -133,7 +133,7 @@ then-expect: Meta events registration 0 view 0 trial 0 subscribe 0 | Ad tracking
 name: sdk-log-failure-keeps-purchase
 scenario: ads-sdk-log-fails
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Continue
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -144,7 +144,7 @@ then-expect: Meta events registration 0 view 0 trial 0 subscribe 0 | Ad tracking
 name: placeholder-credentials-stay-inactive
 scenario: ads-unconfigured
 open: /onboarding/S3c
-actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $49.99/year · $0.96 / week | tap Continue
+actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Continue
 expect: Continue with Apple
 wait: 30
 then-open: /dev
@@ -167,7 +167,7 @@ name: cancelled-purchase-sends-nothing
 scenario: ads-purchase-cancelled
 open: dev?journey=paywall
 tap: Continue
-expect: Continue | Yearly $49.99/year · $0.96 / week
+expect: Continue | Yearly $39.99/year · $0.77 / week
 wait: 30
 then-open: /dev
 then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | purchase_failed {"reason_class":"cancelled"}
@@ -178,7 +178,7 @@ name: pending-purchase-sends-nothing
 scenario: ads-purchase-pending
 open: dev?journey=paywall
 tap: Continue
-expect: Continue | Yearly $49.99/year · $0.96 / week
+expect: Continue | Yearly $39.99/year · $0.77 / week
 wait: 30
 then-open: /dev
 then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | lab_purchase {"result":"pending"
@@ -189,7 +189,7 @@ name: failed-purchase-sends-nothing
 scenario: ads-purchase-error
 open: dev?journey=paywall
 tap: Continue
-expect: Continue | Yearly $49.99/year · $0.96 / week
+expect: Continue | Yearly $39.99/year · $0.77 / week
 wait: 30
 then-open: /dev
 then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | purchase_failed {"reason_class":"unknown"}

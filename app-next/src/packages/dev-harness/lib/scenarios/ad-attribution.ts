@@ -62,12 +62,12 @@ export const adAttributionScenarios = [
     ...atPaywall,
     identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'trial' } },
     purchaseRecovery: 'pending',
-    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 49.99, currency: 'USD' } },
+    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 39.99, currency: 'USD' } },
   }),
   base('ads-interrupted-paid', 'Ads · interrupted purchase without a provable trial is dropped', {
     ...atPaywall,
     identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'active' } },
     purchaseRecovery: 'pending',
-    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 49.99, currency: 'USD' } },
+    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 39.99, currency: 'USD' } },
   }),
 ];
