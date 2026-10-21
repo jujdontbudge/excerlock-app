@@ -5,6 +5,8 @@ date: 2026-09-30
 
 # 0052: Verified StoreKit app environment chooses one authorization lane
 
+Startup-only resolution is superseded by [ADR 0087](0087-recoverable-subscription-verification.md). Environment verification and server partitioning remain required.
+
 ## Decision
 
 A production-channel iOS binary uses StoreKit's locally verified `AppTransaction.shared.environment` to select one account-bound verification backend at startup. Verified `production` selects the Production API root; verified `sandbox` selects the separate `/testflight` Sandbox API process. An unverified, unavailable, unknown, Xcode or timed-out result selects neither: paid app admission fails closed, while account/privacy and purchase recovery stay accessible. Neither the client HTTP request nor a cached Adapty profile supplies an environment or access claim to the server.

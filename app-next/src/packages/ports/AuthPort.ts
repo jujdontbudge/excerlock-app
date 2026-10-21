@@ -96,6 +96,7 @@ export interface AuthPort {
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
   boot(): Promise<AuthIdentity>;
+  waitForReady(options?: { timeoutMs?: number }): Promise<AuthIdentity>;
   dispose(): void;
   subscribe(callback: (session: Session) => void): Unsubscribe;
   subscribeIdentity(callback: (identity: AuthIdentity) => void): Unsubscribe;

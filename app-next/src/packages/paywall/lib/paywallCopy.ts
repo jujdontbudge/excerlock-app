@@ -16,6 +16,10 @@ export const paywallCopy = {
   },
   perWeek: ' / week',
   billedAs: (price: string) => `Billed as ${price}`,
-  trialThenBilled: (length: string, price: string) => `${length} free trial, then ${price}`,
+  trialThenBilled: (length: string, price: string) => `${price} after your ${length} free trial`,
+  premium: 'ExcerLock Premium: all Conditions and app locking.',
+  renewal: 'Payment is charged to your Apple Account. Renews automatically unless canceled at least 24 hours before the period ends. Manage or cancel in App Store settings.',
+  verifyBeforePurchase: 'Restore purchases or try again before buying another plan.',
+  retry: 'Try again',
   account: 'Account and help',
 } as const;

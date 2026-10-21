@@ -52,6 +52,7 @@ export type Scenario = {
   identityLab?: IdentityLabScript;
   onboardingOffer?: { arm: 'a' | 'b' | 'unknown' | 'late' | 'error' | 'malformed'; assigned?: 'a' | 'b'; introEligible?: boolean; trialDays?: number; fallbackError?: boolean };
   purchaseRecovery?: 'pending' | 'accountConnection';
+  admissionFailure?: 'storeNull' | 'storeTimeout' | 'serverError' | 'serverTimeout' | 'offline' | 'retry' | 'storeRetry' | 'serverUnknown';
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;

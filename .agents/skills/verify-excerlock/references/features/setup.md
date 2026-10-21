@@ -95,6 +95,17 @@ expect: Sign up with email | Email address | Send code | Back to sign-in options
 ```
 
 ```proof
+name: post-purchase-setup-layout
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+actions: tap Continue with Apple | expect Restore purchases
+swipe: 0.5,0.8,0.5,0.2
+expect: Continue | Restore purchases
+then-tap: Continue
+then-expect: Allow Screen Time | Not now | Don’t Allow
+```
+
+```proof
 name: sign-in-google-action
 scenario: trial-active
 open: /sample-paywall?stage=sign-in

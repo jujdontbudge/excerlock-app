@@ -16,6 +16,7 @@ import { requestGoogleCredential, type GoogleAuthDeps } from './providerGoogle';
 import { emailSendError, isLinkConflictError, validateEmail, validateOtpCode } from './emailFlow';
 import type { RunIdentityOperation } from '../identityBarrier';
 import { currentEmailChallenge, rememberEmailChallenge, forgetEmailChallenge } from '../emailChallenge';
+import { isProtectedSessionError } from './protectedSessionStorage';
 
 export type AuthAdapterDeps = {
   supabase: SupabaseClient;
@@ -30,6 +31,7 @@ export type AuthAdapterDeps = {
   bootTimeoutMs?: number;
   runIdentityOperation?: RunIdentityOperation;
   readStoredSession?: () => Promise<SupabaseSession | null>;
+  waitForReady?: (options?: { timeoutMs?: number }) => Promise<AuthIdentity>;
 };
 
 const BOOT_TIMEOUT_MS = 5000;
@@ -66,6 +68,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private onAccountSwitchReset: () => Promise<void>;
   private bootTimeoutMs: number;
   private readStoredSession: () => Promise<SupabaseSession | null>;
+  private prepareIdentity: AuthAdapterDeps['waitForReady'];
 
   private generation = 0;
   private currentIdentity: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
@@ -95,6 +98,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.onAccountSwitchReset = deps.onAccountSwitchReset ?? (async () => undefined);
     this.bootTimeoutMs = deps.bootTimeoutMs ?? BOOT_TIMEOUT_MS;
     this.readStoredSession = deps.readStoredSession ?? (async () => null);
+    this.prepareIdentity = deps.waitForReady;
     this.runIdentityOperation = deps.runIdentityOperation ?? (async (operation) => operation());
     this.registerAuthCallback();
     this.registerForegroundRetry();
@@ -107,6 +111,12 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   identity(): AuthIdentity {
     return this.currentIdentity;
+  }
+
+  async waitForReady(options?: { timeoutMs?: number }): Promise<AuthIdentity> {
+    if (this.prepareIdentity) return this.prepareIdentity(options);
+    if (this.currentIdentity.ready) return this.currentIdentity;
+    throw new AuthError('Sign-in is not ready yet. Please try again.', { code: 'IDENTITY_NOT_READY' });
   }
 
   subscribe(callback: (session: Session) => void): Unsubscribe {
@@ -202,13 +212,13 @@ export class SupabaseAuthAdapter implements AuthPort {
         const corrupt = /corrupt/i.test(message) || /chunk/i.test(message) || /orphan/i.test(message);
         throw new AuthError(
           corrupt ? 'Saved sign-in is corrupt. Please try again.' : 'Saved sign-in could not be read. Please try again.',
-          { code: corrupt ? 'STORAGE_CORRUPT' : 'STORAGE_READ_FAILED' },
+          { code: isProtectedSessionError(error) ? 'STORAGE_LOCKED' : corrupt ? 'STORAGE_CORRUPT' : 'STORAGE_READ_FAILED' },
         );
       }
     } catch (error) {
       if (error instanceof AuthError) throw error;
       this.lastBootError = error;
-      throw new AuthError('Saved sign-in could not be read. Please try again.', { code: 'STORAGE_READ_FAILED' });
+      throw new AuthError('Saved sign-in could not be read. Please try again.', { code: isProtectedSessionError(error) ? 'STORAGE_LOCKED' : 'STORAGE_READ_FAILED' });
     }
 
     const anonymousPromise = this.runSdk(() => this.supabase.auth.signInAnonymously()).then(

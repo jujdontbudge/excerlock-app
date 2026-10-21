@@ -1,6 +1,6 @@
 import { gymUiucOutside, gymUiucManual, gymUiucUncertain, gymUiucProgress, gymUiucBackground } from './gym-uiuc';
 import { permissionJourney, permissionConditionEntry, permissionGymSetup } from './permission-journey';
-import { scenario0 } from './fresh-install';
+import { scenario0, reviewVerificationUnavailable, reviewAdmissionScenarios } from './fresh-install';
 import { conditionDemoScenarios } from './condition-demo-gate';
 import { beforeAfterScenarios } from './before-after';
 import { unlockScenarios } from './unlock';
@@ -55,6 +55,8 @@ export const scenarios = [
   permissionConditionEntry,
   permissionGymSetup,
   scenario0,
+  reviewVerificationUnavailable,
+  ...reviewAdmissionScenarios,
   scenario1,
   scenario2,
   scenario3,

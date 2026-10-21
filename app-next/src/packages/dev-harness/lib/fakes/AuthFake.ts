@@ -31,6 +31,7 @@ export function AuthFake(ctx: FakeContext): AuthPort {
   return {
     session,
     identity,
+    waitForReady: async () => identity(),
     signInWithApple: () => signIn('apple'),
     signInWithGoogle: () => signIn('google'),
     linkWithApple: () => signIn('apple'),

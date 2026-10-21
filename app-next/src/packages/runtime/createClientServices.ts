@@ -21,7 +21,7 @@ import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
 import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
-import { unavailableSubscriptionAdmission } from '../subscription/UnavailableSubscriptionAdmission';
+import { resolvingSubscriptionAdmission } from '../subscription/ResolvingSubscriptionAdmission';
 import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
 
@@ -38,6 +38,15 @@ export async function createClientServices(options: {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
+  let verifiedStore: 'production' | 'sandbox' | null = null;
+  let resolvingStore: Promise<'production' | 'sandbox' | null> | null = null;
+  const readVerifiedEnvironment = () => {
+    if (verifiedStore) return Promise.resolve(verifiedStore);
+    if (!resolvingStore) resolvingStore = verifiedStoreEnvironment()
+      .then((value) => { verifiedStore = value; return value; })
+      .finally(() => { resolvingStore = null; });
+    return resolvingStore;
+  };
   const identity = await createIdentityServices({
     config: config.auth, adaptyPublicKey: config.adaptyPublicKey, reportError: options.reportError, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
     beforeAccountSwitch: options.beforeAccountSwitch,
@@ -68,12 +77,9 @@ export async function createClientServices(options: {
     return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
-  const backend = subscriptionBackend(
-    config,
-    config.environment === 'prod' ? await verifiedStoreEnvironment() : config.storeEnvironment,
-  );
-  const subscriptionAdmission = backend
-    ? rememberAdmission(
+  const subscriptionAdmission = resolvingSubscriptionAdmission({
+    resolveBackend: async () => subscriptionBackend(config, config.environment === 'prod' ? await readVerifiedEnvironment() : config.storeEnvironment),
+    createAdmission: (backend) => rememberAdmission(
         createServerSubscriptionAdmission({
           apiBaseUrl: backend.apiBaseUrl,
           environment: backend.environment,
@@ -82,8 +88,8 @@ export async function createClientServices(options: {
           storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
         }),
         { environment: backend.environment, now: Date.now, identity: () => identity.auth.identity() },
-      )
-    : unavailableSubscriptionAdmission();
+      ),
+  });
   identity.subscription.bindAdmission(subscriptionAdmission);
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),
