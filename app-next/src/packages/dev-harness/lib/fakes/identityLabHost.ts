@@ -3,6 +3,8 @@ import { createIdentityLab, type IdentityLab, type IdentityLabAccountHooks } fro
 
 type Method = (...args: unknown[]) => unknown;
 const synchronous = new Set<PropertyKey>([
+  'track',
+  'screen',
   'session',
   'identity',
   'subscribe',

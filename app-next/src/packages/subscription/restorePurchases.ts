@@ -1,5 +1,6 @@
 import type { AnalyticsPort } from '../ports/AnalyticsPort';
 import type { SubscriptionPort } from '../ports/SubscriptionPort';
+import { purchaseFailureClass } from './purchaseErrors';
 
 export type RestoreOutcome = 'restored' | 'notFound';
 
@@ -14,7 +15,7 @@ export async function restorePurchases(subscription: SubscriptionPort, analytics
     analytics.track('restore_failed', { reason_class: 'unavailable' });
     return 'notFound';
   } catch (error) {
-    analytics.track('restore_failed', { reason_class: 'unknown' });
+    analytics.track('restore_failed', { reason_class: purchaseFailureClass(error) });
     throw error;
   }
 }

@@ -31,8 +31,12 @@ so the UI caller cannot accidentally leave the person property stale.
 
 The first mounted surface settles within two seconds and keeps that assignment
 for its identity generation. Unknown values use control/false. Client code
-never emits purchase/trial/subscription lifecycle events; Adapty is their sole
-emitter.
+emits client-owned checkout intent, failure, restore and verification events from
+the shared registry. Adapty alone emits revenue and subscription lifecycle events.
+The registry's owner allow-list is authoritative; a prefix filter must not suppress
+`purchase_started`, `purchase_failed`, the restore events or
+`subscription_verification_failed`. Consent and canonical generation checks still
+apply to every capture.
 
 Screens requested while consent is on but the rail is not yet allowed (cold
 start: the root `usePathname` subscriber and the step caller both fire during

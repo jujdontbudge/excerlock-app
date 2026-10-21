@@ -8,6 +8,9 @@ import type { IdentityLabScript } from '../../../model/models';
 import { FakeContext } from '../FakeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PurchaseRecoveryJournal } from '../../../subscription/PurchaseRecoveryJournal';
+import { paymentAnalyticsLab } from './PaymentAnalyticsLab';
+import { AnalyticsFake } from './AnalyticsFake';
+import type { AnalyticsPort } from '../../../ports/AnalyticsPort';
 
 const SLOW_USER_SYNC_MS = 8000;
 const LAB_URL = 'https://identity-lab.invalid';
@@ -33,6 +36,7 @@ type DeletionIsolationResult = {
 
 export type IdentityLab = {
   auth: AuthPort;
+  analytics: AnalyticsPort;
   subscription: SubscriptionPort;
   booted: Promise<void>;
   runDelayedCallbackIsolation(): Promise<{
@@ -217,6 +221,8 @@ export async function createIdentityLab(
   accountHooks?: IdentityLabAccountHooks,
 ): Promise<IdentityLab> {
   const attempts = {
+    activation: 0,
+    adaptyIdentify: 0,
     anonymous: 0,
     userSync: 0,
     flow: 0,
@@ -553,7 +559,12 @@ export async function createIdentityLab(
   };
   let finishLateProducts: (() => void) | null = null;
   const sdk: AdaptySdkPort = {
-    activate: async () => undefined,
+    activate: async () => {
+      attempts.activation += 1;
+      ctx.log('lab_activation', { attempt: attempts.activation });
+      if (script.activation === 'failFirst' && attempts.activation === 1)
+        throw Object.assign(new Error('Activation network failure'), { adaptyCode: 2005 });
+    },
     setFallback: async () => undefined,
     addEventListener: (_event, callback) => {
       profileListener = callback;
@@ -561,6 +572,11 @@ export async function createIdentityLab(
     },
     getProfile: async () => profile(),
     identify: async (userId) => {
+      attempts.adaptyIdentify += 1;
+      if (script.adaptyIdentify === 'failFirst' && attempts.adaptyIdentify === 1) {
+        ctx.log('lab_identify_retry', { attempt: attempts.adaptyIdentify });
+        throw Object.assign(new Error('Identify server failure'), { adaptyCode: 2004 });
+      }
       customerUserId = userId;
       ctx.log('lab_adapty_identify', { user: userId });
       setTimeout(() => profileListener?.(profile()), 0);
@@ -568,7 +584,10 @@ export async function createIdentityLab(
     logout: async () => {
       customerUserId = undefined;
     },
-    updateProfile: async (params) => { ctx.log('lab_offer_audience', { version: params.customAttributes.onboarding_offer_version }); },
+    updateProfile: async (params) => {
+      ctx.log('lab_offer_audience', { version: params.customAttributes.onboarding_offer_version });
+      if (script.audienceUpdate === 'fail') throw Object.assign(new Error('Audience update network failure'), { adaptyCode: 2005 });
+    },
     getFlow: async (placement) => {
       attempts.flow += 1;
       const offer = ctx.scenario.onboardingOffer;
@@ -581,7 +600,7 @@ export async function createIdentityLab(
         && !(offer?.arm === 'error' && !fallback)
         && !(offer?.fallbackError && fallback);
       ctx.log('lab_flow', { placement, attempt: attempts.flow, ok });
-      if (!ok) throw networkError('Flow request failed');
+      if (!ok) throw Object.assign(new Error('Flow request failed'), { adaptyCode: 2005 });
       const trial = fallback ? true : offer?.arm === 'unknown' || (placement === 'onboarding_no_trial' && offer?.arm === 'b') ? undefined : offer?.arm === 'a';
       return {
         placementId: placement,
@@ -612,6 +631,7 @@ export async function createIdentityLab(
     logShowFlow: async (flow) => { ctx.log('lab_paywall_shown', { variation: flow.variationId }); },
     makePurchase: async (product) => {
       attempts.purchase += 1;
+      updateSubscriptionLab();
       const configured = script.purchase ?? ctx.snapshot().outcome;
       const result = configured === 'errorFirst' && attempts.purchase > 1
         ? 'success'
@@ -626,7 +646,7 @@ export async function createIdentityLab(
         enterPurchaseBarrier?.();
         await purchaseBarrierReleased;
       }
-      if (result === 'error') throw networkError('Purchase failed');
+      if (result === 'error') throw Object.assign(new Error('Product request failed before StoreKit'), { adaptyCode: 1002 });
       if (result === 'alreadyOwned') {
         updateSubscriptionLab();
         throw Object.assign(new Error('This subscription is already owned'), { adaptyCode: 107 });
@@ -645,6 +665,14 @@ export async function createIdentityLab(
       if (ctx.scenario.onboardingOffer) ctx.log('lab_offer_purchase', { plan: product.vendorProductId, trial });
       grants.set(STORE_SUBSCRIPTION_ID, { owner, status: trial ? 'trial' : 'active' });
       const purchased = profile(owner);
+      if (result === 'paidThenInterrupted') {
+        updateSubscriptionLab();
+        throw Object.assign(new Error('Transaction verification network failure after payment'), { adaptyCode: 2005 });
+      }
+      if (result === 'paidThenEncodingFailed') {
+        updateSubscriptionLab();
+        throw Object.assign(new Error('Bridge failed to encode purchase response'), { adaptyCode: 2009 });
+      }
       if (script.delayedCallbacks) {
         queuedProfiles.push({ operation: 'purchase', owner, profile: purchased });
         updateSubscriptionLab();
@@ -698,6 +726,37 @@ export async function createIdentityLab(
   };
 
   const provisional: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
+  const analytics = script.productionAnalytics ? paymentAnalyticsLab(ctx, () => services?.auth.identity() ?? provisional) : AnalyticsFake(ctx);
+  let journalFailed = false;
+  let journalClearAttempts = 0;
+  const recoveryStorage = {
+    getItem: async (key: string) => {
+      if (script.journalFailure === 'hydrateOnce' && !journalFailed) {
+        journalFailed = true;
+        ctx.log('lab_journal_failure', { operation: 'hydrate' });
+        throw new Error('Journal hydration unavailable');
+      }
+      return AsyncStorage.getItem(key);
+    },
+    setItem: async (key: string, value: string) => {
+      if (script.journalFailure === 'confirmOnce' && !journalFailed && JSON.parse(value).type === 'accountConnection') {
+        journalFailed = true;
+        ctx.log('lab_journal_failure', { operation: 'confirm' });
+        throw new Error('Journal confirmation unavailable');
+      }
+      await AsyncStorage.setItem(key, value);
+    },
+    removeItem: async (key: string) => {
+      journalClearAttempts += 1;
+      if (script.journalFailure === 'clearOnce' && !journalFailed) {
+        journalFailed = true;
+        ctx.log('lab_journal_failure', { operation: 'clear' });
+        throw new Error('Journal removal unavailable');
+      }
+      await AsyncStorage.removeItem(key);
+      if (script.journalFailure === 'clearOnce') ctx.log('lab_journal_cleared', { attempt: journalClearAttempts, durable: 'none' });
+    },
+  };
   const adapter = new AdaptySubscriptionAdapter({
     sdk,
     publicSdkKey: 'identity-lab',
@@ -713,7 +772,7 @@ export async function createIdentityLab(
     getPosthogDistinctId: () => distinctId,
     reportError: (error) => ctx.log('lab_adapter_error', { message: message(error) }),
     openSubscriptionManagement: async () => undefined,
-    recoveryJournal: new PurchaseRecoveryJournal(AsyncStorage),
+    recoveryJournal: new PurchaseRecoveryJournal(recoveryStorage),
     now: () => ctx.clock.now(),
     adAttribution: accountHooks?.adAttribution,
     purchaseIntents: new PurchaseIntentStore(AsyncStorage),
@@ -731,9 +790,11 @@ export async function createIdentityLab(
     googleDeps,
     analyticsIdentify: async (id) => {
       distinctId = id;
+      if (script.productionAnalytics) await analytics.identify(id);
     },
     analyticsReset: async () => {
       distinctId = ANONYMOUS_DISTINCT_ID;
+      if (script.productionAnalytics) await analytics.reset();
     },
     subscriptionIdentify: (id) => adapter.identify(id),
     subscriptionReset: () => adapter.reset(),
@@ -806,6 +867,8 @@ export async function createIdentityLab(
       try {
         const result = await adapter.purchase(handle);
         ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });
+        if (script.activation || script.adaptyIdentify || script.audienceUpdate || script.journalFailure === 'hydrateOnce')
+          ctx.log('lab_preflight', { activation: attempts.activation, identify: attempts.adaptyIdentify, flowRecovered: attempts.flow > 1, journalRecovered: script.journalFailure === 'hydrateOnce' && journalFailed });
         return result;
       } catch (error) {
         ctx.log('lab_purchase_failure', {
@@ -886,6 +949,7 @@ export async function createIdentityLab(
   };
   return {
     auth,
+    analytics,
     subscription,
     booted: booted.then(
       () => undefined,
