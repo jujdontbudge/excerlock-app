@@ -26,7 +26,7 @@ export const onboardingStore = createPersistedStore<OnboardingState>(
     step,
     answers,
     complete: v.bool,
-    setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done)$/.test(value),
+    setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done|account|screenTime|apps|motion|location|locationAlways|gym)$/.test(value),
     setupComplete: v.bool,
     winbackDeclined: v.bool,
     extraRules: (value) => Array.isArray(value) && value.every((rule) => validateRule(rule).length === 0),

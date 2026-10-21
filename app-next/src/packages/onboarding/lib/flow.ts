@@ -89,5 +89,15 @@ export function resumeStep(persisted: unknown, order?: FlowOrder | null): string
   if (typeof state.step !== 'string' || !state.answers) return 'O01';
   if (/^T[1-4]$/.test(state.step)) return 'P';
   const path = pathFor(state.answers, applicableOrder({ step: state.step, answers: state.answers }, order));
-  return path.includes(state.step) ? state.step : path[0] ?? 'O01';
+  if (path.includes(state.step)) return state.step;
+  if (state.step === 'O09' || state.step === 'O21') return resumeStep({ ...state, step: 'O10' }, order);
+  if (state.step === 'O19') return resumeStep({ ...state, step: 'O20' }, order);
+  if (/^[RB][12]$/.test(state.step)) return 'O20';
+  if (state.step === 'D') return path.find((step) => tail.includes(step as typeof tail[number])) ?? 'P';
+  const tailIndex = tail.indexOf(state.step as typeof tail[number]);
+  if (tailIndex >= 0) return tail.slice(tailIndex + 1).find((step) => path.includes(step)) ?? 'P';
+  const preIndex = preBranch.indexOf(state.step as typeof preBranch[number]);
+  if (preIndex >= 0) return preBranch.slice(preIndex + 1).find((step) => path.includes(step)) ?? branchFor(state.answers)[0];
+  if (/^[WG]/.test(state.step)) return branchFor(state.answers)[0];
+  return path[0] ?? 'O01';
 }

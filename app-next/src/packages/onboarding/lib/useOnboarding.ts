@@ -11,6 +11,7 @@ import { useRuntime } from '../../ports/useRuntime';
 import { Answers } from '../../model/answers';
 import { applyReviewPreset, isReviewPresetName } from './reviewPreset';
 import { beginPaywall } from '../../journey/index';
+import { markOnboardingPaywall, onboardingResumeStep, resumeOnboarding } from '../resumeOnboarding';
 
 const onboardingReturnDestination = (...values: unknown[]) =>
   values.find((value): value is 'S3' => value === 'S3') ?? '';
@@ -26,7 +27,8 @@ export function useOnboarding() {
     [flowOrder, setFlowOrder] = useState<FlowOrder | null>(() => runtime.onboardingFlow?.order() ?? null),
     [isAdvancing, setIsAdvancing] = useState(false),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
-  const step = params.step ?? resumeStep(state, flowOrder),
+  const requestedStep = resumeStep({ step: params.step, answers: state.answers }, flowOrder);
+  const step = requestedStep === 'O01' && params.step !== 'O01' ? resumeStep(state, flowOrder) : requestedStep,
     flow = { step, answers: state.answers };
   const offer = ['S3e', 'S3c', 'S3d'].includes(step)
     ? runtime.onboardingOffer?.freeze(step === 'S3c' || step === 'S3d')
@@ -44,7 +46,15 @@ export function useOnboarding() {
     return stop;
   }, [runtime]);
   useEffect(() => {
-    useOnboardingStore.getState().patch({ step });
+    if (step === 'P') {
+      markOnboardingPaywall();
+      beginPaywall();
+      router.replace('/paywall');
+      return;
+    }
+    const saved = useOnboardingStore.getState().data;
+    const visitingIntro = ['O01', 'O02', 'O03'].includes(step) && !['O01', 'O02', 'O03'].includes(saved.step);
+    if (!saved.complete && !visitingIntro) useOnboardingStore.getState().patch({ step });
     const current = useOnboardingStore.getState().data.answers;
     if (step.startsWith('S') && !current.ruleId) {
       const draft = createDraft('walking');
@@ -63,7 +73,7 @@ export function useOnboarding() {
       });
     }
     return () => { advanceEpoch.current += 1; };
-  }, [step, runtime]);
+  }, [step, runtime, router]);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
@@ -72,7 +82,8 @@ export function useOnboarding() {
     advanceEpoch.current += 1;
     Keyboard.dismiss();
     setDirection(back ? 'back' : 'forward');
-    useOnboardingStore.getState().patch({ step: next });
+    if (next === 'P') markOnboardingPaywall();
+    else if (!useOnboardingStore.getState().data.complete) useOnboardingStore.getState().patch({ step: next });
     if (next === 'P') {
       runtime.adAttribution.onboardingFinished();
       const epoch = advanceEpoch.current;
@@ -90,6 +101,7 @@ export function useOnboarding() {
     direction,
     isAdvancing,
     progress: progressFraction(flow, order),
+    resumingPaywall: !onboardingReturnDestination(params.returnTo, state.answers.returnTo) && (state.complete || onboardingResumeStep() === 'P'),
     offer: offer?.offer,
     setAnswer: (key: string, value: string | number | boolean | number[] | string[]) => {
       if (key === 'name') advanceEpoch.current += 1;
@@ -101,6 +113,14 @@ export function useOnboarding() {
       setIsAdvancing(true);
       const epoch = advanceEpoch.current;
       try {
+      const saved = useOnboardingStore.getState().data;
+      if (!onboardingReturnDestination(params.returnTo, saved.answers.returnTo) && (
+        saved.complete || onboardingResumeStep() === 'P' || (['O01', 'O02', 'O03'].includes(step) && saved.step !== step && !['O01', 'O02', 'O03'].includes(saved.step))
+      )) {
+        Keyboard.dismiss();
+        router.replace(resumeOnboarding());
+        return;
+      }
       if (step === 'O04') {
         const latest = useOnboardingStore.getState().data.answers;
         const local = isReviewPresetName(latest.name);

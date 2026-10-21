@@ -2,7 +2,7 @@
 id: onboarding
 title: Onboarding questions and plan preview
 routes: [onboarding/[step]]
-scenarios: [fresh-install, onboarding-walking-resume, condition-demo-walk-steps, condition-demo-walk-minutes, condition-demo-walk-state-outside, condition-demo-walk-state-treadmill, condition-demo-gym-arrival, condition-demo-gym-presence, condition-demo-gym-minutes, condition-demo-girl-treadmill, onboarding-offer-a, onboarding-offer-b, onboarding-offer-a-full, onboarding-offer-b-full, onboarding-offer-unknown, onboarding-offer-late, onboarding-offer-error, onboarding-offer-malformed, onboarding-offer-ineligible, onboarding-offer-six-days, onboarding-offer-seven-days]
+scenarios: [fresh-install, onboarding-walking-resume, onboarding-legacy-paywall-reset, condition-demo-walk-steps, condition-demo-walk-minutes, condition-demo-walk-state-outside, condition-demo-walk-state-treadmill, condition-demo-gym-arrival, condition-demo-gym-presence, condition-demo-gym-minutes, condition-demo-girl-treadmill, onboarding-offer-a, onboarding-offer-b, onboarding-offer-a-full, onboarding-offer-b-full, onboarding-offer-unknown, onboarding-offer-late, onboarding-offer-error, onboarding-offer-malformed, onboarding-offer-ineligible, onboarding-offer-six-days, onboarding-offer-seven-days]
 events: [onboarding_screen_viewed, onboarding_offer_exposed]
 depends: [conditions]
 ---
@@ -14,7 +14,7 @@ depends: [conditions]
 - Tail steps `S1`–`S3d`: summary, plan build, the Condition demo `S3b`, Before and After `S3e`, the trial preview `S3c` and reminder `S3d` (which asks for notifications) in A, then `P`, the paywall. Adapty arm B skips exactly `S3c` and `S3d`. A with a known unavailable intro offer skips their promises while remaining A.
 - Before and After `S3e` follows the Condition demo and remains in both offer arms, even when trial screens are skipped. Two overlapping cards: a grey Before card under a rain cloud (the character slumped on a sofa, scrolling; a girl with a ponytail when the gender answer is Female, otherwise the boy) and a peach After card under a sun with sparkles (flexing with a dumbbell for gym, walking with a thumbs up for walking). The first Before line follows the body goal: lose weight, build muscle, get in shape (both) or hit fitness goals (maintain or none); the second After line follows the activity. The Before card and its lines slide in, the arrow and After card pop in about a second later, then its lines follow with a light tick each. Reduce Motion fades everything in and keeps the cloud, sun and sparkles still. The art is generated, see `app-next/assets/onboarding/before-after/provenance/PROVENANCE.md`.
 - The PostHog `onboarding_variant` payload may reorder or drop other bundled steps. Adapty owns `S3c`/`S3d` inclusion and retains `S3e`; it never changes the Condition branch.
-- Answers persist as they change, and a relaunch resumes on the same step.
+- Answers persist as they change, and a relaunch resumes on the same step. Reaching the Paywall saves `complete: true` separately from Setup completion; earlier pages and sign-in detours preserve that checkpoint. Get started or Continue then returns directly to the Paywall. A retired tail step resumes at its next applicable page, and a malformed deep link preserves the saved page. Older installs replaying questions with an already staged plan return to checkout (proposed ADR 0088).
 
 ## How to get to it (user POV)
 Install the app and tap Get started. Every Continue moves to the next `onboarding/<step>`.
@@ -52,6 +52,76 @@ name: resume-walking-goal
 scenario: onboarding-walking-resume
 open: /
 expect: Set your walking goal | Daily step goal | Continue
+relaunch-after-expect: true
+after-relaunch-expect: Set your walking goal | Daily step goal | Continue
+```
+
+```proof
+name: paywall-return-in-one-tap
+scenario: fresh-install
+open: /sample-paywall
+actions: expect Restore purchases | tap Close | expect Get started | tap Get started
+expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+relaunch-after-expect: true
+after-relaunch-expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+```
+
+```proof
+name: sign-in-detour-keeps-name
+scenario: fresh-install
+open: /onboarding/O04
+actions: tap First name | type Jordan | open /onboarding/O01 | tap Sign in | tap Back
+expect: What should we call you? | Jordan | Continue
+relaunch-after-expect: true
+after-relaunch-expect: What should we call you? | Jordan | Continue
+```
+
+```proof
+name: invalid-link-keeps-checkpoint
+scenario: onboarding-walking-resume
+open: /onboarding/invalid
+expect: Set your walking goal | Daily step goal | Continue
+```
+
+```proof
+name: paywall-step-opens-checkout
+scenario: fresh-install
+open: /onboarding/P
+expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+```
+
+This proof requires an installed runtime 6 or later binary. On runtimes 4 and 5, S5 remains enabled and this check is blocked by the reused binary.
+
+```proof
+name: retired-rating-step-continues-forward
+scenario: fresh-install
+open: /onboarding/S5
+expect: Once you hit 10,000 steps | Continue
+```
+
+```proof
+name: retired-question-continues-forward
+scenario: fresh-install
+open: /onboarding/O21
+expect: How many hours do you currently spend scrolling each day? | Continue
+relaunch-after-expect: true
+after-relaunch-expect: How many hours do you currently spend scrolling each day? | Continue
+```
+
+```proof
+name: legacy-reset-opens-paywall
+scenario: onboarding-legacy-paywall-reset
+open: /
+expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+then-open: /dev
+then-expect: Onboarding plan | Staged
+```
+
+```proof
+name: retired-activity-chooses-current-kind
+scenario: fresh-install
+open: /onboarding/R1
+expect: What exercise do you want to do more of? | Walking | Gym | Continue
 ```
 
 ```proof

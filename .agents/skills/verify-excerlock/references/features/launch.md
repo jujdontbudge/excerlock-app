@@ -6,13 +6,13 @@ scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpa
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
-- `BootGate` restores the persisted stores, then resumes a returning account once per cold launch: a signed-in account remembered on this install opens Home (or Setup if it never finished), with no sign-in. A fresh install, a reinstall, or a signed-out device starts at Welcome (ADR 0061).
+- `BootGate` restores the persisted stores, then resumes a returning account once per cold launch: a signed-in account remembered on this install opens Home (or Setup if it never finished), with no sign-in. Unfinished Onboarding resumes its saved page or Paywall. A fresh install, a reinstall, or a signed-out device with completed Setup starts at Welcome (ADR 0061, proposed ADR 0088).
 - The Journey owns entry choice, account verification and paid admission. The last server-verified admission is remembered on the device, so a subscriber opens Home at once, even offline, while the server check runs in the background. A server answer of lapsed opens the Paywall. With no saved check, the launch cover stays up for one server check; an unavailable check opens the Paywall with recovery and retry, while Home stays locked (ADR 0087).
 - Paid admission renews itself in Setup and the main app a minute before the five-minute server lease ends; while the server is unreachable the remembered admission holds until three days after the subscription's paid-through date (ADR 0059, ADR 0061).
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
 ## How to get to it (user POV)
-Open the app. A subscriber who signed in on this phone lands on Home, even after closing the app, restarting the phone or going offline. A lapsed subscriber lands on the Paywall. A first install, a reinstall or a signed-out phone lands on Welcome, where Get started or Sign in continue.
+Open the app. A subscriber who signed in on this phone lands on Home, even after closing the app, restarting the phone or going offline. A lapsed subscriber lands on the Paywall. An unfinished Onboarding resumes the saved page; reaching the Paywall saves it as the continuation destination. A first install, a reinstall or a signed-out phone with completed Setup lands on Welcome, where Get started or Sign in continue. An explicit Paywall link waits for launch recovery and account checks before opening checkout.
 
 ## Driving it with excer
 `./excer sim start` launches the app on the real boot path. Then `./excer demo <scenario> --open /` shows where each Journey lands. `excerlock://dev?scenario=<id>&keep=1` loads a scenario as a fresh launch while keeping the saved data, which simulates reopening the app.
@@ -22,6 +22,15 @@ name: first-launch-welcome
 scenario: fresh-install
 open: /
 expect: HACK your brain to hit your fitness goals | Get started | Sign in
+```
+
+```proof
+name: direct-paywall-link
+scenario: fresh-install
+open: /paywall
+expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+relaunch-after-expect: true
+after-relaunch-expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
 ```
 
 ```proof

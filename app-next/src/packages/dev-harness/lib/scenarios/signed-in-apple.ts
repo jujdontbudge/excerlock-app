@@ -1,4 +1,5 @@
 import { base } from './base';
+import { emptyPermissions } from '../../../permissions/permissionsStore';
 export const scenario18 = base('signed-in-apple', 'Signed in with Apple', {
   session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
 });
@@ -10,6 +11,13 @@ export const returningUnpaid = base('returning-unpaid', 'Returning account with 
   session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
   entitlement: { status: 'none', renewsAt: null },
   launchSignInRequired: true,
+});
+export const returningUnpaidMissingPermissions = base('returning-unpaid-missing-permissions', 'Renewal keeps completed Setup', {
+  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
+  entitlement: { status: 'none', renewsAt: null },
+  launchSignInRequired: true,
+  permissions: emptyPermissions,
+  lockedApps: { handle: null, isEmpty: true },
 });
 export const returningUnpaidRemoteBypassAttempt = base(
   'returning-unpaid-remote-bypass-attempt',

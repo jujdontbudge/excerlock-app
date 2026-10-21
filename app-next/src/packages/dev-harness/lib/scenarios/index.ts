@@ -5,7 +5,7 @@ import { conditionDemoScenarios } from './condition-demo-gate';
 import { beforeAfterScenarios } from './before-after';
 import { unlockScenarios } from './unlock';
 import { identityLabScenarios } from './identity-lab';
-import { scenario1 } from './onboarding-walking-resume';
+import { legacyPaywallReset, scenario1 } from './onboarding-walking-resume';
 import { returningUnpaidOtaHome, returningUnpaidOtaUnlock } from './returning-unpaid-ota';
 import { scenario2 } from './home-locked-walking';
 import { scenario3 } from './home-unlocked-met';
@@ -25,6 +25,7 @@ import {
   scenario18,
   returningSignedIn,
   returningUnpaid,
+  returningUnpaidMissingPermissions,
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
   reinstallKeychain,
@@ -59,6 +60,7 @@ export const scenarios = [
   reviewVerificationUnavailable,
   ...reviewAdmissionScenarios,
   scenario1,
+  legacyPaywallReset,
   scenario2,
   scenario3,
   scenario4,
@@ -76,6 +78,7 @@ export const scenarios = [
   scenario18,
   returningSignedIn,
   returningUnpaid,
+  returningUnpaidMissingPermissions,
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
   reinstallKeychain,

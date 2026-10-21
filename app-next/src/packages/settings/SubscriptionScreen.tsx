@@ -8,7 +8,7 @@ import { entitlementStore as useEntitlementStore } from '../subscription/entitle
 import { useRuntime } from '../ports/useRuntime';
 import { SettingsPage } from '../ui/SettingsPage';
 import { haptic } from '../ui/haptics';
-export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
+export function SubscriptionScreen({ onBack, onPlans }: { onBack: () => void; onPlans: () => void }) {
   const entitlement = useEntitlementStore((s) => s.data.entitlement),
     runtime = useRuntime(),
     [busy, setBusy] = useState(false);
@@ -41,6 +41,7 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
           title={c.plan(entitlement.status)}
           value={entitlement.renewsAt ? c.renewal(entitlement.renewsAt) : undefined}
         />
+        <SettingsRow title={c.viewPlans} onPress={onPlans} />
         <SettingsRow title={subscriptionCopy.manage} onPress={() => void manage()} />
         <SettingsRow title={c.restore} onPress={() => void restore()} />
       </SettingsGroup>

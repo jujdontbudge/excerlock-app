@@ -4,7 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Heading, PrimaryButton, ScreenShell, SecondaryButton } from '../src/packages/ui';
 import { SignInScreen, signInRecoveryCopy } from '../src/packages/identity/SignInScreen';
 import { useRuntime } from '../src/packages/ports/useRuntime';
-import { beginOnboarding, beginWelcome, useJourney, verifySelectedAccount } from '../src/packages/journey/index';
+import { useJourney, verifySelectedAccount } from '../src/packages/journey/index';
+import { resumeOnboarding } from '../src/packages/onboarding/resumeOnboarding';
 import { reportRuntimeError } from '../src/packages/telemetry/reportRuntimeError';
 export default function SignInRoute() {
   const router = useRouter();
@@ -26,13 +27,10 @@ export default function SignInRoute() {
     try { await complete(); } finally { retryInFlight.current = false; setRetrying(false); }
   };
   const exit = () => {
-    beginWelcome();
-    router.replace('/onboarding/O01');
+    router.replace(resumeOnboarding());
   };
   const createAccount = () => {
-    beginWelcome();
-    beginOnboarding();
-    router.replace('/onboarding/O04');
+    router.replace(resumeOnboarding('O04'));
   };
   return (
     <SafeAreaProvider>

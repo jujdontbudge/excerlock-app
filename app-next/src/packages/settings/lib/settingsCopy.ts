@@ -42,6 +42,7 @@ export const settingsCopy = {
   renewal: (date: string) =>
     `Renews ${new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
   manage: 'Manage subscription',
+  viewPlans: 'View plans',
   restore: 'Restore purchases',
   restored: 'Purchases restored',
   noRestore: 'No purchase found',

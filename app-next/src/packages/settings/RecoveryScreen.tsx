@@ -16,10 +16,12 @@ export function RecoveryScreen({
   onBack,
   onSignIn,
   onRestored,
+  onSignedOut,
 }: {
   onBack: () => void;
   onSignIn: () => void;
   onRestored: () => void;
+  onSignedOut: () => void;
 }) {
   const runtime = useRuntime();
   const approved = useSignedIn(runtime.auth);
@@ -60,7 +62,7 @@ export function RecoveryScreen({
     }
   };
   if (section === 'account' && (approved || runtime.auth.session().kind === 'anonymous'))
-    return <AccountScreen onBack={back} onSignIn={onSignIn} />;
+    return <AccountScreen onBack={back} onSignIn={onSignIn} onSignedOut={onSignedOut} />;
   if (section === 'feedback') return <FeedbackScreen onBack={back} />;
   if (section === 'terms' || section === 'privacy')
     return <SettingsPage onBack={back}><LegalScreen doc={section} /></SettingsPage>;

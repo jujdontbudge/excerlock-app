@@ -7,9 +7,10 @@ import { BootScreen } from './lib/BootScreen';
 import { useRuntimeStatus } from '../lock/selectors';
 import { markStartupStage } from './lib/native/startupMarks';
 import { useRuntime } from '../ports/useRuntime';
-import { beginSignIn, notePurchaseRecovery, resumeReturningAccount, useJourney, useReturningAccount } from '../journey/index';
+import { beginSignIn, beginWelcome, notePurchaseRecovery, resumeReturningAccount, useJourney, useReturningAccount } from '../journey/index';
 import { currentEmailChallenge } from '../identity/emailChallenge';
-export function BootGate() {
+import { openOnboardingPaywall, resumeOnboarding } from '../onboarding/resumeOnboarding';
+export function BootGate({ paywallRequested = false }: { paywallRequested?: boolean } = {}) {
   const runtime = useRuntime();
   const journey = useJourney(runtime);
   const hydrated = useHydrated();
@@ -32,10 +33,13 @@ export function BootGate() {
     if (challenge) beginSignIn();
     else if (resuming) resumeReturningAccount(runtime, setupComplete);
     else if (recovering) notePurchaseRecovery(runtime.subscription.recovery());
-  }, [challenge, recovering, resuming, runtime, setupComplete, settled, journey.phase]);
+    else if (paywallRequested) openOnboardingPaywall();
+    else if (setupComplete) beginWelcome();
+    else resumeOnboarding();
+  }, [challenge, recovering, resuming, runtime, setupComplete, settled, journey.phase, paywallRequested]);
   if (__LINKED_RECORDER_TRACE__) return <Redirect href="/linked-trace" />;
   const destination = bootDestination(journey.phase, step, journey.canEnterApp);
-  const redirecting = settled && !resuming && !recovering && !(journey.phase === 'verifying' && !journey.error);
+  const redirecting = settled && journey.phase !== 'launch' && !resuming && !recovering && !(journey.phase === 'verifying' && !journey.error);
   if (redirecting) markStartupStage('BootGateRedirect');
   return redirecting ? <Redirect href={destination as Href} /> : <BootScreen />;
 }

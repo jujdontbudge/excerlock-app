@@ -9,7 +9,7 @@ import { forgetAccount } from '../journey/index';
 import { Reveal } from '../ui/Reveal';
 import { notify } from '../ui/Notice';
 import { haptic } from '../ui/haptics';
-export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
+export function AccountScreen({ onSignIn, onBack, onSignedOut }: { onSignIn: () => void; onBack: () => void; onSignedOut: () => void }) {
   const session = useSessionStore((s) => s.data.session),
     runtime = useRuntime(),
     [confirm, setConfirm] = useState(false),
@@ -22,6 +22,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         notify(c.deleted);
       } else await runtime.auth.signOut();
       forgetAccount(runtime);
+      onSignedOut();
       setConfirm(false);
       haptic('commit');
     } catch {

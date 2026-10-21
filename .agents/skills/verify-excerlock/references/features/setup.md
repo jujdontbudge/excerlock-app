@@ -2,7 +2,7 @@
 id: setup
 title: Setup, sign-in and permissions
 routes: [setup/[step], permissions/[step], sign-in]
-scenarios: [home-permission-needed, home-no-apps, home-walking-session, trial-active, permission-journey, permission-condition-entry, permission-gym-setup]
+scenarios: [fresh-install, returning-unpaid, returning-unpaid-missing-permissions, home-permission-needed, home-no-apps, home-walking-session, trial-active, permission-journey, permission-condition-entry, permission-gym-setup]
 events: [permission_resolved]
 depends: [paywall, conditions]
 ---
@@ -10,7 +10,7 @@ depends: [paywall, conditions]
 - After the paywall, `/setup/X1` requires an explicit Apple, Google or email-code sign-in unless this install already remembers the account; no skip. The sign-in is remembered until Sign out or Delete account, so closing, killing or updating the app never asks again; a reinstall does (ADR 0061). Then comes Allow Screen Time, Choose apps to lock, Motion, Location While Using and (for Walking state) its Always upgrade, then Gym. Pages remain in place until the real request resolves; allow and deny advance automatically. Choosing Locked apps retains a counts summary and requires Continue. The list comes from `permissions/setupNeeds.ts`.
 - `PermissionGuide` draws the exact iOS alert with an arrow pointing at the choice to tap.
 - Home's reminder card ("Your apps are not locked yet", "Walks cannot open your apps yet") and saving a condition that needs something new both open the same screens at `/permissions/<step>`, without sign-in.
-- Sign-in with Apple, Google or an email code, also reachable from Settings and the welcome screen.
+- Sign-in with Apple, Google or an email code, also reachable from Settings and the welcome screen. Back and Create account continue the saved Onboarding checkpoint instead of restarting. Setup persists its current permission page, including pages passed with Not now; process death resumes there. A completed Setup is not replayed after renewal. Native dismissal gestures cannot discard an in-flight sign-in or Setup page (proposed ADR 0088).
 
 ## How to get to it (user POV)
 Buy or start the trial, and setup begins. Later, tap the reminder card on Home, or turn on a condition that needs a new permission.
@@ -40,6 +40,45 @@ expect: Create your account | Use a new or existing account to keep your plan an
 ```
 
 ```proof
+name: sign-in-back-keeps-paywall
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+tap: Back
+expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+```
+
+```proof
+name: skipped-permissions-survive-relaunch
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+actions: tap Continue with Apple | expect Restore purchases | tap Continue | expect Allow Screen Time | tap Not now
+gesture: back
+expect: Count your steps | Not now
+relaunch-after-expect: true
+after-relaunch-expect: Count your steps | Not now
+```
+
+```proof
+name: sign-in-native-back-keeps-checkpoint
+scenario: fresh-install
+open: /sample-paywall?stage=sign-in
+gesture: back
+expect: Create your account | Continue with Apple | Back
+then-tap: Back
+then-expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
+```
+
+```proof
+name: renewal-keeps-completed-setup
+scenario: returning-unpaid-missing-permissions
+open: /
+actions: tap Continue | expect Home
+gesture: back
+expect: Home | Conditions | Your apps are not locked yet
+absent: Allow Screen Time | Count your steps | Get started
+```
+
+```proof
 name: returning-session-opens-home
 scenario: returning-signed-in
 open: /home
@@ -58,9 +97,20 @@ name: sign-out-relaunch-stays-welcome
 scenario: returning-signed-in
 open: /settings/account
 tap: Sign out
+gesture: back
 expect: HACK your brain to hit your fitness goals | Get started | Sign in
 relaunch-after-expect: true
 after-relaunch-expect: HACK your brain to hit your fitness goals | Get started | Sign in
+```
+
+```proof
+name: recovery-sign-out-keeps-paywall-return
+scenario: returning-unpaid
+open: /recovery
+tap: Account and deletion | Sign out
+expect: HACK your brain to hit your fitness goals | Get started | Sign in
+then-tap: Get started
+then-expect: Get your DREAM BODY with ExcerLock | Continue | Restore purchases
 ```
 
 ```proof
@@ -82,7 +132,7 @@ expect: Welcome back | Sign in again to open ExcerLock. | Continue with Apple
 name: start-over-sign-in-keeps-onboarding-plan
 scenario: fresh-install
 open: /sample-paywall?stage=sign-in
-tap: Back | Sign in | Continue with Apple | Continue
+tap: Back | Continue | Continue with Apple
 expect: Allow Screen Time
 ```
 

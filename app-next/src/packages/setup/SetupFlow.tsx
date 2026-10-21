@@ -22,12 +22,17 @@ import { haptic } from '../ui/haptics';
 import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 
 export type SetupStep = 'account' | 'screenTime' | 'locationAlways' | SetupNeed;
+const setupOrder: SetupStep[] = ['account', 'screenTime', 'apps', 'motion', 'location', 'locationAlways', 'gym'];
+export function savedSetupStep(value: string): SetupStep | undefined {
+  return setupOrder.find((step) => step === value);
+}
 
-export function SetupFlow({ account, onDone, onClose, onStep }: {
+export function SetupFlow({ account, onDone, onClose, onStep, resumeAt }: {
   account: boolean;
   onDone: () => void;
   onClose?: () => void;
   onStep?: (step: SetupStep) => void;
+  resumeAt?: SetupStep;
 }) {
   const focused = useIsFocused();
   const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost, router = useRouter(), signedIn = useSignedIn(runtime.auth);
@@ -42,7 +47,7 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
       return [need];
     }),
   ]);
-  const [passed, setPassed] = useState<SetupStep[]>([]), [busy, setBusy] = useState(false);
+  const [passed, setPassed] = useState<SetupStep[]>(() => resumeAt ? setupOrder.slice(0, setupOrder.indexOf(resumeAt)) : []), [busy, setBusy] = useState(false);
   const [pagePermissions, setPagePermissions] = useState(permissions);
   const [summary, setSummary] = useState(() => runtime.screenTime.selectionSummary());
   const current = steps.find((step) => !passed.includes(step) && (step !== 'gym' || needs.includes('gym')));

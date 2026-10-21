@@ -57,6 +57,10 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
       flow.setAnswer(key, value),
     );
   const advance = async () => {
+    if (flow.resumingPaywall && flow.step !== 'S3') {
+      void flow.advance();
+      return;
+    }
     if (flow.step === 'S3b' && !demoReady) return;
     if (flow.step === 'S5') {
       if (!ratingReady) return;
@@ -95,7 +99,7 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
     if (flow.step === 'S3b') setDemoReady(false);
     flow.advance();
   };
-  if (!focused) return null;
+  if (!focused || flow.step === 'P') return null;
   if (adding && stagingBuilder)
     return stagingBuilder({
       onClose: () => setAdding(false),
@@ -135,7 +139,7 @@ export function OnboardingRoute({ stagingBuilder }: { stagingBuilder?: StagingBu
       direction={flow.direction}
       onBack={() => { if (flow.step === 'S3b') setDemoReady(false); if (flow.step === 'S5') setRatingReady(false); flow.back(); }}
       onContinue={() => void advance()}
-      valid={canContinue(flow.step, flow.answers) && (flow.step !== 'S3b' || demoReady) && (flow.step !== 'S5' || ratingReady)}
+      valid={flow.resumingPaywall || (canContinue(flow.step, flow.answers) && (flow.step !== 'S3b' || demoReady) && (flow.step !== 'S5' || ratingReady))}
       continuing={flow.isAdvancing || asking}
       continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? c.trialCta : undefined}
       hideContinue={flow.step === 'S2' || playback.hideContinue}

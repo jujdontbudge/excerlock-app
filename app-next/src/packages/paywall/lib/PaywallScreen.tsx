@@ -22,6 +22,7 @@ import { PaywallReview } from './PaywallReview';
 import { PaywallTagline } from './PaywallTagline';
 import { offeredHandle, offersTrial, planFor, planPairs, trialLength } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
+import { markOnboardingPaywall } from '../../onboarding/resumeOnboarding';
 const paywallLoadRetries = 2,
   planRowHeight = t.control.full;
 export function PaywallScreen({
@@ -61,6 +62,9 @@ export function PaywallScreen({
   useEffect(() => {
     latest.current = { variantKey, onLoaded };
   }, [variantKey, onLoaded]);
+  useEffect(() => {
+    if (placement === 'onboarding') markOnboardingPaywall();
+  }, [placement]);
   const load = useCallback(async (): Promise<void> => {
     setBusy('load');
     for (let attempt = 0; ; attempt++) {
