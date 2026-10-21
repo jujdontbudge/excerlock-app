@@ -1,0 +1,7 @@
+{
+  "production_candidate_ids": 17,
+  "paywall_ids": 6,
+  "checkout_user_lower_bound": 5,
+  "candidate_timeline_rows": 510,
+  "derived_metrics": "evidence/derived-metrics.json"
+}

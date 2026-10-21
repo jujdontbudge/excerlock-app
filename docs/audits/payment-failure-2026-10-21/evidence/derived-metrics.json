@@ -1,0 +1,141 @@
+{
+  "window_utc": {
+    "window_start_inclusive_utc": "2026-09-06T20:21:05Z",
+    "window_end_exclusive_utc": "2026-10-21T20:21:05Z",
+    "source_head": "269885cc51b7a88da106ed7a1e44a6be51eefaae",
+    "posthog_project": 537075,
+    "sentry_organization": "edge-ix",
+    "sentry_project": "excerlock-mobile",
+    "sentry_region": "https://us.sentry.io",
+    "journey_pages_returned": [
+      500,
+      500,
+      204
+    ],
+    "journey_count_query": 1204,
+    "additional_vendor_trial_expired_rows": 1,
+    "sanitization": [
+      "person_id and devices dropped from cohort export",
+      "session_id replaced by per-anonymous-ID session indices",
+      "Condition branch screen codes replaced with condition_flow; no answers queried",
+      "device-ID join values and raw Sentry event detail not retained",
+      "Sentry extract restricted to five financial/authentication error titles and release/time fields",
+      "Adapty fields restricted to existing billing snapshot whitelist"
+    ],
+    "data_qualification": "17 commercial-release-eligible candidates, 13 possibly internal/App Review; one confirmed real incident ID. App Store distribution is not separately instrumented.",
+    "owner_clarification": "Commercial range: 1.0.0/1.0.1, builds 17-21, runtimes 4-6, real devices; preserve ambiguous identities separately."
+  },
+  "cohort_status_counts": {
+    "excluded_preview": 2,
+    "possibly_internal_review": 13,
+    "sandbox_only": 3,
+    "production_candidate": 17
+  },
+  "loaded_paywall": {
+    "ids": 6,
+    "events": 9
+  },
+  "explicit_purchase_start": {
+    "ids": 4,
+    "events": 8
+  },
+  "restore_start": {
+    "ids": 2,
+    "events": 4
+  },
+  "restore_failure": {
+    "ids": 2,
+    "events": 4
+  },
+  "sign_in_failure": {
+    "ids": 5,
+    "events": 15
+  },
+  "paywall_screen": {
+    "ids": 6,
+    "events": 9
+  },
+  "checkout_user_lower_bound": {
+    "ids": 5,
+    "events": 9
+  },
+  "cancelled_purchase": {
+    "ids": 3,
+    "events": 7
+  },
+  "purchase_error": {
+    "ids": 1,
+    "events": 1
+  },
+  "apple_failure": {
+    "ids": 4,
+    "events": 8
+  },
+  "apple_unknown_failure": {
+    "ids": 2,
+    "events": 3
+  },
+  "trial_started": {
+    "ids": 1,
+    "events": 1
+  },
+  "trial_converted": {
+    "ids": 0,
+    "events": 0
+  },
+  "trial_renewal_cancelled": {
+    "ids": 1,
+    "events": 1
+  },
+  "trial_expired": {
+    "ids": 1,
+    "events": 1
+  },
+  "subscription_started": {
+    "ids": 0,
+    "events": 0
+  },
+  "subscription_renewed": {
+    "ids": 0,
+    "events": 0
+  },
+  "subscription_refunded": {
+    "ids": 0,
+    "events": 0
+  },
+  "subscription_renewal_cancelled": {
+    "ids": 0,
+    "events": 0
+  },
+  "paywall_screen_without_loaded_event_ids": [],
+  "same_session_welcome_reset_ids": [
+    "2b0c2b33-9bb9-437b-9310-0e8050be117a",
+    "45564b12-35c6-490a-9ddc-5ca4b19a5717"
+  ],
+  "same_session_onboarding_return_ids": [
+    "2b0c2b33-9bb9-437b-9310-0e8050be117a",
+    "45564b12-35c6-490a-9ddc-5ca4b19a5717",
+    "7e4fe984-6338-4b3b-b2e3-f10d45c99632"
+  ],
+  "only_later_session_welcome_return_ids": [
+    "a69f42dc-5e0a-4330-a647-feeca26fefcd",
+    "d8665640-fa57-4024-a9f1-d061725f1dd9"
+  ],
+  "paywall_placement_arm": {
+    "onboarding:unrecorded": {
+      "ids": 4,
+      "events": 6
+    },
+    "onboarding:b": {
+      "ids": 2,
+      "events": 3
+    }
+  },
+  "sentry_financial_auth_event_counts": {
+    "AuthError: Saved sign-in could not be read. Please try again.": 9,
+    "Error: Canonical subscription identity unavailable": 5,
+    "AuthError: Apple sign-in failed. Please try again.": 16,
+    "Error: #2005 (networkFailed): Network request error. See the original error for more details.": 1,
+    "SubscriptionVerificationError: Subscription verification failed: request_timeout": 1
+  }
+}

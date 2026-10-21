@@ -1,0 +1,25 @@
+✓ typecheck 11.3s
+✓ lint 17.2s
+✓ no-tests 0.0s
+✓ no-comments 2.9s  0 / ceiling 0
+✓ detached-methods 7.4s  55 / ceiling 55
+✓ updates-owner 0.0s
+✓ analytics-emitter 0.1s
+✓ ad-attribution 0.1s
+✓ flag-registry 0.0s
+✓ shield-copy-parity 0.0s
+✓ research-isolation 0.0s
+✓ raw-colours 0.0s  0 / ceiling 0
+✓ raw-type 0.0s  0 / ceiling 0
+✓ illustration-tokens 0.0s  30 / ceiling 30
+✓ icon-centring 0.1s  36 icons centred
+✓ dependency-rules 3.5s  0 / ceiling 0
+✓ unemitted-events 0.1s  16 / ceiling 16
+✓ dependency-floors 0.0s
+✓ sentry-core 0.0s  10.37.0
+✓ ci-pinned 0.0s
+✓ deploy-host-key 0.0s
+✓ agent-layout 0.0s
+✓ feature-map 0.1s  17 features
+
+23 checks passed

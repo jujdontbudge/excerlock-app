@@ -1,0 +1,15 @@
+{
+  "app_id": "6787265352",
+  "app_read_authenticated": true,
+  "existing_analytics_report_requests": 0,
+  "sales_subscriber_export": "blocked_missing_vendor_number",
+  "missing_configuration_names": [
+    "ASC_VENDOR_NUMBER",
+    "ASC_ANALYTICS_VENDOR_NUMBER"
+  ],
+  "read_only_commands": [
+    "asc apps view --id 6787265352",
+    "asc analytics requests --app 6787265352 --paginate --output json"
+  ],
+  "no_new_report_request_created": true
+}

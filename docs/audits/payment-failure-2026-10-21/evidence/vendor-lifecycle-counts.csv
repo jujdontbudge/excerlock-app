@@ -1,0 +1,12 @@
+event,env,events,ids,gross_usd,first_seen,last_seen
+trial_converted,Production,1,1,59.99,2026-10-08T21:51:25Z,2026-10-08T21:51:25Z
+trial_expired,Production,1,1,,2026-10-21T02:45:44Z,2026-10-21T02:45:44Z
+trial_renewal_cancelled,Production,1,1,,2026-10-19T02:08:26.435000Z,2026-10-19T02:08:26.435000Z
+trial_started,Production,2,2,,2026-10-01T21:51:25Z,2026-10-18T02:45:44Z
+subscription_expired,Sandbox,2,2,,2026-10-06T02:59:44Z,2026-10-18T23:09:43Z
+subscription_renewal_cancelled,Sandbox,3,3,,2026-09-30T04:15:28.541000Z,2026-10-18T23:04:43Z
+subscription_renewal_reactivated,Sandbox,1,1,,2026-09-30T04:17:00.631000Z,2026-09-30T04:17:00.631000Z
+subscription_renewed,Sandbox,31,4,559.6899999999999,2026-09-25T16:49:13Z,2026-10-21T20:09:02Z
+subscription_started,Sandbox,1,1,9.99,2026-10-18T22:09:43Z,2026-10-18T22:09:43Z
+trial_converted,Sandbox,3,3,59.970000000000006,2026-09-25T02:55:33Z,2026-10-18T21:40:19Z
+trial_started,Sandbox,2,2,,2026-10-15T20:04:07Z,2026-10-18T21:38:19Z
