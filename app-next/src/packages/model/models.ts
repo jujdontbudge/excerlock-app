@@ -80,6 +80,7 @@ export type IdentityLabScript = {
   restore?: 'restored' | 'notFound' | 'errorFirst';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
+  integrationIdentifier?: 'networkFailed' | 'hang';
   secondSubscription?: boolean;
   concurrentRestore?: boolean;
   linkedProviders?: boolean;

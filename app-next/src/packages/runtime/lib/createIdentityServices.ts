@@ -66,6 +66,7 @@ export async function createIdentityServices(options: {
       subscriptionIdentify: (id) => subscription.identify(id), subscriptionReset: () => subscription.reset(),
       getPosthogDistinctId: () => analytics.getDistinctId(),
       setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
+      reportError: (error) => options.reportError(error),
       onBeforeDelete: options.beforeDelete,
       onAfterDelete: options.afterDelete,
       beforeAccountSwitch: options.beforeAccountSwitch,
