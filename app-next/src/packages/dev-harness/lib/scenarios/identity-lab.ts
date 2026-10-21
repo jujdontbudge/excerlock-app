@@ -18,6 +18,30 @@ const atOnboardingPaywall = {
   steps: { today: 0 },
 };
 export const identityLabScenarios = [
+  base('identity-lab-payment-analytics', 'Identity lab · production payment analytics', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, purchase: 'cancel' },
+  }),
+  base('identity-lab-purchase-preflight', 'Identity lab · retry purchase preflight', {
+    ...atOnboardingPaywall,
+    identityLab: { activation: 'failFirst', adaptyIdentify: 'failFirst', audienceUpdate: 'fail', plans: 'failFirst', journalFailure: 'hydrateOnce' },
+  }),
+  base('identity-lab-purchase-response-interrupted', 'Identity lab · payment response interrupted', {
+    ...atOnboardingPaywall,
+    identityLab: { purchase: 'paidThenInterrupted', restore: 'restored' },
+  }),
+  base('identity-lab-purchase-response-encoding', 'Identity lab · payment response encoding failed', {
+    ...atOnboardingPaywall,
+    identityLab: { purchase: 'paidThenEncodingFailed', restore: 'restored' },
+  }),
+  base('identity-lab-purchase-journal-confirm', 'Identity lab · journal confirmation fails once', {
+    ...atOnboardingPaywall,
+    identityLab: { journalFailure: 'confirmOnce', restore: 'restored' },
+  }),
+  base('identity-lab-purchase-journal-clear', 'Identity lab · journal removal fails once', {
+    ...atOnboardingPaywall,
+    identityLab: { purchase: 'cancel', journalFailure: 'clearOnce', restore: 'notFound' },
+  }),
   base('identity-lab-email-new', 'Identity lab · new email account after purchase', {
     ...atOnboardingPaywall,
     identityLab: { emailAccount: 'new', restore: 'restored' },

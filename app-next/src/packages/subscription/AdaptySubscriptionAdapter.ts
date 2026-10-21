@@ -22,6 +22,8 @@ import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } f
 import { PurchaseRecoveryJournal } from './PurchaseRecoveryJournal';
 import { trialOffer } from './trialOffer';
 import { profileContainsPurchase, storePurchaseForProfile } from './lib/storePurchase';
+import { retryAdapty } from './lib/retryAdapty';
+import { adaptyErrorCode, purchaseDefinitelyUncharged } from './purchaseErrors';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
 const INTEGRATION_TIMEOUT_MS = 3000;
@@ -94,8 +96,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   private ensureActivated(): Promise<void> {
     if (this.disposed) throw new Error('Subscription adapter disposed');
     if (!this.activation) {
-      this.activation = this.deps.sdk
-        .activate(this.deps.publicSdkKey, { __ignoreActivationOnFastRefresh: true })
+      this.activation = retryAdapty(() => {
+        if (this.disposed) throw new Error('Subscription adapter disposed');
+        return this.deps.sdk.activate(this.deps.publicSdkKey, { __ignoreActivationOnFastRefresh: true });
+      })
         .then(() => this.registerFallback())
         .then(() => {
           if (!this.disposed && !this.listener)
@@ -103,6 +107,9 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
               'onLatestProfileLoad',
               (profile) => void this.publishProfile(profile, this.restoreInFlight ? 'restore-callback' : 'listener'),
             );
+        }).catch((error) => {
+          this.activation = null;
+          throw error;
         });
     }
     return this.activation;
@@ -147,7 +154,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const before = this.deps.getIdentity();
     if (before.kind !== 'canonical' || before.userId !== userId || before.generation !== identity.generation || this.disposed)
       throw new Error('Identity changed before Adapty identify');
-    await this.deps.sdk.identify(userId);
+    await retryAdapty(() => {
+      const current = this.deps.getIdentity();
+      if (current.kind !== 'canonical' || current.userId !== userId || current.generation !== identity.generation || this.disposed)
+        throw new Error('Identity changed before Adapty identify');
+      return this.deps.sdk.identify(userId);
+    });
     const after = this.deps.getIdentity();
     if (after.kind !== 'canonical' || after.userId !== userId || after.generation !== identity.generation)
       throw new Error('Identity changed during Adapty identify');
@@ -182,7 +194,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const identity = this.requireExpected();
     await this.ensureActivated();
     this.assertIdentity(identity);
-    const late = this.deps.sdk.getProfile().then((profile) => {
+    const late = retryAdapty(() => {
+      this.assertIdentity(identity);
+      return this.deps.sdk.getProfile();
+    }).then((profile) => {
       this.assertIdentity(identity);
       return this.publishProfile(profile, 'refresh');
     });
@@ -201,16 +216,23 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const identity = this.requireExpected();
     await this.ensureActivated();
     if (placement === 'onboarding' && !options && this.onboardingAudienceGeneration !== identity.generation) {
-      await this.deps.sdk.updateProfile({ customAttributes: { onboarding_offer_version: 1 } });
+      try { await this.deps.sdk.updateProfile({ customAttributes: { onboarding_offer_version: 1 } }); }
+      catch (error) { this.deps.reportError(error); }
       this.assertIdentity(identity);
       this.onboardingAudienceGeneration = identity.generation;
     }
-    const flow = await this.deps.sdk.getFlow(options?.onboardingPlacement ?? placement, {
-      fetchPolicy: 'reload_revalidating_cache_data',
-      loadTimeoutMs: 5000,
+    const flow = await retryAdapty(() => {
+      this.assertIdentity(identity);
+      return this.deps.sdk.getFlow(options?.onboardingPlacement ?? placement, {
+        fetchPolicy: 'reload_revalidating_cache_data',
+        loadTimeoutMs: 5000,
+      });
     });
     this.assertIdentity(identity);
-    const products = await this.deps.sdk.getPaywallProducts(flow);
+    const products = await retryAdapty(() => {
+      this.assertIdentity(identity);
+      return this.deps.sdk.getPaywallProducts(flow);
+    });
     this.assertIdentity(identity);
     if (!products.length) throw new Error('Plans could not load');
     if (generation !== this.paywallGeneration) throw new Error('Paywall request superseded');
@@ -247,6 +269,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
+        this.assertIdentity(ready);
         const loaded = this.loaded;
         const product = loaded?.sdkProducts.get(handle);
         if (!loaded || !product || loaded.identityGeneration !== ready.generation)
@@ -258,21 +281,29 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
           throw new Error('Finish connecting the existing purchase before starting another.');
         let result;
+        let purchaseInvoked = false;
         try {
           await this.attachIntegrationBestEffort(ready);
+          this.assertIdentity(ready);
+          purchaseInvoked = true;
           result = await this.deps.sdk.makePurchase(product);
         } catch (error) {
-          const current = this.deps.recoveryJournal.snapshot();
-          if (current.type === 'pending' && current.operationId === recovery.operationId)
-            await this.deps.recoveryJournal.clear();
+          if (purchaseInvoked && adaptyErrorCode(error) === 1050) {
+            return { type: 'pending' };
+          }
+          if (!purchaseInvoked || purchaseDefinitelyUncharged(error)) {
+            const current = this.deps.recoveryJournal.snapshot();
+            if (current.type === 'pending' && current.operationId === recovery.operationId)
+              await this.deps.recoveryJournal.clear();
+          }
           if (isAlreadyOwned(error)) {
             this.assertIdentity(ready);
             return { type: 'already_subscribed' };
           }
+          if (adaptyErrorCode(error) === 2) return { type: 'user_cancelled' };
           throw error;
         }
         if (result.type === 'success') {
-          this.assertIdentity(ready);
           await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now(), storePurchaseForProfile(result.profile, product.vendorProductId));
         }
         this.assertIdentity(ready);
@@ -299,6 +330,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
+        this.assertIdentity(ready);
         await this.deps.recoveryJournal.ready();
         const existing = this.deps.recoveryJournal.snapshot();
         const recovery = await this.deps.recoveryJournal.begin('restore', ready.userId!, this.deps.now());
@@ -307,7 +339,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         let profile;
         try {
           await this.attachIntegrationBestEffort(ready);
-          profile = await this.deps.sdk.restorePurchases();
+          profile = await retryAdapty(() => {
+            this.assertIdentity(ready);
+            return this.deps.sdk.restorePurchases();
+          });
         } catch (error) {
           const current = this.deps.recoveryJournal.snapshot();
           if (existing.type === 'none' && current.type === 'pending' && current.operationId === recovery.operationId)

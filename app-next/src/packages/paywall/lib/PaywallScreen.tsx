@@ -16,6 +16,7 @@ import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
 import { subscriptionCopy, planName, perPeriod } from '../../subscription/subscriptionCopy';
+import { purchaseFailureClass } from '../../subscription/purchaseErrors';
 import { defaultPlanHandle } from './paywallVariant';
 import { PaywallHeadline } from './PaywallHeadline';
 import { PaywallReview } from './PaywallReview';
@@ -56,6 +57,7 @@ export function PaywallScreen({
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
     chosen = useRef(false),
+    operationInFlight = useRef(false),
     latest = useRef({ variantKey, onLoaded }),
     shown = useRef<number | null>(null);
   useEffect(() => {
@@ -101,7 +103,8 @@ export function PaywallScreen({
     if (placement === 'onboarding') runtime.onboardingOffer?.expose();
   }, [paywall, runtime, placement, reportError]);
   const purchase = async () => {
-    if (!selected || busy || verifying || verificationRequired || recovery.type !== 'none') return;
+    if (!selected || busy || operationInFlight.current || verifying || verificationRequired || recovery.type !== 'none') return;
+    operationInFlight.current = true;
     if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     let restoreExisting = false;
@@ -117,16 +120,19 @@ export function PaywallScreen({
       else if (result.type === 'user_cancelled')
         runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
     } catch (error) {
-      runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
+      runtime.analytics.track('purchase_failed', { reason_class: purchaseFailureClass(error) });
       reportError(error, 'purchase');
       notify(subscriptionCopy.error);
       haptic('error');
     } finally {
+      operationInFlight.current = false;
       setBusy(null);
     }
     if (restoreExisting) await restore();
   };
   async function restore() {
+    if (operationInFlight.current) return;
+    operationInFlight.current = true;
     setBusy('restore');
     try {
       if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound')
@@ -140,6 +146,7 @@ export function PaywallScreen({
       notify(subscriptionCopy.error);
       haptic('error');
     } finally {
+      operationInFlight.current = false;
       setBusy(null);
     }
   }
@@ -149,7 +156,7 @@ export function PaywallScreen({
   };
   const product = paywall?.products.find((item) => item.handle === selected);
   const press = () => {
-    if (busy || verifying) return;
+    if (busy || operationInFlight.current || verifying) return;
     if (recovery.type !== 'none') continueRecovery();
     else if (verificationRequired) onRetryVerification?.();
     else if (!paywall) void load();

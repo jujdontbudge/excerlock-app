@@ -63,12 +63,17 @@ export type Scenario = {
   };
 };
 export type IdentityLabScript = {
+  activation?: 'failFirst';
+  adaptyIdentify?: 'failFirst';
+  audienceUpdate?: 'fail';
+  productionAnalytics?: boolean;
+  journalFailure?: 'hydrateOnce' | 'confirmOnce' | 'clearOnce';
   anonymousSignIn?: 'ok' | 'failFirst';
   userSync?: 'ok' | 'failFirst' | 'slow';
   plans?: 'ok' | 'failFirst' | 'empty';
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
-  purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier';
+  purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier' | 'paidThenInterrupted' | 'paidThenEncodingFailed';
   restore?: 'restored' | 'notFound' | 'errorFirst';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;

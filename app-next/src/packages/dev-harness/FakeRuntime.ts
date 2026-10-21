@@ -136,7 +136,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
   const auth = classBackedPort('auth', identityLab.route(AuthFake(ctx), (lab) => lab.auth));
   const subscription = classBackedPort('subscription', identityLab.route(SubscriptionFake(ctx), (lab) => lab.subscription));
-  const analytics = AnalyticsFake(ctx);
+  const analytics = identityLab.route(AnalyticsFake(ctx), (lab) => lab.analytics);
   const onboardingOffer = createOnboardingOffer({
     subscription,
     analytics,

@@ -18,6 +18,64 @@ depends: [launch]
 Finish onboarding and the paywall appears. A subscriber reaches it through Settings → Manage subscription. A lapsed user sees the win-back paywall at launch.
 
 ## Driving it with excer
+```proof
+name: purchase-events-use-production-analytics
+scenario: identity-lab-payment-analytics
+open: dev?journey=paywall
+tap: Continue
+expect: Continue | Yearly $39.99/year
+then-open: /dev
+then-expect: lab_posthog_capture {"event":"purchase_started"} | purchase_started {"placement":"onboarding","plan_id":"lab.annual"} | lab_posthog_capture {"event":"purchase_failed"} | purchase_failed {"reason_class":"cancelled"}
+```
+
+```proof
+name: purchase-preflight-retries-without-relaunch
+scenario: identity-lab-purchase-preflight
+open: dev?journey=paywall
+tap: Continue
+expect: Continue with Apple
+then-open: /dev
+then-expect: Purchase operations 1 | lab_preflight {"activation":2,"identify":2,"flowRecovered":true,"journalRecovered":true} | Purchase recovery accountConnection
+```
+
+```proof
+name: purchase-interrupted-response-keeps-recovery
+scenario: identity-lab-purchase-response-interrupted
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect Purchase recovery pending | expect lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":1,"recovery":"pending"} | open /paywall | tap Continue
+expect: Continue with Apple
+then-open: /dev
+then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection
+```
+
+```proof
+name: purchase-encoded-response-keeps-recovery
+scenario: identity-lab-purchase-response-encoding
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect Purchase recovery pending | expect lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":1,"recovery":"pending"} | open /paywall | tap Continue
+expect: Continue with Apple
+then-open: /dev
+then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection
+```
+
+```proof
+name: purchase-journal-confirm-can-retry
+scenario: identity-lab-purchase-journal-confirm
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect Purchase recovery pending | expect lab_journal_failure {"operation":"confirm"} | open /paywall | tap Continue
+expect: Continue with Apple
+then-open: /dev
+then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection
+```
+
+```proof
+name: purchase-journal-clear-can-retry
+scenario: identity-lab-purchase-journal-clear
+open: dev?journey=paywall
+actions: tap Continue | open /dev
+expect: Purchase operations 1 | Restore operations 0 | Purchase recovery none | lab_journal_failure {"operation":"clear"} | lab_journal_cleared {"attempt":2,"durable":"none"}
+```
+
 Dev controls change outcomes without touching StoreKit: add `&outcome=success|cancel|error` or `&restore=restored|notFound` to the dev URL. For example, `./excer sim open "dev?scenario=trial-expired&outcome=error"`.
 
 ```proof
@@ -177,7 +235,7 @@ absent: Choose a plan | Starting your plan | Please retry
 name: identity-purchase-error-retries-original-checkout
 scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
-actions: tap Continue | open /dev | expect purchase_failed {"reason_class":"unknown"} | expect paywall_error {"operation":"purchase"} | open /paywall | tap Continue | tap Continue with Apple
+actions: tap Continue | open /dev | expect purchase_failed {"reason_class":"unavailable"} | expect paywall_error {"operation":"purchase"} | open /paywall | tap Continue | tap Continue with Apple
 wait: 25
 expect: Allow Screen Time
 absent: could not finish | Starting your plan
@@ -191,8 +249,10 @@ scenario: identity-lab-purchase-pending
 open: dev?journey=paywall
 tap: Continue
 wait: 25
-expect: Continue | Lab annual $39.99/year · $39.99 / year
+expect: Continue | Yearly $39.99/year · $0.77 / week
 absent: still being confirmed | Check purchase status | pending approval
+then-open: /dev
+then-expect: Purchase recovery pending | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"pending","owner":"lab-checkout-1"} | Protected route mounts | None
 ```
 
 ```proof

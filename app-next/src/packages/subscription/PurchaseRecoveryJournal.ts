@@ -53,16 +53,22 @@ export class PurchaseRecoveryJournal {
   private value: PurchaseRecovery = none();
   private listeners = new Set<(recovery: PurchaseRecovery) => void>();
   private writing = Promise.resolve();
-  private hydrated: Promise<void>;
+  private hydrated: Promise<void> | null = null;
 
   constructor(private storage: Storage) {
-    this.hydrated = storage.getItem(PURCHASE_RECOVERY_KEY).then((raw) => {
-      this.value = parse(raw);
-      this.publish();
-    });
+    void this.ready().catch(() => undefined);
   }
 
   ready(): Promise<void> {
+    if (!this.hydrated) {
+      this.hydrated = this.storage.getItem(PURCHASE_RECOVERY_KEY).then((raw) => {
+        this.value = parse(raw);
+        this.publish();
+      }).catch((error) => {
+        this.hydrated = null;
+        throw error;
+      });
+    }
     return this.hydrated;
   }
 
@@ -76,48 +82,50 @@ export class PurchaseRecoveryJournal {
   }
 
   async begin(operation: 'purchase' | 'restore', checkoutUserId: string, startedAt: string): Promise<PurchaseRecovery> {
-    await this.hydrated;
-    const current = this.value;
-    if (current.type !== 'none') return current;
-    return this.write({
+    return this.update((current) => current.type !== 'none' ? current : ({
       type: 'pending',
       operation,
       operationId: `${operation}:${checkoutUserId}:${startedAt}`,
       checkoutUserId,
       startedAt,
-    });
+    }));
   }
 
   async confirm(checkoutUserId: string, confirmedAt: string, storePurchase?: StorePurchase): Promise<PurchaseRecovery> {
-    await this.hydrated;
-    const current = this.value;
-    if (current.type === 'none' || current.checkoutUserId !== checkoutUserId) return current;
-    if (current.type === 'accountConnection' && (current.storePurchase || !storePurchase)) return current;
-    return this.write({ ...current, type: 'accountConnection', confirmedAt, ...(storePurchase ? { storePurchase } : {}) });
+    return this.update((current) => {
+      if (current.type === 'none' || current.checkoutUserId !== checkoutUserId) return current;
+      if (current.type === 'accountConnection' && (current.storePurchase || !storePurchase)) return current;
+      return { ...current, type: 'accountConnection', confirmedAt, ...(storePurchase ? { storePurchase } : {}) };
+    });
   }
 
   async clear(): Promise<void> {
-    await this.hydrated;
-    this.value = none();
-    this.publish();
-    this.writing = this.writing.then(() => this.storage.removeItem(PURCHASE_RECOVERY_KEY));
-    await this.writing;
+    await this.update(() => none());
   }
 
   async connect(checkoutUserId: string, confirmedAt: string): Promise<void> {
-    await this.hydrated;
-    const current = this.value;
-    if (current.type === 'none') return;
-    await this.write({ ...current, type: 'accountConnection', checkoutUserId, confirmedAt });
+    await this.update((current) => current.type === 'none' ? current : ({ ...current, type: 'accountConnection', checkoutUserId, confirmedAt }));
   }
 
-  private async write(next: Exclude<PurchaseRecovery, { type: 'none' }>): Promise<PurchaseRecovery> {
-    this.value = next;
-    this.publish();
-    const payload = JSON.stringify({ version: 1, ...next });
-    this.writing = this.writing.then(() => this.storage.setItem(PURCHASE_RECOVERY_KEY, payload));
-    await this.writing;
-    return next;
+  private async update(change: (current: PurchaseRecovery) => PurchaseRecovery): Promise<PurchaseRecovery> {
+    await this.ready();
+    const operation = this.writing.then(async () => {
+      const next = change(this.value);
+      if (next === this.value) return next;
+      if (next.type === 'none') {
+        try { await this.storage.removeItem(PURCHASE_RECOVERY_KEY); }
+        catch {
+          await new Promise<void>((resolve) => setTimeout(resolve, 300));
+          await this.storage.removeItem(PURCHASE_RECOVERY_KEY);
+        }
+      }
+      else await this.storage.setItem(PURCHASE_RECOVERY_KEY, JSON.stringify({ version: 1, ...next }));
+      this.value = next;
+      this.publish();
+      return next;
+    });
+    this.writing = operation.then(() => undefined, () => undefined);
+    return operation;
   }
 
   private publish() {
