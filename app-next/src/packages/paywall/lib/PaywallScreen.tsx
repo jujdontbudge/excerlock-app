@@ -166,7 +166,7 @@ export function PaywallScreen({
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      contentStyle={{ gap: t.space.xl, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
+      contentStyle={{ gap: t.space.lg, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
       header={
         onClose ? (
           <View
@@ -260,10 +260,14 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <PaywallHeadline />
-      <PaywallReview />
-      <PaywallTagline />
-      <Label variant="support" style={{ textAlign: 'center' }}>{copy.premium}</Label>
+      <View style={{ gap: t.space.lg }}>
+        <PaywallHeadline />
+        <PaywallReview />
+        <View style={{ gap: t.space.sm }}>
+          <PaywallTagline />
+          <Label variant="support" style={{ textAlign: 'center' }}>{copy.premium}</Label>
+        </View>
+      </View>
     </ScreenShell>
   );
 }
