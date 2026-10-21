@@ -27,6 +27,7 @@ import {
   returningUnpaid,
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
+  returningOfflineStaleProfile,
   reinstallKeychain,
   subscriptionProofMatching,
   subscriptionProofWrongAccount,
@@ -45,6 +46,7 @@ import { scenario26 } from './trial-lapses-in-session';
 import { screenshotsFull } from './screenshots-full';
 import { onboardingOfferScenarios } from './onboarding-offer';
 import { bankScenarios } from './bank';
+import { enforcementPolicyScenario } from './enforcement-policy';
 export const scenarios = [
   gymUiucOutside,
   gymUiucManual,
@@ -57,6 +59,7 @@ export const scenarios = [
   scenario0,
   reviewVerificationUnavailable,
   ...reviewAdmissionScenarios,
+  enforcementPolicyScenario,
   scenario1,
   scenario2,
   scenario3,
@@ -77,6 +80,7 @@ export const scenarios = [
   returningUnpaid,
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
+  returningOfflineStaleProfile,
   reinstallKeychain,
   returningUnpaidOtaHome,
   returningUnpaidOtaUnlock,

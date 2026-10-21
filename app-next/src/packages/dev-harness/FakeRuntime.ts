@@ -3,7 +3,7 @@ import { startFakeBankEvidence } from './lib/bankEvidence';
 import { createBankDrainFake } from './lib/fakes/BankDrainFake';
 import type { GymLocationFix } from '../ports/GymPort';
 import { FakePickerHost } from './FakePickerHost';
-import { noteObservedEntitlement } from '../subscription/winbackSession';
+import { forgetObservedEntitlement, noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
 import { stores } from '../launch/stores';
 import { SupportFake } from './lib/fakes/SupportFake';
@@ -43,9 +43,10 @@ import { createServerSubscriptionAdmission } from '../subscription/ServerSubscri
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
 import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
 import { rememberSignIn } from '../identity/rememberedSignIn';
-import { rememberAdmission } from '../subscription/rememberedAdmission';
+import { rememberAdmission, rememberedAdmissionStore } from '../subscription/rememberedAdmission';
 import { pathFor } from '../onboarding/onboardingPath';
 import { classBackedPort } from './lib/fakes/classBackedPort';
+import { enforcementPolicyEvidence } from './lib/enforcementPolicyEvidence';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
 export type FakeRuntimeOptions = {
   gymFixSource?: () => Promise<GymLocationFix | null>;
@@ -223,6 +224,18 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           otaResume: null,
         });
         scriptedAdmission.prepare();
+        if (scenario.rememberedPaidThrough) {
+          const identity = auth.identity();
+          if (!identity.userId) throw new Error('Remembered admission needs an account');
+          const observedAt = new Date(Date.parse(scenario.rememberedPaidThrough) - 60_000).toISOString();
+          rememberedAdmissionStore.getState().patch({ admission: {
+            userId: identity.userId, environment: 'sandbox', expiresAt: scenario.rememberedPaidThrough,
+            observedAt, verifiedAt: observedAt,
+          } });
+          rememberSignIn(identity);
+          forgetObservedEntitlement();
+        }
+        await enforcementPolicyEvidence(ctx);
         void onboardingOffer.prefetch();
         const trialReminder = trialReminderPlan(scenario.entitlement, Date.parse(ctx.clock.now()));
         ctx.update({ trialReminder: trialReminder ? `${trialReminder.title} · ${new Date(trialReminder.at).toISOString()} · ${Math.round((Date.parse(scenario.entitlement.accessExpiresAt!) - trialReminder.at) / 3600000)} hours before expiry` : 'None' });

@@ -2,7 +2,7 @@
 id: enforcement
 title: Screen Time enforcement and shields
 routes: [diagnostics/bank-drain]
-scenarios: [home-locked-walking, trial-active, bank-empty]
+scenarios: [home-locked-walking, trial-active, bank-empty, enforcement-policy-deadlines]
 events: [shields_applied, shields_lifted, unlock_completed]
 depends: [home]
 ---
@@ -17,6 +17,15 @@ Open a locked app during a scheduled window, and the ExcerLock shield covers it.
 
 ## Driving it with excer
 The simulator cannot show real Screen Time shields. Preview the shield design with `./excer sim open "dev?stage=shield"`. Real enforcement needs a physical iPhone.
+
+The policy-deadline scenario runs the production Enforcement source and host against the native publish contract. It proves revision consistency for repeated open and shield policies, not actual Screen Time effects.
+
+```proof
+name: stable-policy-deadlines
+scenario: enforcement-policy-deadlines
+open: /dev
+expect: enforcement_policy_checked {"mode":"disabled","first":"applied","second":"applied","stableRevision":true} | enforcement_policy_checked {"mode":"lapsed","first":"applied","second":"applied","stableRevision":true} | enforcement_policy_checked {"mode":"outsideWindow","first":"applied","second":"applied","stableRevision":true} | enforcement_policy_checked {"mode":"shield","first":"applied","second":"applied","stableRevision":true} | enforcement_policy_errors {"count":0}
+```
 
 ```proof
 name: shield-preview

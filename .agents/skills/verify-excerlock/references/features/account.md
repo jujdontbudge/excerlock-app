@@ -2,7 +2,7 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict, review-verification-unavailable, review-store-null, review-store-timeout, review-server-error, review-server-timeout, review-offline, review-server-unknown, review-store-retry, review-verification-retry, review-pending-unavailable]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict, review-verification-unavailable, review-store-null, review-store-timeout, review-server-error, review-server-timeout, review-offline, review-server-unknown, review-store-retry, review-verification-retry, review-pending-unavailable, review-admission-network-retry, review-admission-timeout-retry, review-admission-mirror-retry]
 server: [PUT /v1/user, DELETE /v1/user, POST /v1/subscription/resync]
 events: [subscription_verification_failed]
 depends: [setup]
@@ -347,7 +347,9 @@ open: /onboarding/O01
 actions: tap Sign in | tap Continue with Apple
 expect: Restore purchases | Continue
 absent: Let's try that again
-wait: 35
+wait: 50
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | review_admission_request {"attempt":2 | request_timeout
 ```
 
 ```proof
@@ -387,10 +389,44 @@ then-expect: Journey app · paid yes · admitted yes | review_store_environment 
 name: admission-recovers-on-retry
 scenario: review-verification-retry
 open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple | expect Try again
-swipe: 0.5,0.8,0.5,0.25
-expect: Try again | Restore purchases
-then-tap: Try again
+actions: tap Sign in | tap Continue with Apple
+expect: Home | Conditions
+wait: 45
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
+```
+
+Admission retries use the production server adapter with scripted HTTP responses. One retry covers a transient 5xx, network failure, timeout, or unknown webhook mirror; a permanent timeout remains unpaid after two bounded attempts. They do not establish real Adapty webhook timing.
+
+```proof
+name: admission-recovers-after-network-error
+scenario: review-admission-network-retry
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Home | Conditions
+wait: 45
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
+```
+
+```proof
+name: admission-recovers-after-timeout
+scenario: review-admission-timeout-retry
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Home | Conditions
+wait: 45
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
+```
+
+```proof
+name: admission-recovers-after-delayed-webhook
+scenario: review-admission-mirror-retry
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Home | Conditions
+wait: 45
 then-open: /dev
 then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
 ```

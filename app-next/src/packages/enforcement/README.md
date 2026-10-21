@@ -13,6 +13,7 @@ generated copies are not source inputs. Ordinary builds use
   account/policy/selection generations, selection payload, watchdog registrations,
   windows and the shielded flag. Its schema and filenames stay unchanged. Ordinary policy publication does not
   clear unread Bank ticks; Bank owns its arm/disarm lifecycle.
+- A revision identifies an immutable `eligibleUntil` as well as its state and context, matching Swift's `publish` guard. Open policies without a timed Unlock use zero; a clock tick never invents a new deadline or revision for them. Timed and shield policies include their deadline in the source signature.
 - UserDefaults `familyActivitySelectionIds`, opaque handle
   `excerlock.selection.locked.v1`: the native-only FamilyActivitySelection payload.
 - UserDefaults `excerlock.shield.copy-overrides.v1`: canonical remote shield copy,

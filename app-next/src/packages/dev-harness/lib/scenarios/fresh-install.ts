@@ -28,4 +28,7 @@ export const reviewAdmissionScenarios = [
   base('review-server-timeout', 'Review · admission server timeout', { ...scenario0, id: 'review-server-timeout', admissionFailure: 'serverTimeout' }),
   base('review-offline', 'Review · offline after authentication', { ...scenario0, id: 'review-offline', admissionFailure: 'offline' }),
   base('review-verification-retry', 'Review · paid verification recovers on retry', { ...scenario0, id: 'review-verification-retry', entitlement: { status: 'active', renewsAt: '2026-10-07T15:00:00.000Z' }, admissionFailure: 'retry' }),
+  base('review-admission-network-retry', 'Review · admission recovers after a network error', { ...scenario0, id: 'review-admission-network-retry', entitlement: { status: 'active', renewsAt: '2026-10-07T15:00:00.000Z' }, admissionFailure: 'networkRetry' }),
+  base('review-admission-timeout-retry', 'Review · admission recovers after a timeout', { ...scenario0, id: 'review-admission-timeout-retry', entitlement: { status: 'active', renewsAt: '2026-10-07T15:00:00.000Z' }, admissionFailure: 'timeoutRetry' }),
+  base('review-admission-mirror-retry', 'Review · admission recovers after a delayed webhook', { ...scenario0, id: 'review-admission-mirror-retry', entitlement: { status: 'active', renewsAt: '2026-10-07T15:00:00.000Z' }, admissionFailure: 'unknownRetry' }),
 ];
