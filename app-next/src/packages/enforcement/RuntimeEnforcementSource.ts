@@ -51,7 +51,7 @@ export class RuntimeEnforcementSource {
       rules: input.rules, timezone: input.timezone, account: input.accountGeneration,
       selection: input.selectionVersion, state: projected.state, reason: projected.openReason,
       relief: projected.state === 'conditional' ? projected.relief : null,
-      deadline: projected.state === 'conditional' || projected.openReason === 'earned' ? projected.eligibleUntil : null,
+      deadline: projected.eligibleUntil,
       future: projected.futureEnforcementEligible, windows: projected.windows,
     });
     if (signature !== this.signature) {
