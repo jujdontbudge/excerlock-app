@@ -250,14 +250,14 @@ then-expect: Journey signIn · paid no · admitted no | Purchase recovery accoun
 ```
 
 ```proof
-name: identity-account-switch-does-not-reuse-checkout
+name: identity-account-switch-connects-checkout
 scenario: identity-lab-apple-linked
 open: dev?journey=paywall
-tap: Continue | Continue with Apple | Recover with Apple
+tap: Continue | Continue with Apple
 wait: 25
-expect: Sign in to continue
+expect: Allow Screen Time
 then-open: dev
-then-expect: Purchase recovery accountConnection | Purchase operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"}
+then-expect: Purchase recovery none | Purchase operations 1 | Restore operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"} | lab_restore {"result":"restored","owner":"lab-user-a","source":"adapter"}
 ```
 
 ```proof

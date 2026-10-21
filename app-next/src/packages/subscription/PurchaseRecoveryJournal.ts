@@ -1,4 +1,4 @@
-import type { PurchaseRecovery } from '../ports/SubscriptionPort';
+import type { PurchaseRecovery, StorePurchase } from '../ports/SubscriptionPort';
 import type { Unsubscribe } from '../model/models';
 
 export const PURCHASE_RECOVERY_KEY = 'excerlock-next.purchase-recovery.v1';
@@ -23,12 +23,16 @@ const parse = (raw: string | null): PurchaseRecovery => {
       typeof value.checkoutUserId !== 'string' ||
       typeof value.startedAt !== 'string'
     ) return none();
+    const purchase = value.storePurchase as Partial<StorePurchase> | null | undefined;
+    const storePurchase = purchase && typeof purchase.originalTransactionId === 'string' && purchase.originalTransactionId && typeof purchase.isSandbox === 'boolean'
+      ? { originalTransactionId: purchase.originalTransactionId, isSandbox: purchase.isSandbox } : undefined;
     if (value.type === 'pending') return {
       type: 'pending',
       operation: value.operation as 'purchase' | 'restore',
       operationId: value.operationId,
       checkoutUserId: value.checkoutUserId,
       startedAt: value.startedAt,
+      ...(storePurchase ? { storePurchase } : {}),
     };
     if (typeof value.confirmedAt !== 'string') return none();
     return {
@@ -38,6 +42,7 @@ const parse = (raw: string | null): PurchaseRecovery => {
       checkoutUserId: value.checkoutUserId,
       startedAt: value.startedAt,
       confirmedAt: value.confirmedAt,
+      ...(storePurchase ? { storePurchase } : {}),
     };
   } catch {
     return none();
@@ -83,12 +88,12 @@ export class PurchaseRecoveryJournal {
     });
   }
 
-  async confirm(checkoutUserId: string, confirmedAt: string): Promise<PurchaseRecovery> {
+  async confirm(checkoutUserId: string, confirmedAt: string, storePurchase?: StorePurchase): Promise<PurchaseRecovery> {
     await this.hydrated;
     const current = this.value;
     if (current.type === 'none' || current.checkoutUserId !== checkoutUserId) return current;
-    if (current.type === 'accountConnection') return current;
-    return this.write({ ...current, type: 'accountConnection', confirmedAt });
+    if (current.type === 'accountConnection' && (current.storePurchase || !storePurchase)) return current;
+    return this.write({ ...current, type: 'accountConnection', confirmedAt, ...(storePurchase ? { storePurchase } : {}) });
   }
 
   async clear(): Promise<void> {
@@ -97,6 +102,13 @@ export class PurchaseRecoveryJournal {
     this.publish();
     this.writing = this.writing.then(() => this.storage.removeItem(PURCHASE_RECOVERY_KEY));
     await this.writing;
+  }
+
+  async connect(checkoutUserId: string, confirmedAt: string): Promise<void> {
+    await this.hydrated;
+    const current = this.value;
+    if (current.type === 'none') return;
+    await this.write({ ...current, type: 'accountConnection', checkoutUserId, confirmedAt });
   }
 
   private async write(next: Exclude<PurchaseRecovery, { type: 'none' }>): Promise<PurchaseRecovery> {

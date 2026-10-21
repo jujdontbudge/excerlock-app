@@ -5,6 +5,8 @@ date: 2026-09-10
 
 # 0011: Canonical identity, provider linking, and durable erasure
 
+Email anonymous conversion is superseded by [ADR 0086](0086-verified-account-recovery-and-checkout-connection.md); the remaining identity and erasure decisions stay accepted.
+
 ## Decision
 
 Use canonical Supabase anonymous identity as the shared VPS, Adapty and PostHog ID. A bounded boot may

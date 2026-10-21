@@ -1,13 +1,13 @@
 export const signInCopy = {
   signUp: {
     title: 'Create your account',
-    body: 'Your plan and subscription stay with your account.',
+    body: 'Use a new or existing account to keep your plan and subscription.',
     emailTitle: 'Sign up with email',
     codeBody: 'Enter the six-digit code to create your account.',
   },
   signIn: {
     title: 'Welcome back',
-    body: 'Sign in to the account you already have.',
+    body: 'Use your email or the sign-in method for your account.',
     emailTitle: 'Sign in with email',
     codeBody: 'Enter the six-digit code to sign in.',
   },
@@ -22,7 +22,7 @@ export const signInCopy = {
   codeSentTo: (email: string) => `We sent a six-digit code to ${email}.`,
   changeEmail: 'Use a different email',
   resendIn: (seconds: number) => `Resend code in ${seconds}s`,
-  alreadySent: 'We already sent a code to this email. Enter it here.',
+  alreadySent: 'If you have a code, enter it here. Request another when the timer ends.',
   noAccountTitle: 'No account found',
   noAccountBody: (email: string) => `There's no ExcerLock account for ${email}. Check the spelling, or sign in with Apple or Google if you used one of them.`,
   tryAnotherEmail: 'Try another email',
@@ -34,10 +34,15 @@ export const signInCopy = {
   resent: 'New code sent',
   codeSent: 'We sent you a code',
   accountInUse: 'You already have an account. Tap below to use it.',
-  sameAccount: 'Please use the account you signed up with.',
+  appleError: 'Apple sign-in is unavailable. Try again or continue with email.',
   authError: "That didn't work. Please try again.",
   codeError: "That code didn't work. Please try again.",
   backToOptions: 'Back to sign-in options',
   continue: 'Continue',
   skip: 'Skip for now',
+} as const;
+
+export const signInRecoveryCopy = {
+  title: "Let's try that again",
+  purchase: 'Your purchase is saved. Try again to connect it to your account.',
 } as const;

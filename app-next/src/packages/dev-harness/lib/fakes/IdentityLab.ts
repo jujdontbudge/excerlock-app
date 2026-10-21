@@ -16,7 +16,7 @@ const STORE_SUBSCRIPTION_ID = 'lab.store.annual';
 const INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.monthly';
 const TARGET_INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.b.monthly';
 
-type LabUser = { id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
+type LabUser = { email?: string; id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
 type LabSession = { access_token: string; refresh_token: string; user: LabUser };
 type LabSupabase = NonNullable<AuthServiceConfig['supabase']>;
 type LabAppleDeps = NonNullable<AuthServiceConfig['appleDeps']>;
@@ -230,6 +230,7 @@ export async function createIdentityLab(
     emailSend: 0,
   };
   const grants = new Map<string, { owner: string; status: 'trial' | 'active' }>();
+  let checkoutProductId = 'lab.annual';
   if (script.purchase === 'alreadyOwned') grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
   if (script.wrongStoreAccount) grants.set(STORE_SUBSCRIPTION_ID, { owner: 'lab-user-a', status: 'active' });
   if (script.storeGrant) grants.set(STORE_SUBSCRIPTION_ID, script.storeGrant);
@@ -258,6 +259,7 @@ export async function createIdentityLab(
   const providerUsers = new Map<string, LabUser>();
   const usersById = new Map<string, LabUser>();
   const emailChallengeOutcomes: string[] = [];
+  const consumedEmailChallenges = new Set<number>();
 
   const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
   const newUser = (provider?: string): LabUser => {
@@ -265,7 +267,7 @@ export async function createIdentityLab(
     if (existing) return existing;
     users += 1;
     const user: LabUser = {
-      id: provider === 'apple' ? 'lab-user-a' : provider === 'google' ? 'lab-user-b' : `lab-checkout-${users}`,
+      id: provider === 'apple' ? 'lab-user-a' : provider === 'google' ? 'lab-user-b' : provider === 'email' ? 'lab-email-account' : `lab-checkout-${users}`,
       is_anonymous: !provider,
       identities: provider ? [{ provider }] : [],
       app_metadata: provider ? { provider } : {} as Record<string, string>,
@@ -337,9 +339,23 @@ export async function createIdentityLab(
         ctx.log('lab_recovered_account', { provider, user: result.data.user.id });
         return result;
       },
-      signInWithOtp: unscripted,
+      signInWithOtp: async () => {
+        if ((!script.emailChallenges && !script.emailAccount) || !stored) return unscripted();
+        attempts.emailSend += 1;
+        ctx.log('lab_email_code_sent', { challenge: attempts.emailSend, account: stored.user.id });
+        return { error: script.emailRateLimited ? Object.assign(new Error('For security purposes, you can only request this after 60 seconds.'), { status: 429 }) : null };
+      },
       verifyOtp: async ({ token }: { email: string; token: string; type: string }) => {
-        if (!script.emailChallenges || !stored) return unscripted();
+        if ((!script.emailChallenges && !script.emailAccount) || !stored) return unscripted();
+        if (script.emailAccount) {
+          const ok = token === '123456' && !consumedEmailChallenges.has(attempts.emailSend);
+          ctx.log('lab_email_verified', { challenge: attempts.emailSend, ok, consumed: consumedEmailChallenges.has(attempts.emailSend) });
+          if (!ok) return { data: { session: null }, error: { code: 'otp_expired' } };
+          consumedEmailChallenges.add(attempts.emailSend);
+          const user = newUser('email');
+          if (script.emailAccount === 'paid') grants.set(TARGET_INDEPENDENT_SUBSCRIPTION_ID, { owner: user.id, status: 'active' });
+          return signedIn(user);
+        }
         const outcome = token === '111111'
           ? 'invalid'
           : token === '222222'
@@ -404,14 +420,16 @@ export async function createIdentityLab(
   const appleDeps: LabAppleDeps = {
     signInAsync: async () => {
       attempts.appleCredential += 1;
-      const cancelled = Boolean(script.providerAttempts && attempts.appleCredential === 1);
+      const unknown = Boolean(script.appleUnknown && attempts.appleCredential === 1);
+      const cancelled = Boolean(script.providerAttempts && attempts.appleCredential === (script.appleUnknown ? 2 : 1));
       ctx.log('lab_provider_attempt', {
         provider: 'apple',
         attempt: attempts.appleCredential,
-        result: cancelled ? 'cancelled' : 'success',
+        result: unknown ? 'unknown' : cancelled ? 'cancelled' : 'success',
         account: stored?.user.id ?? 'none',
         grants: grants.size,
       });
+      if (unknown) throw Object.assign(new Error('Native authorization failed for an unknown reason'), { code: 'ERR_REQUEST_UNKNOWN' });
       if (cancelled) throw Object.assign(new Error('Provider sheet canceled'), { code: 'ERR_REQUEST_CANCELED' });
       return { identityToken: 'lab-apple-identity-token', authorizationCode: null, user: 'lab-apple-user' };
     },
@@ -473,7 +491,7 @@ export async function createIdentityLab(
       passiveEntry: ctx.snapshot().subscriptionLab?.passiveEntry,
       lifecycleRevocation: ctx.snapshot().subscriptionLab?.lifecycleRevocation,
       providerConflict: script.establishedProviderConflict
-        ? `B preserved Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
+        ? `selected ${stored?.user.id ?? 'none'} Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
         : ctx.snapshot().subscriptionLab?.providerConflict,
     },
   });
@@ -485,6 +503,13 @@ export async function createIdentityLab(
     const days = status === 'trial' ? ctx.scenario.onboardingOffer?.trialDays ?? 3 : 30;
     return {
       customerUserId: owner,
+      subscriptions: Object.fromEntries([...grants].filter(([, grant]) => grant.owner === owner).map(([id]) => [id, {
+        isActive: true,
+        store: 'app_store',
+        vendorProductId: id === STORE_SUBSCRIPTION_ID ? checkoutProductId : id,
+        vendorOriginalTransactionId: id === STORE_SUBSCRIPTION_ID ? script.storeTransaction?.originalTransactionId ?? 'lab-original-1' : id,
+        isSandbox: id !== STORE_SUBSCRIPTION_ID || script.storeTransaction?.environment !== 'Production',
+      }])),
       accessLevels: status
         ? {
             premium: {
@@ -500,7 +525,7 @@ export async function createIdentityLab(
   const applyStoreRestore = (owner: string) => {
     const storeGrant = grants.get(STORE_SUBSCRIPTION_ID);
     if (storeGrant && storeGrant.owner !== owner) transfers += 1;
-    grants.set(STORE_SUBSCRIPTION_ID, { owner, status: 'active' });
+    grants.set(STORE_SUBSCRIPTION_ID, { owner, status: storeGrant?.status ?? 'active' });
   };
   const restoreForOwner = async (owner: string, source: 'adapter' | 'remote'): Promise<AdaptyProfile> => {
     attempts.restore += 1;
@@ -616,6 +641,7 @@ export async function createIdentityLab(
         return { type: 'success', profile: purchased } as unknown as AdaptyPurchaseResult;
       }
       const trial = product.subscription?.offer?.phases.some((phase) => phase.paymentMode === 'free_trial') ?? false;
+      checkoutProductId = product.vendorProductId;
       if (ctx.scenario.onboardingOffer) ctx.log('lab_offer_purchase', { plan: product.vendorProductId, trial });
       grants.set(STORE_SUBSCRIPTION_ID, { owner, status: trial ? 'trial' : 'active' });
       const purchased = profile(owner);

@@ -3,6 +3,7 @@ import { Unsubscribe } from '../model/models';
 export type TrialOffer = { trialDays: number; reminderDaysBefore: number; label: string };
 export type SubscriptionEntitlement = Entitlement & { offer: TrialOffer };
 export type SubscriptionOperation = { busy: boolean; pending: boolean; error: string | null };
+export type StorePurchase = { originalTransactionId: string; isSandbox: boolean };
 export type PurchaseRecovery =
   | { type: 'none' }
   | {
@@ -11,6 +12,7 @@ export type PurchaseRecovery =
       operationId: string;
       checkoutUserId: string;
       startedAt: string;
+      storePurchase?: StorePurchase;
     }
   | {
       type: 'accountConnection';
@@ -19,6 +21,7 @@ export type PurchaseRecovery =
       checkoutUserId: string;
       startedAt: string;
       confirmedAt: string;
+      storePurchase?: StorePurchase;
     };
 export type PaywallProduct = {
   handle: string;

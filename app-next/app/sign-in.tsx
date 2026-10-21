@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Heading, PrimaryButton, ScreenShell, SecondaryButton } from '../src/packages/ui';
-import { SignInScreen } from '../src/packages/identity/SignInScreen';
+import { SignInScreen, signInRecoveryCopy } from '../src/packages/identity/SignInScreen';
 import { useRuntime } from '../src/packages/ports/useRuntime';
 import { beginOnboarding, beginWelcome, useJourney, verifySelectedAccount } from '../src/packages/journey/index';
 import { reportRuntimeError } from '../src/packages/telemetry/reportRuntimeError';
@@ -31,7 +31,7 @@ export default function SignInRoute() {
         {journey.phase === 'verifying' ? (
           journey.error ? (
             <>
-              <Heading title="Let's try that again" centered />
+              <Heading title={signInRecoveryCopy.title} support={runtime.subscription.recovery().type !== 'none' ? signInRecoveryCopy.purchase : undefined} centered />
               <PrimaryButton label="Try again" onPress={() => void complete()} />
               <SecondaryButton label="Account and help" onPress={() => router.push('/recovery')} />
               <SecondaryButton label="Back to start" onPress={exit} />

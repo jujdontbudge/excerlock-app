@@ -25,7 +25,7 @@ export function generateRawNonce(randomBytes?: () => string): string {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(bytes);
   } else {
-    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+    throw new AuthError('Could not prepare Apple sign-in. Please try again.', { code: 'APPLE_NONCE_FAILED' });
   }
   return Array.from(bytes, (b) => chars[b % chars.length]).join('');
 }
@@ -63,5 +63,5 @@ export async function requestAppleCredential(deps: AppleNativeDeps, rawNonce?: s
 export async function realAppleSignIn(hashedNonce: string): Promise<{ identityToken: string | null; authorizationCode: string | null; user: string | null }> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
   const Apple = require('expo-apple-authentication') as typeof import('expo-apple-authentication');
-  return Apple.signInAsync({ nonce: hashedNonce });
+  return Apple.signInAsync({ nonce: hashedNonce, requestedScopes: [Apple.AppleAuthenticationScope.EMAIL] });
 }

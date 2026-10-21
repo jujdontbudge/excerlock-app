@@ -86,6 +86,9 @@ export type IdentityLabScript = {
   localSignOut?: boolean;
   providerAttempts?: boolean;
   emailChallenges?: boolean;
+  emailAccount?: 'new' | 'existing' | 'paid';
+  emailRateLimited?: boolean;
+  appleUnknown?: boolean;
   staleProductHandle?: boolean;
   storeGrant?: { owner: string; status: 'trial' | 'active' };
   storeTransaction?: { originalTransactionId: string; environment: 'Sandbox' | 'Production' | 'Xcode' };

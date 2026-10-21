@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { BackButton, Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../ui';
@@ -15,6 +15,9 @@ import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRe
 import { rememberSignIn } from './rememberedSignIn';
 import { haptic } from '../ui/haptics';
 import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
+import { currentEmailChallenge, forgetEmailChallenge } from './emailChallenge';
+
+export { signInRecoveryCopy } from './lib/signInCopy';
 
 export type SignInPurpose = 'signUp' | 'signIn';
 
@@ -39,16 +42,17 @@ export function SignInScreen({
 }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
-    [phase, setPhase] = useState<'options' | 'email' | 'code' | 'noAccount'>('options'),
-    [email, setEmail] = useState(''),
+    initialChallenge = currentEmailChallenge(runtime.auth.identity().userId),
+    submitting = useRef(false),
+    [phase, setPhase] = useState<'options' | 'email' | 'code' | 'noAccount'>(initialChallenge ? 'code' : 'options'),
+    [email, setEmail] = useState(initialChallenge?.email ?? ''),
     [code, setCode] = useState(''),
     [busy, setBusy] = useState(false),
     [required, setRequired] = useState<boolean | null>(
       signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
     ),
     [flagAttempt, setFlagAttempt] = useState(0),
-    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | 'email' | null>(null),
-    [cooldownUntil, setCooldownUntil] = useState(0),
+    [cooldownUntil, setCooldownUntil] = useState(initialChallenge?.resendAt ?? 0),
     [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (cooldownUntil <= now) return;
@@ -89,9 +93,9 @@ export function SignInScreen({
     if (!expectedSignInFailure(reason)) reportError(caught);
   };
   const signIn = async (provider: 'apple' | 'google' | 'email', typed = code) => {
-    if (busy) return;
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
-    setRecoveryProvider(null);
     try {
       const result =
         provider === 'apple'
@@ -116,27 +120,26 @@ export function SignInScreen({
           setPhase('code');
           notify(c.codeSent);
         } else {
-          setRecoveryProvider(caught.provider);
           notify(c.accountInUse);
         }
-      } else if (caught instanceof AuthError && caught.code === 'REAUTH_DIFFERENT_ACCOUNT') {
-        setRecoveryProvider(provider);
-        notify(c.sameAccount);
       } else {
         haptic('error');
         if (provider === 'email') setCode('');
-        notify(provider === 'email' ? c.codeError : c.authError);
+        notify(provider === 'email' ? c.codeError : provider === 'apple' ? c.appleError : c.authError);
       }
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
   const send = async () => {
-    if (busy || !validEmail || cooldown > 0) return;
+    if (submitting.current || !validEmail || cooldown > 0) return;
+    submitting.current = true;
     setBusy(true);
-    setRecoveryProvider(null);
     try {
-      await runtime.auth.sendEmailCode(email.trim(), { existingAccountOnly: purpose === 'signIn' });
+      await runtime.auth.sendEmailCode(email.trim());
+      setCooldownUntil(Date.now() + 60_000);
+      setNow(Date.now());
       setCode('');
       if (phase === 'code') notify(c.resent);
       setPhase('code');
@@ -160,6 +163,7 @@ export function SignInScreen({
         failed('email', caught);
       }
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
@@ -179,7 +183,8 @@ export function SignInScreen({
           <BackButton
             label={phase === 'options' ? undefined : c.backToOptions}
             onPress={() => {
-              if (busy) return;
+              if (submitting.current) return;
+              void forgetEmailChallenge();
               if (phase === 'options') onExit?.();
               else setPhase('options');
             }}
@@ -197,8 +202,10 @@ export function SignInScreen({
           onVerify={() => signIn('email')}
           onResend={send}
           onChangeEmail={() => {
-            if (busy) return;
+            if (submitting.current) return;
             setCode('');
+            setCooldownUntil(0);
+            void forgetEmailChallenge();
             setPhase('email');
           }}
           busy={busy}
@@ -290,31 +297,6 @@ export function SignInScreen({
               <PrimaryButton label={c.email} loading={busy} onPress={() => setPhase('email')} />
             </View>
           )}
-          {recoveryProvider ? (
-            <SecondaryButton
-              label={recoveryProvider === 'email' ? 'Switch to this email account' : `Recover with ${recoveryProvider === 'apple' ? 'Apple' : 'Google'}`}
-              loading={busy}
-              onPress={() => {
-                setBusy(true);
-                const recovery = recoveryProvider === 'apple'
-                  ? runtime.auth.recoverWithApple()
-                  : recoveryProvider === 'google'
-                    ? runtime.auth.recoverWithGoogle()
-                    : runtime.auth.recoverWithEmailCode(code);
-                void recovery
-                  .then((result) => {
-                    if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) onContinue();
-                    else notify(c.authError);
-                  })
-                  .catch((caught) => {
-                    if (isAuthCancelled(caught)) return;
-                    notify(c.authError);
-                    failed(recoveryProvider, caught);
-                  })
-                  .finally(() => setBusy(false));
-              }}
-            />
-          ) : null}
         </>
       )}
       <View style={{ flexGrow: 1 }} />

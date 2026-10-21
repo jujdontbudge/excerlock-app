@@ -5,6 +5,8 @@ date: 2026-09-29
 
 # 0050: Welcome-first hard Paywall and account-bound admission
 
+Purchase recovery metadata is extended by [ADR 0086](0086-verified-account-recovery-and-checkout-connection.md) with an optional opaque transaction identifier and environment flag.
+
 Partly superseded by [ADR 0061](0061-stay-signed-in-and-admitted-across-launches.md): cold launches resume a remembered account, and the last server-verified admission is remembered on the device.
 
 ## Decision

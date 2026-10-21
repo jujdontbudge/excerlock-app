@@ -45,12 +45,17 @@ function defaultAppleDeps(): AppleNativeDeps {
     signInAsync: async ({ nonce }) => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
       const Apple = require('expo-apple-authentication') as typeof import('expo-apple-authentication');
-      const credential = await Apple.signInAsync({ nonce });
+      const credential = await Apple.signInAsync({ nonce, requestedScopes: [Apple.AppleAuthenticationScope.EMAIL] });
       return {
         identityToken: credential.identityToken,
         authorizationCode: credential.authorizationCode,
         user: credential.user,
       };
+    },
+    randomNonce: () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
+      const Crypto = require('expo-crypto') as typeof import('expo-crypto');
+      return Array.from(Crypto.getRandomBytes(32), (byte) => byte.toString(16).padStart(2, '0')).join('');
     },
     digestSHA256Hex: async (value) => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
