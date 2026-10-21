@@ -291,7 +291,7 @@ name: billing-disclosures
 scenario: fresh-install
 open: /sample-paywall
 swipe: 0.5,0.8,0.5,0.25
-expect: Yearly $49.99/year · $0.96 / week | Monthly $9.99/month · $2.31 / week | $49.99/year after your 3-day free trial | Payment is charged to your Apple Account. Renews automatically unless canceled at least 24 hours before the period ends. Manage or cancel in App Store settings. | Continue | Restore purchases | Terms of Use | Privacy Policy
+expect: Yearly $49.99/year · $0.96 / week | Monthly $9.99/month · $2.31 / week | $49.99/year after your 3-day free trial | Renews automatically unless canceled at least 24 hours before the period ends. Cancel in App Store settings. | Continue | Restore purchases | Terms of Use | Privacy Policy
 ```
 
 ```proof
