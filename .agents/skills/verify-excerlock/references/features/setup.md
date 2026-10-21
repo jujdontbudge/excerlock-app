@@ -36,7 +36,7 @@ expect: Walks cannot open your apps yet | Turn on
 name: sign-in-provider-options
 scenario: fresh-install
 open: /sample-paywall?stage=sign-in
-expect: Create your account | Your plan and subscription stay with your account. | Continue with Apple | Continue with Google | Continue with email
+expect: Create your account | Use a new or existing account to keep your plan and subscription. | Continue with Apple | Continue with Google | Continue with email
 ```
 
 ```proof
@@ -67,7 +67,7 @@ after-relaunch-expect: HACK your brain to hit your fitness goals | Get started |
 name: sign-in-after-paywall-is-sign-up
 scenario: returning-signed-in
 open: /sample-paywall?stage=sign-in
-expect: Create your account | Your plan and subscription stay with your account. | Continue with Apple
+expect: Create your account | Use a new or existing account to keep your plan and subscription. | Continue with Apple
 ```
 
 ```proof

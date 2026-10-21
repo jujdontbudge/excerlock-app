@@ -113,12 +113,22 @@ export async function verifySelectedAccount(runtime: Runtime, next: AdmittedPhas
     const selected = account(runtime.auth.identity());
     if (!selected || selected.userId !== identity.userId || selected.generation !== identity.generation)
       throw new Error('Account changed while checking your subscription.');
+    await runtime.subscription.recoveryReady();
+    const recovery = runtime.subscription.recovery();
+    if (recovery.type === 'pending' || (recovery.type === 'accountConnection' && recovery.checkoutUserId !== selected.userId)) {
+      await runtime.subscription.restore();
+      const connected = runtime.subscription.recovery();
+      if (connected.type !== 'accountConnection' || connected.checkoutUserId !== selected.userId)
+        throw new Error('Your purchase could not be connected. Retry will not start another purchase.');
+    }
     const result = await runtime.subscriptionAdmission.verify(selected);
     const live = account(runtime.auth.identity());
     if (!live || live.userId !== selected.userId || live.generation !== selected.generation)
       throw new Error('Account changed while checking your subscription.');
     if (result.type === 'unavailable') throw new Error('Subscription verification is unavailable. Retry will not start another purchase.');
     if (result.type === 'ineligible') {
+      if (runtime.subscription.recovery().type !== 'none')
+        throw new Error('Your purchase is still being checked. Retry will not start another purchase.');
       beginPaywall();
       return 'unpaid';
     }
@@ -159,7 +169,7 @@ export function resumeReturningAccount(runtime: Runtime, setupComplete: boolean)
   lastRenewal = Number.NEGATIVE_INFINITY;
   renewRetryMs = RENEW_RETRY_MS;
   const next: AdmittedPhase = setupComplete ? 'app' : 'setup';
-  if (runtime.subscriptionAdmission.current(selected))
+  if (runtime.subscription.recovery().type === 'none' && runtime.subscriptionAdmission.current(selected))
     set({ phase: next, entryIntent: null, admission: selected, error: null });
   else void verifySelectedAccount(runtime, next);
 }

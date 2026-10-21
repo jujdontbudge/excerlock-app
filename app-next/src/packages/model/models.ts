@@ -78,6 +78,9 @@ export type IdentityLabScript = {
   localSignOut?: boolean;
   providerAttempts?: boolean;
   emailChallenges?: boolean;
+  emailAccount?: 'new' | 'existing' | 'paid';
+  emailRateLimited?: boolean;
+  appleUnknown?: boolean;
   staleProductHandle?: boolean;
   wrongStoreAccount?: boolean;
   independentRestore?: boolean;

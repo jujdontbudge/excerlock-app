@@ -31,17 +31,6 @@ then-expect: Journey paywall · paid no · admitted no | Active account Checkout
 ```
 
 ```proof
-name: email-code-failures-use-only-current-challenge
-scenario: identity-lab-email-challenges
-open: dev?journey=signIn
-actions: tap Continue with email | type a@b.co | tap Send code | tap Verification code | type 111111 | tap Verification code | type 222222 | tap Resend code | tap Verification code | type 333333 | tap Verification code | type 444444
-wait: 30
-expect: become ADDICTED to exercise
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Active account Checkout | Email challenges invalid · expired · superseded · success · account lab-checkout-1 · grants 0 | lab_email_challenge {"challenge":1,"result":"invalid","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"expired","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":1,"result":"superseded","account":"lab-checkout-1","grants":0} | lab_email_challenge {"challenge":2,"result":"success","account":"lab-checkout-1","grants":0} | subscription_proof_checked {"account":"lab-checkout-1","result":"ineligible"} | Protected route mounts | None
-```
-
-```proof
 name: linked-providers-one-account
 scenario: identity-lab-linked-providers
 open: /dev
@@ -51,34 +40,35 @@ expect: Active account A | Condition owner Account A | History Days 1 | Profile 
 ```
 
 ```proof
-name: established-provider-conflict-stays-separated
+name: established-provider-selects-isolated-account
 scenario: identity-lab-established-provider-conflict
 open: dev?journey=signIn
 tap: Continue with Apple
 wait: 30
-expect: Please use the account you signed up with. | Recover with Apple
-absent: already on this device
+expect: Restore purchases
 then-open: /dev
-then-expect: Journey signIn · paid no · admitted no | Active account B | Condition owner Account B | History Days 1 | Profile Account B | Saved Gym Gym B | Provider conflict B preserved Apple owner lab-user-a links 0 session restores 1 Entitlement none data account-b/1/Account B/Gym B | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_session_restored {"user":"lab-user-b"}
+then-expect: Journey paywall · paid no · admitted no | Active account A | Condition owner Account A | History Days 1 | Profile Account A | Saved Gym Gym A | lab_recovered_account {"provider":"apple","user":"lab-user-a"}
 ```
 
-Welcome's Sign in opens the full-screen sign-in, never a sheet. Signing in sends a code only to an existing account: in the fake, an email starting with `new` has no account, and a second code to the same address within 60 seconds is rate limited, as Supabase does.
+Welcome's Sign in opens the full-screen sign-in. A verified email can select a new or existing account, including a new complimentary recipient. Resending within 60 seconds keeps the current code available.
 
 ```proof
-name: welcome-sign-in-no-account
+name: welcome-email-code-allows-new-account
 scenario: fresh-install
 open: /onboarding/O01
 actions: tap Sign in | tap Continue with email | type new@a.co | tap Send code
-expect: No account found | There's no ExcerLock account for new@a.co | Try another email | Sign in another way | New here? Create an account
-absent: That didn't work | Check your email | Sign in again
+expect: Check your email | We sent a six-digit code to new@a.co | Verification code
+absent: No account found
 ```
 
 ```proof
-name: welcome-no-account-creates-account
-scenario: fresh-install
+name: welcome-new-email-can-sign-in
+scenario: identity-lab-email-new
 open: /onboarding/O01
-actions: tap Sign in | tap Continue with email | type new@a.co | tap Send code | expect No account found | tap New here? Create an account
-expect: What should we call you?
+actions: tap Sign in | tap Continue with email | type n@b.co | tap Send code | tap Verification code | type 123456
+expect: Restore purchases
+then-open: /dev
+then-expect: lab_email_verified {"challenge":1,"ok":true,"consumed":false} | lab_adapty_identify {"user":"lab-email-account"} | Journey paywall · paid no · admitted no
 ```
 
 ```proof
@@ -159,11 +149,6 @@ then-expect: Journey welcome · paid no · admitted no | Active account Checkout
 wait: 30
 ```
 
-## Gotchas
-- A sign-in is remembered on this install until Sign out or Delete account, so `/settings/account` opens directly for a returning account (ADR 0061; setup/returning-settings-opens). A reinstall asks for sign-in again.
-- Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
-- The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.
-
 The complimentary local harness is enabled only in a development bundle with `EXPO_PUBLIC_EXCER_LOCAL_ACCESS=1`. It requires loopback `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_API_URL` and a local `EXPO_PUBLIC_SUPABASE_ANON_KEY`. It runs the production Supabase email-code adapter, identity coordinator, Adapty Entitlement adapter and server admission adapter. Session storage is namespaced local AsyncStorage because the reused simulator Debug binary cannot use Keychain. Adapty SDK, telemetry, sensors and Screen Time are local stand-ins; it cannot purchase or prove native shields. Provision a local confirmed email grant in the Sandbox lane, then use Welcome → Sign in → Continue with email → Send code → Verify code from the local mail sink and finish Setup. Never connect this harness to real accounts or vendor services. The following proof starts from that established user path, captures the admitted app and proves a cold relaunch. The sign-in actions and sink/database evidence are recorded separately because OTPs must not be committed.
 
 ```proof
@@ -215,3 +200,104 @@ expect: Let's try that again | Try again | Account and help
 absent: Add condition
 wait: 30
 ```
+
+ADR 0086 replaces same-UID reauthentication with verified account recovery. These focused proofs use the production auth adapter, coordinator, purchase journal and subscription adapter with scripted provider/StoreKit responses. Native purchases and Apple ID authorization remain physical-device gates.
+
+```proof
+name: checkout-new-email-verifies-once
+scenario: identity-lab-email-new
+open: /dev?journey=paywall
+actions: tap Continue | tap Continue with email | type n@b.co | tap Send code | tap Verification code | type 123456
+expect: Allow Screen Time
+absent: That code didn't work | Let's try that again
+then-open: /dev
+then-expect: lab_email_verified {"challenge":1,"ok":true,"consumed":false} | lab_adapty_identify {"user":"lab-email-account"} | lab_restore {"result":"restored","owner":"lab-email-account","source":"adapter"} | Journey setup · paid yes · admitted no
+wait: 30
+```
+
+```proof
+name: checkout-existing-email-connects-purchase
+scenario: identity-lab-email-existing
+open: /dev?journey=paywall
+actions: tap Continue | tap Continue with email | type e@b.co | tap Send code | tap Verification code | type 123456
+expect: Allow Screen Time
+absent: That code didn't work | Let's try that again
+then-open: /dev
+then-expect: lab_email_verified {"challenge":1,"ok":true,"consumed":false} | lab_restore {"result":"restored","owner":"lab-email-account","source":"adapter"} | Journey setup · paid yes · admitted no
+wait: 30
+```
+
+```proof
+name: checkout-paid-email-keeps-both-entitlements
+scenario: identity-lab-email-paid
+open: /dev?journey=paywall
+actions: tap Continue | tap Continue with email | type p@b.co | tap Send code | tap Verification code | type 123456
+expect: Allow Screen Time
+then-open: /dev
+then-expect: lab_email_verified {"challenge":1,"ok":true,"consumed":false} | lab_restore {"result":"restored","owner":"lab-email-account","source":"adapter"} | Journey setup · paid yes · admitted no
+wait: 30
+```
+
+```proof
+name: wrong-email-code-then-right-code
+scenario: identity-lab-email-existing
+open: /dev?journey=signIn
+actions: tap Continue with email | type e@b.co | tap Send code | tap Verification code | type 000000 | expect That code didn't work | tap Verification code | type 123456
+expect: Restore purchases
+absent: That code didn't work
+then-open: /dev
+then-expect: lab_email_verified {"challenge":1,"ok":false,"consumed":false} | lab_email_verified {"challenge":1,"ok":true,"consumed":false} | Journey paywall · paid no · admitted no
+wait: 30
+```
+
+```proof
+name: rate-limit-retains-verifiable-code
+scenario: identity-lab-email-rate-limited
+open: /dev?journey=signIn
+actions: tap Continue with email | type e@b.co | tap Send code | expect Resend code in | tap Verification code | type 123456
+expect: Restore purchases
+then-open: /dev
+then-expect: sign_in_failed {"provider":"email","surface":"sign_up","reason_class":"rate_limited","failure_code":"EMAIL_RATE_LIMITED"} | lab_email_verified {"challenge":1,"ok":true,"consumed":false}
+wait: 30
+```
+
+```proof
+name: apple-unknown-cancel-retry-stays-on-signin
+scenario: identity-lab-apple-unknown
+open: /dev?journey=signIn
+actions: tap Continue with Apple | expect Apple sign-in is unavailable. Try again or continue with email. | tap Continue with Apple | expect Continue with email | tap Continue with Apple
+expect: Restore purchases
+then-open: /dev
+then-expect: lab_provider_attempt {"provider":"apple","attempt":1,"result":"unknown","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"apple","attempt":2,"result":"cancelled","account":"lab-checkout-1","grants":0} | lab_provider_attempt {"provider":"apple","attempt":3,"result":"success","account":"lab-checkout-1","grants":0}
+wait: 30
+```
+
+The following focused proof starts after sending a real code through the isolated local Supabase/mail harness. It cold-launches the actual simulator app without resetting the scenario or storing the code. Fixture email and database assertions stay in the ignored evidence directory.
+
+```proof
+name: pending-email-code-survives-relaunch
+open: /
+expect: Check your email | Verification code | We sent a six-digit code
+absent: Let's try that again
+relaunch-after-expect: true
+after-relaunch-expect: Check your email | Verification code | We sent a six-digit code
+wait: 30
+```
+
+With the same local email grant, sign out through Settings → Account, load the completed Screen Time fixture, and sign in again using the next delivered code. Seed coordinates on the owned simulator before cold launch so the fixture's authorized location lookup can complete. The account must enter Home without another Screen Time page and keep access after process death.
+
+```proof
+name: email-sign-in-after-completed-setup
+open: /
+expect: Home | Conditions
+absent: Allow Screen Time | Check your email | Let's try that again
+relaunch-after-expect: true
+after-relaunch-expect: Home | Conditions
+wait: 30
+```
+
+## Gotchas
+
+- A sign-in is remembered on this install until Sign out or Delete account, so `/settings/account` opens directly for a returning account (ADR 0061; setup/returning-settings-opens). A reinstall asks for sign-in again.
+- Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
+- The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.

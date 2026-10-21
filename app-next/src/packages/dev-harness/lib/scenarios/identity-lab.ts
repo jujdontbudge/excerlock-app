@@ -18,6 +18,27 @@ const atOnboardingPaywall = {
   steps: { today: 0 },
 };
 export const identityLabScenarios = [
+  base('identity-lab-email-new', 'Identity lab · new email account after purchase', {
+    ...atOnboardingPaywall,
+    identityLab: { emailAccount: 'new', restore: 'restored' },
+  }),
+  base('identity-lab-email-existing', 'Identity lab · existing email account after purchase', {
+    ...atOnboardingPaywall,
+    identityLab: { emailAccount: 'existing', restore: 'restored' },
+  }),
+  base('identity-lab-email-paid', 'Identity lab · existing paid email account after purchase', {
+    ...atOnboardingPaywall,
+    identityLab: { emailAccount: 'paid', restore: 'restored' },
+  }),
+  base('identity-lab-email-rate-limited', 'Identity lab · rate limited email code', {
+    ...atOnboardingPaywall,
+    identityLab: { emailAccount: 'existing', emailRateLimited: true },
+  }),
+  base('identity-lab-apple-unknown', 'Identity lab · Apple unknown error then cancel and retry', {
+    ...atOnboardingPaywall,
+    identityLab: { appleUnknown: true, providerAttempts: true },
+    subscriptionProof: 'ineligible',
+  }),
   base('identity-lab-account-isolation', 'Identity lab · account data isolation', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success' },
@@ -137,6 +158,6 @@ export const identityLabScenarios = [
   }),
   base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
     ...atOnboardingPaywall,
-    identityLab: { appleLink: 'conflict' },
+    identityLab: { appleLink: 'conflict', restore: 'restored' },
   }),
 ];

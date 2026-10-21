@@ -1,3 +1,4 @@
+import { emailChallengeStore } from '../identity/emailChallenge';
 import { analyticsPreferencesStore } from '../insights/analyticsPreferencesStore';
 import { historyStore } from '../progress/historyStore';
 import { profileStore } from '../preferences/profileStore';
@@ -14,6 +15,7 @@ import { filmingModeStore } from '../activity/filmingModeStore';
 import { showcaseModeStore } from '../progress/showcaseModeStore';
 import { bankStore } from '../bank/bankStore';
 export const stores = [
+  emailChallengeStore,
   bankStore,
   analyticsPreferencesStore,
   historyStore,
