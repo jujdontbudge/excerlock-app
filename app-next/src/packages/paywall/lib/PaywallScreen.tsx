@@ -63,16 +63,17 @@ export function PaywallScreen({
   }, [variantKey, onLoaded]);
   const load = useCallback(async (): Promise<void> => {
     setBusy('load');
+    let requestedPlacement = placement;
     for (let attempt = 0; ; attempt++) {
       try {
-        const next = placement === 'onboarding' && runtime.onboardingOffer
+        const next = requestedPlacement === 'onboarding' && runtime.onboardingOffer
           ? await runtime.onboardingOffer.loadPaywall()
-          : await runtime.subscription.loadPaywall(placement);
+          : await runtime.subscription.loadPaywall(requestedPlacement);
         setPaywall(next);
         setSelected(offeredHandle(next, defaultPlanHandle(next.products, latest.current.variantKey)));
         latest.current.onLoaded?.(next);
         runtime.analytics.track('paywall_viewed', {
-          placement,
+          placement: next.placement,
           has_trial: next.products.some((item) => item.offerLabel !== null),
           variation_id: next.flowVariationId || undefined,
           ...(placement === 'onboarding' ? { offer_arm: runtime.onboardingOffer?.snapshot().arm ?? 'a', offer_source: runtime.onboardingOffer?.snapshot().source ?? 'fallback' } : {}),
@@ -82,6 +83,7 @@ export function PaywallScreen({
       } catch (error) {
         reportError(error, 'load');
         if (attempt >= paywallLoadRetries) break;
+        if (requestedPlacement === 'winback') requestedPlacement = 'in_app';
         await new Promise((resolve) => setTimeout(resolve, t.motion.hold.notice));
       }
     }
@@ -103,7 +105,7 @@ export function PaywallScreen({
   }, [paywall, runtime, placement, reportError]);
   const purchase = async () => {
     if (!selected || busy || verifying || verificationRequired || recovery.type !== 'none') return;
-    if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
+    if (product && paywall) runtime.analytics.track('purchase_started', { placement: paywall.placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     let restoreExisting = false;
     try {

@@ -75,7 +75,7 @@ export type Scenario = {
 export type IdentityLabScript = {
   anonymousSignIn?: 'ok' | 'failFirst';
   userSync?: 'ok' | 'failFirst' | 'slow';
-  plans?: 'ok' | 'failFirst' | 'empty';
+  plans?: 'ok' | 'failFirst' | 'empty' | 'winbackUnavailable';
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier';

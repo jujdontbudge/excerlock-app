@@ -59,6 +59,10 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { plans: 'failFirst' },
   }),
+  base('identity-lab-winback-unavailable', 'Identity lab · Win-back unavailable with regular plans', {
+    entitlement: { status: 'none', renewsAt: null },
+    identityLab: { plans: 'winbackUnavailable' },
+  }),
   base('identity-lab-purchase-cancelled', 'Identity lab · purchase cancelled', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'cancel' },

@@ -578,6 +578,7 @@ export async function createIdentityLab(
         setTimeout(() => { ctx.log('lab_late_offer_returned', { arm: 'b' }); finish(); }, 500);
       }
       const ok = !(script.plans === 'failFirst' && attempts.flow === 1)
+        && !(script.plans === 'winbackUnavailable' && placement === 'winback')
         && !(offer?.arm === 'error' && !fallback)
         && !(offer?.fallbackError && fallback);
       ctx.log('lab_flow', { placement, attempt: attempts.flow, ok });
