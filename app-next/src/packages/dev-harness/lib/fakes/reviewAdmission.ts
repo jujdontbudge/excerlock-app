@@ -29,16 +29,16 @@ export function reviewAdmission(ctx: FakeContext, auth: AuthPort): SubscriptionA
         fetchImpl: async (input, init) => {
           attempts += 1;
           ctx.log('review_admission_request', { attempt: attempts, mode, path: new URL(String(input)).pathname });
-          if (mode === 'offline') throw new TypeError('Network request failed');
+          if (mode === 'offline' || (mode === 'networkRetry' && attempts === 1)) throw new TypeError('Network request failed');
           if (mode === 'serverError' || (mode === 'retry' && attempts === 1)) return new Response('{}', { status: 503 });
-          if (mode === 'serverTimeout') return new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('Aborted'))));
-          const active = mode === 'retry' || mode === 'storeRetry';
+          if (mode === 'serverTimeout' || (mode === 'timeoutRetry' && attempts === 1)) return new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('Aborted'))));
+          const active = ['retry', 'storeRetry', 'networkRetry', 'timeoutRetry', 'unknownRetry'].includes(mode) && (mode !== 'unknownRetry' || attempts > 1);
           return new Response(JSON.stringify({
             accountId: auth.identity().userId,
             verifiedAt: ctx.clock.now(),
             authorization: {
               environment: backend.environment,
-              status: active ? 'active' : mode === 'serverUnknown' ? 'unknown' : 'none',
+              status: active ? 'active' : mode === 'serverUnknown' || mode === 'unknownRetry' ? 'unknown' : 'none',
               hasAccess: active,
               expiresAt: active ? '2026-10-07T15:00:00.000Z' : null,
               observedAt: active ? ctx.clock.now() : null,

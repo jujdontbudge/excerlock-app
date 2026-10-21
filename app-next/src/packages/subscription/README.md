@@ -28,3 +28,7 @@ Profiles publish only when `customerUserId` and canonical generation match. The 
 
 Official integration reference: https://adapty.io/docs/posthog (`posthog_distinct_user_id`). Physical StoreKit/Adapty/provider activation and sandbox attribution remain device verification gates.
 
+## Admission recovery
+
+`ServerSubscriptionAdmission` joins concurrent checks for the same account and identity generation. Each check makes at most two attempts, separated by one second, for a network failure, timeout, HTTP 408/5xx, or an unknown subscription mirror. Each attempt has a 20-second budget: the server can spend five seconds reading the confirmed email followed by ten seconds reaching Adapty, before transport and database overhead. Other HTTP errors, invalid responses, account/environment mismatches and explicit ineligibility are terminal for that check. Invalidation or an identity change prevents retry and admission. Only a successful account/environment-bound response can create a lease; retry never calls checkout or extends remembered access by itself.
+

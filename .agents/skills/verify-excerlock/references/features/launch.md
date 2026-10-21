@@ -2,7 +2,7 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, reinstall-keychain, subscription-proof-matching, subscription-proof-unavailable, subscription-proof-lapsed, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, returning-offline-stale-profile, reinstall-keychain, subscription-proof-matching, subscription-proof-unavailable, subscription-proof-lapsed, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
@@ -69,6 +69,16 @@ open: /
 expect: day streak | Apps blocked until
 then-open: /dev?scenario=subscription-proof-unavailable&keep=1
 then-expect: day streak | Apps blocked until
+```
+
+```proof
+name: stale-profile-keeps-offline-admission
+scenario: returning-offline-stale-profile
+open: /
+expect: Home | Conditions
+absent: Get your DREAM BODY with ExcerLock
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | "reason_code":"request_failed" | "destination":"retained"
 ```
 
 ```proof

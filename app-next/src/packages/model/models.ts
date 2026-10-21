@@ -60,7 +60,9 @@ export type Scenario = {
     sentBefore?: string[][];
     interruptedPurchase?: { vendorProductId: string; amount: number; currency: string };
   };
-  admissionFailure?: 'storeNull' | 'storeTimeout' | 'serverError' | 'serverTimeout' | 'offline' | 'retry' | 'storeRetry' | 'serverUnknown';
+  admissionFailure?: 'storeNull' | 'storeTimeout' | 'serverError' | 'serverTimeout' | 'offline' | 'retry' | 'storeRetry' | 'serverUnknown' | 'networkRetry' | 'timeoutRetry' | 'unknownRetry';
+  enforcementPolicyProof?: boolean;
+  rememberedPaidThrough?: string;
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;

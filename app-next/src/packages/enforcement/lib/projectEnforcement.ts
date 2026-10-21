@@ -21,7 +21,7 @@ export function projectEnforcement(input: EnforcementProjection): EnforcementSna
   if (windows.length > 7 || windows.some(w => !w.id || !Number.isFinite(w.start) || !Number.isFinite(w.end) || w.end <= w.start)) throw new Error('Invalid exact enforcement windows');
   const snapshot: EnforcementSnapshot = {
     revision: input.revision, now, context: input.context,
-    state: 'open', relief: 'unlockedWalking', eligibleUntil: now,
+    state: 'open', relief: 'unlockedWalking', eligibleUntil: 0,
     futureEnforcementEligible: false, windows: [],
   };
   if (input.deleting) return { ...snapshot, openReason: 'deleting' };
