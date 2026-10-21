@@ -1,0 +1,13 @@
+PASS: 35-ID cohort = 17 release-eligible + 13 possibly internal/App Review + 2 preview + 3 Sandbox-only.
+PASS: 1,205 complete distinct journey rows; 510 eligible + 209 ambiguous rows; all 30 non-excluded timelines present exactly once.
+PASS: two groups of timestamp-tied screen records documented; page boundaries do not split tied timestamps.
+PASS: all 13 ambiguous IDs explicitly listed with reasons; confirmed incident ID stays eligible.
+PASS: 84 local documentation/file links resolved; source line anchors are in range.
+PASS: all report millisecond timestamps found in exports except the separately documented Sentry detail timestamp.
+PASS: HTML contains 30 identities, 6 eligible paywall journeys and 1 ambiguous paywall journey; self-contained assets.
+PASS: no contact-email values, recognizable secret/JWT patterns, raw person/device joins, sensitive activity columns or Condition-branch details retained.
+PASS: private owner comparison: 35 authenticated reads, no additional owner match; complete current-directory check; no contact attributes retained.
+PASS: artifact 728 px light preview — height 1645; no console errors or horizontal overflow.
+PASS: artifact 360 px dark preview — height 2421; no console errors or horizontal overflow.
+PASS: preview interactions — eligible 17, ambiguous 13, all 30, ID search 1, paywall 7; expanded table fits.
+PASS: ./excer check — 23 checks passed after pinned npm ci. No app behavior change or simulator proof.

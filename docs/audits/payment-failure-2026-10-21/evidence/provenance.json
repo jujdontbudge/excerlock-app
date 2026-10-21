@@ -1,0 +1,26 @@
+{
+  "window_start_inclusive_utc": "2026-09-06T20:21:05Z",
+  "window_end_exclusive_utc": "2026-10-21T20:21:05Z",
+  "source_head": "269885cc51b7a88da106ed7a1e44a6be51eefaae",
+  "posthog_project": 537075,
+  "sentry_organization": "edge-ix",
+  "sentry_project": "excerlock-mobile",
+  "sentry_region": "https://us.sentry.io",
+  "journey_pages_returned": [
+    500,
+    500,
+    204
+  ],
+  "journey_count_query": 1204,
+  "additional_vendor_trial_expired_rows": 1,
+  "sanitization": [
+    "person_id and devices dropped from cohort export",
+    "session_id replaced by per-anonymous-ID session indices",
+    "Condition branch screen codes replaced with condition_flow; no answers queried",
+    "device-ID join values and raw Sentry event detail not retained",
+    "Sentry extract restricted to five financial/authentication error titles and release/time fields",
+    "Adapty fields restricted to existing billing snapshot whitelist"
+  ],
+  "data_qualification": "17 commercial-release-eligible candidates, 13 possibly internal/App Review; one confirmed real incident ID. App Store distribution is not separately instrumented.",
+  "owner_clarification": "Commercial range: 1.0.0/1.0.1, builds 17-21, runtimes 4-6, real devices; preserve ambiguous identities separately."
+}
