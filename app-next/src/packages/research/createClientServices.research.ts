@@ -40,6 +40,7 @@ function createLabAuth(): AuthPort {
   return {
     session: () => ({ kind: 'anonymous' }),
     identity: () => LAB_IDENTITY,
+    waitForReady: async () => LAB_IDENTITY,
     boot: async () => LAB_IDENTITY,
     waitForCanonicalIdentity: async () => LAB_IDENTITY,
     signInWithApple: async () => { throw new LabIdentityUnavailableError(); },

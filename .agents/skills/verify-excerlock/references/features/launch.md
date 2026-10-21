@@ -7,7 +7,7 @@ depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
 - `BootGate` restores the persisted stores, then resumes a returning account once per cold launch: a signed-in account remembered on this install opens Home (or Setup if it never finished), with no sign-in. A fresh install, a reinstall, or a signed-out device starts at Welcome (ADR 0061).
-- The Journey owns entry choice, account verification and paid admission. The last server-verified admission is remembered on the device, so a subscriber opens Home at once, even offline, while the server check runs in the background. A server answer of lapsed opens the Paywall. With no saved check, the launch cover stays up for one server check.
+- The Journey owns entry choice, account verification and paid admission. The last server-verified admission is remembered on the device, so a subscriber opens Home at once, even offline, while the server check runs in the background. A server answer of lapsed opens the Paywall. With no saved check, the launch cover stays up for one server check; an unavailable check opens the Paywall with recovery and retry, while Home stays locked (ADR 0087).
 - Paid admission renews itself in Setup and the main app a minute before the five-minute server lease ends; while the server is unreachable the remembered admission holds until three days after the subscription's paid-through date (ADR 0059, ADR 0061).
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
@@ -210,33 +210,37 @@ expect: day streak | Apps blocked until
 name: wrong-account-proof-fails-closed
 scenario: subscription-proof-wrong-account
 open: /
-expect: Let's try that again | Try again | Back to start
+expect: Try again | Restore purchases | Account and help
 absent: Checking your subscription | Connecting your subscription
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
 ```
 
 ```proof
 name: wrong-environment-proof-fails-closed
 scenario: subscription-proof-wrong-environment
 open: /
-expect: Let's try that again | Try again | Back to start
+expect: Try again | Restore purchases | Account and help
 absent: Checking your subscription | Connecting your subscription
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
 ```
 
 ```proof
 name: unavailable-proof-fails-closed
 scenario: subscription-proof-unavailable
 open: /
-expect: Let's try that again | Try again | Account and help | Back to start
+expect: Try again | Restore purchases | Account and help
 absent: Retry will not start another purchase | verification is unavailable
 then-open: /dev
-then-expect: Journey verifying · paid no · admitted no | Protected route mounts | None
+then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
 ```
 
 ```proof
 name: unavailable-proof-recovery-access
 scenario: subscription-proof-unavailable
 open: /
-expect: Let's try that again | Account and help
+expect: Try again | Account and help
 then-tap: Account and help
 then-expect: Account and help | Restore purchases | Help and feedback
 ```

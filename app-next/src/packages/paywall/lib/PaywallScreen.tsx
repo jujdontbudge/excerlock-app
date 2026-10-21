@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
+import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton } from '../../ui';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { haptic } from '../../ui/haptics';
@@ -33,16 +33,21 @@ export function PaywallScreen({
   onLoaded,
   onAccess,
   recovery,
+  onRetryVerification,
+  verificationRequired = false,
+  verifying = false,
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
   variantKey?: PaywallVariant;
   onClose?: () => void;
   onAccount?: () => void;
-  onBack?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
   recovery: PurchaseRecovery;
+  onRetryVerification?: () => void;
+  verificationRequired?: boolean;
+  verifying?: boolean;
 }) {
   const runtime = useRuntime(),
     insets = useSafeAreaInsets(),
@@ -97,7 +102,7 @@ export function PaywallScreen({
     if (placement === 'onboarding') runtime.onboardingOffer?.expose();
   }, [paywall, runtime, placement, reportError]);
   const purchase = async () => {
-    if (!selected || busy || recovery.type !== 'none') return;
+    if (!selected || busy || verifying || verificationRequired || recovery.type !== 'none') return;
     if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     let restoreExisting = false;
@@ -145,8 +150,9 @@ export function PaywallScreen({
   };
   const product = paywall?.products.find((item) => item.handle === selected);
   const press = () => {
-    if (busy) return;
+    if (busy || verifying) return;
     if (recovery.type !== 'none') continueRecovery();
+    else if (verificationRequired) onRetryVerification?.();
     else if (!paywall) void load();
     else void purchase();
   };
@@ -201,22 +207,25 @@ export function PaywallScreen({
             })}
           </View>
           {product ? (
-            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+            <Label variant="support" style={{ textAlign: 'center' }}>
               {product.offerLabel
                 ? copy.trialThenBilled(trialLength(product), perPeriod(product))
                 : copy.billedAs(perPeriod(product))}
             </Label>
           ) : null}
+          {verificationRequired ? <Label variant="support" style={{ textAlign: 'center' }}>{copy.verifyBeforePurchase}</Label> : null}
           </View>
+          <Label variant="micro" tone="secondary" style={{ textAlign: 'center' }}>{copy.renewal}</Label>
           <PrimaryButton
             label={
               recovery.type === 'accountConnection'
                 ? subscriptionCopy.signInToContinue
-                : subscriptionCopy.continue
+                : verificationRequired || !paywall ? copy.retry : subscriptionCopy.continue
             }
-            loading={busy !== null}
+            loading={busy !== null || verifying}
             onPress={press}
           />
+          {onRetryVerification && !verificationRequired ? <SecondaryButton label={copy.retry} loading={busy !== null || verifying} onPress={onRetryVerification} /> : null}
           <View
             style={[
               { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: t.space.xs },
@@ -229,7 +238,7 @@ export function PaywallScreen({
               {
                 label: subscriptionCopy.restore,
                 onPress: () => {
-                  if (busy === null) void restore();
+                  if (busy === null && !verifying) void restore();
                 },
               },
               {
@@ -254,6 +263,7 @@ export function PaywallScreen({
       <PaywallHeadline />
       <PaywallReview />
       <PaywallTagline />
+      <Label variant="support" style={{ textAlign: 'center' }}>{copy.premium}</Label>
     </ScreenShell>
   );
 }
@@ -276,7 +286,7 @@ function PlanRow({
   const m = useMotion(),
     pop = useSharedValue(1),
     first = useRef(true),
-    name = `${planName(product)} ${product.localizedPrice}`,
+    name = `${planName(product)} ${perPeriod(product)}`,
     price = product.localizedWeeklyPrice && product.periodUnit !== 'week'
       ? `${product.localizedWeeklyPrice}${copy.perWeek}`
       : `${product.localizedPrice} / ${product.periodUnit ?? product.localizedPeriod}`;

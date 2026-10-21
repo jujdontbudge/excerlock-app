@@ -1,4 +1,15 @@
-# Review-fixes changelog — Wave 3 batch A (`fm/asr-fix-d1`)
+# Review-fixes changelog
+
+## 2026-10-20 — 1.0.2 (22) sign-in verification recovery
+
+- Reproduced the review screenshot after successful authentication. Proven defects: a null StoreKit environment permanently selected unavailable admission, and a fresh account's valid `unknown` subscription response entered the same dead end. Apple's initiating failure remains unproven.
+- Retry now resolves the failed identity, environment or API step. An account with no unfinished purchase can reach the Paywall without admission; prior/unknown paid access requires verification before checkout. Pending purchases stay in recovery and block another charge. Protected Home admission and transaction-specific account recovery remain intact.
+- Added sanitized reason-coded Sentry/analytics failures, bounded the entire admission request, fenced stale callbacks, kept sign-in visible during verification, and made protected-Keychain operations resume after foregrounding without replacing the saved identity.
+- Paywall shows full billed price/period, renewal/cancellation terms before checkout, retry after empty plan loading, and Account and help/Close for every account.
+- Updated the repository review-note draft to reflect required sign-in and disclose Showcase data's real Bank-time effect. Live App Store Connect notes still say optional sign-in; no notes, dashboard, reply or submission were changed remotely. Guideline 5.1.1(v) remains an owner decision.
+- [ADR 0087](../adr/0087-recoverable-subscription-verification.md), [investigation/proof index](../plans/2026-10-20-review-221-recovery.md), [unsent reply](2026-10-20-review-221-reply-draft.md). JavaScript-only for runtime 7; runtimes 4/5/6 require separate compatible backports. Physical iOS 27 Apple/StoreKit verification remains blocked.
+
+## Historical Wave 3 batch A (`fm/asr-fix-d1`)
 
 Answers the Wave 2 audit (`data/asr-audit-c1/report.md`, Wave 3 fix list §6). Batch A = the four items needing no captain decision (fixes 4, 5, 8, 10). Nothing here is a review-only skin and nothing here hides a capability from review that an OTA would later enable — every change is what all users see from this build on, or documentation.
 

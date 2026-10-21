@@ -4,6 +4,7 @@ import type {
   SubscriptionPort,
 } from '../../../ports/SubscriptionPort';
 import type { AuthPort } from '../../../ports/AuthPort';
+import { reviewAdmission } from './reviewAdmission';
 import { FakeContext } from '../FakeContext';
 
 const MAX_LEASE_MS = 5 * 60_000;
@@ -12,19 +13,23 @@ export function SubscriptionAdmissionFake(
   ctx: FakeContext,
   auth: AuthPort,
   subscription: SubscriptionPort,
-): SubscriptionAdmissionPort {
+): SubscriptionAdmissionPort & { prepare(): void } {
+  const review = reviewAdmission(ctx, auth);
   let lease: SubscriptionAdmissionLease | null = null;
   const remainingMs: SubscriptionAdmissionPort['remainingMs'] = (identity) => {
+    if (ctx.scenario.admissionFailure) return review.remainingMs(identity);
     if (!lease || lease.userId !== identity.userId || lease.generation !== identity.generation) return 0;
     const deadline = Math.min(Date.parse(lease.expiresAt), Date.parse(lease.verifiedAt) + MAX_LEASE_MS);
     return Math.max(0, deadline - Date.parse(ctx.clock.now()));
   };
-  const current: SubscriptionAdmissionPort['current'] = (identity) => (remainingMs(identity) > 0 ? lease : null);
+  const current: SubscriptionAdmissionPort['current'] = (identity) => ctx.scenario.admissionFailure ? review.current(identity) : remainingMs(identity) > 0 ? lease : null;
   return {
+    prepare: () => review.prepare(),
     current,
     remainingMs,
-    invalidate: () => { lease = null; },
+    invalidate: () => { lease = null; review.invalidate(); },
     verify: async (identity) => {
+      if (ctx.scenario.admissionFailure) return review.verify(identity);
       const proof = ctx.scenario.subscriptionProof ?? 'matching';
       const live = auth.identity();
       if (live.userId !== identity.userId || live.generation !== identity.generation || proof === 'unavailable')

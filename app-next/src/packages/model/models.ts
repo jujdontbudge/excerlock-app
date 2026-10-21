@@ -60,6 +60,7 @@ export type Scenario = {
     sentBefore?: string[][];
     interruptedPurchase?: { vendorProductId: string; amount: number; currency: string };
   };
+  admissionFailure?: 'storeNull' | 'storeTimeout' | 'serverError' | 'serverTimeout' | 'offline' | 'retry' | 'storeRetry' | 'serverUnknown';
   subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;

@@ -349,10 +349,13 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       adaptyModes.set(failureUserId, mode);
       await call('PUT', '/v1/user', failureToken);
       const failedResync = await call('POST', '/v1/subscription/resync', failureToken);
-      failureBodies.push(failedResync.text);
+      const failureProof = JSON.parse(failedResync.text) as SubscriptionProof;
+      failureBodies.push(JSON.stringify(failureProof.authorization));
       expect(
-        failedResync.status === 503 && failedResync.text.includes('SUBSCRIPTION_RESYNC_FAILED'),
-        `Adapty ${mode} response fails closed without account detail → ${failedResync.status}`,
+        failedResync.status === 200 && failureProof.accountId === failureUserId &&
+          failureProof.authorization.environment === 'sandbox' &&
+          failureProof.authorization.status === 'unknown' && !failureProof.authorization.hasAccess,
+        `Adapty ${mode} response returns unknown account-bound admission → ${failedResync.status}`,
         failedResync.text,
       );
       expect(
@@ -360,7 +363,7 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
         `Adapty ${mode} response creates no subscription grant`,
       );
     }
-    expect(new Set(failureBodies).size === 1, 'vendor failures share one non-enumerating response');
+    expect(new Set(failureBodies).size === 1, 'vendor failures share the same unknown authorization');
     const rateLimited = await call('POST', '/v1/subscription/resync', token);
     expect(rateLimited.status === 429 && rateLimited.text.includes('RATE_LIMITED'), `subscription resync rate limit fails closed → ${rateLimited.status}`, rateLimited.text);
     expect(owned('incident_reports') === 1 && owned('support_requests') === 1, 'the account owns 1 incident report and 1 support request');

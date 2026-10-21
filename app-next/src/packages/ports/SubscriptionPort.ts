@@ -61,7 +61,22 @@ export type SubscriptionAdmissionLease = {
 export type SubscriptionAdmissionResult =
   | { type: 'eligible'; lease: SubscriptionAdmissionLease }
   | { type: 'ineligible' }
-  | { type: 'unavailable' };
+  | { type: 'unavailable'; reason?: SubscriptionVerificationFailure };
+export type SubscriptionVerificationFailure =
+  | 'store_environment_unavailable'
+  | 'identity_not_ready'
+  | 'identity_timeout'
+  | 'identity_changed'
+  | 'auth_unavailable'
+  | 'request_timeout'
+  | 'request_failed'
+  | 'http_error'
+  | 'invalid_response'
+  | 'account_mismatch'
+  | 'environment_mismatch'
+  | 'subscription_unknown'
+  | 'purchase_recovery'
+  | 'verification_failed';
 export interface SubscriptionAdmissionPort {
   verify(identity: { userId: string; generation: number }): Promise<SubscriptionAdmissionResult>;
   current(identity: { userId: string; generation: number }): SubscriptionAdmissionLease | null;

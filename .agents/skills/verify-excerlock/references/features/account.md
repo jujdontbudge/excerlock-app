@@ -2,8 +2,9 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict, review-verification-unavailable, review-store-null, review-store-timeout, review-server-error, review-server-timeout, review-offline, review-server-unknown, review-store-retry, review-verification-retry, review-pending-unavailable]
 server: [PUT /v1/user, DELETE /v1/user, POST /v1/subscription/resync]
+events: [subscription_verification_failed]
 depends: [setup]
 ---
 ## Sub-features
@@ -12,12 +13,25 @@ depends: [setup]
 - Account screen: sign in, sign out and delete account. Signing out revokes main-app access until a new explicit sign-in.
 - Account deletion erases server data and returns the app to an anonymous session behind the sign-in gate.
 - An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
+- Successful sign-in with no unfinished purchase opens the Paywall even when verification is unavailable. Prior or unknown paid access requires verification before another checkout; unfinished purchases retain recovery. Try again restarts the failed identity, StoreKit or admission step (ADR 0087).
 
 ## How to get to it (user POV)
 Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface.
 
 ## Driving it with excer
+
 Run `./excer demo signed-in-apple --open /settings/account`. To assert what the server did, run it locally and check the database. `./excer server ready` must pass first.
+
+```proof
+name: fresh-apple-unavailable-reaches-paywall
+scenario: review-verification-unavailable
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
+```
 
 ```proof
 name: provider-attempts-fail-closed-until-success
@@ -296,8 +310,114 @@ after-relaunch-expect: Home | Conditions
 wait: 30
 ```
 
+```proof
+name: fresh-store-null-reaches-paywall
+scenario: review-store-null
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+wait: 35
+```
+
+```proof
+name: fresh-store-timeout-reaches-paywall
+scenario: review-store-timeout
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+wait: 35
+```
+
+```proof
+name: fresh-server-error-reaches-paywall
+scenario: review-server-error
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+wait: 35
+```
+
+```proof
+name: fresh-server-timeout-reaches-paywall
+scenario: review-server-timeout
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+wait: 35
+```
+
+```proof
+name: fresh-offline-reaches-paywall
+scenario: review-offline
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple
+expect: Restore purchases | Continue
+absent: Let's try that again
+wait: 35
+```
+
+```proof
+name: fresh-email-unavailable-reaches-paywall
+scenario: review-server-unknown
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with email | tap Email address | type r@a.co | expect Email address r@a.co | tap Send code | expect Check your email | tap Verification code | type 123456
+expect: Restore purchases | Continue | Account and help
+absent: Let's try that again
+then-open: /dev
+then-expect: Journey paywall · paid no · admitted no | subscription_verification_failed | subscription_unknown
+```
+
+```proof
+name: store-environment-recovers-on-retry
+scenario: review-store-retry
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple | expect Try again
+swipe: 0.5,0.8,0.5,0.25
+expect: Try again | Restore purchases
+then-tap: Try again
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | review_store_environment {"attempt":5 | /testflight/v1/subscription/resync
+```
+
+```proof
+name: admission-recovers-on-retry
+scenario: review-verification-retry
+open: /onboarding/O01
+actions: tap Sign in | tap Continue with Apple | expect Try again
+swipe: 0.5,0.8,0.5,0.25
+expect: Try again | Restore purchases
+then-tap: Try again
+then-open: /dev
+then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
+```
+
+```proof
+name: pending-unavailable-blocks-checkout
+scenario: review-pending-unavailable
+open: /
+swipe: 0.5,0.8,0.5,0.25
+expect: Sign in to continue | Restore purchases
+then-tap: Sign in to continue | Continue with Apple | Try again
+then-open: /dev
+then-expect: Journey verifying · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 0
+absent: Continue
+```
+
+```proof
+name: sign-in-layout
+scenario: fresh-install
+open: /onboarding/O01
+actions: tap Sign in
+expect: Welcome back | Continue with Apple | Continue with Google | Continue with email
+```
+
 ## Gotchas
 
+- iPad uses the shipping iPhone compatibility presentation (`supportsTablet: false`). `excer` maps its accessibility coordinates into the physical touch surface and records the letterboxed viewport in centring evidence. On a new dev client, scroll the Expo introduction sheet to bring Continue into view before closing it; this sheet is absent from the release app.
 - A sign-in is remembered on this install until Sign out or Delete account, so `/settings/account` opens directly for a returning account (ADR 0061; setup/returning-settings-opens). A reinstall asks for sign-in again.
 - Known gap: account deletion does not erase `incident_reports` rows. The server rebuild fixes this.
 - The server reads `SUPABASE_JWKS_URL`. Older docs said `SUPABASE_JWT_JWKS_URL`.

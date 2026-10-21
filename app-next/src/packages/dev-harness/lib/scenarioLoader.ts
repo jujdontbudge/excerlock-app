@@ -71,6 +71,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
       ? { activity: 'walking', walkingMode: 'steps', goal: 5000, ...scenario.onboardingAnswers }
       : {},
   });
+  beginLaunch();
 }
 
 async function seedAdAttribution(scenario: Scenario) {

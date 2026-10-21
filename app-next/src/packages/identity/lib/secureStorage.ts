@@ -1,4 +1,5 @@
 import type { SupportedStorage } from '@supabase/auth-js';
+import { withAvailableSessionStorage } from './protectedSessionStorage';
 
 export type SecureStoreBackend = {
   getItemAsync(key: string): Promise<string | null>;
@@ -59,9 +60,28 @@ function split(value: string): string[] {
   if (chunks.length > SECURE_MAX_CHUNKS) throw new Error('SecureStore value exceeds secure chunk budget');
   return chunks;
 }
+let availableBackend: SecureStoreBackend | null = null;
 async function defaultBackend(): Promise<SecureStoreBackend> {
+  if (availableBackend) return availableBackend;
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so the module stays out of the startup path
-  return require('expo-secure-store') as SecureStoreBackend;
+  const store = require('expo-secure-store') as SecureStoreBackend;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lifecycle availability is needed only by native secure storage
+  const { AppState } = require('react-native') as typeof import('react-native');
+  const availability = {
+    active: () => AppState.currentState === 'active',
+    whenActive: () => new Promise<void>((resolve) => {
+      const listener = AppState.addEventListener('change', (state) => {
+        if (state === 'active') { listener.remove(); resolve(); }
+      });
+      if (AppState.currentState === 'active') { listener.remove(); resolve(); }
+    }),
+  };
+  availableBackend = {
+    getItemAsync: (key) => withAvailableSessionStorage(() => store.getItemAsync(key), availability),
+    setItemAsync: (key, value) => withAvailableSessionStorage(() => store.setItemAsync(key, value), availability),
+    deleteItemAsync: (key) => withAvailableSessionStorage(() => store.deleteItemAsync(key), availability),
+  };
+  return availableBackend;
 }
 
 export class SecureSupabaseStorage implements SupportedStorage {

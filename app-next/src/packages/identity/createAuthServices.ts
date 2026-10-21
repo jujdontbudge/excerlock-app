@@ -126,6 +126,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   const onBeforeDelete = config.onBeforeDelete;
   const onAfterDelete = config.onAfterDelete;
 
+  let waitForIdentityReady!: AuthServices['waitForIdentityReady'];
   const adapterDeps: AuthAdapterDeps = {
     supabase,
     appleDeps,
@@ -139,6 +140,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     runIdentityOperation,
     runSdk: (operation) => sdkLifecycle.run(operation),
     readStoredSession: ownsSupabase ? storedSessionReader(config.secureBackend) : undefined,
+    waitForReady: (options) => waitForIdentityReady(options),
   };
   let auth!: SupabaseAuthAdapter;
   let coordinator: IdentityCoordinator | undefined;
@@ -169,12 +171,19 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   const putUser: IdentityCoordinatorDeps['putUser'] = async ({ accessToken, userId }) => {
     void userId;
     const impl = fetchImpl ?? fetch;
-    const response = await impl(`${apiBaseUrl.replace(/\/$/, '')}/v1/user`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    return { status: response.status };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await impl(`${apiBaseUrl.replace(/\/$/, '')}/v1/user`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      return { status: response.status };
+    } finally {
+      clearTimeout(timeout);
+    }
   };
 
   const attachIntegration = async (userId: string) => {
@@ -209,7 +218,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     for (let attempt = 0; attempt < 2 && auth.identity().kind === 'canonical' && !coordinator!.isReady(); attempt += 1)
       await coordinator!.retry();
   };
-  const waitForIdentityReady: AuthServices['waitForIdentityReady'] = (options) => {
+  waitForIdentityReady = (options) => {
     const ready = coordinator!.waitForIdentityReady(options);
     void recoverIdentity().catch(() => undefined);
     return ready;

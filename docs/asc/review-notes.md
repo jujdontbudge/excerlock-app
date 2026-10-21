@@ -1,41 +1,47 @@
-# App Review notes (for version 1.0.1, Build 20)
+# App Review notes — 1.0.2 (22), runtime 7 — owner draft
 
-The exact text in App Store Connect review details `b4388fd8-23da-4e34-83e3-9210af040b1e` (version 1.0.1), set 2026-10-15. Update this file whenever the live notes change.
+Draft for ADR 0087's source change. **Not sent to App Store Connect.** Live detail `3752d42c-6ee1-40da-ac4c-2d55b2f7d0e7`, read on 2026-10-21 UTC, still incorrectly promises optional sign-in. The previous repository text described 1.0.1 build 20. These notes describe the patched JavaScript; the owner must approve its delivery and these notes before using them. The embedded build-22 bundle does not contain this patch.
 
 ```text
-GUIDELINE 2.5.1: Like builds 11 to 19, build 20 has no HealthKit; steps are measured on device with Core Motion.
+GUIDELINE 2.5.1: This build has no HealthKit; steps use on-device Core Motion.
 
-ExcerLock uses Apple's Family Controls / Screen Time APIs to shield apps the user selects until the user completes a movement condition (walking or gym). It is a self-control tool for the user's own device, not a parental-control or medical app.
+ExcerLock uses Apple's Family Controls / Screen Time APIs to shield apps the user selects until they complete a Condition (walking or gym). It is a self-control tool for the user's own device, not a parental-control or medical app.
 
-QUICK REVIEW PATH (about 5 minutes, physical iPhone required)
-1. Fresh install. Tap Get started through the three intro pages.
-2. On the name screen ("What should we call you?") enter exactly: App Review (case-sensitive). This applies a reviewer preset: an all-day walking condition with a 20-step goal for today's weekday. It is an ordinary, editable rule; it grants no bypass.
-3. Answer the remaining questions (Walking and "Reach a step goal" are already selected). The plan screen reads "Your apps are blocked until you walk 20 steps all day". Tap Import, then Continue.
-4. Subscription: each plan shows its billed price and weekly equivalent; a free trial, where offered, is stated under the plans. The button reads "Continue". Purchase with a Sandbox Apple ID. Restore purchases is on the paywall and in Settings.
-5. Sign-in is optional: tap Skip for now. "Already have an account? Sign in" is only for returning users.
-6. Choose apps to lock: allow Screen Time when asked and pick at least one app in Apple's app picker. Then allow Motion & Fitness.
-7. Open a selected app: it is shielded. Walk with the iPhone for about 30 seconds (20 steps): the condition completes and the app opens. Steps already counted today also satisfy the goal.
+QUICK REVIEW PATH (physical device required for actual movement and shields)
+1. Fresh install. Tap Get started and continue through the intro pages.
+2. On "What should we call you?" enter exactly: App Review (case-sensitive). This applies an ordinary, editable Walking target: 20 steps, all day, on today's weekday. It grants no purchase, account, permission or enforcement bypass. Steps already counted today can satisfy the goal.
+3. Continue through the questions and import the plan. Walking and "Reach a step goal" are already selected by the preset. Continue to the subscription options.
+4. Each plan shows its full billed price and billing period; a weekly equivalent is secondary. Trial duration and the following billed amount appear above Continue. Automatic renewal and cancellation terms, Terms of Use, Restore purchases and Privacy Policy are on this scrollable screen. Purchase using a Sandbox Apple ID. Account and help and Close remain available without buying.
+5. After a purchase, create or sign into an account using Continue with Apple, Continue with Google or Continue with email. Email sends a six-digit code. Sign-in is required before Setup and Home; there is no "Skip for now" on this route. An account associates a subscription with recovery. No shared demo credentials are needed. Returning users can tap Sign in on Welcome. A signed-in account with no purchase proceeds to the Paywall; a temporarily unavailable check never grants Home. An unfinished purchase stays in recovery with Try again, Restore purchases and help; retry does not buy another plan.
+6. Allow Screen Time and select at least one app in Apple's app picker. Then allow Motion & Fitness. Setup asks only for permissions needed by the selected Conditions; Not now leaves a reminder on Home. Permission and subscription screens scroll on iPhone and iPad.
+7. Open a selected app: Screen Time shields it until the Walking target is met. Walk with the device for about 30 seconds (20 steps). For Walking state, fast walking detection is the normal behavior for every account; Filming mode does not provide a separate paid or sensor bypass.
 
 PERMISSIONS
-- Screen Time (Family Controls): required to shield apps. If denied or no apps are chosen, Home shows a card to finish setup.
+- Screen Time (Family Controls): shields selected apps. If denied or no apps are chosen, Home offers the same Setup screens.
 - Motion & Fitness: counts steps and detects walking on device.
-- Location While Using: recognizes arrival at the gym the user saved. Location Always (optional): keeps walk detection and gym auto-detect running while ExcerLock is closed. Both are asked only when a condition needs them; manual Check in and Check walking remain available.
-- New in 1.0.1: during a walking window with Location Always, Core Location live updates and visit monitoring let iOS relaunch ExcerLock in the background. It stops when the window ends; location stays on device.
-- Camera (optional): checks walking on device when the phone is propped up. Nothing is recorded or uploaded.
-- Notifications: a trial-ending reminder, a "walking goal complete" prompt, and, during a walking condition, a notice if iOS closed ExcerLock in the background so the user can turn walking detection back on.
-No location, steps or app selections are sent to our servers.
+- Location While Using: recognizes arrival at the saved gym. Location Always: keeps Walking state detection and gym auto-detect available in the background, requested only when needed. Manual Check in and Check walking remain available.
+- During a walking window with Location Always, Core Location live updates and visit monitoring let iOS relaunch ExcerLock in the background. Monitoring stops when that window ends; location stays on device.
+- Camera (optional): verifies walking on device when the phone is propped up. Nothing is recorded or uploaded.
+- Notifications (optional): trial reminder, Walking target completion and a notice to reopen background walking if iOS stopped the app.
+No location, step counts or Screen Time app selections are sent to our servers.
 
-NEW IN BUILD 20: SCREEN TIME BANK (optional)
-On "How does this unlock?" the user may choose Screen Time Bank. Steps or gym minutes earn Points; a Shop tab spends Points on minutes of screen time. The Bank drains only while the user's chosen apps are in use (Screen Time DeviceActivity), and the apps lock at 0. Points are earned only by activity: they cannot be bought, have no cash value and unlock no subscription features.
+SCREEN TIME BANK (optional)
+On "How does this unlock?" choose Screen Time Bank. Steps or gym minutes earn Points; the Shop spends Points on Bank time. Bank time drains only while Locked apps are used (Screen Time DeviceActivity), and apps lock when the Bank is empty. Points cannot be bought, have no cash value and grant no subscription access.
 
 ACCOUNT
-No demo account is needed: the app works anonymously. Sign in with Apple, Google and email code are optional. Account deletion and data export are in Settings.
+Get started and onboarding are available before sign-in. An Apple, Google or email-code sign-in is currently required to finish a purchase's account connection and enter Setup/Home. Sign-in persists until Sign out or Delete account. Account deletion and data export are in Settings. Account/help, restore, legal links and support stay reachable without paid access.
 
-FILMING MODE (owner demo setting, disclosed)
-Tapping the version number at the bottom of Settings seven times turns on Filming mode for 2 hours. It shortens walking detection so unlock and re-lock happen within about a second, for demo videos. It unlocks nothing without walking and grants no subscription.
+FILMING MODE AND SHOWCASE DATA (disclosed owner demo settings)
+Seven taps on the version at the bottom of Settings toggle Filming mode for two hours. The fast walking detector is already enabled for every account. The gesture does not grant subscription access or bypass Screen Time permissions.
+For the owner's allowlisted account, that same gesture also toggles Showcase data: sample History and activity displays, 12,000 showcase Points and 17 minutes in the Bank. Buying a Shop Offer spends showcase Points and adds Bank time, including real on-device Bank time. Measured History and real Points are not rewritten. Other accounts cannot enable Showcase data. These are disclosed demo functions; the App Review name preset remains an ordinary editable Condition and never grants admission.
+
+AD ATTRIBUTION
+The app asks for tracking permission (ATT) to measure ad campaigns. Meta and TikTok receive only the configured install/registration, paywall-view, trial-start and first-purchase events. No health, movement, location or Screen Time selection data is included.
 
 TECHNICAL NOTES
-- The app uses Expo Updates (expo-updates) to deliver JavaScript-only fixes inside the already-reviewed feature set. It cannot change native code, permissions, entitlements or capabilities. Any new capability requires a new App Store build and review.
-- Remote configuration only tunes copy, plan order and detection thresholds.
-- Not MDM/VPN. Shielding uses Family Controls + ManagedSettings.
+- Expo Updates delivers JavaScript-only fixes within the reviewed feature set. It cannot change native code, permissions, entitlements or capabilities; new native capabilities require a new App Store build.
+- Remote configuration tunes copy, plan order and detection thresholds. It cannot grant paid access or bypass account-bound subscription verification.
+- Shielding uses Family Controls and ManagedSettings.
 ```
+
+Owner decision before the next review: Apple Guideline 5.1.1(v) requires use without login when significant account-based features are absent. Conditions and Enforcement run on device; account-bound recovery alone is not a proven justification. Recommend optional provider sign-in after independently verified anonymous paid admission, retaining purchase recovery and account isolation. That requires a separate identity/admission policy change and physical purchase/restore verification. This patch does not weaken those guarantees or claim the risk is resolved.

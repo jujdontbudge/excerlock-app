@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { appRoot, stateDir, timestamp } from './paths.ts';
 import { walk } from './files.ts';
 import { must, run, sleep } from './shell.ts';
+import { fitViewport } from './viewport.ts';
 
 export const bundleId = 'com.johansardar.excerlock';
 function configuredMetroPort(): number {
@@ -198,6 +199,14 @@ const companionSocket = (udid: string) => `/tmp/idb/${udid}_companion.sock`;
 const idbArgs = (udid: string, args: string[]) => existsSync(companionSocket(udid))
   ? ['--companion', companionSocket(udid), ...args] : args;
 
+function touchPoint(udid: string, screen: AxNode['frame'], x: number, y: number): [number, number] {
+  const target = JSON.parse(must('idb', idbArgs(udid, ['describe', '--udid', udid, '--json']))) as {
+    screen_dimensions: { width_points: number; height_points: number };
+  };
+  const viewport = fitViewport(screen, { width: target.screen_dimensions.width_points, height: target.screen_dimensions.height_points });
+  return [Math.round(viewport.x + (x - screen.x) * viewport.scale), Math.round(viewport.y + (y - screen.y) * viewport.scale)];
+}
+
 const companionLogLimitBytes = 5 * 1024 * 1024;
 
 export function ensureCompanion(udid: string): void {
@@ -284,8 +293,9 @@ export async function tap(udid: string, label: string): Promise<string> {
   if (screen && (x < screen.x || y < screen.y || x >= screen.x + screen.width || y >= screen.y + screen.height))
     throw new Error(`"${label}" is off screen; scroll it into view before tapping`);
   const press = target.type === 'CheckBox' ? ['--duration', '0.15'] : [];
-  must('idb', idbArgs(udid, ['ui', 'tap', '--udid', udid, String(x), String(y), ...press]));
-  return `tapped "${label}" at ${x},${y}`;
+  const [touchX, touchY] = screen ? touchPoint(udid, screen, x, y) : [x, y];
+  must('idb', idbArgs(udid, ['ui', 'tap', '--udid', udid, String(touchX), String(touchY), ...press]));
+  return `tapped "${label}" at ${touchX},${touchY}`;
 }
 
 export function typeText(udid: string, value: string): string {
@@ -301,7 +311,8 @@ export function swipe(udid: string, coordinates: string): string {
   }
   const screen = tree(udid).find((node) => node.type === 'Application')?.frame;
   if (!screen) throw new Error('Simulator accessibility tree has no screen frame');
-  const [xStart, yStart, xEnd, yEnd] = points.map((point, index) => Math.round(point * (index % 2 === 0 ? screen.width : screen.height)));
+  const [xStart, yStart] = touchPoint(udid, screen, points[0]! * screen.width, points[1]! * screen.height);
+  const [xEnd, yEnd] = touchPoint(udid, screen, points[2]! * screen.width, points[3]! * screen.height);
   must('idb', idbArgs(udid, ['ui', 'swipe', '--udid', udid, String(xStart), String(yStart), String(xEnd), String(yEnd), '--duration', '0.5']));
   return `swiped from ${xStart},${yStart} to ${xEnd},${yEnd}`;
 }
@@ -313,11 +324,10 @@ export function swipeBack(udid: string): string {
     .filter((frame) => frame.x === 0 && frame.y === 0 && frame.width > 0 && frame.height > 0)
     .sort((a, b) => b.width * b.height - a.width * a.height)[0];
   if (!screen) throw new Error('Accessibility tree has no screen frame');
-  const xStart = Math.max(1, Math.round(screen.width * 0.01));
-  const xEnd = Math.round(screen.width * 0.85);
-  const y = Math.round(screen.height * 0.5);
-  must('idb', idbArgs(udid, ['ui', 'swipe', '--udid', udid, String(xStart), String(y), String(xEnd), String(y), '--duration', '0.5']));
-  return `swiped back from ${xStart},${y} to ${xEnd},${y}`;
+  const [xStart, yStart] = touchPoint(udid, screen, Math.max(1, screen.width * 0.01), screen.height * 0.5);
+  const [xEnd, yEnd] = touchPoint(udid, screen, screen.width * 0.85, screen.height * 0.5);
+  must('idb', idbArgs(udid, ['ui', 'swipe', '--udid', udid, String(xStart), String(yStart), String(xEnd), String(yEnd), '--duration', '0.5']));
+  return `swiped back from ${xStart},${yStart} to ${xEnd},${yEnd}`;
 }
 
 export async function metroClients(): Promise<number> {

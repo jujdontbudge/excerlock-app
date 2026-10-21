@@ -3,6 +3,7 @@ import type {
   SubscriptionAdmissionLease,
   SubscriptionAdmissionPort,
   SubscriptionAdmissionResult,
+  SubscriptionVerificationFailure,
 } from '../ports/SubscriptionPort';
 import { forgetAdmission, rememberedAdmissionStore } from './rememberedAdmission';
 
@@ -61,73 +62,91 @@ export function createServerSubscriptionAdmission(options: {
   };
   const verify: SubscriptionAdmissionPort['verify'] = async (identity): Promise<SubscriptionAdmissionResult> => {
     const started = ++request;
-    const auth = await options.getAuthContext();
-    if (started !== request || !auth || auth.userId !== identity.userId || auth.generation !== identity.generation)
-      return { type: 'unavailable' };
-    const storeKitTestTransaction = (await options.storeKitTestTransactions?.())?.[0];
-    if (started !== request) return { type: 'unavailable' };
-    let response: Response;
+    let failure: SubscriptionVerificationFailure = 'auth_unavailable';
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      response = await (options.fetchImpl ?? fetch)(`${options.apiBaseUrl.replace(/\/$/, '')}/v1/subscription/resync`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(storeKitTestTransaction ? { storeKitTestTransaction } : {}),
-        signal: controller.signal,
-      });
-    } catch {
-      return { type: 'unavailable' };
-    } finally {
-      clearTimeout(timeout);
-    }
-    if (started !== request || !response.ok) return { type: 'unavailable' };
-    let payload: ResyncResponse | null = null;
-    try {
-      payload = parseResponse(await response.json());
-    } catch {
-      return { type: 'unavailable' };
-    }
-    const live = options.getIdentity();
-    if (started !== request || !payload || live.userId !== identity.userId || live.generation !== identity.generation)
-      return { type: 'unavailable' };
-    if (payload.accountId !== identity.userId || payload.authorization.environment !== options.environment) {
-      lease = null;
-      return { type: 'unavailable' };
-    }
-    const authorization = payload.authorization;
-    if (payload.complimentaryAccessChecked === true && authorization.source !== 'complimentary' && rememberedAdmissionStore.getState().data.admission?.source === 'complimentary') {
-      lease = null;
-      forgetAdmission();
-    }
-    if (authorization.status === 'unknown') return { type: 'unavailable' };
-    if (!authorization.hasAccess || authorization.status !== 'active') {
-      lease = null;
-      return { type: 'ineligible' };
-    }
-    if (!authorization.expiresAt || !authorization.observedAt || !authorization.source) {
-      lease = null;
-      return { type: 'unavailable' };
-    }
-    const verifiedAt = Date.parse(payload.verifiedAt);
-    const observedAt = Date.parse(authorization.observedAt);
-    const expiresAt = Date.parse(authorization.expiresAt);
-    const duration = Math.min(MAX_LEASE_MS, expiresAt - verifiedAt);
-    if (observedAt > verifiedAt || duration <= 0) {
-      lease = null;
-      return { type: 'unavailable' };
-    }
-    lease = {
-      ...(authorization.source === 'complimentary' ? { source: 'complimentary' as const } : {}),
-      userId: identity.userId,
-      generation: identity.generation,
-      environment: options.environment,
-      expiresAt: authorization.expiresAt,
-      observedAt: authorization.observedAt,
-      verifiedAt: payload.verifiedAt,
-      deadline: now() + duration,
+    let timer: ReturnType<typeof setTimeout>;
+    const run = async (): Promise<SubscriptionAdmissionResult> => {
+      const auth = await options.getAuthContext();
+      if (started !== request || !auth || auth.userId !== identity.userId || auth.generation !== identity.generation)
+        return { type: 'unavailable', reason: 'auth_unavailable' };
+      failure = 'request_failed';
+      const storeKitTestTransaction = (await options.storeKitTestTransactions?.())?.[0];
+      if (started !== request) return { type: 'unavailable', reason: 'identity_changed' };
+      let response: Response;
+      try {
+        response = await (options.fetchImpl ?? fetch)(`${options.apiBaseUrl.replace(/\/$/, '')}/v1/subscription/resync`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(storeKitTestTransaction ? { storeKitTestTransaction } : {}),
+          signal: controller.signal,
+        });
+      } catch {
+        return { type: 'unavailable', reason: 'request_failed' };
+      }
+      if (started !== request) return { type: 'unavailable', reason: 'identity_changed' };
+      if (!response.ok) return { type: 'unavailable', reason: 'http_error' };
+      let payload: ResyncResponse | null = null;
+      try {
+        payload = parseResponse(await response.json());
+      } catch {
+        return { type: 'unavailable', reason: 'invalid_response' };
+      }
+      const live = options.getIdentity();
+      if (started !== request || live.userId !== identity.userId || live.generation !== identity.generation)
+        return { type: 'unavailable', reason: 'identity_changed' };
+      if (!payload) return { type: 'unavailable', reason: 'invalid_response' };
+      if (payload.accountId !== identity.userId || payload.authorization.environment !== options.environment) {
+        lease = null;
+        return { type: 'unavailable', reason: payload.accountId !== identity.userId ? 'account_mismatch' : 'environment_mismatch' };
+      }
+      const authorization = payload.authorization;
+      if (payload.complimentaryAccessChecked === true && authorization.source !== 'complimentary' && rememberedAdmissionStore.getState().data.admission?.source === 'complimentary') {
+        lease = null;
+        forgetAdmission();
+      }
+      if (authorization.status === 'unknown') return { type: 'unavailable', reason: 'subscription_unknown' };
+      if (!authorization.hasAccess || authorization.status !== 'active') {
+        lease = null;
+        return { type: 'ineligible' };
+      }
+      if (!authorization.expiresAt || !authorization.observedAt || !authorization.source) {
+        lease = null;
+        return { type: 'unavailable', reason: 'invalid_response' };
+      }
+      const verifiedAt = Date.parse(payload.verifiedAt);
+      const observedAt = Date.parse(authorization.observedAt);
+      const expiresAt = Date.parse(authorization.expiresAt);
+      const duration = Math.min(MAX_LEASE_MS, expiresAt - verifiedAt);
+      if (observedAt > verifiedAt || duration <= 0) {
+        lease = null;
+        return { type: 'unavailable', reason: 'invalid_response' };
+      }
+      lease = {
+        ...(authorization.source === 'complimentary' ? { source: 'complimentary' as const } : {}),
+        userId: identity.userId,
+        generation: identity.generation,
+        environment: options.environment,
+        expiresAt: authorization.expiresAt,
+        observedAt: authorization.observedAt,
+        verifiedAt: payload.verifiedAt,
+        deadline: now() + duration,
+      };
+      return { type: 'eligible', lease: current(identity)! };
     };
-    return { type: 'eligible', lease: current(identity)! };
+    try {
+      return await Promise.race([
+        run().catch((): SubscriptionAdmissionResult => ({ type: 'unavailable', reason: failure })),
+        new Promise<SubscriptionAdmissionResult>((resolve) => {
+          timer = setTimeout(() => {
+            if (started === request) request += 1;
+            controller.abort();
+            resolve({ type: 'unavailable', reason: 'request_timeout' });
+          }, REQUEST_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer!);
+    }
   };
   const remainingMs: SubscriptionAdmissionPort['remainingMs'] = (identity) =>
     lease && current(identity) ? lease.deadline - now() : 0;
