@@ -1,1 +1,1 @@
-export { pathFor } from './lib/flow';
+export { pathFor, resumeStep } from './lib/flow';

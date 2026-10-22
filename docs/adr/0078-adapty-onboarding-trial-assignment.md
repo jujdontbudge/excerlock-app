@@ -1,5 +1,5 @@
 ---
-status: accepted; assignment superseded by 0079
+status: accepted; assignment superseded by 0079; offer lifetime superseded by 0089
 date: 2026-10-13
 ---
 
@@ -8,6 +8,8 @@ date: 2026-10-13
 ## Decision
 
 The arm assignment below is superseded by [0079](0079-install-split-onboarding-trial-assignment.md); the rest stands.
+
+The process-local offer lifetime and cold-launch re-evaluation below are superseded by [0089](0089-resume-onboarding-with-its-frozen-offer.md). Frozen offer metadata now survives with the Onboarding checkpoint; checkout reloads SDK product handles from its placement.
 
 Adapty owns the trial versus no-trial experiment on `onboarding`, with a 50/50 A/B test. Each localized remote config must contain a JSON boolean `trial`: `true` for A and `false` for B. B is accepted only with exactly the approved Variant A monthly and annual `.notrial` twins and no introductory offer. Missing, malformed, failed or late assignments fall back to A. Product eligibility never assigns B.
 

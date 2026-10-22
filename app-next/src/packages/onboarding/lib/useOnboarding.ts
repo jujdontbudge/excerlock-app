@@ -32,6 +32,7 @@ export function useOnboarding() {
     ? runtime.onboardingOffer?.freeze(step === 'S3c' || step === 'S3d')
     : runtime.onboardingOffer?.snapshot();
   const order = offerFlowOrder(flowOrder, offer?.trialAvailable ?? true);
+  const checkpointOffer = ['S3e', 'S3c', 'S3d'].includes(step) ? offer : undefined;
   useEffect(() => { void runtime.onboardingOffer?.prefetch(); }, [runtime]);
   useEffect(() => {
     if (['S3e', 'S3c', 'S3d'].includes(step)) runtime.onboardingOffer?.expose();
@@ -44,7 +45,7 @@ export function useOnboarding() {
     return stop;
   }, [runtime]);
   useEffect(() => {
-    useOnboardingStore.getState().patch({ step });
+    useOnboardingStore.getState().patch({ step, ...(checkpointOffer ? { offer: checkpointOffer } : {}) });
     const current = useOnboardingStore.getState().data.answers;
     if (step.startsWith('S') && !current.ruleId) {
       const draft = createDraft('walking');
@@ -63,7 +64,7 @@ export function useOnboarding() {
       });
     }
     return () => { advanceEpoch.current += 1; };
-  }, [step, runtime]);
+  }, [step, runtime, checkpointOffer]);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
@@ -72,7 +73,7 @@ export function useOnboarding() {
     advanceEpoch.current += 1;
     Keyboard.dismiss();
     setDirection(back ? 'back' : 'forward');
-    useOnboardingStore.getState().patch({ step: next });
+    useOnboardingStore.getState().patch({ step: next, ...(next === 'P' ? { offer: runtime.onboardingOffer?.snapshot() ?? null } : {}) });
     if (next === 'P') {
       runtime.adAttribution.onboardingFinished();
       const epoch = advanceEpoch.current;
