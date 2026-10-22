@@ -233,7 +233,8 @@ wait: 30
 name: checkout-existing-email-connects-purchase
 scenario: identity-lab-email-existing
 open: /dev?journey=paywall
-actions: tap Continue | tap Continue with email | type e@b.co | tap Send code | tap Verification code | type 123456
+open-wait: 3
+actions: expect Yearly $39.99/year | tap Continue | expect Continue with email | tap Continue with email | type e@b.co | tap Send code | tap Verification code | type 123456
 expect: Allow Screen Time
 absent: That code didn't work | Let's try that again
 then-open: /dev
