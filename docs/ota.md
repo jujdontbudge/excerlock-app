@@ -148,11 +148,17 @@ until the old runtime's 30-day active-install share is under 5%. Never orphan
 a runtime that still has installs. Version bumps never change
 `runtimeVersion`.
 
-Publish to the older runtime with `./excer ota --message "<what changed>" --runtime 4 --publish`
-from the same `origin/main` commit. The flag sets `EXCERLOCK_OTA_RUNTIME=4` (or `5`), which is the only
-way `app.config.ts` reports an older runtime, and the gate refuses unless the simulator's installed app
-is a runtime 4 build, so the ship proofs run on that binary. The JavaScript stays runtime-4 safe
-through optional native module lookups (ADR 0076); a commit that needs runtime 5 native code
-must not be published with `--runtime 4`.
+Runtime 8 (1.0.2 build 24) backports scene-aware Apple sign-in presentation in
+`expo-apple-authentication@57.0.2`. `app.config.ts` and `./excer ota` default to runtime 8.
+The JavaScript remains compatible with runtime 7 (1.0.2 builds 22/23), but an OTA
+cannot deliver the native Apple sign-in fix to those binaries.
 
-Runtime 6 (build 20) adds the Bank drain. `--runtime 4` and `--runtime 5` publish the same JavaScript to older binaries, where the Bank choice stays hidden because `armBankDrain` is missing.
+Publish to runtime 7 with `./excer ota --message "<what changed>" --runtime 7 --publish`
+from the same `origin/main` commit. The flag sets `EXCERLOCK_OTA_RUNTIME=7`, which is the only
+way `app.config.ts` reports the older runtime, and the gate refuses unless the simulator's installed app
+is a runtime 7 build, so the ship proofs run on that binary. Keep publishing compatible JavaScript
+to both runtimes until runtime 7 meets the retirement threshold above.
+
+Runtime 6 (build 20) adds the Bank drain. Historical runtime 4/5 JavaScript keeps the Bank choice
+hidden because `armBankDrain` is missing (ADR 0076). Runtimes 4–6 require their compatible historical
+source revision; the current ad-attribution source refuses those targets (ADR 0084).

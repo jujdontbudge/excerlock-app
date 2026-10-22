@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const linkedRecorderStandalone = linkedRecorderConfig.standaloneEnabled(process.env);
   const linkedIdentifiers = linkedRecorderConfig.identifiers(process.env);
   const environment = resolveBuildEnvironment(process.env);
-  if (process.env.EXCERLOCK_OTA_RUNTIME && process.env.EXCERLOCK_OTA_RUNTIME !== '7') throw new Error('Ad attribution requires native runtime 7; use an older source revision for older binaries');
+  if (process.env.EXCERLOCK_OTA_RUNTIME && !['7', '8'].includes(process.env.EXCERLOCK_OTA_RUNTIME)) throw new Error('This source supports native runtimes 7 and 8; use an older source revision for older binaries');
   const values = loadBuildEnvironment();
   const extra = buildClientExtra(values, environment, { requireUploadToken: process.env.EAS_BUILD === 'true' });
   // A research bundle (Metro dev or standalone lab) runs the lab-local identity
@@ -67,7 +67,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: linkedRecorderResearch ? [linkedRecorderConfig.URL_SCHEME] : ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '7',
+    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : process.env.EXCERLOCK_OTA_RUNTIME || '8',
     ios: {
       ...config.ios,
       ...(linkedRecorderResearch ? researchIos(nativeConfig.ios, linkedIdentifiers) : nativeConfig.ios),

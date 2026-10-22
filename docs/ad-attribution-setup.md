@@ -1,6 +1,6 @@
 # Ad attribution setup — 2026-10-18
 
-Native runtime: 7 (new Meta/TikTok/ATT modules); this source refuses OTA targets for older binaries.
+Native runtime: 8 (scene-aware Apple sign-in); minimum ad-attribution runtime: 7 (Meta/TikTok/ATT modules). This source supports `--runtime 7` for builds 22/23 and refuses OTA targets for older binaries.
 
 Status: local static checks and 19 focused simulator proofs passed; physical-device and dashboard proof remains outstanding. The owner accepted the delivery and test-mode residuals on 2026-10-18 (ADR 0084). Keyed Debug and Release simulator artifacts built as 1.0.1 (21), runtime 7. Locally signed Debug initializes both real SDKs against the preview configuration, then the real runtime stops because simulator Core Motion is unavailable. No financial events or dashboard receipts were verified. No upload or dashboard mutation.
 
