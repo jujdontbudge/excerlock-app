@@ -11,6 +11,7 @@ import { useJourney } from '../../journey/index';
 import { recentHaptics, subscribeHaptics } from '../../ui/haptics';
 import { toggleFilmingMode, useFilmingModeActive } from '../../activity/filmingModeStore';
 import { toggleShowcaseMode, useShowcaseMode } from '../../progress/showcaseModeStore';
+import { checkoutDiagnosticLabels } from './checkoutDiagnosticLabels';
 export function DevMenu() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
@@ -35,6 +36,7 @@ export function DevMenu() {
       <Heading title={c.title} support={c.support} />
       <Label>{view.scenarioId}</Label>
       <Label>Journey {journey.phase} · paid {journey.paid ? 'yes' : 'no'} · admitted {journey.canEnterApp ? 'yes' : 'no'}</Label>
+      {checkoutDiagnosticLabels(view.events).map((label) => <Label key={label}>{label}</Label>)}
       <Label>{`Gym visits ${view.gymVisits?.visits ?? 0} · ${view.gymVisits?.confirmed ? 'confirmed' : 'unconfirmed'} · background ${view.gymVisits?.autoDetect ? 'on' : 'off'}`}</Label>
       <Label>{`Gym progress ${view.gymVisits?.progressMinutes ?? 0} min`}</Label>
       <SettingsGroup title={c.haptics}>

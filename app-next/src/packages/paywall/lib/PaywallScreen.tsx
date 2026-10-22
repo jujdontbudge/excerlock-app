@@ -16,7 +16,6 @@ import type { PaywallErrorOperation } from './paywallErrors';
 import type { PaywallVariant } from '../../telemetry/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../ports/useRuntime';
 import { subscriptionCopy, planName, perPeriod } from '../../subscription/subscriptionCopy';
-import { purchaseFailureClass } from '../../subscription/purchaseErrors';
 import { defaultPlanHandle } from './paywallVariant';
 import { PaywallHeadline } from './PaywallHeadline';
 import { PaywallReview } from './PaywallReview';
@@ -106,7 +105,6 @@ export function PaywallScreen({
   const purchase = async () => {
     if (!selected || busy || operationInFlight.current || verifying || verificationRequired || recovery.type !== 'none') return;
     operationInFlight.current = true;
-    if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     let restoreExisting = false;
     try {
@@ -118,10 +116,7 @@ export function PaywallScreen({
         } else restoreExisting = true;
       } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
       else if (result.type === 'already_subscribed') restoreExisting = true;
-      else if (result.type === 'user_cancelled')
-        runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
     } catch (error) {
-      runtime.analytics.track('purchase_failed', { reason_class: purchaseFailureClass(error) });
       reportError(error, 'purchase');
       notify(subscriptionCopy.error);
       haptic('error');
@@ -136,7 +131,7 @@ export function PaywallScreen({
     operationInFlight.current = true;
     setBusy('restore');
     try {
-      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound')
+      if ((await restorePurchases(runtime.subscription, placement)) === 'notFound')
         notify(subscriptionCopy.notFound);
       else {
         haptic('success');

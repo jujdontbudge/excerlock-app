@@ -2,6 +2,8 @@
 
 ## Index
 
+- [0090: Correlate client checkout attempts without billing events](0090-client-checkout-attempt-diagnostics.md) — **accepted**.
+
 - [0089: Resume Onboarding with its frozen offer](0089-resume-onboarding-with-its-frozen-offer.md) — **accepted**.
 - [0085: Refusing Screen Time asks again instead of sending people to Settings](0085-screen-time-refusal-asks-again.md) — **accepted**.
 - [0084: Meta and TikTok ad events, one owner per event](0084-ad-attribution-one-owner-per-event.md) — **proposed**.

@@ -27,6 +27,9 @@ import type { PurchaseIntentStore } from './lib/purchaseIntent';
 import { profileContainsPurchase, storePurchaseForProfile, storePurchaseForTransaction } from './lib/storePurchase';
 import { retryAdapty } from './lib/retryAdapty';
 import { adaptyErrorCode, purchaseDefinitelyUncharged } from './purchaseErrors';
+import { AppState } from 'react-native';
+import type { AnalyticsPort } from '../ports/AnalyticsPort';
+import { CheckoutDiagnostics, type ObserveStoreKitInactive } from './CheckoutDiagnostics';
 
 export { PurchaseIntentStore, PURCHASE_INTENT_KEY } from './lib/purchaseIntent';
 
@@ -36,6 +39,7 @@ type Loaded = {
   generation: number;
   identityGeneration: number;
   flow: AdaptyFlow;
+  placement: SubscriptionPaywall['placement'];
   sdkProducts: Map<string, AdaptyPaywallProduct>;
 };
 
@@ -98,6 +102,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       adAttribution?: Pick<AdAttributionPort, 'trialStarted' | 'subscriptionStarted'>;
       purchaseIntents?: PurchaseIntentStore;
       adIntegrationIdentifiers?(): Promise<Record<string, string>>;
+      analytics: Pick<AnalyticsPort, 'track'>;
+      observeStoreKitInactive?: ObserveStoreKitInactive;
     },
   ) {}
   private recoveringIntent = false;
@@ -264,6 +270,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       generation,
       identityGeneration: identity.generation,
       flow,
+      placement,
       sdkProducts: new Map(mapped.map((item, i) => [item.handle, products[i]!])),
     };
     return publicPaywall;
@@ -276,6 +283,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   async purchase(handle: string): Promise<PurchaseResult> {
     if (this.op.busy) throw new Error('A subscription operation is already running');
     this.op = { busy: true, pending: false, error: null };
+    const attempt = new CheckoutDiagnostics(this.deps.analytics, {
+      operation: 'purchase', placement: this.loaded?.placement ?? 'in_app',
+      plan_id: this.loaded?.sdkProducts.get(handle)?.vendorProductId ?? 'unknown',
+    });
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
@@ -284,6 +295,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         const product = loaded?.sdkProducts.get(handle);
         if (!loaded || !product || loaded.identityGeneration !== ready.generation)
           throw new Error('Plan expired. Reload plans.');
+        attempt.record('succeeded');
+        attempt.stage('recovery_journal');
         await this.deps.recoveryJournal.ready();
         if (this.deps.recoveryJournal.snapshot().type !== 'none')
           throw new Error('Finish connecting the existing purchase before starting another.');
@@ -299,19 +312,31 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           currency: product.price?.currencyCode ?? null,
           hadAccessBefore,
         });
+        attempt.record('succeeded');
         let result;
         let purchaseInvoked = false;
         try {
-          await this.attachIntegrationBestEffort(ready);
+          await this.attachIntegrationBestEffort(ready, attempt);
           this.assertIdentity(ready);
           purchaseInvoked = true;
-          result = await this.deps.sdk.makePurchase(product);
+          result = await attempt.storeKit(() => this.deps.sdk.makePurchase(product), this.observeStoreKitInactive());
         } catch (error) {
           if (purchaseInvoked && adaptyErrorCode(error) === 1050) {
+            attempt.result('pending', error);
+            attempt.record('failed', error);
+            attempt.stage('result');
+            attempt.record('succeeded');
             await this.dropIntent();
             return { type: 'pending' };
           }
+          if (isAlreadyOwned(error) || adaptyErrorCode(error) === 2) {
+            attempt.result(isAlreadyOwned(error) ? 'already_subscribed' : 'cancelled', error);
+            attempt.record('failed', error);
+            attempt.stage('result');
+          }
+          else attempt.fail(error);
           if (!purchaseInvoked || purchaseDefinitelyUncharged(error)) {
+            if (isAlreadyOwned(error) || adaptyErrorCode(error) === 2) attempt.stage('recovery_journal');
             await this.dropIntent();
             const current = this.deps.recoveryJournal.snapshot();
             if (current.type === 'pending' && current.operationId === recovery.operationId)
@@ -324,10 +349,17 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           if (adaptyErrorCode(error) === 2) return { type: 'user_cancelled' };
           throw error;
         }
+        attempt.record('succeeded');
+        attempt.stage('result');
+        attempt.result(result.type === 'user_cancelled' ? 'cancelled' : result.type);
+        attempt.record('succeeded');
         if (result.type === 'success') {
+          attempt.stage('recovery_journal');
           const transaction = decodeStoreTransaction(result.ios?.jwsTransaction);
           const storePurchase = storePurchaseForTransaction(transaction) ?? storePurchaseForProfile(result.profile, product.vendorProductId);
           await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now(), storePurchase);
+          attempt.record('succeeded');
+          attempt.stage('entitlement_verification');
           this.assertIdentity(ready);
           await this.reportConversion(ready.userId!, result.profile.accessLevels?.premium, transaction, {
             vendorProductId: product.vendorProductId, amount: product.price?.amount, currency: product.price?.currencyCode,
@@ -336,62 +368,98 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         this.assertIdentity(ready);
         if (result.type !== 'success') {
           if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };
-          else await this.deps.recoveryJournal.clear();
+          else {
+            attempt.stage('recovery_journal');
+            await this.deps.recoveryJournal.clear();
+            attempt.record('succeeded');
+          }
           return { type: result.type };
         }
         const entitlement = this.publishProfile(result.profile, 'purchase');
+        attempt.record('succeeded');
+        attempt.stage('recovery_journal');
         await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now());
+        attempt.entitlement(entitlement.status === 'active' || entitlement.status === 'trial' ? 'active' : entitlement.status === 'none' ? 'none' : 'unverified');
+        attempt.record('succeeded');
         return { type: 'success', entitlement };
       });
     } catch (error) {
+      attempt.fail(error);
       this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Purchase failed' };
       throw error;
     } finally {
+      attempt.complete();
       this.op = { ...this.op, busy: false };
     }
   }
-  async restore(): Promise<Entitlement> {
+  async restore(context?: { placement: SubscriptionPaywall['placement'] }): Promise<Entitlement> {
     if (this.op.busy) throw new Error('A subscription operation is already running');
     this.op = { busy: true, pending: false, error: null };
     this.restoreInFlight = true;
+    const attempt = new CheckoutDiagnostics(this.deps.analytics, {
+      operation: 'restore', placement: context?.placement ?? this.loaded?.placement ?? 'in_app', plan_id: 'none',
+    });
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
         this.assertIdentity(ready);
+        attempt.record('succeeded');
+        attempt.stage('recovery_journal');
         await this.deps.recoveryJournal.ready();
         const existing = this.deps.recoveryJournal.snapshot();
         const recovery = await this.deps.recoveryJournal.begin('restore', ready.userId!, this.deps.now());
         if (recovery.type === 'none' || (recovery.checkoutUserId !== ready.userId && ready.isAnonymous))
           throw new Error('Sign in to connect your purchase.');
+        attempt.record('succeeded');
         let profile;
         try {
-          await this.attachIntegrationBestEffort(ready);
-          profile = await retryAdapty(() => {
+          await this.attachIntegrationBestEffort(ready, attempt);
+          profile = await attempt.storeKit(() => retryAdapty(() => {
             this.assertIdentity(ready);
             return this.deps.sdk.restorePurchases();
-          });
+          }));
         } catch (error) {
           const current = this.deps.recoveryJournal.snapshot();
           if (existing.type === 'none' && current.type === 'pending' && current.operationId === recovery.operationId)
             await this.deps.recoveryJournal.clear();
           throw error;
         }
+        attempt.record('succeeded');
+        attempt.stage('result');
+        attempt.record('succeeded');
+        attempt.stage('entitlement_verification');
         this.assertIdentity(ready);
         const entitlement = this.publishProfile(profile, 'restore-return');
         const restored = mapEntitlement(profile);
         const matchesCheckout = existing.type === 'none' || existing.checkoutUserId === ready.userId ||
           (existing.storePurchase && profileContainsPurchase(profile, existing.storePurchase));
+        if (profile.customerUserId !== ready.userId || !matchesCheckout || restored.status === 'unknown') {
+          attempt.entitlement('unverified');
+          attempt.fail(undefined);
+        } else {
+          attempt.result(restored.status === 'active' || restored.status === 'trial' ? 'success' : 'not_found');
+          attempt.entitlement(restored.status === 'active' || restored.status === 'trial' ? 'active' : 'none');
+          attempt.record('succeeded');
+        }
+        attempt.stage('recovery_journal');
         if ((restored.status === 'active' || restored.status === 'trial') && profile.customerUserId === ready.userId && matchesCheckout) {
           await this.deps.recoveryJournal.connect(ready.userId!, this.deps.now());
           await this.deps.recoveryJournal.confirm(ready.userId!, this.deps.now(), storePurchaseForProfile(profile));
         }
         else if (existing.type === 'none') await this.deps.recoveryJournal.clear();
+        attempt.record('succeeded');
         return entitlement;
       });
     } catch (error) {
+      if (adaptyErrorCode(error) === 1004) attempt.result('not_found', error);
+      else {
+        attempt.result('failed', error);
+        attempt.fail(error);
+      }
       this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Restore failed' };
       throw error;
     } finally {
+      attempt.complete();
       this.op = { ...this.op, busy: false };
       this.restoreInFlight = false;
     }
@@ -425,21 +493,32 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       throw new Error('Canonical subscription identity unavailable');
     return identity;
   }
-  private async attachIntegrationBestEffort(identity: AuthIdentity) {
+  private observeStoreKitInactive(): ObserveStoreKitInactive {
+    return this.deps.observeStoreKitInactive ?? ((inactive) => {
+      const listener = AppState.addEventListener('change', (state) => { if (state === 'inactive') inactive(); });
+      return () => listener.remove();
+    });
+  }
+  private async attachIntegrationBestEffort(identity: AuthIdentity, attempt: CheckoutDiagnostics) {
+    attempt.stage('integration_attach');
     const current = this.requireExpected();
     if (current.generation !== identity.generation) throw new Error('Identity changed');
     const id = this.deps.getPosthogDistinctId();
     if (!id) {
+      attempt.record('skipped', undefined, 'auth');
       this.deps.reportError(new Error('PostHog identity unavailable'));
       return;
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
     try {
       await Promise.race([
         this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Integration identifier timed out')), INTEGRATION_TIMEOUT_MS); }),
+        new Promise((_, reject) => { timer = setTimeout(() => { timedOut = true; reject(new Error('Integration identifier timed out')); }, INTEGRATION_TIMEOUT_MS); }),
       ]);
+      attempt.record('succeeded');
     } catch (error) {
+      attempt.record(timedOut ? 'timed_out' : 'failed', error, timedOut ? 'timeout' : undefined);
       this.deps.reportError(error);
     } finally {
       if (timer) clearTimeout(timer);

@@ -76,6 +76,7 @@ export async function createClientServices(options: {
         },
       });
       return {
+        track: (event, props) => telemetry.analytics.track(event, props),
         identify: (id) => telemetry.analytics.identify(id), reset: () => telemetry.analytics.reset(),
         getDistinctId: telemetry.getDistinctId,
         replayPendingScreens: () => telemetry.analytics.replayPendingScreens(),

@@ -86,7 +86,7 @@ export interface SubscriptionAdmissionPort {
 export interface SubscriptionPort {
   entitlement(): SubscriptionEntitlement;
   presentPaywall(placement: string): Promise<Entitlement>;
-  restore(): Promise<Entitlement>;
+  restore(context?: { placement: SubscriptionPaywall['placement'] }): Promise<Entitlement>;
   identify(userId: string): Promise<void>;
   reset(): Promise<void>;
   refresh(): Promise<Entitlement>;
