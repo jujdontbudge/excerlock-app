@@ -416,6 +416,20 @@ then-expect: onboarding_offer_exposed {"arm":"b","assigned_arm":"b","source":"ad
 wait: 20
 ```
 
+Runtimes 4 and 5 retain the rating step between research and the Condition demo. This variant follows that production path and asserts the same no-trial offer and checkout.
+
+```proof
+name: offer-b-no-trial-with-rating
+scenario: onboarding-offer-b
+open: /onboarding/S3
+actions: tap Import | expect ExcerLock is built on research | tap Continue | expect Give us a rating | tap Continue | expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue
+expect: Billed as $39.99/year | Continue | Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week
+absent: Free trial | Enable free trial | free trial | trial ends | No payment due now
+then-open: /dev
+then-expect: onboarding_offer_exposed {"arm":"b","assigned_arm":"b","source":"adapty","intro_offer":"unavailable","variation_id":"offer-b"} | lab_flow {"placement":"onboarding_no_trial","attempt":1,"ok":true} | lab_paywall_shown {"variation":"offer-b"}
+wait: 20
+```
+
 ```proof
 name: offer-b-killed-shows-a
 scenario: onboarding-offer-b-killed
@@ -599,7 +613,7 @@ then-expect: Billed as $39.99/year | Restore purchases
 ```
 
 ## Gotchas
-- Rating `S5` exists only on runtimes 4 and 5; development builds and runtime 6 skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
+- Rating `S5` exists only on runtimes 4 and 5, including their preserved Debug binaries; runtime 6 and later skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
 - The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
 - Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
 - The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).
