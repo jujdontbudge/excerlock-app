@@ -555,3 +555,13 @@ then-expect: Journey onboarding | Protected route mounts | None
 - Step ids are persisted, so renaming one breaks resume for installs already in the field.
 
 - The Adapty offer is prefetched without awaiting a first frame and freezes before the trial tail. `trial: false` plus exactly the approved twins is B; a missing flag or unavailable intro is not B. A delayed B response is discarded, and checkout loads `onboarding_trial_fallback` once for A. A resumed S3c/S3d keeps A. See ADR 0078.
+
+```proof
+name: paywall-relaunch-returns-to-checkout
+scenario: onboarding-offer-a-full
+open: /onboarding/S3d
+actions: expect 1 day before your trial ends | tap Continue
+expect: 3-day free trial, then $39.99/year | Restore purchases
+relaunch-after-expect: true
+after-relaunch-expect: 3-day free trial, then $39.99/year | Restore purchases
+```
