@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../onboardingStore';
 import { nextStep, prevStep, progressFraction, resumeStep, offerFlowOrder, type FlowOrder } from './flow';
 import { createDraft } from '../../conditions/draft';
@@ -16,7 +16,8 @@ const onboardingReturnDestination = (...values: unknown[]) =>
   values.find((value): value is 'S3' => value === 'S3') ?? '';
 
 export function useOnboarding() {
-  const params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
+  const focused = useIsFocused(),
+    params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
     router = useRouter(),
     runtime = useRuntime(),
     state = useOnboardingStore((s) => s.data),
@@ -28,15 +29,15 @@ export function useOnboarding() {
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const step = params.step ?? resumeStep(state, flowOrder),
     flow = { step, answers: state.answers };
-  const offer = ['S3e', 'S3c', 'S3d'].includes(step)
+  const offer = focused && ['S3e', 'S3c', 'S3d'].includes(step)
     ? runtime.onboardingOffer?.freeze(step === 'S3c' || step === 'S3d')
     : runtime.onboardingOffer?.snapshot();
   const order = offerFlowOrder(flowOrder, offer?.trialAvailable ?? true);
   const checkpointOffer = ['S3e', 'S3c', 'S3d'].includes(step) ? offer : undefined;
-  useEffect(() => { void runtime.onboardingOffer?.prefetch(); }, [runtime]);
+  useEffect(() => { if (focused) void runtime.onboardingOffer?.prefetch(); }, [runtime, focused]);
   useEffect(() => {
-    if (['S3e', 'S3c', 'S3d'].includes(step)) runtime.onboardingOffer?.expose();
-  }, [step, runtime]);
+    if (focused && ['S3e', 'S3c', 'S3d'].includes(step)) runtime.onboardingOffer?.expose();
+  }, [step, runtime, focused]);
   useEffect(() => {
     const port = runtime.onboardingFlow;
     if (!port) return;
@@ -45,6 +46,7 @@ export function useOnboarding() {
     return stop;
   }, [runtime]);
   useEffect(() => {
+    if (!focused) return;
     useOnboardingStore.getState().patch({ step, ...(checkpointOffer ? { offer: checkpointOffer } : {}) });
     const current = useOnboardingStore.getState().data.answers;
     if (step.startsWith('S') && !current.ruleId) {
@@ -64,7 +66,7 @@ export function useOnboarding() {
       });
     }
     return () => { advanceEpoch.current += 1; };
-  }, [step, runtime, checkpointOffer]);
+  }, [step, runtime, checkpointOffer, focused]);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };

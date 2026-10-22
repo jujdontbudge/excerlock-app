@@ -11,6 +11,8 @@ An unfinished Onboarding resumes its saved step on a cold launch. Saved `P` open
 
 Save the frozen `OnboardingOffer` metadata alongside the step in the existing Onboarding store, using an additive nullable `offer` field. Restore it before boot routing. Store no SDK product handles; checkout fetches fresh handles from the saved offer's placement and validates its arm before accepting them. Older installs without this field retain their existing offer selection and trial-step fallback. Storage keys and versions remain unchanged.
 
+Only a focused Onboarding screen may freeze or expose an offer, prefetch it, or write its checkpoint. A tail screen retained behind another route must not freeze a new session or overwrite its saved step.
+
 This supersedes only the process-local offer lifetime and cold-launch re-evaluation in accepted ADR 0078. ADR 0079's install assignment remains unchanged. Account recovery and returning-account admission retain precedence over unfinished Onboarding.
 
 ## Context
@@ -18,6 +20,8 @@ This supersedes only the process-local offer lifetime and cold-launch re-evaluat
 An App Store user reached the Paywall, returned in a new session 53 minutes later, and was sent to Welcome. On `27e1c54a`, `paywall-relaunch-returns-to-checkout` reproduces this: boot ignores the persisted `P` checkpoint. The offer session also lives only in memory, so restoring a route alone can freeze fallback A before a no-trial offer has loaded.
 
 The earlier `f9b7e338` attempt also introduced broader checkpoint inference, changed Close to Welcome, and added Settings and sign-in surfaces. This change keeps the current navigation and visible screens, using the saved step directly rather than inferring completion from staged answers or a new permanent completion flag. Its implementation is limited to boot routing, the existing offer port, the Onboarding checkpoint, and focused proofs.
+
+The arm B Close proof exposed an additional interaction after resuming a trial tail: an inactive screen could run `useOnboarding` behind the scenario-loading route, freeze fallback A before B's prefetch, and replace the new checkpoint. The focus guard prevents that retained screen from owning the next offer session.
 
 ## Consequences
 
