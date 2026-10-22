@@ -1,8 +1,8 @@
 # @excerlock/analytics-events
 
 Permission outcomes, unlock method and review presets use bounded enum
-vocabulary. Raw answers, locations, account identifiers, receipts, and SDK
-errors never cross this seam. Subscription/trial lifecycle and revenue remain
+vocabulary. Raw answers, locations, account identifiers, receipts, and free-form SDK
+errors never cross this seam. Checkout diagnostics permit only integer Adapty failure codes in 0–9999. Subscription/trial lifecycle and revenue remain
 owned only by the Adapty integration.
 
 The typed PostHog event registry — the single source of truth for **every event name the product
@@ -64,11 +64,10 @@ requires a migration note here.
 | `walk_session_started` | — |
 | `walk_session_ended` | — |
 | `paywall_viewed` | `placement`, `has_trial`, `variation_id`, optional onboarding `offer_arm`, `offer_source` |
-| `purchase_started` | `placement`, `plan_id` |
-| `purchase_failed` | `reason_class` |
+| `checkout_attempt_started` | `attempt_id`, `operation`, `placement`, `plan_id` |
+| `checkout_stage_recorded` | attempt context plus `stage`, `stage_result`, `elapsed_ms`, optional `failure_code`, `failure_kind` |
+| `checkout_attempt_completed` | attempt context plus `outcome`, `stage`, `failing_stage`, `failure_kind`, optional `failure_code`, `duration_ms`, optional `storekit_ms`, `sheet_observation`, `entitlement_result` |
 | `paywall_error` | `operation` |
-| `restore_started` / `restore_succeeded` | — |
-| `restore_failed` | `reason_class` |
 | `milestone_unlocked` | — |
 | `share_card_shared` | `card`, `format` |
 | `notification_toggled` | `type`, `is_enabled` |
@@ -135,4 +134,12 @@ Compile-time invariants live in `src/registry.ts`: the props map and owner map m
 the same names, and every props shape must be D12-flat. Runtime invariants (snake_case names,
 owner partition, module disjointness) are in `__tests__/`.
 
-ADR 0078 adds an Adapty-owned onboarding offer experiment. The PostHog client boundary suppresses purchase, restore, trial and subscription lifecycle prefixes even when legacy callers retain those registry names. Adapty measures purchases; only UI exposure and paywall views carry the arm to PostHog.
+ADR 0078 adds an Adapty-owned onboarding offer experiment. Client events pass by registry ownership, consent and canonical identity; there is no purchase/restore prefix filter.
+
+Migration (2026-10-22, ADR 0090): new checkout diagnostics replace the retired client `purchase_started`, `purchase_failed`, `restore_started`, `restore_succeeded` and `restore_failed` emissions. Historical names and data are unchanged in PostHog; the active registry lists the new emitters. `operation` separates purchase from restore. Never combine completion `success` with authoritative Adapty revenue events in a revenue funnel. It means the SDK returned success, independently of admission.
+
+The attempt ID is 12 random hexadecimal characters generated for each accepted operation, never an account, transaction or recovery-journal ID. Restore uses `plan_id: none`; an expired purchase handle uses `unknown`. Stages are `identity_ready`, `recovery_journal`, `integration_attach`, `storekit`, `result`, `entitlement_verification`. Stage results are `started`, `succeeded`, `failed`, `skipped`, `timed_out`. A failed best-effort integration stage can precede a successful attempt.
+
+Completion outcomes are `success`, `cancelled`, `pending`, `already_subscribed`, `not_found` (restore only), `failed`. A later journal or profile failure preserves a returned purchase success and records its `failing_stage`. A restore without a matching, readable profile is a verification failure, never `not_found`. Failure kinds are `none`, `transport`, `auth`, `verification`, `storage`, `vendor`, `unknown`, `timeout`. Missing vendor codes are omitted. Durations use the monotonic clock, rounded to milliseconds and capped at one day. `storekit_ms` includes restore SDK retries.
+
+`sheet_observation: inactive` means an AppState inactive transition occurred while `makePurchase` was in flight. Other values are `not_observed`, `not_called`, `unavailable`; absence does not establish that Apple never showed UI, and unrelated system UI can also cause inactive. Restore does not observe the purchase sheet. `entitlement_result` is `not_checked`, `active`, `none`, `unverified`, or `failed`, and reports the local SDK profile only. Account-bound paid admission remains a separate Journey decision. Process termination or consent/identity gates can prevent delivery; the single terminal guarantee applies to completed client calls, not crash recovery or PostHog ingestion.

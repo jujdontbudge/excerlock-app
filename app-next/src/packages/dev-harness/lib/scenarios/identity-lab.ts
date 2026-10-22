@@ -18,6 +18,34 @@ const atOnboardingPaywall = {
   steps: { today: 0 },
 };
 export const identityLabScenarios = [
+  base('identity-lab-restore-transport', 'Identity lab · restore transport failure', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, restore: 'transport' },
+  }),
+  base('identity-lab-restore-auth', 'Identity lab · restore authentication failure', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, restore: 'auth' },
+  }),
+  base('identity-lab-restore-unverified', 'Identity lab · restore verification failure', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, restore: 'unverified' },
+  }),
+  base('identity-lab-checkout-no-sheet', 'Identity lab · cancellation without an inactive observation', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, purchase: 'cancel', checkoutSheet: 'none' },
+  }),
+  base('identity-lab-checkout-analytics-throw', 'Identity lab · checkout analytics throw', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, checkoutAnalyticsFailure: 'throw' },
+  }),
+  base('identity-lab-checkout-analytics-reject', 'Identity lab · checkout analytics rejection', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, checkoutAnalyticsFailure: 'reject' },
+  }),
+  base('identity-lab-checkout-analytics-hang', 'Identity lab · checkout analytics hang', {
+    ...atOnboardingPaywall,
+    identityLab: { productionAnalytics: true, checkoutAnalyticsFailure: 'hang' },
+  }),
   base('identity-lab-payment-analytics', 'Identity lab · production payment analytics', {
     ...atOnboardingPaywall,
     identityLab: { productionAnalytics: true, purchase: 'cancel' },

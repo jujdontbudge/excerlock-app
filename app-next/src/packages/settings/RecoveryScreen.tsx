@@ -39,7 +39,7 @@ export function RecoveryScreen({
     if (restoreBusy) return;
     setRestoreBusy(true);
     try {
-      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored') onRestored();
+      if ((await restorePurchases(runtime.subscription)) === 'restored') onRestored();
       else notify(c.noRestore);
     } catch {
       notify(c.error);

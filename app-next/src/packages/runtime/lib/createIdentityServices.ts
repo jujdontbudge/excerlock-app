@@ -7,8 +7,9 @@ import type { AdaptySdkPort } from '../../subscription/adaptySdk';
 import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PurchaseRecoveryJournal } from '../../subscription/PurchaseRecoveryJournal';
+import type { AnalyticsPort } from '../../ports/AnalyticsPort';
 
-type AnalyticsIdentityHooks = {
+type AnalyticsIdentityHooks = Pick<AnalyticsPort, 'track'> & {
   identify(id: string): Promise<void>;
   reset(): Promise<void>;
   getDistinctId(): string | null;
@@ -48,6 +49,7 @@ export async function createIdentityServices(options: {
     reportError: options.reportError,
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
     recoveryJournal,
+    analytics,
     now: () => new Date().toISOString(),
   });
   try {

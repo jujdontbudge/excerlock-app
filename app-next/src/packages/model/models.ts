@@ -69,6 +69,8 @@ export type IdentityLabScript = {
   adaptyIdentify?: 'failFirst';
   audienceUpdate?: 'fail';
   productionAnalytics?: boolean;
+  checkoutSheet?: 'none';
+  checkoutAnalyticsFailure?: 'throw' | 'reject' | 'hang';
   journalFailure?: 'hydrateOnce' | 'confirmOnce' | 'clearOnce';
   anonymousSignIn?: 'ok' | 'failFirst';
   userSync?: 'ok' | 'failFirst' | 'slow';
@@ -76,7 +78,7 @@ export type IdentityLabScript = {
   appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier' | 'paidThenInterrupted' | 'paidThenEncodingFailed';
-  restore?: 'restored' | 'notFound' | 'errorFirst';
+  restore?: 'restored' | 'notFound' | 'errorFirst' | 'transport' | 'auth' | 'unverified';
   delayedCallbacks?: boolean;
   establishedTransfer?: boolean;
   integrationIdentifier?: 'networkFailed' | 'hang';

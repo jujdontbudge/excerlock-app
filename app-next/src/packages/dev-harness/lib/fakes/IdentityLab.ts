@@ -634,6 +634,8 @@ export async function createIdentityLab(
         updateSubscriptionLab();
         throw Object.assign(new Error('This subscription is already owned'), { adaptyCode: 107 });
       }
+      if (script.checkoutSheet !== 'none') storeKitInactive?.();
+      await new Promise((resolve) => setTimeout(resolve, 40));
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
       if (!owner) throw new Error('Purchase owner unavailable');
@@ -669,6 +671,16 @@ export async function createIdentityLab(
       const result = configured === 'errorFirst' && attempts.restore > 0 ? 'restored' : configured;
       const owner = customerUserId;
       if (!owner) throw new Error('Restore owner unavailable');
+      if (result === 'transport' || result === 'auth') {
+        attempts.restore += 1;
+        updateSubscriptionLab();
+        throw Object.assign(new Error('Restore unavailable'), { adaptyCode: result === 'transport' ? 2005 : 2002 });
+      }
+      if (result === 'unverified') {
+        attempts.restore += 1;
+        updateSubscriptionLab();
+        return profile('lab-unverified-owner');
+      }
       if (result === 'errorFirst') {
         attempts.restore += 1;
         ctx.log('lab_restore', { result: 'error', owner, source: 'adapter' });
@@ -695,7 +707,7 @@ export async function createIdentityLab(
       if (key !== 'posthog_distinct_user_id') return;
       if (script.integrationIdentifier === 'networkFailed') {
         ctx.log('lab_integration', { result: 'networkFailed' });
-        throw networkError('Adapty networkFailed 2005');
+        throw Object.assign(networkError('Adapty networkFailed 2005'), { adaptyCode: 2005 });
       }
       if (script.integrationIdentifier === 'hang') {
         ctx.log('lab_integration', { result: 'hang' });
@@ -706,6 +718,7 @@ export async function createIdentityLab(
 
   const provisional: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
   const analytics = script.productionAnalytics ? paymentAnalyticsLab(ctx, () => services?.auth.identity() ?? provisional) : AnalyticsFake(ctx);
+  let storeKitInactive: (() => void) | undefined;
   let journalFailed = false;
   let journalClearAttempts = 0;
   const recoveryStorage = {
@@ -752,6 +765,21 @@ export async function createIdentityLab(
     reportError: (error) => ctx.log('lab_adapter_error', { message: message(error) }),
     openSubscriptionManagement: async () => undefined,
     recoveryJournal: new PurchaseRecoveryJournal(recoveryStorage),
+    analytics: {
+      track: (event, props) => {
+        analytics.track(event, props);
+        if (script.checkoutAnalyticsFailure) {
+          ctx.log('lab_checkout_analytics', { result: script.checkoutAnalyticsFailure });
+          if (script.checkoutAnalyticsFailure === 'throw') throw new Error('Diagnostic tracking unavailable');
+          if (script.checkoutAnalyticsFailure === 'reject') return Promise.reject(new Error('Diagnostic tracking unavailable'));
+          return new Promise<void>(() => undefined);
+        }
+      },
+    },
+    observeStoreKitInactive: (inactive) => {
+      storeKitInactive = inactive;
+      return () => { storeKitInactive = undefined; };
+    },
     now: () => ctx.clock.now(),
   });
   services = await createAuthServices({
@@ -792,7 +820,7 @@ export async function createIdentityLab(
   const subscription: SubscriptionPort = {
     entitlement: () => adapter.entitlement(),
     presentPaywall: () => adapter.presentPaywall(),
-    restore: () => adapter.restore(),
+    restore: (context) => adapter.restore(context),
     identify: (id) => adapter.identify(id),
     reset: () => adapter.reset(),
     refresh: () => adapter.refresh(),

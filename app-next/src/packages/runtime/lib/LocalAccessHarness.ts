@@ -67,6 +67,7 @@ export function attachLocalAccessHarness(runtime: Runtime) {
       beforeDelete: async () => undefined,
       afterDelete: async () => undefined,
       analyticsFactory: () => ({
+        track: () => undefined,
         identify: async () => undefined,
         reset: async () => undefined,
         getDistinctId: () => owner ?? 'local-access',

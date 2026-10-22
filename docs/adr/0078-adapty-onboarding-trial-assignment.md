@@ -42,3 +42,5 @@ The PostHog `onboarding_variant` rail can still vary other bundled steps, but Ad
 - `app-next/src/packages/onboarding/lib/flow.ts`, `useOnboarding.ts`, `app-next/src/packages/paywall/lib/PaywallScreen.tsx`.
 - `app-next/src/packages/notifications/notificationPlan.ts`.
 - [0032](0032-posthog-flag-consumers.md), partly superseded here; [0043](0043-sign-in-and-permissions-after-the-paywall.md), [0050](0050-hard-paywall-journey-and-account-bound-admission.md), [0061](0061-stay-signed-in-and-admitted-across-launches.md), [0066](0066-onboarding-stages-several-conditions.md) and [0068](0068-ota-ship-gate.md), accepted and otherwise unchanged.
+
+Checkout diagnostic names and per-attempt semantics are superseded by [0090](0090-client-checkout-attempt-diagnostics.md). Adapty billing ownership and the client ownership gate are retained.

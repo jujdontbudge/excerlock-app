@@ -16,7 +16,7 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
     if (busy) return;
     setBusy(true);
     try {
-      const restored = (await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored';
+      const restored = (await restorePurchases(runtime.subscription)) === 'restored';
       notify(restored ? c.restored : c.noRestore);
       if (restored) haptic('success');
     } catch {
