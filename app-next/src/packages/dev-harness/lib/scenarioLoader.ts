@@ -14,7 +14,7 @@ import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
 import { beginLaunch } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
+import { PURCHASE_ATTEMPTS_KEY, PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
 import { PURCHASE_INTENT_KEY } from '../../subscription/AdaptySubscriptionAdapter';
 import { LEDGER_PREFIX, ledgerKey } from '../../ad-attribution/AdAttribution';
 import { createAsyncStorageOtaStorage } from '../../updates/updates';
@@ -76,7 +76,15 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
 
 async function seedAdAttribution(scenario: Scenario) {
   const keys = await AsyncStorage.getAllKeys();
-  await AsyncStorage.multiRemove([...keys.filter((key) => key.startsWith(LEDGER_PREFIX)), PURCHASE_INTENT_KEY]);
+  await AsyncStorage.multiRemove([...keys.filter((key) => key.startsWith(LEDGER_PREFIX)), PURCHASE_INTENT_KEY, PURCHASE_ATTEMPTS_KEY]);
+  if (scenario.identityLab?.lateStorePurchase === 'relaunch') {
+    await AsyncStorage.setItem(PURCHASE_ATTEMPTS_KEY, JSON.stringify({ version: 1, attempts: [{
+      operationId: `purchase:lab-checkout-1:${scenario.clock.now}`,
+      checkoutUserId: 'lab-checkout-1',
+      vendorProductId: 'lab.annual',
+      startedAt: scenario.clock.now,
+    }] }));
+  }
   for (const parts of scenario.ads?.sentBefore ?? []) await AsyncStorage.setItem(ledgerKey(...parts), 'sent');
   const interrupted = scenario.ads?.interruptedPurchase;
   if (interrupted) {

@@ -238,6 +238,7 @@ export async function createIdentityLab(
   const queuedProfiles: { operation: 'purchase' | 'restore'; owner: string; profile: AdaptyProfile }[] = [];
   let transfers = 0;
   let deliveredProfiles = 0;
+  const latePurchaseTimers: ReturnType<typeof setTimeout>[] = [];
   let users = 0;
   let stored: LabSession | null = null;
   let distinctId = ANONYMOUS_DISTINCT_ID;
@@ -503,7 +504,7 @@ export async function createIdentityLab(
     const days = status === 'trial' ? ctx.scenario.onboardingOffer?.trialDays ?? 3 : 30;
     return {
       customerUserId: owner,
-      subscriptions: Object.fromEntries([...grants].filter(([, grant]) => grant.owner === owner).map(([id]) => [id, {
+      subscriptions: script.lateStorePurchase === 'accessLevel' ? {} : Object.fromEntries([...grants].filter(([, grant]) => grant.owner === owner).map(([id]) => [id, {
         isActive: true,
         store: 'app_store',
         vendorProductId: id === STORE_SUBSCRIPTION_ID ? checkoutProductId : id,
@@ -514,6 +515,8 @@ export async function createIdentityLab(
         ? {
             premium: {
               isActive: true,
+              store: 'app_store',
+              vendorProductId: checkoutProductId,
               activeIntroductoryOfferType: status === 'trial' ? 'free_trial' : undefined,
               expiresAt: new Date(Date.parse(ctx.clock.now()) + days * 86_400_000),
               willRenew: true,
@@ -612,7 +615,9 @@ export async function createIdentityLab(
     logShowFlow: async (flow) => { ctx.log('lab_paywall_shown', { variation: flow.variationId }); },
     makePurchase: async (product) => {
       attempts.purchase += 1;
-      const configured = script.purchase ?? ctx.snapshot().outcome;
+      const configured = script.lateStorePurchase && script.lateStorePurchase !== 'relaunch'
+        ? ['pending', 'pendingWrongProduct'].includes(script.lateStorePurchase) ? 'pending' : 'cancel'
+        : script.purchase ?? ctx.snapshot().outcome;
       const result = configured === 'errorFirst' && attempts.purchase > 1
         ? 'success'
         : configured === 'errorFirst'
@@ -622,6 +627,19 @@ export async function createIdentityLab(
             : configured;
       const owner = customerUserId;
       ctx.log('lab_purchase', { result: configured === 'busyBarrier' ? 'success' : result, owner });
+      if (script.lateStorePurchase && script.lateStorePurchase !== 'relaunch' && attempts.purchase === 1 && owner) {
+        const originalProduct = product.vendorProductId;
+        latePurchaseTimers.push(setTimeout(() => {
+          const paidOwner = script.lateStorePurchase === 'wrongAccount' ? 'lab-other-owner' : owner;
+          checkoutProductId = ['wrongProduct', 'pendingWrongProduct'].includes(script.lateStorePurchase ?? '') ? 'lab.other-product' : originalProduct;
+          grants.set(STORE_SUBSCRIPTION_ID, { owner: paidOwner, status: 'trial' });
+          ctx.log('lab_late_purchase', { owner: paidOwner, product: checkoutProductId, result: 'success' });
+          profileListener?.(profile(paidOwner));
+          profileListener?.(profile(paidOwner));
+          deliveredProfiles += 2;
+          updateSubscriptionLab();
+        }, script.lateStorePurchase === 'retry' ? 6500 : 2500));
+      }
       if (configured === 'busyBarrier') {
         enterPurchaseBarrier?.();
         await purchaseBarrierReleased;
@@ -1286,6 +1304,7 @@ export async function createIdentityLab(
       };
     },
     dispose: async () => {
+      latePurchaseTimers.forEach(clearTimeout);
       adapter.dispose();
       await services?.dispose();
     },

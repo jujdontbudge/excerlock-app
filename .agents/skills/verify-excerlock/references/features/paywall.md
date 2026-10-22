@@ -2,7 +2,7 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-integration-failed, identity-lab-integration-hangs, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked, trial-reminder-three-days, trial-reminder-too-late, onboarding-offer-fallback-error, onboarding-offer-a, onboarding-offer-b]
+scenarios: [identity-lab-cancelled-late-success, identity-lab-pending-late-success, identity-lab-retry-late-success, identity-lab-foreign-late-success, identity-lab-unrelated-late-success, identity-lab-relaunch-late-success, identity-lab-offline-late-success, identity-lab-pending-unrelated-success, fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-integration-failed, identity-lab-integration-hangs, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked, trial-reminder-three-days, trial-reminder-too-late, onboarding-offer-fallback-error, onboarding-offer-a, onboarding-offer-b]
 server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
 events: [paywall_viewed, purchase_started, paywall_error]
 depends: [launch]
@@ -18,6 +18,83 @@ depends: [launch]
 Finish onboarding and the paywall appears. A subscriber reaches it through Settings → Manage subscription. A lapsed user sees the win-back paywall at launch.
 
 ## Driving it with excer
+Candidate behavior awaiting owner approval: late StoreKit resolution below uses scripted SDK profile callbacks with the production subscription adapter and account admission path. These proofs establish client recovery, never Apple's purchase sheet, Face ID, billing remediation, Adapty backend delivery or production admission. Cancellation remains silent and permits another checkout. A matching late App Store subscription restores the existing Sign in to continue action; it does not grant admission from a local Entitlement.
+
+```proof
+name: offline-profile-late-store-success
+scenario: identity-lab-offline-late-success
+open: dev?journey=paywall
+actions: tap Continue | expect Sign in to continue | tap Sign in to continue | tap Continue with Apple
+expect: Allow Screen Time
+then-open: /dev
+then-expect: Purchase recovery none | Purchase operations 1 | Restore operations 0 | subscription_proof_verified
+```
+
+```proof
+name: pending-unrelated-store-success-is-ignored
+scenario: identity-lab-pending-unrelated-success
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect lab_late_purchase
+expect: Purchase recovery pending | Journey pendingPurchase · paid no · admitted no | lab_late_purchase {"owner":"lab-checkout-1","product":"lab.other-product","result":"success"} | Protected route mounts | None
+```
+
+```proof
+name: cancelled-late-store-success
+scenario: identity-lab-cancelled-late-success
+open: dev?journey=paywall
+actions: tap Continue | expect Sign in to continue | tap Sign in to continue | tap Continue with Apple
+expect: Allow Screen Time
+then-open: /dev
+then-expect: Purchase recovery none | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"cancel","owner":"lab-checkout-1"} | lab_late_purchase {"owner":"lab-checkout-1","product":"lab.annual","result":"success"} | subscription_proof_verified
+```
+
+```proof
+name: pending-late-store-success
+scenario: identity-lab-pending-late-success
+open: dev?journey=paywall
+actions: tap Continue | expect Sign in to continue | tap Sign in to continue | tap Continue with Apple
+expect: Allow Screen Time
+then-open: /dev
+then-expect: Purchase recovery none | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"pending","owner":"lab-checkout-1"} | subscription_proof_verified
+```
+
+```proof
+name: cancelled-retry-late-store-success
+scenario: identity-lab-retry-late-success
+open: dev?journey=paywall
+actions: tap Continue | tap Monthly $9.99/month · $2.31 / week | tap Continue | expect Sign in to continue | tap Sign in to continue | tap Continue with Apple
+expect: Allow Screen Time
+then-open: /dev
+then-expect: Purchase recovery none | Purchase operations 2 | lab_late_purchase {"owner":"lab-checkout-1","product":"lab.annual","result":"success"} | subscription_proof_verified
+```
+
+```proof
+name: foreign-late-store-success-is-ignored
+scenario: identity-lab-foreign-late-success
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect lab_late_purchase
+expect: Purchase recovery none | Journey paywall · paid no · admitted no | lab_late_purchase {"owner":"lab-other-owner","product":"lab.annual","result":"success"} | Protected route mounts | None
+```
+
+```proof
+name: unrelated-late-store-success-is-ignored
+scenario: identity-lab-unrelated-late-success
+open: dev?journey=paywall
+actions: tap Continue | open /dev | expect lab_late_purchase
+expect: Purchase recovery none | Journey paywall · paid no · admitted no | lab_late_purchase {"owner":"lab-checkout-1","product":"lab.other-product","result":"success"} | Protected route mounts | None
+```
+
+```proof
+name: cancelled-store-success-after-relaunch
+scenario: identity-lab-relaunch-late-success
+relaunch: true
+open: dev?journey=paywall
+actions: expect Sign in to continue | tap Sign in to continue | tap Continue with Apple
+expect: Allow Screen Time
+then-open: /dev
+then-expect: Purchase recovery none | Purchase operations 0 | Restore operations 0 | subscription_proof_verified
+```
+
 Dev controls change outcomes without touching StoreKit: add `&outcome=success|cancel|error` or `&restore=restored|notFound` to the dev URL. For example, `./excer sim open "dev?scenario=trial-expired&outcome=error"`.
 
 ```proof

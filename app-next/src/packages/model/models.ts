@@ -79,6 +79,7 @@ export type IdentityLabScript = {
   purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier';
   restore?: 'restored' | 'notFound' | 'errorFirst';
   delayedCallbacks?: boolean;
+  lateStorePurchase?: 'cancelled' | 'pending' | 'retry' | 'wrongAccount' | 'wrongProduct' | 'relaunch' | 'accessLevel' | 'pendingWrongProduct';
   establishedTransfer?: boolean;
   integrationIdentifier?: 'networkFailed' | 'hang';
   secondSubscription?: boolean;

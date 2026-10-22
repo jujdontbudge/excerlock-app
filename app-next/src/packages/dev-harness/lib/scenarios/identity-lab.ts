@@ -18,6 +18,38 @@ const atOnboardingPaywall = {
   steps: { today: 0 },
 };
 export const identityLabScenarios = [
+  base('identity-lab-offline-late-success', 'Identity lab · late Xcode profile has no subscription list', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'accessLevel' },
+  }),
+  base('identity-lab-pending-unrelated-success', 'Identity lab · unrelated product cannot confirm pending checkout', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'pendingWrongProduct' },
+  }),
+  base('identity-lab-cancelled-late-success', 'Identity lab · cancelled checkout succeeds later', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'cancelled' },
+  }),
+  base('identity-lab-pending-late-success', 'Identity lab · approved checkout succeeds later', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'pending' },
+  }),
+  base('identity-lab-retry-late-success', 'Identity lab · first checkout succeeds after a second cancel', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'retry' },
+  }),
+  base('identity-lab-foreign-late-success', 'Identity lab · late checkout belongs to another account', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'wrongAccount' },
+  }),
+  base('identity-lab-unrelated-late-success', 'Identity lab · late profile contains another product', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'wrongProduct' },
+  }),
+  base('identity-lab-relaunch-late-success', 'Identity lab · cancelled checkout recovered on another launch', {
+    ...atOnboardingPaywall,
+    identityLab: { lateStorePurchase: 'relaunch', storeGrant: { owner: 'lab-checkout-1', status: 'trial' } },
+  }),
   base('identity-lab-email-new', 'Identity lab · new email account after purchase', {
     ...atOnboardingPaywall,
     identityLab: { emailAccount: 'new', restore: 'restored' },
