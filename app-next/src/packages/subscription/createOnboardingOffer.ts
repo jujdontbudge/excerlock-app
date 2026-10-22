@@ -81,6 +81,14 @@ export function createOnboardingOffer(deps: {
   };
   return {
     reset,
+    resume(offer) {
+      syncIdentity();
+      if (locked) return;
+      reset();
+      assignment = offer.assigned;
+      boundIdentity = deps.identityGeneration();
+      locked = offer;
+    },
     snapshot() { syncIdentity(); return locked ?? fallback(assigned()); },
     freeze,
     prefetch() {
@@ -98,12 +106,14 @@ export function createOnboardingOffer(deps: {
       return prefetching;
     },
     loadPaywall() {
-      freeze();
+      const offer = freeze();
       if (retained) return Promise.resolve(retained);
       if (loading) return loading;
       const started = epoch;
-      loading = deps.subscription.loadPaywall('onboarding', { onboardingPlacement: 'onboarding_trial_fallback' }).then((paywall) => {
-        if (started !== epoch || armFor(paywall, 'a') !== 'a') throw new Error('Onboarding trial plans unavailable');
+      const options = offer.arm === 'b' ? { onboardingPlacement: 'onboarding_no_trial' as const }
+        : offer.source === 'fallback' ? { onboardingPlacement: 'onboarding_trial_fallback' as const } : undefined;
+      loading = deps.subscription.loadPaywall('onboarding', options).then((paywall) => {
+        if (started !== epoch || armFor(paywall, offer.arm) !== offer.arm) throw new Error('Onboarding plans unavailable');
         boundIdentity = deps.identityGeneration();
         retained = paywall;
         return paywall;

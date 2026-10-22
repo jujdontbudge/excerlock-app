@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0089: Resume Onboarding with its frozen offer](0089-resume-onboarding-with-its-frozen-offer.md) — **accepted**.
 - [0085: Refusing Screen Time asks again instead of sending people to Settings](0085-screen-time-refusal-asks-again.md) — **accepted**.
 - [0083: Bank drain carries usage through bounded native intervals and re-arm receipts](0083-bank-drain-intervals-and-receipts.md) — **proposed**.
 - [0082: Scoped bearer tokens grant complimentary access over HTTPS](0082-scoped-access-grant-tokens.md) — **accepted**.

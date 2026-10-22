@@ -11,6 +11,7 @@ export type OnboardingOffer = {
 
 export interface OnboardingOfferPort {
   prefetch(): Promise<void>;
+  resume(offer: OnboardingOffer): void;
   freeze(keepTrialScreens?: boolean): OnboardingOffer;
   snapshot(): OnboardingOffer;
   loadPaywall(): Promise<SubscriptionPaywall>;

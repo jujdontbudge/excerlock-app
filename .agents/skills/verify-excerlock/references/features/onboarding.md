@@ -52,6 +52,8 @@ name: resume-walking-goal
 scenario: onboarding-walking-resume
 open: /
 expect: Set your walking goal | Daily step goal | Continue
+relaunch-after-expect: true
+after-relaunch-expect: Set your walking goal | Daily step goal | Continue
 ```
 
 ```proof
@@ -547,14 +549,7 @@ then-open: /dev
 then-expect: Journey onboarding | Protected route mounts | None
 ```
 
-## Gotchas
-- Rating `S5` exists only on runtimes 4 and 5; development builds and runtime 6 skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
-- The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
-- Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
-- The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).
-- Step ids are persisted, so renaming one breaks resume for installs already in the field.
-
-- The Adapty offer is prefetched without awaiting a first frame and freezes before the trial tail. `trial: false` plus exactly the approved twins is B; a missing flag or unavailable intro is not B. A delayed B response is discarded, and checkout loads `onboarding_trial_fallback` once for A. A resumed S3c/S3d keeps A. See ADR 0078.
+The frozen offer and current step survive a cold relaunch. Closing checkout saves its preceding step; Continue from that resumed step returns to the same offer.
 
 ```proof
 name: paywall-relaunch-returns-to-checkout
@@ -565,3 +560,49 @@ expect: 3-day free trial, then $39.99/year | Restore purchases
 relaunch-after-expect: true
 after-relaunch-expect: 3-day free trial, then $39.99/year | Restore purchases
 ```
+
+```proof
+name: offer-b-paywall-relaunch-returns-to-checkout
+scenario: onboarding-offer-b-full
+open: /onboarding/S3e
+actions: expect Become the best version of yourself | tap Continue
+expect: Billed as $39.99/year | Restore purchases | Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week
+absent: free trial | trial ends | No payment due now
+relaunch-after-expect: true
+after-relaunch-expect: Billed as $39.99/year | Restore purchases | Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week
+```
+
+```proof
+name: offer-a-paywall-close-relaunch-returns-reminder
+scenario: onboarding-offer-a-full
+open: /onboarding/S3d
+actions: expect 1 day before your trial ends | tap Continue | expect 3-day free trial, then $39.99/year | tap Close
+expect: 1 day before your trial ends | Continue
+absent: Get started
+relaunch-after-expect: true
+after-relaunch-expect: 1 day before your trial ends | Continue
+then-tap: Continue
+then-expect: 3-day free trial, then $39.99/year | Restore purchases
+```
+
+```proof
+name: offer-b-paywall-close-relaunch-returns-before-after
+scenario: onboarding-offer-b-full
+open: /onboarding/S3e
+actions: expect Become the best version of yourself | tap Continue | expect Billed as $39.99/year | tap Close
+expect: Become the best version of yourself | Continue
+absent: Get started | free trial | trial ends
+relaunch-after-expect: true
+after-relaunch-expect: Become the best version of yourself | Continue
+then-tap: Continue
+then-expect: Billed as $39.99/year | Restore purchases
+```
+
+## Gotchas
+- Rating `S5` exists only on runtimes 4 and 5; development builds and runtime 6 skip it. The native rating sheet needs StoreKit services: use `simslim --except family,store` for this proof device. Demo `--prompt ask` forwards to the native port, while default demo proofs use its logged fake. StoreKit exposes no accessibility labels here; screenshot the real sheet. Submit is disabled in a development build.
+- The install-scoped rating gate survives scenario resets and account changes. Re-entry must not request again; inspect the dev analytics log for one `review_requested`.
+- Onboarding imports no real permission, analytics or purchase SDK. Input and output go only through runtime ports, and copy lives in `src/content`.
+- The notification ask sits on `S3d`, before the paywall. Every other permission is asked in setup, after the paywall (ADR 0043).
+- Step ids are persisted, so renaming one breaks resume for installs already in the field.
+
+- The Adapty offer is prefetched without awaiting a first frame and freezes before the trial tail. `trial: false` plus exactly the approved twins is B; a missing flag or unavailable intro is not B. A delayed B response is discarded, and checkout loads `onboarding_trial_fallback` once for a fresh A fallback. The frozen offer is saved with S3e/S3c/S3d/P and restored before routing; SDK product handles are fetched again from its placement. A resumed S3c/S3d without a saved offer keeps A. See ADRs 0078 and 0089.

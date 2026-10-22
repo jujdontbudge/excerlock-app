@@ -7,14 +7,16 @@ import { BootScreen } from './lib/BootScreen';
 import { useRuntimeStatus } from '../lock/selectors';
 import { markStartupStage } from './lib/native/startupMarks';
 import { useRuntime } from '../ports/useRuntime';
-import { beginSignIn, notePurchaseRecovery, resumeReturningAccount, useJourney, useReturningAccount } from '../journey/index';
+import { beginOnboarding, beginPaywall, beginSignIn, beginWelcome, notePurchaseRecovery, resumeReturningAccount, useJourney, useReturningAccount } from '../journey/index';
 import { currentEmailChallenge } from '../identity/emailChallenge';
+import { resumeStep } from '../onboarding/onboardingPath';
 export function BootGate() {
   const runtime = useRuntime();
   const journey = useJourney(runtime);
   const hydrated = useHydrated();
   const runtimeState = useRuntimeStatus();
-  const step = useOnboardingStore((s) => s.data.step);
+  const saved = useOnboardingStore((s) => s.data);
+  const step = resumeStep(saved);
   const setupComplete = useOnboardingStore((s) => s.data.setupComplete);
   const returning = useReturningAccount(runtime, setupComplete);
   const [recoveryReady, setRecoveryReady] = useState(false);
@@ -32,10 +34,19 @@ export function BootGate() {
     if (challenge) beginSignIn();
     else if (resuming) resumeReturningAccount(runtime, setupComplete);
     else if (recovering) notePurchaseRecovery(runtime.subscription.recovery());
-  }, [challenge, recovering, resuming, runtime, setupComplete, settled, journey.phase]);
+    else if (setupComplete) beginWelcome();
+    else {
+      if (saved.offer) runtime.onboardingOffer?.resume(saved.offer);
+      if (step === 'O01') beginWelcome();
+      else {
+        beginOnboarding();
+        if (step === 'P') beginPaywall();
+      }
+    }
+  }, [challenge, recovering, resuming, runtime, setupComplete, settled, journey.phase, step, saved.offer]);
   if (__LINKED_RECORDER_TRACE__) return <Redirect href="/linked-trace" />;
   const destination = bootDestination(journey.phase, step, journey.canEnterApp);
-  const redirecting = settled && !resuming && !recovering && !(journey.phase === 'verifying' && !journey.error);
+  const redirecting = settled && journey.phase !== 'launch' && !resuming && !recovering && !(journey.phase === 'verifying' && !journey.error);
   if (redirecting) markStartupStage('BootGateRedirect');
   return redirecting ? <Redirect href={destination as Href} /> : <BootScreen />;
 }
