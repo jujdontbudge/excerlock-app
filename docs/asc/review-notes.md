@@ -1,6 +1,6 @@
-# App Review notes — 1.0.2 (23), runtime 7
+# App Review notes — 1.0.2 (24), runtime 8
 
-Live on review detail `3752d42c-6ee1-40da-ac4c-2d55b2f7d0e7` for the 1.0.2 (23) resubmission (2026-10-21). Build 23 embeds the ADR 0087 recovery fix, which also reached runtimes 4–7 by OTA. These notes replace the build-22 text that incorrectly promised optional sign-in. App Store Connect caps notes at 4,000 characters.
+Live on review detail `3752d42c-6ee1-40da-ac4c-2d55b2f7d0e7` for the 1.0.2 (24) resubmission (2026-10-22), which replaced 1.0.2 (23) in the queue. Build 24 adds the iOS 27 Sign in with Apple presentation fix (runtime 8). Build 23 embeds the ADR 0087 recovery fix, which also reached runtimes 4–7 by OTA. These notes replace the build-22 text that incorrectly promised optional sign-in. App Store Connect caps notes at 4,000 characters.
 
 ```text
 GUIDELINE 2.5.1: No HealthKit; steps use on-device Core Motion.
@@ -37,6 +37,7 @@ AD ATTRIBUTION
 The app asks for tracking permission (ATT) to measure ad campaigns. Meta and TikTok receive only install/registration, paywall-view, trial-start and first-purchase events; no health, movement, location or Screen Time data.
 
 TECHNICAL NOTES
+- Build 24 fixes Sign in with Apple failing to open on iOS 27.
 - Expo Updates delivers JavaScript fixes within the reviewed feature set; it cannot change native code, permissions or entitlements.
 - Remote configuration tunes copy, plan order and detection thresholds; it cannot grant paid access.
 ```
