@@ -138,8 +138,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   recoveryReady(): Promise<void> {
     return this.deps.recoveryJournal.ready();
   }
-  clearRecovery(): Promise<void> {
-    return this.deps.recoveryJournal.clear();
+  async clearRecovery(): Promise<void> {
+    await this.deps.recoveryJournal.ready();
+    const recovery = this.deps.recoveryJournal.snapshot();
+    await this.deps.recoveryJournal.clear();
+    if (recovery.type !== 'none')
+      await this.deps.recoveryJournal.attempts.forget(recovery.operationId).catch((error) => this.deps.reportError(error));
   }
   subscribeRecovery(callback: Parameters<PurchaseRecoveryJournal['subscribe']>[0]) {
     return this.deps.recoveryJournal.subscribe(callback);
@@ -268,6 +272,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         if (recovery.type !== 'pending' || recovery.checkoutUserId !== ready.userId)
           throw new Error('Finish connecting the existing purchase before starting another.');
         const hadAccessBefore = this.observedEntitlement.status === 'active' || this.observedEntitlement.status === 'trial';
+        await this.deps.recoveryJournal.attempts.remember({
+          operationId: recovery.operationId,
+          checkoutUserId: ready.userId!,
+          vendorProductId: product.vendorProductId,
+          startedAt: recovery.startedAt,
+        }).catch((error) => this.deps.reportError(error));
         await this.saveIntent({
           operationId: recovery.operationId,
           account: ready.userId!,
@@ -281,6 +291,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           await this.attachIntegrationBestEffort(ready);
           result = await this.deps.sdk.makePurchase(product);
         } catch (error) {
+          await this.deps.recoveryJournal.attempts.forget(recovery.operationId).catch((failure) => this.deps.reportError(failure));
           void this.dropIntent();
           const current = this.deps.recoveryJournal.snapshot();
           if (current.type === 'pending' && current.operationId === recovery.operationId)

@@ -1,5 +1,8 @@
 import type { PurchaseRecovery, StorePurchase } from '../ports/SubscriptionPort';
 import type { Unsubscribe } from '../model/models';
+import { PurchaseAttempts } from './lib/purchaseAttempts';
+
+export { PURCHASE_ATTEMPTS_KEY } from './lib/purchaseAttempts';
 
 export const PURCHASE_RECOVERY_KEY = 'excerlock-next.purchase-recovery.v1';
 
@@ -50,12 +53,14 @@ const parse = (raw: string | null): PurchaseRecovery => {
 };
 
 export class PurchaseRecoveryJournal {
+  readonly attempts: PurchaseAttempts;
   private value: PurchaseRecovery = none();
   private listeners = new Set<(recovery: PurchaseRecovery) => void>();
   private writing = Promise.resolve();
   private hydrated: Promise<void>;
 
   constructor(private storage: Storage) {
+    this.attempts = new PurchaseAttempts(storage);
     this.hydrated = storage.getItem(PURCHASE_RECOVERY_KEY).then((raw) => {
       this.value = parse(raw);
       this.publish();

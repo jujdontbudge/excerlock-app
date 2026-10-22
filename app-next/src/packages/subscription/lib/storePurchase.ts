@@ -16,6 +16,13 @@ export function storePurchaseForProfile(profile: AdaptyProfile, productId?: stri
   return { originalTransactionId: purchases[0]!.vendorOriginalTransactionId, isSandbox: purchases[0]!.isSandbox };
 }
 
+export function profileHasActiveStoreProduct(profile: AdaptyProfile, productId: string): boolean {
+  const access = profile.accessLevels?.premium;
+  return Object.values(profile.subscriptions ?? {}).some((purchase) =>
+    purchase.isActive && purchase.store === 'app_store' && purchase.vendorProductId === productId,
+  ) || (access?.isActive === true && access.store === 'app_store' && access.vendorProductId === productId);
+}
+
 export function profileContainsPurchase(profile: AdaptyProfile, purchase: StorePurchase): boolean {
   return Object.values(profile.subscriptions ?? {}).some((subscription) => subscription.isActive &&
     subscription.store === 'app_store' && subscription.vendorOriginalTransactionId === purchase.originalTransactionId &&
