@@ -19,5 +19,4 @@ export const paywallCopy = {
   trialThenBilled: (length: string, price: string) => `${length} free trial, then ${price}`,
   verifyBeforePurchase: 'Restore purchases or try again before buying another plan.',
   retry: 'Try again',
-  account: 'Account and help',
 } as const;

@@ -16,7 +16,7 @@ depends: [setup]
 - Successful sign-in with no unfinished purchase opens the Paywall even when verification is unavailable. Prior or unknown paid access requires verification before another checkout; unfinished purchases retain recovery. Try again restarts the failed identity, StoreKit or admission step (ADR 0087).
 
 ## How to get to it (user POV)
-Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface.
+Settings → the profile row → Account. The Paywall has no Account and help link; the restricted recovery surface opens from the Sign in recovery screen.
 
 ## Driving it with excer
 
@@ -126,32 +126,6 @@ expect: Sign up with email | Email address | Send code
 ```
 
 ```proof
-name: unpaid-account-recovery
-scenario: returning-unpaid
-open: /
-tap: Account and help
-expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
-```
-
-```proof
-name: account-and-help-back-returns-to-paywall
-scenario: returning-unpaid
-open: /
-tap: Account and help | Back
-expect: Continue | Restore purchases | Account and help
-```
-
-```proof
-name: recovery-without-subscription
-scenario: returning-unpaid
-open: /
-tap: Account and help | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
-expect: Account | Signed in with Apple | Delete account
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | subscription_management_opened {} | export_requested {"rules":1,"days":1,"earnedUnlocks":0,"visits":0} | restore {} | Protected route mounts | None
-```
-
-```proof
 name: deletion-and-late-callbacks-user-path
 scenario: identity-lab-deletion-callbacks
 open: /dev
@@ -180,7 +154,7 @@ After revoking that grant in the local CLI and a successful foreground check, th
 ```proof
 name: complimentary-revoked-opens-paywall
 open: /
-expect: Restore purchases | Account and help
+expect: Restore purchases | Continue
 absent: Add condition
 wait: 30
 ```
@@ -190,7 +164,7 @@ Sign out of the granted account, then use Welcome's email code to recover a diff
 ```proof
 name: complimentary-non-granted-opens-paywall
 open: /
-expect: Restore purchases | Account and help
+expect: Restore purchases | Continue
 absent: Add condition
 wait: 30
 ```
@@ -367,7 +341,8 @@ name: fresh-email-unavailable-reaches-paywall
 scenario: review-server-unknown
 open: /onboarding/O01
 actions: tap Sign in | tap Continue with email | tap Email address | type r@a.co | expect Email address r@a.co | tap Send code | expect Check your email | tap Verification code | type 123456
-expect: Restore purchases | Continue | Account and help
+expect: Restore purchases | Continue
+absent: Account and help
 absent: Let's try that again
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | subscription_verification_failed | subscription_unknown

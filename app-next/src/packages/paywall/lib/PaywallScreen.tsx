@@ -23,13 +23,13 @@ import { PaywallTagline } from './PaywallTagline';
 import { offeredHandle, offersTrial, planFor, planPairs, trialLength } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
 const paywallLoadRetries = 2,
-  planRowHeight = t.control.full;
+  planRowHeight = t.control.full,
+  closeTop = (t.type.display.lineHeight - t.control.inline) / 2;
 export function PaywallScreen({
   placement,
   reportError,
   variantKey = 'control',
   onClose,
-  onAccount,
   onLoaded,
   onAccess,
   recovery,
@@ -41,7 +41,6 @@ export function PaywallScreen({
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
   variantKey?: PaywallVariant;
   onClose?: () => void;
-  onAccount?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
   recovery: PurchaseRecovery;
@@ -168,28 +167,7 @@ export function PaywallScreen({
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      contentStyle={{ gap: t.space.xl, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
-      header={
-        onClose ? (
-          <View
-            style={{
-              paddingHorizontal: t.layout.page,
-              height: t.layout.header,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: onAccount ? 'space-between' : 'flex-end',
-            }}>
-            {onAccount ? (
-              <PressableScale label={copy.account} onPress={onAccount}>
-                <Label variant="support" tone="secondary">
-                  {copy.account}
-                </Label>
-              </PressableScale>
-            ) : null}
-            <CloseButton label="Close" onPress={onClose} />
-          </View>
-        ) : undefined
-      }
+      contentStyle={{ gap: t.space.xl, paddingTop: insets.top + t.space.xl }}
       footer={
         <>
           <View style={{ gap: t.space.md, paddingBottom: t.space.sm }}>
@@ -261,7 +239,14 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <PaywallHeadline />
+      <View>
+        <PaywallHeadline />
+        {onClose ? (
+          <View style={{ position: 'absolute', top: closeTop, right: 0 }}>
+            <CloseButton label="Close" onPress={onClose} />
+          </View>
+        ) : null}
+      </View>
       <PaywallReview />
       <PaywallTagline />
     </ScreenShell>

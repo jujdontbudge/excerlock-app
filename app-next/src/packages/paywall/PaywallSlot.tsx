@@ -89,7 +89,6 @@ export function PaywallSlot() {
       onAccess={() => void onAccess()}
       recovery={recovery}
       onClose={back}
-      onAccount={() => router.push('/recovery')}
       onRetryVerification={journey.error ? () => void onAccess() : undefined}
       verificationRequired={Boolean(journey.error) && checkoutNeedsVerification(runtime)}
       verifying={retrying}
