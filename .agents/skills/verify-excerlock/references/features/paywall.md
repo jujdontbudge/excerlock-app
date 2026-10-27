@@ -12,7 +12,7 @@ depends: [launch]
 - Checkout diagnostics correlate one process-local attempt through identity, integration, StoreKit, result and entitlement verification. Exactly one completion reports the SDK outcome. `/dev` derives its Checkout labels from the emitted event log, checking IDs, terminal counts, property safety and timing. Inactive observations are a sheet proxy, not proof of Apple UI.
 - Close returns an onboarding user to the step before the Paywall with answers kept, and anyone else to Welcome. Close never grants access. Adapty placements cover onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
 - The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $39.99/year", in both offers, and the right side shows the smaller weekly equivalent, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $39.99/year" (or "Billed as …" without a trial), then automatic renewal/cancellation terms and the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy follow on the same scrollable screen. Close sits on the headline's first line at the right edge and stays available for every account, including plan-load failure; there is no header row and no account, help or sign-in link (ADR 0092). Close never grants admission: it returns an onboarding user to the step before the Paywall and anyone else to Welcome. The review is preview copy.
-- The first Close on the onboarding Paywall opens the one-time close offer (ADR 0093): the ExcerLock mark, "ONE TIME OFFER", "You will never see this again.", a soft grey card where the discount counts up to 75% in the glowing orange with "DISCOUNT", "THIS OFFER WILL EXPIRE SOON", then the solid orange Yearly pill with the monthly equivalent and a "3-day free trial" badge, the billed line against the monthly price, a breathing "CLAIM YOUR OFFER NOW" button and Terms of Use · Restore purchases · Privacy Policy. It sells the approved $29.99 yearly plan from the Adapty `close_offer` placement. It shows once per install; closing it, a later Close, or an offer that fails to load returns one step like the plain Close. Claiming admits like any purchase.
+- The first Close on the onboarding Paywall opens the one-time close offer (ADR 0093) on solid orange with white text: Close, "ONE TIME OFFER", a white card where the discount counts up to "75% OFF" in the glowing orange over "FOREVER" with yellow sparkles twinkling either side, "$9.99/mo" struck through beside "$2.50/mo", "This offer won't be there once you close it", an outlined Yearly box headed "LOWEST PRICE EVER" with "12mo · $29.99 · 3-day free trial" and "$2.50/mo", a breathing white "Claim your one time offer" button, an outlined "I'd rather pay full price" button and Terms of Use · Restore purchases · Privacy Policy. It sells the approved $29.99 yearly plan from the Adapty `close_offer` placement. It shows once per install. "I'd rather pay full price" returns to the Paywall with its plans reloaded; Close, a later Close, or an offer that fails to load returns one step like the plain Close. Claiming admits like any purchase.
 - Restore with nothing to restore opens a sheet, "No purchase found", with OK and "Account and deletion", which opens the restricted account screen. A restore that is still confirming a purchase shows the confirming notice instead.
 - Purchase and restore are single-flight and show a busy state; a purchase is never retried automatically. Cancel and error never grant access; error shows a retry message. `pending` (Ask to Buy) shows "Waiting for approval" and stays put. A successful purchase whose profile does not show Premium yet shows "Payment received. Confirming your purchase…" with Restore, and moves on by itself when Adapty reports access; it never shows the plans again. Failed plan loading offers Try again. An already-owned product restores.
 - Settings → Manage subscription shows the plan status (trial or active) and links to App Store management and restore. A billing issue keeps access only while Apple's grace period keeps the access level active; after that it opens the Paywall.
@@ -484,9 +484,9 @@ name: close-offer-once
 scenario: fresh-install
 open: dev?journey=paywall
 open-wait: 3
-actions: expect Continue | tap Close | expect ONE TIME OFFER | expect 75% discount | expect CLAIM YOUR OFFER NOW | tap Close | expect Get started | open dev?journey=paywall | expect Continue | tap Close
+actions: expect Continue | tap Close | expect ONE TIME OFFER | expect 75% off forever | expect Claim your one time offer | tap Close | expect Get started | open dev?journey=paywall | expect Continue | tap Close
 expect: Get started
-absent: ONE TIME OFFER | CLAIM YOUR OFFER NOW
+absent: ONE TIME OFFER | Claim your one time offer
 ```
 
 ```proof
@@ -494,11 +494,22 @@ name: close-offer-claim-to-setup
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
 open-wait: 3
-actions: expect Yearly $39.99/year | tap Close | expect CLAIM YOUR OFFER NOW
-tap: CLAIM YOUR OFFER NOW
+actions: expect Yearly $39.99/year | tap Close | expect Claim your one time offer
+tap: Claim your one time offer
 wait: 25
 expect: Allow Screen Time
 absent: ONE TIME OFFER
+```
+
+```proof
+name: close-offer-full-price-returns-to-paywall
+scenario: fresh-install
+open: dev?journey=paywall
+open-wait: 3
+actions: expect Continue | tap Close | expect Claim your one time offer
+tap: I'd rather pay full price
+expect: Get your DREAM BODY with ExcerLock | Yearly $39.99/year · $0.77 / week | Continue
+absent: ONE TIME OFFER | Try again
 ```
 
 ```proof
@@ -508,6 +519,6 @@ open: dev?journey=paywall
 open-wait: 3
 actions: expect Continue | tap Close
 wait: 6
-expect: ExcerLock | ONE TIME OFFER | You will never see this again. | 75% discount | THIS OFFER WILL EXPIRE SOON | Save 75% with the yearly plan. | Yearly · $2.50/mo | Billed $29.99/year after 3-day free trial · vs $9.99/month | CLAIM YOUR OFFER NOW | Terms of Use | Restore purchases | Privacy Policy
+expect: ONE TIME OFFER | 75% off forever | Was $9.99 a month, now $2.50/mo | This offer won't be there once you close it | LOWEST PRICE EVER. Yearly, 12mo · $29.99 · 3-day free trial, $2.50/mo | Claim your one time offer | I'd rather pay full price | Terms of Use | Restore purchases | Privacy Policy
 absent: Continue
 ```

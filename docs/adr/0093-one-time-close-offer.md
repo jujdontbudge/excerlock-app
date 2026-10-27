@@ -7,9 +7,9 @@ date: 2026-10-27
 
 ## Decision
 
-The first Close on the onboarding Paywall opens a one-time close offer instead of leaving. It sells one product, the approved `com.johansardar.excerlock.premium.annual.2999.t3` ($29.99/year with a 3-day free trial), served by the Adapty placement `close_offer`. The screen states the discount against the monthly plan the Paywall loaded (75% against $9.99/month) and the yearly price per month.
+The first Close on the onboarding Paywall opens a one-time close offer instead of leaving. It sells one product, the approved `com.johansardar.excerlock.premium.annual.2999.t3` ($29.99/year with a 3-day free trial), served by the Adapty placement `close_offer`. The screen is solid orange with white text and cards. It states the discount against the monthly plan the Paywall loaded ("75% OFF FOREVER" against $9.99/month; the $29.99 renewal price does not change), the yearly price per month, and the billed amount ("12mo · $29.99").
 
-It shows once per install (`closeOfferSeen` in the onboarding store, set when the offer loads). Win-back and in-app Paywalls never show it. Closing it, any later Close, or an offer that cannot load or price itself takes the plain Close path: back to the step before the Paywall, or Welcome. Claiming admits like any purchase and goes to Setup. Analytics use placement `close_offer`.
+It shows once per install (`closeOfferSeen` in the onboarding store, set when the offer loads). Win-back and in-app Paywalls never show it. Closing it, any later Close, or an offer that cannot load or price itself takes the plain Close path: back to the step before the Paywall, or Welcome. Claiming admits like any purchase and goes to Setup. "I'd rather pay full price" returns to the Paywall, which reloads its plans because the offer replaced the loaded Adapty paywall. Analytics use placement `close_offer`.
 
 It ships to 1.0.2 (runtime 8) as an OTA update: it is JavaScript only, uses an already approved product, and adds no new native code or App Store product.
 
@@ -24,5 +24,5 @@ Some onboarding users who would have left see a cheaper annual plan once. The Ad
 ## References
 
 - `app-next/src/packages/paywall/lib/CloseOfferScreen.tsx`, `closeOffer.ts`, `leavePaywall.ts`
-- Proofs `close-offer-once`, `close-offer-claim-to-setup`, `close-offer-layout` in the paywall feature
+- Proofs `close-offer-once`, `close-offer-claim-to-setup`, `close-offer-layout`, `close-offer-full-price-returns-to-paywall` in the paywall feature
 - [0092: The Paywall has no account link](0092-paywall-has-no-account-link.md) — **accepted**

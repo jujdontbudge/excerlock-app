@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { onboardingStore as useOnboardingStore } from '../onboarding/onboardingStore';
 import { useRuntime } from '../ports/useRuntime';
 import { reportPaywallError, type PaywallErrorOperation } from './lib/paywallErrors';
 import type { PaywallVariant } from '../telemetry/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { admitPaid } from '../journey/index';
 import { leavePaywall } from './lib/leavePaywall';
 import { closeOfferAvailable, rememberMonthlyAnchor } from './lib/closeOffer';
@@ -45,9 +45,20 @@ export function PaywallSlot() {
     if (!admitPaid(runtime, setupComplete)) return;
     router.replace(setupComplete ? '/(tabs)/home' : '/setup/X1');
   };
+  const [round, setRound] = useState(0);
+  const away = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!away.current) return;
+      away.current = false;
+      setRound((value) => value + 1);
+    }, []),
+  );
   const back = () => {
-    if (placement === 'onboarding' && closeOfferAvailable()) router.push('/close-offer');
-    else leavePaywall(runtime, router);
+    if (placement === 'onboarding' && closeOfferAvailable()) {
+      away.current = true;
+      router.push('/close-offer');
+    } else leavePaywall(runtime, router);
   };
   const onLoaded = (paywall: SubscriptionPaywall) => {
     if (paywall.placement === 'onboarding') rememberMonthlyAnchor(paywall.products);
@@ -55,6 +66,7 @@ export function PaywallSlot() {
   };
   return (
     <PaywallScreen
+      key={round}
       placement={placement}
       variantKey={assignment?.variant ?? 'control'}
       onLoaded={onLoaded}

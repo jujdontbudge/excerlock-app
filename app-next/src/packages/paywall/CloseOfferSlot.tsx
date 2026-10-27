@@ -20,5 +20,9 @@ export function CloseOfferSlot() {
     router.replace(setupComplete ? '/(tabs)/home' : '/setup/X1');
   };
   const onLeave = useCallback(() => leavePaywall(runtime, router), [runtime, router]);
-  return <CloseOfferScreen onAccess={onAccess} onLeave={onLeave} reportError={reportError} />;
+  const onFullPrice = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/paywall');
+  };
+  return <CloseOfferScreen onAccess={onAccess} onLeave={onLeave} onFullPrice={onFullPrice} reportError={reportError} />;
 }
