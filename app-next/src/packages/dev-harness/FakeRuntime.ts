@@ -227,7 +227,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
           if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
           rememberSignIn(auth.identity());
-          const journeyRuntime = { auth, subscription } as unknown as Runtime;
+          const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
           if (admitPaid(journeyRuntime, false)) finishSetup(journeyRuntime);
         }
         walking.resume();
@@ -429,7 +429,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         } });
       },
       runLabLocalSignOut: async () => {
-        const journeyRuntime = { auth, subscription } as unknown as Runtime;
+        const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
         const journeyCheckpoint = async (action?: 'admit' | 'reset') => {
           if (action === 'reset') beginWelcome();
           else if (action === 'admit') {
@@ -494,7 +494,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         } });
       },
       runLabLifecycleRevocation: async () => {
-        const journeyRuntime = { auth, subscription } as unknown as Runtime;
+        const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
         const journeyCheckpoint = async (action: 'admit' | 'refresh') => {
           if (action === 'admit') {
             if (!admitPaid(journeyRuntime, false) || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');

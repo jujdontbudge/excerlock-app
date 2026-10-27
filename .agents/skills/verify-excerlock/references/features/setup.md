@@ -64,18 +64,12 @@ after-relaunch-expect: HACK your brain to hit your fitness goals | Get started |
 ```
 
 ```proof
-name: sign-in-after-paywall-is-sign-up
-scenario: returning-signed-in
-open: /sample-paywall?stage=sign-in
-expect: Create your account | Use a new or existing account to keep your plan and subscription. | Continue with Apple
-```
-
-```proof
 name: welcome-sign-in-is-returning
 scenario: reinstall-keychain
 open: /
 tap: Sign in
-expect: Welcome back | Sign in again to open ExcerLock. | Continue with Apple
+expect: Welcome back | Use your email or the sign-in method for your account. | Continue with Apple | Continue with Google | Continue with email
+absent: alex@example.test
 ```
 
 ```proof
@@ -97,12 +91,11 @@ expect: Sign up with email | Email address | Send code | Back to sign-in options
 ```proof
 name: post-purchase-setup-layout
 scenario: fresh-install
-open: /sample-paywall?stage=sign-in
-actions: tap Continue with Apple | expect Restore purchases
-swipe: 0.5,0.8,0.5,0.2
-expect: Continue | Restore purchases
-then-tap: Continue
-then-expect: Allow Screen Time | Not now | Don’t Allow
+open: /sample-paywall
+open-wait: 6
+actions: expect Yearly $39.99/year | tap Continue
+expect: Allow Screen Time | Not now
+absent: Continue with Apple | Create your account
 ```
 
 ```proof
@@ -229,7 +222,6 @@ open: /settings/permission/notifications
 expect: Notifications | Don’t Allow | Allow | Continue
 absent: Open Settings | Not requested
 ```
-
 
 ```proof
 name: condition-needs-motion

@@ -2,13 +2,13 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, returning-offline-stale-profile, reinstall-keychain, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, returning-offline-stale-profile, returning-offline-renewal-due, reinstall-keychain, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
-- `BootGate` restores the persisted stores, then resumes a returning account once per cold launch: a signed-in account remembered on this install opens Home (or Setup if it never finished), with no sign-in. A fresh install, a reinstall, or a signed-out device starts at Welcome (ADR 0061).
-- The Journey owns entry choice, account verification and paid admission. The last server-verified admission is remembered on the device, so a subscriber opens Home at once, even offline, while the server check runs in the background. A server answer of lapsed opens the Paywall. With no saved check, the launch cover stays up for one server check; an unavailable check opens the Paywall with recovery and retry, while Home stays locked (ADR 0087).
-- Paid admission renews itself in Setup and the main app a minute before the five-minute server lease ends; while the server is unreachable the remembered admission holds until three days after the subscription's paid-through date (ADR 0059, ADR 0061).
+- `BootGate` restores the persisted stores, then resumes once per cold launch. Entering the app needs a finished onboarding and Premium from the phone's last Adapty profile; no sign-in and no server check stand in the way (payments and auth rebuild, `docs/plans/payments-auth-rebuild/`).
+- The last Adapty profile is kept on the device, so a subscriber opens Home at once, even offline or with the API down. While access is `checking` (no profile yet) the last known state holds; only a profile that says inactive opens the Paywall. A timeout, a network error or an account change never does. An active, auto-renewing profile keeps access for three days past its renewal date, so a subscriber who renewed while offline is not locked out. When a profile with Premium arrives while the Paywall is open, the Paywall continues by itself.
+- A fresh install, a reinstall or a signed-out device without Premium starts at Welcome.
 - Startup signposts (`markStartupStage`) are for diagnostics. They never gate navigation.
 
 ## How to get to it (user POV)
@@ -63,13 +63,21 @@ expect: HACK your brain to hit your fitness goals | Get started | Sign in
 ```
 
 ```proof
-name: stale-profile-keeps-offline-admission
-scenario: returning-offline-stale-profile
+name: offline-renewal-due-keeps-access
+scenario: returning-offline-renewal-due
 open: /
 expect: Home | Conditions
 absent: Get your DREAM BODY with ExcerLock
 then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | "reason_code":"request_failed" | "destination":"retained"
+then-expect: Journey app · paid yes
+```
+
+```proof
+name: offline-expired-profile-opens-paywall
+scenario: returning-offline-stale-profile
+open: /
+expect: Continue | Restore purchases
+absent: Apps blocked until
 ```
 
 ```proof
@@ -96,7 +104,7 @@ expect: Continue | Restore purchases
 deny-routes: protected
 deny-expect: Continue | Restore purchases
 then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Remote flags sign-in optional review preset enabled paywall variant error | Protected route mounts | None
+then-expect: Journey paywall · paid no | Protected route mounts | None
 ```
 
 ```proof
@@ -198,20 +206,22 @@ then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protec
 - `/` is a transient BootGate route. The OTA coordinator never counts it as a safe place to reload.
 
 ```proof
-name: admission-renews-while-open
+name: access-holds-while-open
 scenario: trial-active
 open: /settings
 actions: open /dev?advance=600000
 expect: Settings | Manage subscription | Legal
+absent: Get your DREAM BODY with ExcerLock
 then-open: /dev
-then-expect: Journey app · paid yes · admitted yes
+then-expect: Journey app · paid yes
 ```
 
 ```proof
-name: long-setup-keeps-admission
+name: long-setup-keeps-access
 scenario: fresh-install
-open: /sample-paywall?stage=sign-in
-actions: tap Continue with Apple | tap Continue | tap Not now | open /dev?advance=360000 | tap Not now
-expect: Home
-absent: Get your DREAM BODY with ExcerLock
+open: /sample-paywall
+open-wait: 6
+actions: expect Yearly $39.99/year | tap Continue | expect Allow Screen Time | open /dev?advance=360000
+expect: Allow Screen Time
+absent: Get your DREAM BODY with ExcerLock | Continue with Apple
 ```

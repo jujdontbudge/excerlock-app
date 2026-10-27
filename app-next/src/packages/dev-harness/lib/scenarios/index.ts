@@ -28,6 +28,7 @@ import {
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
   returningOfflineStaleProfile,
+  returningOfflineRenewalDue,
   reinstallKeychain,
 } from './signed-in-apple';
 import { scenario19 } from './analytics-6-weeks';
@@ -75,6 +76,7 @@ export const scenarios = [
   returningUnpaidRemoteBypassAttempt,
   returningExpired,
   returningOfflineStaleProfile,
+  returningOfflineRenewalDue,
   reinstallKeychain,
   returningUnpaidOtaHome,
   returningUnpaidOtaUnlock,

@@ -13,7 +13,7 @@ depends: [setup]
 - Account screen: sign in, sign out and delete account. Signing out revokes main-app access until a new explicit sign-in.
 - Account deletion erases server data and returns the app to an anonymous session behind the sign-in gate.
 - An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
-- Successful sign-in with no unfinished purchase opens the Paywall even when verification is unavailable. Prior or unknown paid access requires verification before another checkout; unfinished purchases retain recovery. Try again restarts the failed identity, StoreKit or admission step (ADR 0087).
+- Signing in is optional. After sign-in the app refreshes the Adapty profile: with Premium it continues to Setup or Home, without it to the Paywall.
 
 ## How to get to it (user POV)
 Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface.
@@ -152,57 +152,13 @@ then-expect: Journey welcome · paid no · admitted no | Active account Checkout
 wait: 30
 ```
 
-The complimentary local harness is enabled only in a development bundle with `EXPO_PUBLIC_EXCER_LOCAL_ACCESS=1`. It requires loopback `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_API_URL` and a local `EXPO_PUBLIC_SUPABASE_ANON_KEY`. It runs the production Supabase email-code adapter, identity coordinator, Adapty Entitlement adapter and server admission adapter. Session storage is namespaced local AsyncStorage because the reused simulator Debug binary cannot use Keychain. Adapty SDK, telemetry, sensors and Screen Time are local stand-ins; it cannot purchase or prove native shields. Provision a local confirmed email grant in the Sandbox lane, then use Welcome → Sign in → Continue with email → Send code → Verify code from the local mail sink and finish Setup. Never connect this harness to real accounts or vendor services. The following proof starts from that established user path, captures the admitted app and proves a cold relaunch. The sign-in actions and sink/database evidence are recorded separately because OTPs must not be committed.
-
-```proof
-name: complimentary-email-code-keeps-access
-open: /
-expect: Add condition | Home
-absent: Get your DREAM BODY with ExcerLock | Let's try that again
-relaunch-after-expect: true
-after-relaunch-expect: Add condition | Home
-wait: 30
-```
+Complimentary Premium is read from `POST /v1/subscription/resync` after a signed-in account loads. The API can only grant it; the grant is kept on the device until its expiry date or until another account signs in, so a relaunch or an offline launch keeps it. The previous local harness was removed with the server admission path; a lab proof for complimentary access arrives with the account rebuild (phase 2).
 
 After revoking that grant in the local CLI and a successful foreground check, this focused proof verifies loss of protected access. Its precondition is a confirmed inactive paid mirror; unknown paid evidence opens verification instead.
 
-```proof
-name: complimentary-revoked-opens-paywall
-open: /
-expect: Restore purchases | Account and help
-absent: Add condition
-wait: 30
-```
-
 Sign out of the granted account, then use Welcome's email code to recover a different confirmed unpaid account with no grant and an inactive Sandbox paid mirror. The previous account's grant must not follow it.
 
-```proof
-name: complimentary-non-granted-opens-paywall
-open: /
-expect: Restore purchases | Account and help
-absent: Add condition
-wait: 30
-```
-
 The next two proofs use a verified finite complimentary grant, then stop only the isolated local API/auth services while keeping Metro running. The first runs before the response expiry; the second runs after it. Both capture cold process launches. This distinguishes cached offline access from the absence of a three-day paid grace for grants.
-
-```proof
-name: complimentary-offline-keeps-home
-open: /
-expect: Add condition | Home
-absent: Get your DREAM BODY with ExcerLock | Let's try that again
-relaunch-after-expect: true
-after-relaunch-expect: Add condition | Home
-wait: 30
-```
-
-```proof
-name: complimentary-offline-expiry-closes-access
-open: /
-expect: Let's try that again | Try again | Account and help
-absent: Add condition
-wait: 30
-```
 
 ADR 0086 replaces same-UID reauthentication with verified account recovery. These focused proofs use the production auth adapter, coordinator, purchase journal and subscription adapter with scripted provider/StoreKit responses. Native purchases and Apple ID authorization remain physical-device gates.
 

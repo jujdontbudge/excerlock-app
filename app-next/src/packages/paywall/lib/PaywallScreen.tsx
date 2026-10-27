@@ -47,13 +47,14 @@ export function PaywallScreen({
     [paywall, setPaywall] = useState<SubscriptionPaywall | null>(null),
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
+    [confirming, setConfirming] = useState(false),
     chosen = useRef(false),
     operationInFlight = useRef(false),
-    latest = useRef({ variantKey, onLoaded }),
+    latest = useRef({ variantKey, onLoaded, onAccess }),
     shown = useRef<number | null>(null);
   useEffect(() => {
-    latest.current = { variantKey, onLoaded };
-  }, [variantKey, onLoaded]);
+    latest.current = { variantKey, onLoaded, onAccess };
+  }, [variantKey, onLoaded, onAccess]);
   const load = useCallback(async (): Promise<void> => {
     setBusy('load');
     for (let attempt = 0; ; attempt++) {
@@ -94,6 +95,13 @@ export function PaywallScreen({
     void runtime.subscription.logPaywallShown(paywall.generation).catch((error) => reportError(error, 'load'));
     if (placement === 'onboarding') runtime.onboardingOffer?.expose();
   }, [paywall, runtime, placement, reportError]);
+  useEffect(() => {
+    const admitIfPaid = (entitlement: Entitlement) => {
+      if (eligible(entitlement, Date.parse(runtime.clock.now()))) latest.current.onAccess?.(entitlement);
+    };
+    admitIfPaid(runtime.subscription.entitlement());
+    return runtime.subscription.subscribe(admitIfPaid);
+  }, [runtime]);
   const purchase = async () => {
     if (!selected || busy || operationInFlight.current) return;
     operationInFlight.current = true;
@@ -105,10 +113,9 @@ export function PaywallScreen({
         const entitlement = eligible(result.entitlement, Date.parse(runtime.clock.now()))
           ? result.entitlement
           : await runtime.subscription.refresh();
-        if (eligible(entitlement, Date.parse(runtime.clock.now()))) {
-          haptic('success');
-          onAccess?.(entitlement);
-        } else restoreExisting = true;
+        haptic('success');
+        if (eligible(entitlement, Date.parse(runtime.clock.now()))) onAccess?.(entitlement);
+        else setConfirming(true);
       } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
       else if (result.type === 'already_subscribed') restoreExisting = true;
     } catch (error) {
@@ -127,7 +134,7 @@ export function PaywallScreen({
     setBusy('restore');
     try {
       if ((await restorePurchases(runtime.subscription, placement)) === 'notFound')
-        notify(subscriptionCopy.notFound);
+        notify(confirming ? copy.stillConfirming : subscriptionCopy.notFound);
       else {
         haptic('success');
         onAccess?.(runtime.subscription.entitlement());
@@ -144,7 +151,8 @@ export function PaywallScreen({
   const product = paywall?.products.find((item) => item.handle === selected);
   const press = () => {
     if (busy || operationInFlight.current) return;
-    if (!paywall) void load();
+    if (confirming) void restore();
+    else if (!paywall) void load();
     else void purchase();
   };
   const choose = (handle: string) => {
@@ -181,6 +189,13 @@ export function PaywallScreen({
       }
       footer={
         <>
+          {confirming ? (
+            <View style={{ paddingBottom: t.space.sm }}>
+              <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+                {copy.confirming}
+              </Label>
+            </View>
+          ) : (
           <View style={{ gap: t.space.md, paddingBottom: t.space.sm }}>
           <View style={{ gap: t.space.md, minHeight: planRowHeight * 2 + t.space.md }}>
             {pairs.map((pair, index) => {
@@ -205,8 +220,9 @@ export function PaywallScreen({
             </Label>
           ) : null}
           </View>
+          )}
           <PrimaryButton
-            label={paywall ? subscriptionCopy.continue : copy.retry}
+            label={confirming ? subscriptionCopy.restore : paywall ? subscriptionCopy.continue : copy.retry}
             loading={busy !== null}
             onPress={press}
           />

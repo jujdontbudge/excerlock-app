@@ -37,6 +37,7 @@ export default function SignInRoute() {
           reportError={reportRuntimeError}
           onContinue={complete}
           onExit={exit}
+          requireFreshSignIn
           firstVisit={fromWelcome}
           onCreateAccount={purpose === 'signIn' ? createAccount : undefined}
         />

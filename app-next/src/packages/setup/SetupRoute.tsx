@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../onboarding/onboardingStore';
 import { useRuntime } from '../ports/useRuntime';
@@ -13,7 +13,7 @@ export function SetupRoute() {
     runtime = useRuntime(),
     journey = useJourney(runtime),
     { step } = useLocalSearchParams<{ step?: string }>(),
-    userId = runtime.auth.identity().userId,
+    userId = useSyncExternalStore((listener) => runtime.auth.subscribeIdentity(listener), () => runtime.auth.identity().userId) ?? 'guest',
     noConditions = useRulesStore((state) => state.data.rules.length === 0),
     needsStagedPlan = currentJourney().entryIntent === 'onboarding' || noConditions,
     stagedPlanCommitted = useOnboardingStore((state) => state.data.answers.ruleCommitted !== false);
@@ -23,7 +23,7 @@ export function SetupRoute() {
       router.replace('/paywall');
       return;
     }
-    if (needsStagedPlan && !stagedPlanCommitted && userId) {
+    if (needsStagedPlan && !stagedPlanCommitted) {
       commitStagedPlan(userId, settingsStore.getState().data.units, {
         now: runtime.clock.now(),
         timezone: runtime.clock.timezone(),

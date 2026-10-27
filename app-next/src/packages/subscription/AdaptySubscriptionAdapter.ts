@@ -45,7 +45,7 @@ const CANCELLED = 2;
 
 export class AdaptySubscriptionAdapter implements SubscriptionPort {
   private observed: Entitlement = entitlementStore.getState().data.entitlement;
-  private complimentary: { userId: string; expiresAt: string } | null = null;
+  private complimentary = entitlementStore.getState().data.complimentary;
   private activation: Promise<void> | null = null;
   private listener: { remove(): void } | null = null;
   private userId: string | null = null;
@@ -89,7 +89,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     this.loaded = null;
     if (switching) {
       forgetObservedEntitlement();
-      this.complimentary = null;
+      this.setComplimentary(null);
       this.observed = { status: 'unknown', renewsAt: null };
       this.publish();
     }
@@ -100,7 +100,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   async reset(): Promise<void> {
     this.userId = null;
     this.loaded = null;
-    this.complimentary = null;
+    this.setComplimentary(null);
     forgetObservedEntitlement();
     this.observed = { status: 'unknown', renewsAt: null };
     this.publish();
@@ -254,6 +254,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     if (paid(this.observed) || !comp || comp.userId !== this.userId || Date.parse(comp.expiresAt) <= Date.now()) return this.observed;
     return { status: 'active', renewsAt: null, accessExpiresAt: comp.expiresAt, willRenew: false };
   }
+  private setComplimentary(grant: { userId: string; expiresAt: string } | null) {
+    this.complimentary = grant;
+    if (!this.disposed) entitlementStore.getState().patch({ complimentary: grant });
+  }
   private publish(): Entitlement {
     const entitlement = this.effective();
     if (!this.disposed) entitlementStore.getState().patch({ entitlement });
@@ -280,8 +284,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     if (!this.deps.complimentaryAccess || identity.isAnonymous) return;
     try {
       const expiresAt = await this.deps.complimentaryAccess(userId);
-      if (this.userId !== userId) return;
-      this.complimentary = expiresAt ? { userId, expiresAt } : null;
+      if (this.userId !== userId || !expiresAt) return;
+      this.setComplimentary({ userId, expiresAt });
       this.publish();
     } catch (error) {
       this.deps.reportError(error);
@@ -318,14 +322,16 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       return;
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Error('Integration identifier timed out');
     try {
       await Promise.race([
         this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Integration identifier timed out')), INTEGRATION_TIMEOUT_MS); }),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(timedOut), INTEGRATION_TIMEOUT_MS); }),
       ]);
       attempt.record('succeeded');
     } catch (error) {
-      attempt.record('failed', error);
+      if (error === timedOut) attempt.record('timed_out', undefined, 'timeout');
+      else attempt.record('failed', error);
       this.deps.reportError(error);
     } finally {
       if (timer) clearTimeout(timer);

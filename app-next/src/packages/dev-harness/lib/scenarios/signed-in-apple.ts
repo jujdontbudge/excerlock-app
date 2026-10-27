@@ -31,6 +31,10 @@ export const returningOfflineStaleProfile = base('returning-offline-stale-profil
   entitlement: { status: 'expired', renewsAt: null, accessExpiresAt: '2026-09-06T15:00:00.000Z' },
   launchSignInRequired: true,
 });
+export const returningOfflineRenewalDue = base('returning-offline-renewal-due', 'Returning offline subscriber whose renewal date passed', {
+  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
+  entitlement: { status: 'active', renewsAt: '2026-09-06T15:00:00.000Z', accessExpiresAt: '2026-09-06T15:00:00.000Z', willRenew: true },
+});
 export const reinstallKeychain = base('reinstall-keychain', 'Reinstall with saved account and receipt', {
   onboarding: 'fresh',
   profile: {},

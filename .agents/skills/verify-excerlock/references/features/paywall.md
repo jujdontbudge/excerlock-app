@@ -2,18 +2,19 @@
 id: paywall
 title: Paywall, trial and subscription
 routes: [paywall, settings/subscription]
-scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-integration-failed, identity-lab-integration-hangs, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, identity-lab-apple-linked, trial-reminder-three-days, trial-reminder-too-late, onboarding-offer-fallback-error, onboarding-offer-a, onboarding-offer-b]
-server: [POST /v1/subscription/resync, POST /v1/webhooks/adapty]
+scenarios: [fresh-install, trial-active, trial-expired, billing-issue, identity-lab-user-sync-failed, identity-lab-slow-cold-start, identity-lab-anonymous-failed, identity-lab-plans-failed, identity-lab-purchase-cancelled, identity-lab-integration-failed, identity-lab-integration-hangs, identity-lab-purchase-error-retry, identity-lab-purchase-busy, identity-lab-existing-subscription, identity-lab-restore-wrong-store, identity-lab-restore-error-retry, trial-reminder-three-days, trial-reminder-too-late, onboarding-offer-fallback-error, onboarding-offer-a]
+server: [POST /v1/webhooks/adapty]
 events: [paywall_viewed, checkout_attempt_started, checkout_stage_recorded, checkout_attempt_completed, paywall_error]
 depends: [launch]
 ---
 ## Sub-features
-- Client checkout diagnostics correlate one process-local attempt through identity, recovery, integration, StoreKit, result and entitlement verification. Exactly one completion reports the SDK outcome independently of paid admission; Adapty retains revenue ownership. `/dev` derives its Checkout labels from the emitted event log, checking IDs, terminal counts, property safety and timing. Inactive observations are a sheet proxy, not proof of Apple UI.
-- The Paywall requires verified paid admission before Setup or Home. Account and help stays reachable. Close returns an onboarding user to the step before the Paywall with answers kept, and anyone else to Welcome. Adapty placements cover onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $39.99/year", in both offers, and the right side shows the smaller weekly equivalent; when Adapty serves trial and no-trial twins, an offer with a trial shows only the trial plans and a no-trial offer only the no-trial plans, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $39.99/year" (or "Billed as …" without a trial), then automatic renewal/cancellation terms and the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy follow on the same scrollable screen. Account and help and Close remain available for every account, including plan-load failure; Close never grants admission: it returns an onboarding user to the step before the Paywall and anyone else to Welcome. The review is preview copy.
-- Purchase and restore are serialized and show a busy state. Cancel, error and not-found never grant access. Failed plan loading offers Try again. Unavailable verification with prior or unknown paid access replaces checkout with Try again; an unfinished purchase always blocks checkout (ADR 0087).
-- Settings → Manage subscription shows the plan status (trial, active, billing issue) and links to App Store management and restore.
-- The server mirrors entitlements from Adapty webhooks and resyncs on request.
+- Adapty on the phone is the only judge of Premium (`accessLevels.premium.isActive`). The server never gates access. A guest buys without signing in, and a successful purchase goes straight to Setup (or Home after a lapse). Signing in is optional and never follows a purchase.
+- Checkout diagnostics correlate one process-local attempt through identity, integration, StoreKit, result and entitlement verification. Exactly one completion reports the SDK outcome. `/dev` derives its Checkout labels from the emitted event log, checking IDs, terminal counts, property safety and timing. Inactive observations are a sheet proxy, not proof of Apple UI.
+- Close returns an onboarding user to the step before the Paywall with answers kept, and anyone else to Welcome. Close never grants access. Adapty placements cover onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $39.99/year", in both offers, and the right side shows the smaller weekly equivalent, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $39.99/year" (or "Billed as …" without a trial), then automatic renewal/cancellation terms and the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy follow on the same scrollable screen. Account and help and Close remain available for every account, including plan-load failure; Close never grants admission: it returns an onboarding user to the step before the Paywall and anyone else to Welcome. The review is preview copy.
+- Purchase and restore are single-flight and show a busy state; a purchase is never retried automatically. Cancel and error never grant access; error shows a retry message. `pending` (Ask to Buy) shows "Waiting for approval" and stays put. A successful purchase whose profile does not show Premium yet shows "Payment received. Confirming your purchase…" with Restore, and moves on by itself when Adapty reports access; it never shows the plans again. Failed plan loading offers Try again. An already-owned product restores.
+- Settings → Manage subscription shows the plan status (trial or active) and links to App Store management and restore. A billing issue keeps access only while Apple's grace period keeps the access level active; after that it opens the Paywall.
+- The server keeps Adapty webhooks for support and revenue only.
 
 ## How to get to it (user POV)
 Finish onboarding and the paywall appears. A subscriber reaches it through Settings → Manage subscription. A lapsed user sees the win-back paywall at launch.
@@ -28,57 +29,7 @@ actions: expect Yearly $39.99/year
 tap: Continue
 expect: Continue | Yearly $39.99/year
 then-open: /dev
-then-expect: lab_purchase {"result":"cancel","owner":"lab-checkout-1"} | lab_posthog_capture {"event":"checkout_attempt_started"} | lab_posthog_capture {"event":"checkout_stage_recorded"} | lab_posthog_capture {"event":"checkout_attempt_completed"} | Checkout 1 purchase cancelled · terminals 1 · joined yes · safe yes · timing yes | Checkout context 1 · placement onboarding · plan lab.annual | kind none · code none · sheet inactive · entitlement not_checked | Checkout stages 1 · identity_ready > recovery_journal > integration_attach > storekit > result > recovery_journal
-```
-
-```proof
-name: purchase-preflight-retries-without-relaunch
-scenario: identity-lab-purchase-preflight
-open: dev?journey=paywall
-tap: Continue
-expect: Continue with Apple
-then-open: /dev
-then-expect: Purchase operations 1 | lab_preflight {"activation":2,"identify":2,"flowRecovered":true,"journalRecovered":true} | Purchase recovery accountConnection
-```
-
-```proof
-name: purchase-interrupted-response-keeps-recovery
-scenario: identity-lab-purchase-response-interrupted
-open: dev?journey=paywall
-open-wait: 3
-actions: expect Yearly $39.99/year | tap Continue | open /dev | expect Purchase recovery pending | expect lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":1,"recovery":"pending"} | open /paywall | tap Continue
-expect: Continue with Apple
-then-open: /dev
-then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection | Checkout 1 purchase failed · terminals 1 · joined yes · safe yes · timing yes | failure storekit · kind transport · code 2005 · sheet inactive
-```
-
-```proof
-name: purchase-encoded-response-keeps-recovery
-scenario: identity-lab-purchase-response-encoding
-open: dev?journey=paywall
-actions: tap Continue | open /dev | expect Purchase recovery pending | expect lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":1,"recovery":"pending"} | open /paywall | tap Continue
-expect: Continue with Apple
-then-open: /dev
-then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection
-```
-
-```proof
-name: purchase-journal-confirm-can-retry
-scenario: identity-lab-purchase-journal-confirm
-open: dev?journey=paywall
-open-wait: 3
-actions: expect Yearly $39.99/year | tap Continue | open /dev | expect Purchase recovery pending | expect lab_journal_failure {"operation":"confirm"} | open /paywall | tap Continue
-expect: Continue with Apple
-then-open: /dev
-then-expect: Purchase operations 1 | Restore operations 1 | Purchase recovery accountConnection | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | failure recovery_journal · kind storage · code none · sheet inactive · entitlement not_checked
-```
-
-```proof
-name: purchase-journal-clear-can-retry
-scenario: identity-lab-purchase-journal-clear
-open: dev?journey=paywall
-actions: tap Continue | open /dev
-expect: Purchase operations 1 | Restore operations 0 | Purchase recovery none | lab_journal_failure {"operation":"clear"} | lab_journal_cleared {"attempt":2,"durable":"none"}
+then-expect: lab_purchase {"result":"cancel","owner":"lab-checkout-1"} | lab_posthog_capture {"event":"checkout_attempt_started"} | lab_posthog_capture {"event":"checkout_stage_recorded"} | lab_posthog_capture {"event":"checkout_attempt_completed"} | Checkout 1 purchase cancelled · terminals 1 · joined yes · safe yes · timing yes | Checkout context 1 · placement onboarding · plan lab.annual | Checkout stages 1 · identity_ready > integration_attach > storekit > result
 ```
 
 Dev controls change outcomes without touching StoreKit: add `&outcome=success|cancel|error` or `&restore=restored|notFound` to the dev URL. For example, `./excer sim open "dev?scenario=trial-expired&outcome=error"`.
@@ -101,10 +52,11 @@ absent: Free trial enabled | Enable free trial
 ```
 
 ```proof
-name: subscription-billing-issue
+name: billing-issue-after-grace-opens-paywall
 scenario: billing-issue
-open: /settings/subscription
-expect: Subscription | Billing issue | Manage in App Store | Restore purchases
+open: /
+expect: Continue | Restore purchases
+absent: Apps blocked until
 ```
 
 ```proof
@@ -133,7 +85,7 @@ name: identity-sync-retry
 scenario: identity-lab-user-sync-failed
 open: /paywall
 wait: 25
-expect: Lab annual $39.99/year · $39.99 / year | Lab monthly $9.99/month · $9.99 / month | Continue
+expect: Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week | Continue
 ```
 
 ```proof
@@ -151,7 +103,7 @@ name: identity-slow-cold-start
 scenario: identity-lab-slow-cold-start
 relaunch: true
 wait: 25
-expect: Lab annual $39.99/year · $39.99 / year | Lab monthly $9.99/month · $9.99 / month | Continue
+expect: Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week | Continue
 ```
 
 ```proof
@@ -159,7 +111,7 @@ name: identity-anonymous-retry
 scenario: identity-lab-anonymous-failed
 open: /paywall
 wait: 25
-expect: Lab annual $39.99/year · $39.99 / year | Lab monthly $9.99/month · $9.99 / month | Continue
+expect: Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week | Continue
 ```
 
 ```proof
@@ -167,7 +119,7 @@ name: identity-plans-retry
 scenario: identity-lab-plans-failed
 open: dev?journey=paywall
 wait: 25
-expect: Lab annual $39.99/year · $39.99 / year | Lab monthly $9.99/month · $9.99 / month | Continue
+expect: Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week | Continue
 absent: Retry loading plans | couldn't load
 ```
 
@@ -177,11 +129,12 @@ scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
-tap: Continue | Continue with Apple
+tap: Continue
 wait: 25
 expect: Allow Screen Time
+absent: Continue with Apple | Sign in to continue
 then-open: dev
-then-expect: Purchase recovery none | Purchase operations 1 | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"}
+then-expect: Journey setup · paid yes | Purchase operations 1 | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | entitlement active
 ```
 
 An attribution identifier failure never blocks checkout: a network error or a silent Adapty call still reaches Apple's sheet and Setup.
@@ -192,11 +145,11 @@ scenario: identity-lab-integration-failed
 open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
-tap: Continue | Continue with Apple
+tap: Continue
 wait: 25
 expect: Allow Screen Time
 then-open: dev
-then-expect: lab_integration {"result":"networkFailed"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Purchase recovery none | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Checkout integration 1 · failed · code 2005 · kind transport
+then-expect: lab_integration {"result":"networkFailed"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Checkout integration 1 · failed · code 2005 · kind transport
 ```
 
 ```proof
@@ -205,11 +158,11 @@ scenario: identity-lab-integration-hangs
 open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
-tap: Continue | Continue with Apple
+tap: Continue
 wait: 30
 expect: Allow Screen Time
 then-open: dev
-then-expect: lab_integration {"result":"hang"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Purchase recovery none | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Checkout integration 1 · timed_out · code none · kind timeout
+then-expect: lab_integration {"result":"hang"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Checkout integration 1 · timed_out · code none · kind timeout
 ```
 
 ```proof
@@ -226,22 +179,27 @@ then-expect: Journey app · paid yes · admitted yes | Checkout context 1 · pla
 ```
 
 ```proof
-name: identity-restore-to-required-signin
+name: identity-restore-to-setup
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall&restore=restored
-tap: Restore purchases | Continue with Apple
+open-wait: 3
+actions: expect Yearly $39.99/year
+tap: Restore purchases
 wait: 25
 expect: Allow Screen Time
+absent: Continue with Apple | Sign in to continue
 ```
 
 ```proof
 name: identity-purchase-cancelled
 scenario: identity-lab-purchase-cancelled
 open: dev?journey=paywall
+open-wait: 3
+actions: expect Yearly $39.99/year
 tap: Continue
 wait: 25
-expect: Continue | Lab annual $39.99/year · $39.99 / year
-absent: Choose a plan | Starting your plan | Please retry
+expect: Continue | Yearly $39.99/year · $0.77 / week
+absent: Choose a plan | Starting your plan | Please retry | Confirming your purchase
 ```
 
 ```proof
@@ -249,12 +207,12 @@ name: identity-purchase-error-retries-original-checkout
 scenario: identity-lab-purchase-error-retry
 open: dev?journey=paywall
 open-wait: 3
-actions: expect Yearly $39.99/year | tap Continue | open /dev | expect Checkout 1 purchase failed · terminals 1 · joined yes · safe yes · timing yes | expect paywall_error {"operation":"purchase"} | open /paywall | tap Continue | expect Continue with Apple | tap Continue with Apple
+actions: expect Yearly $39.99/year | tap Continue | open /dev | expect Checkout 1 purchase failed · terminals 1 · joined yes · safe yes · timing yes | expect paywall_error {"operation":"purchase"} | open /paywall | expect Yearly $39.99/year | tap Continue
 wait: 25
 expect: Allow Screen Time
-absent: could not finish | Starting your plan
+absent: could not finish | Starting your plan | Continue with Apple
 then-open: /dev
-then-expect: Journey setup · paid yes · admitted no | Active account Checkout | Purchase recovery none | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase_failure {"attempt":1,"owner":"lab-checkout-1","grants":0,"recovery":"none"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | subscription_proof_verified {"account":"lab-checkout-1","environment":"sandbox"} | Protected route mounts | None | Checkout 2 purchase success · terminals 1 · joined yes · safe yes · timing yes | failure storekit · kind vendor · code 1002 · sheet not_observed
+then-expect: Journey setup · paid yes | Purchase operations 2 | lab_purchase {"result":"error","owner":"lab-checkout-1"} | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Checkout 2 purchase success · terminals 1 · joined yes · safe yes · timing yes
 ```
 
 ```proof
@@ -266,9 +224,9 @@ actions: expect Yearly $39.99/year
 tap: Continue
 wait: 25
 expect: Continue | Yearly $39.99/year · $0.77 / week
-absent: still being confirmed | Check purchase status | pending approval
+absent: Allow Screen Time | Confirming your purchase
 then-open: /dev
-then-expect: Purchase recovery pending | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"pending","owner":"lab-checkout-1"} | Protected route mounts | None | Checkout 1 purchase pending · terminals 1 · joined yes · safe yes · timing yes | sheet inactive · entitlement not_checked
+then-expect: Journey paywall · paid no | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"pending","owner":"lab-checkout-1"} | Checkout 1 purchase pending · terminals 1 · joined yes · safe yes · timing yes
 ```
 
 ```proof
@@ -279,21 +237,23 @@ open-wait: 3
 actions: expect Yearly $39.99/year
 tap: Continue
 wait: 25
-expect: Sign in to continue
-absent: Payment received | being confirmed
+expect: Payment received. Confirming your purchase… | Restore purchases
+absent: No purchase found | Sign in to continue | Yearly $39.99/year · $0.77 / week
 then-open: /dev
-then-expect: Journey accountRecovery · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | lab_purchase {"result":"successWithoutAccess","owner":"lab-checkout-1"} | lab_purchase_profile {"owner":"lab-checkout-1","access":"none","grants":0} | Protected route mounts | None | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | sheet inactive · entitlement none
+then-expect: Journey paywall · paid no | Purchase operations 1 | Restore operations 0 | lab_purchase {"result":"successWithoutAccess","owner":"lab-checkout-1"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes
 ```
 
 ```proof
 name: identity-purchase-double-tap-is-serialized
 scenario: identity-lab-purchase-busy
 open: dev?journey=paywall
+open-wait: 3
+actions: expect Yearly $39.99/year
 tap: Continue
 wait: 25
-expect: Continue with Apple
+expect: Allow Screen Time
 then-open: /dev
-then-expect: Purchase recovery accountConnection | Purchase operations 1 | Restore operations 0 | Purchase serialization duplicate A subscription operation is already running restore A subscription operation is already running owner stable operation stable | lab_purchase {"result":"success","owner":"lab-checkout-1"} | Protected route mounts | None
+then-expect: Purchase operations 1 | Restore operations 0 | Purchase serialization duplicate | lab_purchase {"result":"success","owner":"lab-checkout-1"}
 ```
 
 ```proof
@@ -304,16 +264,18 @@ open-wait: 3
 actions: expect Yearly $39.99/year
 tap: Continue
 wait: 25
-expect: Continue with Apple
-absent: already has a subscription | Use existing subscription
+expect: Allow Screen Time
+absent: already has a subscription | Use existing subscription | Continue with Apple
 then-open: /dev
-then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 1 | Restore operations 1 | Existing subscription store lab.store.annual owner lab-checkout-1 selected lab-checkout-1 charge starts 0 | lab_purchase {"result":"alreadyOwned","owner":"lab-checkout-1"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None | Checkout 1 purchase already_subscribed · terminals 1 · joined yes · safe yes · timing yes | code 107 · sheet not_observed | Checkout 2 restore success · terminals 1 · joined yes · safe yes · timing yes
+then-expect: Journey setup · paid yes | Purchase operations 1 | Restore operations 1 | lab_purchase {"result":"alreadyOwned","owner":"lab-checkout-1"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Checkout 1 purchase already_subscribed · terminals 1 · joined yes · safe yes · timing yes | Checkout 2 restore success · terminals 1 · joined yes · safe yes · timing yes
 ```
 
 ```proof
 name: identity-restore-not-found
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall
+open-wait: 3
+actions: expect Yearly $39.99/year
 tap: Restore purchases
 wait: 25
 expect: No purchase found
@@ -324,34 +286,23 @@ absent: Restoring purchases
 name: restore-wrong-store-account-stays-unpaid
 scenario: identity-lab-restore-wrong-store
 open: dev?journey=paywall
-tap: Restore purchases
-wait: 25
-expect: No purchase found | Restore purchases
+open-wait: 3
+actions: expect Yearly $39.99/year | tap Restore purchases | open /dev | expect lab_restore {"result":"notFound","owner":"lab-checkout-1","source":"adapter"} | open /paywall
+expect: Continue | Restore purchases
 then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Restore operations 1 | Restore isolation wrong Store owner lab-user-a selected lab-checkout-1 transfers 0 | lab_restore {"result":"notFound","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
+then-expect: Journey paywall · paid no | Restore operations 1
 ```
 
 ```proof
 name: restore-failure-retries-original-account
 scenario: identity-lab-restore-error-retry
 open: dev?journey=paywall
-tap: Restore purchases
-wait: 25
-expect: That didn't go through. Please try again. | Restore purchases
-then-tap: Restore purchases
-then-open: /dev
-then-expect: Journey signIn · paid no · admitted no | Purchase recovery accountConnection | Restore operations 2 | lab_restore {"result":"error","owner":"lab-checkout-1","source":"adapter"} | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"} | Protected route mounts | None
-```
-
-```proof
-name: identity-account-switch-connects-checkout
-scenario: identity-lab-apple-linked
-open: dev?journey=paywall
-tap: Continue | Continue with Apple
+open-wait: 3
+actions: expect Yearly $39.99/year | tap Restore purchases | open /dev | expect lab_restore {"result":"error","owner":"lab-checkout-1","source":"adapter"} | expect paywall_error {"operation":"restore"} | open /paywall | expect Yearly $39.99/year | tap Restore purchases
 wait: 25
 expect: Allow Screen Time
-then-open: dev
-then-expect: Purchase recovery none | Purchase operations 1 | Restore operations 1 | lab_recovered_account {"provider":"apple","user":"lab-user-a"} | lab_adapty_identify {"user":"lab-user-a"} | lab_restore {"result":"restored","owner":"lab-user-a","source":"adapter"}
+then-open: /dev
+then-expect: Journey setup · paid yes | Restore operations 2 | lab_restore {"result":"restored","owner":"lab-checkout-1","source":"adapter"}
 ```
 
 ```proof
@@ -376,7 +327,7 @@ expect: Try again | Account and help | Close | Restore purchases | Terms of Use 
 absent: Free trial | Enable free trial | free trial | Loading plans
 then-tap: Try again
 then-open: /dev
-then-expect: paywall_error {"operation":"load"} | onboarding_trial_fallback
+then-expect: paywall_error {"operation":"load"}
 wait: 20
 ```
 
@@ -389,23 +340,14 @@ expect: Yearly $39.99/year · $0.77 / week | Monthly $9.99/month · $2.31 / week
 ```
 
 ```proof
-name: offer-b-checkout-selects-monthly-twin
-scenario: onboarding-offer-b
-open: /onboarding/S3b
-actions: expect Once you hit 10,000 steps | expect Once you hit 10,000 steps | tap Continue | expect Become the best version of yourself | tap Continue | expect Yearly $39.99/year · $0.77 / week | expect Billed as $39.99/year | tap Monthly $9.99/month · $2.31 / week | expect Billed as $9.99/month | tap Continue
-expect: Continue with Apple
-then-open: /dev
-then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly.notrial","trial":false} | Purchase operations 1 | Purchase recovery accountConnection
-```
-
-```proof
-name: offer-a-checkout-selects-trial-product
+name: checkout-selects-trial-product
 scenario: onboarding-offer-a
 open: /onboarding/S3c
 actions: expect 3-day free trial | tap Continue | expect Day 2 · Reminder | tap Continue | expect Yearly $39.99/year · $0.77 / week | tap Monthly $9.99/month · $2.31 / week | expect 3-day free trial, then $9.99/month | tap Continue
-expect: Continue with Apple
+expect: Apps blocked until
+absent: Continue with Apple
 then-open: /dev
-then-expect: lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly","trial":true} | Purchase operations 1 | Purchase recovery accountConnection
+then-expect: Journey app · paid yes | lab_offer_purchase {"plan":"com.johansardar.excerlock.premium.a.monthly","trial":true} | Purchase operations 1 | screen {"name":"/paywall"} | screen {"name":"/setup/X1"}
 ```
 
 ```proof
@@ -475,7 +417,7 @@ open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
 tap: Continue
-expect: Continue with Apple
+expect: Allow Screen Time
 then-open: /dev
 then-expect: lab_posthog_capture {"event":"checkout_attempt_completed"} | lab_checkout_analytics {"result":"throw"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Purchase operations 1
 ```
@@ -487,7 +429,7 @@ open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
 tap: Continue
-expect: Continue with Apple
+expect: Allow Screen Time
 then-open: /dev
 then-expect: lab_posthog_capture {"event":"checkout_attempt_completed"} | lab_checkout_analytics {"result":"reject"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Purchase operations 1
 ```
@@ -499,7 +441,7 @@ open: dev?journey=paywall
 open-wait: 3
 actions: expect Yearly $39.99/year
 tap: Continue
-expect: Continue with Apple
+expect: Allow Screen Time
 then-open: /dev
 then-expect: lab_posthog_capture {"event":"checkout_attempt_completed"} | lab_checkout_analytics {"result":"hang"} | Checkout 1 purchase success · terminals 1 · joined yes · safe yes · timing yes | Purchase operations 1
 ```
@@ -510,7 +452,8 @@ then-expect: lab_posthog_capture {"event":"checkout_attempt_completed"} | lab_ch
 - In a dev build the paywall is a local stand-in with dash prices. Seeing real prices means the real runtime is running (see the launch Gotchas).
 - A new PostHog flag, or a new consumer of `paywall_variant`, is App Store submission material, never an OTA (`docs/ota.md`, `excer check` `flag-registry`).
 - The win-back paywall appears when the first live entitlement of a launch is `expired`, even though the persisted store still says `trial` from the last run (the real app hydrates `trial`, then Adapty's first profile says `expired`). `trial-lapsed-while-closed` reproduces it: Home mounts on the hydrated `trial`, and the fake publishes `expired` 20 s after launch (`entitlementTimeline`). `trial-lapses-in-session` publishes a live `trial` at 1 s and `expired` at 20 s, which must show the in-app placement instead. Both proofs read the placement from the fake `paywall_viewed` event on `dev`. A lapse observed live after a live `trial`/`active` in the same session (`subscription/winbackSession.ts`) does not trigger it. Do not deep-link after the relaunch: opening a URL rebuilds navigation and remounts Home.
-- The `identity-lab-*` scenarios swap demo mode's `AuthFake` and `SubscriptionFake` for the real `createAuthServices` (SupabaseAuthAdapter + IdentityCoordinator) and `AdaptySubscriptionAdapter`, over a scripted Supabase client, a scripted `PUT /v1/user` and a scripted Adapty SDK (`dev-harness/lib/fakes/IdentityLab.ts`). The scenario's `identityLab` script makes one edge fail once or run slow (8 s). They reproduce App Review 2.1(b) on Build 12: a user-sync failure at launch left the identity spine unready for the whole session, and a cold start onto the paywall raced the spine. Plans are named "Lab annual" / "Lab monthly" so a lab screenshot is never mistaken for StoreKit data. Checkout, account A and account B have independent ownership. Delayed-callback scenarios queue immutable purchase/restore profiles and deliver them after an account transition. They prove identity generation, journal and admission gating only, not StoreKit, Adapty transfer behavior or a sandbox account.
-- The dev client's floating tools button (gear) sits on top of the paywall's Restore link; turn it off in the dev menu (Tools button) before `identity-restore-not-found`, or the tap opens the dev menu.
+- The `identity-lab-*` scenarios swap demo mode's `AuthFake` and `SubscriptionFake` for the real `createAuthServices` (SupabaseAuthAdapter + IdentityCoordinator) and `AdaptySubscriptionAdapter`, over a scripted Supabase client, a scripted `PUT /v1/user` and a scripted Adapty SDK (`dev-harness/lib/fakes/IdentityLab.ts`). The scenario's `identityLab` script makes one edge fail once or run slow (8 s). They reproduce App Review 2.1(b) on Build 12: a user-sync failure at launch left the identity spine unready for the whole session, and a cold start onto the paywall raced the spine. Plans are named "Lab annual" / "Lab monthly" so a lab screenshot is never mistaken for StoreKit data. Checkout, account A and account B have independent ownership. Delayed-callback scenarios queue immutable purchase/restore profiles and deliver them after an account transition. They prove identity generation and purchase handling only, not StoreKit, Adapty transfer behavior or a sandbox account.
+- The dev client's floating tools button (gear) sits exactly on the paywall's Close button, so a Close tap opens the dev menu. Turn it off once per simulator: `xcrun simctl --set ~/.local/share/excer/worker-simulators spawn <udid> defaults write com.johansardar.excerlock EXDevMenuShowFloatingActionButton -bool false`, then relaunch.
 
-- ADR 0078: the onboarding offer is retained from its early Adapty response, including product handles and impression variation. B requires `trial: false` and the two approved `.notrial` twins. A includes both base and twin plans for the toggle; introductory ineligibility remains A with ordinary billing. Notification timing diagnostics run the production `trialReminderPlan`; they are not proof of iOS delivery.
+- The onboarding offer is retained from its early Adapty response. There are no trial/no-trial arms; trial wording comes only from the offer StoreKit returns. Notification timing diagnostics run the production `trialReminderPlan`; they are not proof of iOS delivery.
+- A fresh worker simulator has no location. The gym fake waits for a location fix while the scenario loads, so `excer demo` silently keeps the previous scenario. Set one first: `xcrun simctl --set ~/.local/share/excer/worker-simulators location <udid> set 40.1106,-88.2073`.

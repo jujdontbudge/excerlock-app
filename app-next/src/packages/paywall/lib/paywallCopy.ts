@@ -18,5 +18,7 @@ export const paywallCopy = {
   billedAs: (price: string) => `Billed as ${price}`,
   trialThenBilled: (length: string, price: string) => `${length} free trial, then ${price}`,
   retry: 'Try again',
+  confirming: 'Payment received. Confirming your purchase…',
+  stillConfirming: 'Still confirming with the App Store. Try Restore purchases again in a moment.',
   account: 'Account and help',
 } as const;

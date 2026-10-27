@@ -29,25 +29,28 @@ export const beginPaywall = () => enter('paywall');
 export const beginSignIn = () => enter('signIn');
 export const currentJourney = snapshot;
 
+const RENEWAL_OFFLINE_GRACE_MS = 3 * 86_400_000;
+
 export function eligible(entitlement: Entitlement, now = Date.now()) {
   if (entitlement.status !== 'active' && entitlement.status !== 'trial') return false;
   if (entitlement.isLifetime) return true;
-  const end = entitlement.accessExpiresAt ?? entitlement.renewsAt;
-  return !end || (Number.isFinite(Date.parse(end)) && Date.parse(end) > now);
+  const end = Date.parse(entitlement.accessExpiresAt ?? entitlement.renewsAt ?? '');
+  if (Number.isNaN(end)) return !(entitlement.accessExpiresAt ?? entitlement.renewsAt);
+  return end + (entitlement.willRenew ? RENEWAL_OFFLINE_GRACE_MS : 0) > now;
 }
 
-const access = (entitlement: Entitlement) =>
-  entitlement.status === 'unknown' ? 'checking' : eligible(entitlement) ? 'paid' : 'unpaid';
+const access = (runtime: Runtime, entitlement: Entitlement = runtime.subscription.entitlement()) =>
+  entitlement.status === 'unknown' ? 'checking' : eligible(entitlement, Date.parse(runtime.clock.now())) ? 'paid' : 'unpaid';
 
 export function admitPaid(runtime: Runtime, setupComplete: boolean): boolean {
-  if (access(runtime.subscription.entitlement()) !== 'paid') return false;
+  if (access(runtime) !== 'paid') return false;
   enter(setupComplete ? 'app' : 'setup');
   return true;
 }
 
 export function resumeLaunch(runtime: Runtime, progress: { setupComplete: boolean; step: string }) {
   if (state.phase !== 'launch') return;
-  const status = access(runtime.subscription.entitlement());
+  const status = access(runtime);
   if (progress.setupComplete && status !== 'unpaid') return enter('app');
   if (progress.setupComplete) return enter('paywall');
   if (status === 'paid' && progress.step === 'P') return enter('setup');
@@ -57,7 +60,7 @@ export function resumeLaunch(runtime: Runtime, progress: { setupComplete: boolea
 }
 
 export function finishSetup(runtime: Runtime): boolean {
-  if (state.phase !== 'setup' || access(runtime.subscription.entitlement()) === 'unpaid') return false;
+  if (state.phase !== 'setup' || access(runtime) === 'unpaid') return false;
   enter('app');
   return true;
 }
@@ -66,9 +69,9 @@ export function forgetAccount() {
   beginWelcome();
 }
 
-export function useJourney(_runtime: Runtime) {
+export function useJourney(runtime: Runtime) {
   const current = useSyncExternalStore(subscribe, snapshot, snapshot);
-  const status = access(useEntitlementStore((s) => s.data.entitlement));
+  const status = access(runtime, useEntitlementStore((s) => s.data.entitlement));
   const paid = status !== 'unpaid';
   return {
     ...current,
