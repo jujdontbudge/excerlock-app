@@ -20,6 +20,21 @@ export const paywallCopy = {
   retry: 'Try again',
   confirming: 'Payment received. Confirming your purchase…',
   stillConfirming: 'Still confirming with the App Store. Try Restore purchases again in a moment.',
+  closeOffer: {
+    eyebrow: 'ONE TIME OFFER',
+    never: 'You will never see this again.',
+    discount: 'DISCOUNT',
+    expires: 'THIS OFFER WILL EXPIRE SOON',
+    gone: (percent: number) => `Once you close your one-time offer, it's gone! Save ${percent}% with the yearly plan.`,
+    plan: 'Yearly',
+    perMonth: (price: string) => `${price}/mo`,
+    badge: (length: string) => `${length} free trial`,
+    billed: (price: string, length: string | null, anchor: string) =>
+      length ? `Billed ${price}/year after ${length} free trial · vs ${anchor}/month` : `Billed ${price}/year · vs ${anchor}/month`,
+    claim: 'CLAIM YOUR OFFER NOW',
+    percent: (value: number) => `${value}%`,
+    a11y: (percent: number) => `${percent}% discount`,
+  },
   noPurchase: {
     title: 'No purchase found',
     body: 'This Apple ID has no ExcerLock subscription to restore.',

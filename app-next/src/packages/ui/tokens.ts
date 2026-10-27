@@ -73,6 +73,7 @@ export const tokens = {
     metric: { fontSize: 48, lineHeight: 58, fontFamily: font.bold },
     display: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
     hero: { fontSize: 50, lineHeight: 60, fontFamily: font.extraBold },
+    deal: { fontSize: 96, lineHeight: 116, fontFamily: font.extraBold },
     brand: { fontSize: 31, lineHeight: 38, fontFamily: font.extraBold },
     metricSmall: { fontSize: 30, lineHeight: 36, fontFamily: font.bold },
     section: { fontSize: 22, lineHeight: 31, fontFamily: font.bold },

@@ -6,7 +6,9 @@ import type { PaywallVariant } from '../telemetry/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
 import { useRouter } from 'expo-router';
-import { admitPaid, beginOnboarding, beginWelcome } from '../journey/index';
+import { admitPaid } from '../journey/index';
+import { leavePaywall } from './lib/leavePaywall';
+import { closeOfferAvailable, rememberMonthlyAnchor } from './lib/closeOffer';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
@@ -44,22 +46,18 @@ export function PaywallSlot() {
     router.replace(setupComplete ? '/(tabs)/home' : '/setup/X1');
   };
   const back = () => {
-    const answeredOnboarding = Object.keys(useOnboardingStore.getState().data.answers).length > 0;
-    if (setupComplete || !answeredOnboarding) {
-      beginWelcome();
-      router.replace('/onboarding/O01');
-      return;
-    }
-    const step = runtime.onboardingOffer?.snapshot().trialAvailable === false ? 'S3e' : 'S3d';
-    useOnboardingStore.getState().patch({ step, complete: false });
-    beginOnboarding();
-    router.replace(`/onboarding/${step}`);
+    if (placement === 'onboarding' && closeOfferAvailable()) router.push('/close-offer');
+    else leavePaywall(runtime, router);
+  };
+  const onLoaded = (paywall: SubscriptionPaywall) => {
+    if (paywall.placement === 'onboarding') rememberMonthlyAnchor(paywall.products);
+    setLoaded(paywall);
   };
   return (
     <PaywallScreen
       placement={placement}
       variantKey={assignment?.variant ?? 'control'}
-      onLoaded={setLoaded}
+      onLoaded={onLoaded}
       reportError={reportError}
       onAccess={onAccess}
       onClose={back}

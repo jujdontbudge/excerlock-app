@@ -11,13 +11,15 @@ export type PaywallProduct = {
   localizedPrice: string;
   localizedPeriod: string;
   localizedWeeklyPrice: string | null;
+  localizedMonthlyPrice: string | null;
+  priceAmount: number | null;
   periodUnit: string | null;
   offerLabel: string | null;
   trialOffer?: TrialOffer | null;
   recommended: boolean;
 };
 export type SubscriptionPaywall = {
-  placement: 'onboarding' | 'in_app' | 'winback';
+  placement: 'onboarding' | 'in_app' | 'winback' | 'close_offer';
   title: string;
   body: string;
   flowVariationId: string;

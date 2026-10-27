@@ -1,6 +1,6 @@
 import type { EventSpecMap } from '../types'
 
-export type PaywallPlacement = 'onboarding' | 'in_app' | 'winback'
+export type PaywallPlacement = 'onboarding' | 'in_app' | 'winback' | 'close_offer'
 
 export type PaywallOperation = 'load' | 'purchase' | 'restore'
 

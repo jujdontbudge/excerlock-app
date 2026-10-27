@@ -49,6 +49,7 @@ export function RootNavigator() {
           </Stack.Protected>
           <Stack.Protected guard={journey.phase === 'paywall'}>
             <Stack.Screen name="paywall" options={{ presentation: 'card', gestureEnabled: false }} />
+            <Stack.Screen name="close-offer" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
           </Stack.Protected>
           <Stack.Protected guard={journey.phase === 'setup' && journey.paid}>
             <Stack.Screen name="setup/[step]" />

@@ -45,6 +45,31 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
     refresh: async () => entitlement(),
     loadPaywall: async (nextPlacement) => {
       placement = nextPlacement;
+      if (nextPlacement === 'close_offer')
+        return {
+          placement: nextPlacement,
+          title: 'One time offer',
+          body: '',
+          flowVariationId: 'fake',
+          generation: 0,
+          products: [
+            {
+              handle: 'fake:annual-offer',
+              vendorProductId: 'fake.annual.offer',
+              title: 'Annual',
+              detail: '',
+              localizedPrice: '$29.99',
+              localizedPeriod: 'year',
+              localizedWeeklyPrice: '$0.58',
+              localizedMonthlyPrice: '$2.50',
+              priceAmount: 29.99,
+              periodUnit: 'year',
+              offerLabel: fakeOffer.label,
+              trialOffer: fakeOffer,
+              recommended: true,
+            },
+          ],
+        };
       return {
         placement: nextPlacement,
         title: 'Choose your plan',
@@ -60,6 +85,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
             localizedPrice: '$39.99',
             localizedPeriod: 'year',
             localizedWeeklyPrice: '$0.77',
+            localizedMonthlyPrice: '$3.33',
+            priceAmount: 39.99,
             periodUnit: 'year',
             offerLabel: fakeOffer.label,
             trialOffer: fakeOffer,
@@ -73,6 +100,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
             localizedPrice: '$9.99',
             localizedPeriod: 'month',
             localizedWeeklyPrice: '$2.31',
+            localizedMonthlyPrice: '$9.99',
+            priceAmount: 9.99,
             periodUnit: 'month',
             offerLabel: fakeOffer.label,
             trialOffer: fakeOffer,
@@ -86,6 +115,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
             localizedPrice: '$39.99',
             localizedPeriod: 'year',
             localizedWeeklyPrice: '$0.77',
+            localizedMonthlyPrice: '$3.33',
+            priceAmount: 39.99,
             periodUnit: 'year',
             offerLabel: null,
             recommended: false,
@@ -98,6 +129,8 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
             localizedPrice: '$9.99',
             localizedPeriod: 'month',
             localizedWeeklyPrice: '$2.31',
+            localizedMonthlyPrice: '$9.99',
+            priceAmount: 9.99,
             periodUnit: 'month',
             offerLabel: null,
             recommended: false,

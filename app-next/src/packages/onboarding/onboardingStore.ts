@@ -12,6 +12,7 @@ export type OnboardingState = {
   setupStep: string;
   setupComplete: boolean;
   winbackDeclined: boolean;
+  closeOfferSeen: boolean;
   extraRules: Rule[];
   offer: OnboardingOffer | null;
 };
@@ -23,7 +24,7 @@ const answers = (value: unknown) =>
     : v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x) || v.array(v.text)(x));
 export const onboardingStore = createPersistedStore<OnboardingState>(
   'onboarding',
-  { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false, winbackDeclined: false, extraRules: [], offer: null },
+  { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false, winbackDeclined: false, closeOfferSeen: false, extraRules: [], offer: null },
   {
     step,
     answers,
@@ -31,6 +32,7 @@ export const onboardingStore = createPersistedStore<OnboardingState>(
     setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done)$/.test(value),
     setupComplete: v.bool,
     winbackDeclined: v.bool,
+    closeOfferSeen: v.bool,
     extraRules: (value) => Array.isArray(value) && value.every((rule) => validateRule(rule).length === 0),
     offer: v.nullable(v.shape({
       arm: v.oneOf(['a', 'b']),
