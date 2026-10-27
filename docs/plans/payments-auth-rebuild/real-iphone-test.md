@@ -4,10 +4,11 @@ About 10 minutes on Johan's iPhone 13 with a Sandbox Apple ID. Run it after the 
 
 ## Before the run
 
-1. Dashboard changes, each with Johan's go-ahead:
-   - Supabase: anonymous sign-ins on; manual identity linking on; email auto-confirm off; the "Change email address" template sends the six-digit `{{ .Token }}`.
-   - Adapty: "Sharing paid access between user accounts" = Enabled for production and sandbox; the two-product paywall on `onboarding` and `in_app`.
-   - App Store Connect: 3-day trial on both `.t3` products.
+1. Dashboard state, checked 2026-10-27:
+   - Supabase: done. Anonymous sign-ins and manual identity linking were already on; email auto-confirm turned off and the "Change email address" template now sends the six-digit `{{ .Token }}` (2026-10-27).
+   - App Store Connect: done. Both `.t3` products have a 3-day free trial in all 175 territories; billing grace period turned on, 16 days, paid-to-paid renewals, production and sandbox (2026-10-27).
+   - Adapty: `onboarding` and `in_app` already show one paywall to 100% (annual and monthly `.t3` with their no-trial twins, which the app pairs). Removing the twins waits until the OTA has shipped. "Sharing paid access between user accounts" is not visible to the CLI: check it is Enabled in the Adapty dashboard (App settings → General).
+   - Sentry: alert rules on the `alert` tag still to create in the dashboard; the CLI logins lack the alert-write scope.
 2. On the iPhone: Settings → Developer → Sandbox Apple Account, signed in with a fresh Sandbox tester. A second Sandbox tester is not needed.
 3. Make one existing ExcerLock test account with an email Johan can read (sign in with that email once in a Debug build, then sign out). That is account B.
 4. Build: a Debug dev client of branch `rebuild/payments-auth` installed with `xcrun devicectl device install app`, loading JS from this worktree's Metro, pointed at production Supabase, Adapty sandbox and `api.excerlock.com` (or a local server). The OTA itself is never used for the test.
