@@ -41,3 +41,7 @@ Runtimes 4–7 (1.0 and 1.0.1) still show the link; they cannot receive this bun
 ## OTA: one-time close offer
 
 `39cf0e28` to runtime 8, group `7bb3c9e6-4524-4cc8-986c-aa835860eb87`, update `01a17f43-f78e-7295-8a63-818b20b7b41d`, tag `ota-runtime8-20261027-39cf0e28`. The first Close on the onboarding Paywall opens a one-time offer for `premium.annual.2999.t3` (ADR 0093). Adapty: new paywall `f73eb135-110b-48dd-a681-456e548c587f` (that product only) on new placement `close_offer` (`9ca9509a-b84f-4bfe-9c5f-0207340c1f74`), one audience, no experiment; other placements untouched. `./excer check` (24 checks) and the ship gate passed. Proofs on worker simulator `ExcerLock-payauth`: `paywall/close-offer-once`, `paywall/close-offer-claim-to-setup`, `paywall/close-offer-layout`. Not verified: the live Adapty placement serving through StoreKit on a device.
+
+## OTA: orange close offer
+
+`b845a7b1` to runtime 8, group `176be71c-8787-4972-8b03-355d687c013c`, update `01a17f6f-2102-796c-a981-7e40d640c058`, tag `ota-runtime8-20261027-b845a7b1`. Redesigns the close offer (orange, white cards, "75% OFF FOREVER", "12mo · $29.99", "I'd rather pay full price"), removes the billed line, and reloads the Paywall's plans when the user returns to it from the offer. `./excer check` (24 checks) and the ship gate passed. Proofs on worker simulator `ExcerLock-payauth`: `paywall/close-offer-once`, `paywall/close-offer-claim-to-setup`, `paywall/close-offer-layout` (after fixing two centring faults), `paywall/close-offer-full-price-returns-to-paywall`.
