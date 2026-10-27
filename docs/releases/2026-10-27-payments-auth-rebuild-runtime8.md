@@ -31,3 +31,9 @@ Real-iPhone test before release: `docs/plans/payments-auth-rebuild/real-iphone-t
 - Adapty sharing setting: not visible to the CLI.
 - Rotating `ADAPTY_SECRET_KEY` and `ADAPTY_WEBHOOK_SECRET`: deferred by the owner.
 - On-device proof that installs from the App Store receive the update (`docs/ota.md` release ritual step 3).
+
+## Follow-up OTA — Paywall account link removed (runtime 8)
+
+`d690ee6b` to runtime 8, group `607070b8-1b15-44ec-8612-7e686aa9d185`, update `01a17eec-371c-7f93-b0a5-ffb5297aae7a`, tag `ota-runtime8-20261027-d690ee6b`. Removes "Account and help" from the Paywall and moves Close onto the headline line; Restore purchases with nothing found opens "No purchase found" with Account and deletion (ADR 0092). `./excer check` (24 checks, including the new `paywall-no-account-link`) and the ship gate passed. Proofs on worker simulator `ExcerLock-payauth`: `paywall/no-account-link-on-paywall`, `paywall/restore-nothing-offers-account`, `paywall/offer-fallback-outage-keeps-retry`, and the twelve rerouted `account` proofs (`save-with-email-keeps-account` passed on its second run).
+
+Runtimes 4–7 (1.0 and 1.0.1) still show the link; they cannot receive this bundle.
