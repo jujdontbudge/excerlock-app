@@ -3,7 +3,7 @@ id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
 scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-save, identity-lab-existing-apple, identity-lab-existing-email, identity-lab-email-rate-limited, identity-lab-provider-attempts, identity-lab-apple-unknown]
-server: [PUT /v1/user, DELETE /v1/user, POST /v1/subscription/resync]
+server: [PUT /v1/user, DELETE /v1/user, GET /v1/subscription/complimentary]
 events: []
 depends: [setup]
 ---
@@ -14,7 +14,7 @@ depends: [setup]
 - Welcome → Sign in uses the same flow but switches without asking, because the person said they already have an account. A new identity simply saves the guest.
 - Account screen: save, sign out and delete. Sign out and delete reset onboarding and start a fresh guest; a relaunch opens Welcome.
 - An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
-- Complimentary Premium is read from `POST /v1/subscription/resync` after an account loads. It is kept on the device until its expiry or until another account signs in.
+- Complimentary Premium is read from `GET /v1/subscription/complimentary` after an account loads. `POST /v1/subscription/resync` stays only for App Store builds that still gate on it. It is kept on the device until its expiry or until another account signs in.
 
 ## How to get to it (user POV)
 Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface. Welcome → Sign in.
@@ -31,7 +31,7 @@ actions: tap Account and help | tap Account and deletion | tap Save your account
 wait: 30
 expect: Restore purchases
 then-open: /dev
-then-expect: lab_link_identity {"provider":"apple","result":"ok","user":"lab-checkout-1"} | Active account Checkout | Onboarding plan | Staged
+then-expect: lab_link_identity {"provider":"apple","result":"ok","user":"lab-checkout-1"} | auth_started {"provider":"apple","operation":"save"} | auth_completed {"provider":"apple","operation":"save","result":"saved"} | Active account Checkout | Onboarding plan | Staged
 ```
 
 ```proof
@@ -76,7 +76,7 @@ actions: tap Account and help | tap Account and deletion | tap Save your account
 wait: 30
 expect: Allow Screen Time
 then-open: /dev
-then-expect: lab_link_identity {"provider":"apple","result":"conflict","user":"lab-checkout-1"} | lab_signed_in {"provider":"apple","user":"lab-existing"} | lab_adapty_identify {"user":"lab-existing"} | Active account Existing
+then-expect: lab_link_identity {"provider":"apple","result":"conflict","user":"lab-checkout-1"} | auth_completed {"provider":"apple","operation":"save","result":"existing_account"} | auth_completed {"provider":"apple","operation":"switch","result":"switched"} | lab_signed_in {"provider":"apple","user":"lab-existing"} | lab_adapty_identify {"user":"lab-existing"} | Active account Existing
 ```
 
 ```proof

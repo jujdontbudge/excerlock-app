@@ -37,6 +37,7 @@ export type CheckoutCompletionProps = CheckoutAttemptProps & {
 export const paywallEvents = {
   paywall_viewed: { owner: 'client', transmittedProperties: ['placement', 'has_trial', 'variation_id', 'offer_arm', 'offer_source'] },
   paywall_error: { owner: 'client', transmittedProperties: ['operation'] },
+  paywall_closed: { owner: 'client', transmittedProperties: ['placement'] },
   checkout_attempt_started: { owner: 'client', transmittedProperties: ['attempt_id', 'operation', 'placement', 'plan_id'] },
   checkout_stage_recorded: { owner: 'client', transmittedProperties: ['attempt_id', 'operation', 'placement', 'plan_id', 'stage', 'stage_result', 'elapsed_ms', 'failure_code', 'failure_kind'] },
   checkout_attempt_completed: { owner: 'client', transmittedProperties: ['attempt_id', 'operation', 'placement', 'plan_id', 'outcome', 'stage', 'failing_stage', 'failure_kind', 'failure_code', 'duration_ms', 'storekit_ms', 'sheet_observation', 'entitlement_result'] },
@@ -45,6 +46,7 @@ export const paywallEvents = {
 export interface PaywallEventProps {
   paywall_viewed: { placement: PaywallPlacement; has_trial: boolean; variation_id?: string; offer_arm?: 'a' | 'b'; offer_source?: 'adapty' | 'fallback' }
   paywall_error: { operation: PaywallOperation }
+  paywall_closed: { placement: PaywallPlacement }
   checkout_attempt_started: CheckoutAttemptProps
   checkout_stage_recorded: CheckoutStageProps
   checkout_attempt_completed: CheckoutCompletionProps

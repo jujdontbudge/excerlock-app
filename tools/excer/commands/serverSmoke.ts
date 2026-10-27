@@ -43,7 +43,7 @@ async function listen(server: Server): Promise<number> {
 
 type AdaptyStubMode = 'ok' | 'rateLimited' | 'failed' | 'malformed' | 'timeout';
 
-function startVendorStub(calls: StubCall[], adaptyModes: Map<string, AdaptyStubMode>): Server {
+function startVendorStub(calls: StubCall[], adaptyModes: Map<string, AdaptyStubMode>, confirmedEmails: Map<string, string>): Server {
   return createServer((request, response) => {
     calls.push({ method: request.method ?? '', path: request.url ?? '' });
     request.resume();
@@ -64,6 +64,12 @@ function startVendorStub(calls: StubCall[], adaptyModes: Map<string, AdaptyStubM
       }
       if (mode === 'malformed') {
         response.end('{');
+        return;
+      }
+      const adminUser = request.method === 'GET' ? /\/auth\/v1\/admin\/users\/([^/?]+)/.exec(request.url ?? '')?.[1] : undefined;
+      const email = adminUser ? confirmedEmails.get(decodeURIComponent(adminUser)) : undefined;
+      if (adminUser && email) {
+        response.end(JSON.stringify({ id: decodeURIComponent(adminUser), is_anonymous: false, email, email_confirmed_at: new Date().toISOString() }));
         return;
       }
       response.end(request.url?.includes('/persons/bulk_delete/') ? '{"deletion_errors":[]}' : '{}');
@@ -128,7 +134,9 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
   const root = resolve(option(args, 'root') ?? serverRoot);
   const calls: StubCall[] = [];
   const adaptyModes = new Map<string, AdaptyStubMode>();
-  const stub = startVendorStub(calls, adaptyModes);
+  const confirmedEmails = new Map<string, string>();
+  const stub = startVendorStub(calls, adaptyModes, confirmedEmails);
+  let serverLog = '';
   let server: ChildProcess | undefined;
   let failures = 0;
   const expect = (ok: boolean, line: string, detail?: string) => {
@@ -178,7 +186,8 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
         PORT: String(apiPort),
         SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: authorizationEnvironment,
       };
-      server = spawn('node', [join(root, 'dist', 'index.js')], { cwd, env: processEnvironment, stdio: 'ignore' });
+      server = spawn('node', [join(root, 'dist', 'index.js')], { cwd, env: processEnvironment, stdio: ['ignore', 'pipe', 'ignore'] });
+      server.stdout?.on('data', (chunk: Buffer) => { serverLog += chunk.toString(); });
       base = `http://127.0.0.1:${apiPort}`;
       await waitForHealth(base, server);
     };
@@ -227,6 +236,29 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
     expect(provision.status === 204, `PUT /v1/user → ${provision.status}`, provision.text);
     const again = await call('PUT', '/v1/user', token);
     expect(again.status === 204, `PUT /v1/user again (idempotent) → ${again.status}`, again.text);
+    const complimentaryNoToken = await call('GET', '/v1/subscription/complimentary');
+    expect(complimentaryNoToken.status === 401, `GET /v1/subscription/complimentary without a token → ${complimentaryNoToken.status}`, complimentaryNoToken.text);
+    const noGrant = await call('GET', '/v1/subscription/complimentary', token);
+    expect(noGrant.status === 200 && JSON.parse(noGrant.text).complimentary === null, `no grant reads as no complimentary access → ${noGrant.status}`, noGrant.text);
+    confirmedEmails.set(userId, 'smoke-grant@example.test');
+    sql(`insert into complimentary_access_grants (id, email, environment, granted_by, granted_at, expires_at) values ('smoke-grant', 'smoke-grant@example.test', 'production', 'smoke', now(), now() + interval '10 days')`);
+    const granted = await call('GET', '/v1/subscription/complimentary', token);
+    const grantedBody = granted.status === 200 ? JSON.parse(granted.text) as { accountId?: string; complimentary?: { expiresAt?: string } | null } : {};
+    const grantedUntil = Date.parse(grantedBody.complimentary?.expiresAt ?? '');
+    expect(
+      granted.status === 200 && grantedBody.accountId === userId && grantedUntil > Date.now() && grantedUntil <= Date.now() + 24 * 3_600_000 + 60_000,
+      `a confirmed email's grant is read without Adapty, capped at 24 hours → ${granted.status}`,
+      granted.text,
+    );
+    const matched = sql(`select coalesce(matched_user_id, '<null>') from complimentary_access_grants where id = 'smoke-grant'`);
+    expect(matched === userId, `the grant row records the matched account (${matched === userId ? 'matched' : matched})`);
+    expect(!calls.some((entry) => entry.path.includes(`/profile/`) && entry.path.includes(userId)), 'the complimentary read never calls Adapty');
+    sql(`update complimentary_access_grants set revoked_at = now(), revoked_by = 'smoke' where id = 'smoke-grant'`);
+    confirmedEmails.delete(userId);
+    const logLines = serverLog.split('\n').filter(Boolean).map((line) => { try { return JSON.parse(line) as Record<string, unknown>; } catch { return {}; } });
+    const logged = logLines.find((line) => line.msg === 'request' && line.route === '/v1/subscription/complimentary' && line.status === 200 && line.user === userId);
+    expect(Boolean(logged && typeof logged.ms === 'number' && typeof logged.reqId === 'string'), 'request log line has request id, route, status, duration and user id', JSON.stringify(logged ?? logLines.slice(-3)));
+    expect(!/bearer|authorization|smoke-grant@/i.test(serverLog), 'request logs carry no headers, tokens or emails');
     const unknownUserId = randomUUID();
     const unknownToken = mintToken(secret, `${stubUrl}/auth/v1`, unknownUserId);
     await call('PUT', '/v1/user', unknownToken);

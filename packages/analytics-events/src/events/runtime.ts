@@ -6,6 +6,8 @@ export type WalkPlaces =
   | 'outside_and_inside' | 'outside_and_treadmill' | 'inside_and_treadmill'
   | 'outside_and_inside_and_treadmill' | 'none'
 
+export type ResumeReason = 'welcome' | 'onboarding' | 'paywall' | 'setup' | 'app'
+
 export type UnlockKind = 'gym' | 'treadmill'
 
 export type TreadmillScanFailure = 'denied' | 'timeout'
@@ -28,6 +30,7 @@ export const runtimeEvents = {
   treadmill_scan_verified: { owner: 'client', transmittedProperties: ['ms', 'preview'] },
   treadmill_scan_failed: { owner: 'client', transmittedProperties: ['reason'] },
   runtime_launched: { owner: 'client', transmittedProperties: ['app_state'] },
+  journey_resumed: { owner: 'client', transmittedProperties: ['resume_reason', 'access'] },
 } as const satisfies EventSpecMap
 
 export interface RuntimeEventProps {
@@ -48,4 +51,5 @@ export interface RuntimeEventProps {
   treadmill_scan_verified: { ms: number; preview: boolean }
   treadmill_scan_failed: { reason: TreadmillScanFailure }
   runtime_launched: { app_state: EnforcementAppState }
+  journey_resumed: { resume_reason: ResumeReason; access: 'paid' | 'unpaid' | 'checking' }
 }

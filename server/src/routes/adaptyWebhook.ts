@@ -61,6 +61,13 @@ export function createAdaptyWebhookRoutes(
         return {};
       }
 
+      const event = request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>) : {};
+      const text = (value: unknown) => (typeof value === "string" ? value.slice(0, 120) : undefined);
+      request.log.info({
+        event_type: text(event.event_type),
+        profile: text(event.profile_id),
+        user: text(event.customer_user_id),
+      }, "adapty webhook");
       try {
         const result = await getService(dependencies, environment).record(request.body);
         return { accepted: true, ...result };

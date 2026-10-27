@@ -22,7 +22,9 @@ import { PaywallReview } from './PaywallReview';
 import { PaywallTagline } from './PaywallTagline';
 import { offeredHandle, offersTrial, planFor, planPairs, trialLength } from './paywallPlans';
 import { paywallCopy as copy } from './paywallCopy';
-const paywallLoadRetries = 2,
+import { reportRuntimeAlert } from '../../telemetry/reportRuntimeError';
+const paidLockedOutAfterMs = 120_000,
+  paywallLoadRetries = 2,
   planRowHeight = t.control.full;
 export function PaywallScreen({
   placement,
@@ -102,6 +104,14 @@ export function PaywallScreen({
     admitIfPaid(runtime.subscription.entitlement());
     return runtime.subscription.subscribe(admitIfPaid);
   }, [runtime]);
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => {
+      if (eligible(runtime.subscription.entitlement(), Date.parse(runtime.clock.now()))) return;
+      reportRuntimeAlert('paid_locked_out', new Error('Purchase succeeded but Premium is still inactive after two minutes'), runtime.subscription.entitlement().status);
+    }, paidLockedOutAfterMs);
+    return () => clearTimeout(timer);
+  }, [confirming, runtime]);
   const purchase = async () => {
     if (!selected || busy || operationInFlight.current) return;
     operationInFlight.current = true;
@@ -183,7 +193,10 @@ export function PaywallScreen({
                 </Label>
               </PressableScale>
             ) : null}
-            <CloseButton label="Close" onPress={onClose} />
+            <CloseButton label="Close" onPress={() => {
+              runtime.analytics.track('paywall_closed', { placement });
+              onClose();
+            }} />
           </View>
         ) : undefined
       }

@@ -5,9 +5,32 @@ import { createSupabaseConfirmedEmailReader } from "../packages/identity/confirm
 import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 
 export interface SubscriptionResync { resync(userId: string): Promise<unknown> }
+export interface ComplimentaryLookup { read(userId: string): Promise<{ expiresAt: Date } | null> }
 const inFlight = new Map<string, Promise<unknown>>();
-export function createSubscriptionRoutes(dependencies: { resync?: SubscriptionResync } = {}): FastifyPluginAsync {
+function createComplimentaryLookup(): ComplimentaryLookup {
+  if (!config.supabaseUrl || !config.supabaseServiceRoleKey) return { read: async () => null };
+  const emails = createSupabaseConfirmedEmailReader({ supabaseUrl: config.supabaseUrl, serviceRoleKey: config.supabaseServiceRoleKey });
+  const grants = createComplimentaryAccessRepository();
+  return {
+    async read(userId) {
+      const email = await emails.read(userId);
+      return email ? grants.read(userId, email, config.subscriptionAuthorizationStoreEnvironment, new Date()) : null;
+    },
+  };
+}
+
+export function createSubscriptionRoutes(dependencies: { resync?: SubscriptionResync; complimentary?: ComplimentaryLookup } = {}): FastifyPluginAsync {
   return async (app) => {
+    app.get("/subscription/complimentary", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (request, reply) => {
+      const userId = await requireActiveRouteUserId(request, reply);
+      if (!userId) return;
+      try {
+        const grant = await (dependencies.complimentary ?? createComplimentaryLookup()).read(userId);
+        return { accountId: userId, complimentary: grant ? { expiresAt: grant.expiresAt.toISOString() } : null };
+      } catch {
+        return reply.code(503).send({ error: { code: "COMPLIMENTARY_LOOKUP_FAILED", message: "Complimentary access could not be checked" } });
+      }
+    });
     app.post("/subscription/resync", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
       const userId = await requireActiveRouteUserId(request, reply);
       if (!userId) return;

@@ -37,7 +37,7 @@ export type {
   WalkSessionSource,
 } from './src/events/shield'
 export type { PaywallOperation, PaywallPlacement, PurchaseFailureClass, CheckoutStage, CheckoutOutcome, CheckoutFailureKind, CheckoutAttemptProps, CheckoutStageProps, CheckoutCompletionProps } from './src/events/paywall'
-export type { SignInFailureClass, SignInProvider, SignInSurface } from './src/events/identity'
+export type { AuthOperation, AuthResult, SignInFailureClass, SignInProvider, SignInSurface } from './src/events/identity'
 export type {
   MilestoneCategory,
   NotificationType,

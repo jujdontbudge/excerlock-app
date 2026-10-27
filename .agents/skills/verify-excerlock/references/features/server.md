@@ -2,7 +2,7 @@
 id: server
 title: API server
 routes: []
-server: [GET /v1/health, GET /v1/ready, POST /v1/webhooks/adapty, POST /v1/subscription/resync, GET /v1/user, PUT /v1/user, DELETE /v1/user, POST /v1/support, POST /v1/incident-reports]
+server: [GET /v1/health, GET /v1/ready, POST /v1/webhooks/adapty, POST /v1/subscription/resync, GET /v1/subscription/complimentary, GET /v1/user, PUT /v1/user, DELETE /v1/user, POST /v1/support, POST /v1/incident-reports]
 depends: [account, paywall, support]
 ---
 ## Sub-features

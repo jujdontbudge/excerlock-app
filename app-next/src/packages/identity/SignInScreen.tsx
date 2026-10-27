@@ -12,6 +12,7 @@ import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { AuthError, isAuthCancelled, isAuthRateLimited } from '../ports/AuthPort';
 import type { SaveAccountResult } from '../ports/AuthPort';
+import type { AuthOperation, AuthResult } from '@excerlock/analytics-events';
 import { haptic } from '../ui/haptics';
 import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
 import { currentEmailChallenge, forgetEmailChallenge } from './emailChallenge';
@@ -24,11 +25,13 @@ type Provider = 'apple' | 'google' | 'email';
 export function SignInScreen({
   purpose,
   reportError,
+  reportAppleFailure,
   onContinue,
   onExit,
 }: {
   purpose: SignInPurpose;
   reportError: (error: unknown) => void;
+  reportAppleFailure: (error: unknown, code: string) => void;
   onContinue: () => void | Promise<void>;
   onExit?: () => void;
 }) {
@@ -36,6 +39,7 @@ export function SignInScreen({
     session = useSessionStore((s) => s.data.session),
     initialChallenge = currentEmailChallenge(runtime.auth.identity().userId),
     submitting = useRef(false),
+    pendingProvider = useRef<Provider>('email'),
     [phase, setPhase] = useState<'options' | 'email' | 'code' | 'existing'>(initialChallenge ? 'code' : 'options'),
     [email, setEmail] = useState(initialChallenge?.email ?? ''),
     [code, setCode] = useState(''),
@@ -60,16 +64,28 @@ export function SignInScreen({
       reason_class: reason,
       ...(caught instanceof AuthError ? { failure_code: caught.code.slice(0, 60) } : {}),
     });
-    if (!expectedSignInFailure(reason)) reportError(caught);
+    if (expectedSignInFailure(reason)) return;
+    if (provider === 'apple') reportAppleFailure(caught, caught instanceof AuthError ? caught.code.slice(0, 60) : 'unknown');
+    else reportError(caught);
   };
-  const run = async (provider: Provider, action: () => Promise<void>) => {
+  const operation: AuthOperation = purpose === 'save' ? 'save' : 'sign_in';
+  const run = async (provider: Provider, action: () => Promise<AuthResult | null>, kind: AuthOperation = operation) => {
     if (submitting.current) return;
     submitting.current = true;
     setBusy(true);
+    runtime.analytics.track('auth_started', { provider, operation: kind });
     try {
-      await action();
+      const result = await action();
+      if (result) runtime.analytics.track('auth_completed', { provider, operation: kind, result });
     } catch (caught) {
-      if (isAuthCancelled(caught)) return;
+      const cancelled = isAuthCancelled(caught);
+      runtime.analytics.track('auth_completed', {
+        provider,
+        operation: kind,
+        result: cancelled ? 'cancelled' : 'failed',
+        ...(caught instanceof AuthError ? { failure_code: caught.code.slice(0, 60) } : {}),
+      });
+      if (cancelled) return;
       failed(provider, caught);
       haptic('error');
       if (provider === 'email') setCode('');
@@ -84,47 +100,50 @@ export function SignInScreen({
     if (purpose === 'save') notify(c.saved);
     await onContinue();
   };
-  const switchAccount = async () => {
+  const switchAccount = async (): Promise<AuthResult> => {
     const result = await runtime.auth.useExistingAccount();
     if (result === 'code-sent') {
       setCode('');
       setCooldownUntil(Date.now() + 60_000);
       setNow(Date.now());
       setPhase('code');
-      return;
+      return 'code_sent';
     }
     await finish();
+    return 'switched';
   };
-  const existing = async () => {
+  const existing = async (provider: Provider): Promise<AuthResult> => {
+    pendingProvider.current = provider;
     haptic('warning');
-    if (purpose === 'signIn') await switchAccount();
-    else setPhase('existing');
+    if (purpose === 'signIn') return switchAccount();
+    setPhase('existing');
+    return 'existing_account';
   };
   const save = (provider: 'apple' | 'google') => run(provider, async () => {
     const result: SaveAccountResult = provider === 'apple' ? await runtime.auth.saveWithApple() : await runtime.auth.saveWithGoogle();
-    if (result === 'cancelled') return;
-    if (result === 'existing-account') await existing();
-    else await finish();
+    if (result === 'cancelled') return 'cancelled';
+    if (result === 'existing-account') return existing(provider);
+    await finish();
+    return 'saved';
   });
   const confirm = (typed = code) => run('email', async () => {
     const result = await runtime.auth.confirmEmailCode(typed);
     if (result.kind !== 'signedIn') throw new AuthError('Email code finished without a saved account.', { code: 'IDENTITY_NOT_READY' });
     await finish();
+    return purpose === 'save' ? 'saved' : 'signed_in';
   });
   const send = () => {
     if (!validEmail || cooldown > 0) return Promise.resolve();
     return run('email', async () => {
       try {
         const result = await runtime.auth.sendEmailCode(email.trim());
-        if (result === 'existing-account') {
-          await existing();
-          return;
-        }
+        if (result === 'existing-account') return existing('email');
         setCooldownUntil(Date.now() + 60_000);
         setNow(Date.now());
         setCode('');
         if (phase === 'code') notify(c.resent);
         setPhase('code');
+        return 'code_sent';
       } catch (caught) {
         if (!isAuthRateLimited(caught)) throw caught;
         failed('email', caught);
@@ -132,6 +151,7 @@ export function SignInScreen({
         setNow(Date.now());
         setPhase('code');
         notify(c.alreadySent);
+        return 'code_sent';
       }
     });
   };
@@ -189,7 +209,7 @@ export function SignInScreen({
             </Label>
           </View>
           <View style={{ gap: t.space.md }}>
-            <PrimaryButton label={c.useExisting} loading={busy} onPress={() => void run('email', switchAccount)} />
+            <PrimaryButton label={c.useExisting} loading={busy} onPress={() => void run(pendingProvider.current, switchAccount, 'switch')} />
             <SecondaryButton label={c.keepGuest} variant="tertiary" onPress={() => setPhase('options')} />
           </View>
         </>

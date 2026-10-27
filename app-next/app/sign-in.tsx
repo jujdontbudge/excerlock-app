@@ -5,7 +5,7 @@ import { SignInScreen } from '../src/packages/identity/SignInScreen';
 import { useRuntime } from '../src/packages/ports/useRuntime';
 import { admitPaid, beginPaywall, beginWelcome } from '../src/packages/journey/index';
 import { onboardingStore } from '../src/packages/onboarding/onboardingStore';
-import { reportRuntimeError } from '../src/packages/telemetry/reportRuntimeError';
+import { reportRuntimeAlert, reportRuntimeError } from '../src/packages/telemetry/reportRuntimeError';
 export default function SignInRoute() {
   const router = useRouter();
   const runtime = useRuntime();
@@ -34,6 +34,7 @@ export default function SignInRoute() {
         <SignInScreen
           purpose={saving ? 'save' : 'signIn'}
           reportError={reportRuntimeError}
+          reportAppleFailure={(error, code) => reportRuntimeAlert('apple_sign_in_failed', error, code)}
           onContinue={complete}
           onExit={saving ? () => void complete() : exit}
         />

@@ -38,8 +38,28 @@ export interface BuildServerOptions extends FastifyServerOptions {
 
 export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
   const app = Fastify({
+    logger: config.nodeEnv === "test" ? false : { level: "info" },
+    disableRequestLogging: true,
     ...options,
     trustProxy: ["127.0.0.1", "::1"],
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    const route = request.routeOptions.url ?? "unmatched";
+    const status = reply.statusCode;
+    request.log.info({
+      method: request.method,
+      route,
+      status,
+      ms: Math.round(reply.elapsedTime),
+      user: request.authIdentity?.userId,
+    }, "request");
+    if (status >= 500 || (status === 429 && request.authIdentity)) {
+      Sentry.captureMessage(`API ${status} on ${request.method} ${route}`, {
+        level: status >= 500 ? "error" : "warning",
+        tags: { alert: status >= 500 ? "api_5xx" : "api_429", route, status: String(status) },
+        fingerprint: ["api", String(status), request.method, route],
+      });
+    }
   });
   void app.register(helmet, {
     contentSecurityPolicy: false,

@@ -51,6 +51,13 @@ export function admitPaid(runtime: Runtime, setupComplete: boolean): boolean {
 export function resumeLaunch(runtime: Runtime, progress: { setupComplete: boolean; step: string }) {
   if (state.phase !== 'launch') return;
   const status = access(runtime);
+  route(status, progress);
+  const phase = state.phase;
+  if (phase !== 'launch' && phase !== 'signIn')
+    runtime.analytics.track('journey_resumed', { resume_reason: phase, access: status });
+}
+
+function route(status: ReturnType<typeof access>, progress: { setupComplete: boolean; step: string }) {
   if (progress.setupComplete && status !== 'unpaid') return enter('app');
   if (progress.setupComplete) return enter('paywall');
   if (status === 'paid' && progress.step === 'P') return enter('setup');
