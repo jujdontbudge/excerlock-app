@@ -9,7 +9,7 @@ import { StepsPort } from './StepsPort';
 import { WalkingPort } from './WalkingPort';
 import { GymPort } from './GymPort';
 import { AuthPort } from './AuthPort';
-import { SubscriptionAdmissionPort, SubscriptionPort } from './SubscriptionPort';
+import { SubscriptionPort } from './SubscriptionPort';
 import { AnalyticsPort } from './AnalyticsPort';
 import type { AdAttributionPort } from './AdAttributionPort';
 import { NotificationsPort } from './NotificationsPort';
@@ -25,7 +25,7 @@ import type { StrideGatePort } from './lib/StrideGatePort';
 import type { SensorStreamModuleClient } from './SensorStreamPort';
 import type { OnboardingFlowPort } from './OnboardingFlowPort';
 import type { OnboardingOfferPort } from './OnboardingOfferPort';
-import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
+import type { PaywallExperimentPort } from './ExperimentPorts';
 import type { NotificationResponsesPort } from './NotificationResponsesPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
@@ -39,7 +39,6 @@ export type Runtime = {
   gym: GymPort;
   auth: AuthPort;
   subscription: SubscriptionPort;
-  subscriptionAdmission: SubscriptionAdmissionPort;
   analytics: AnalyticsPort;
   adAttribution: AdAttributionPort;
   notifications: NotificationsPort;
@@ -53,7 +52,6 @@ export type Runtime = {
   status: RuntimeStatusPort;
   reviewPreset?: ReviewPresetPort;
   experiments?: PaywallExperimentPort;
-  signInRequired?: SignInRequiredPort;
   onboardingFlow?: OnboardingFlowPort;
   onboardingOffer?: OnboardingOfferPort;
   shieldCopy?: ShieldCopyPort;

@@ -2,7 +2,7 @@ import { inactiveAdAttribution } from '../ad-attribution/AdAttribution';
 import { createAccountBoundExport } from '../runtime/AccountBoundExport';
 import { createNativeNotifications } from '../notifications/createNativeNotifications';
 import { createNativeJsonExport } from '../runtime/NativeJsonExport';
-import { createPaywallExperimentPort, createReviewPresetPort, createSignInRequiredPort } from '../telemetry/PostHogAnalyticsAdapter';
+import { createPaywallExperimentPort, createReviewPresetPort } from '../telemetry/PostHogAnalyticsAdapter';
 import { createOnboardingFlowPort } from '../onboarding/flowOrder';
 import { entitlementStore } from '../subscription/entitlementStore';
 import type { Session } from '../model/types';
@@ -70,12 +70,10 @@ function subscribe<T>(subscribers: Set<(value: T) => void>, callback: (value: T)
 
 function createLabSubscription(): SubscriptionPort {
   const publish = () => entitlementStore.getState().patch({ entitlement: LAB_ENTITLEMENT });
-  const noRecovery = { type: 'none' as const };
   publish();
   const subscribers = new Set<(entitlement: SubscriptionEntitlement) => void>();
   return {
     entitlement: () => LAB_ENTITLEMENT,
-    presentPaywall: async () => LAB_ENTITLEMENT,
     restore: async () => LAB_ENTITLEMENT,
     refresh: async () => LAB_ENTITLEMENT,
     identify: async () => undefined,
@@ -88,10 +86,6 @@ function createLabSubscription(): SubscriptionPort {
     purchase: async () => { throw new LabIdentityUnavailableError(); },
     manageSubscription: async () => { throw new LabIdentityUnavailableError(); },
     operation: () => ({ busy: false, pending: false, error: null }),
-    recovery: () => noRecovery,
-    recoveryReady: async () => undefined,
-    clearRecovery: async () => undefined,
-    subscribeRecovery: () => () => undefined,
     subscribe: (callback) => subscribe(subscribers, callback),
   };
 }
@@ -126,7 +120,6 @@ export async function createClientServices(options: {
     adAttribution: inactiveAdAttribution,
     incidentReports: { post: async () => { throw new LabIdentityUnavailableError(); } },
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
-    signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     onboardingFlow: createOnboardingFlowPort({
       readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
     }),

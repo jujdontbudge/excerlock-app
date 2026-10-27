@@ -9,11 +9,7 @@ import { useScreenTracking } from '../telemetry/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
 import Constants from 'expo-constants';
 import { diagnosticsRoutesEnabled } from '../platform/diagnosticsRoutes';
-import { beginPaywall, renewAdmission, useJourney, verifySelectedAccount } from '../journey/index';
-import { StyleSheet, View } from 'react-native';
-import { FullWindowOverlay } from 'react-native-screens';
-import { BootScreen } from './lib/BootScreen';
-import { reportRuntimeError } from '../telemetry/reportRuntimeError';
+import { beginPaywall, useJourney } from '../journey/index';
 export function RootNavigator() {
   const motion = useMotion();
   const router = useRouter();
@@ -23,19 +19,9 @@ export function RootNavigator() {
   const status = useEntitlementStore((s) => s.data.entitlement.status);
   useEffect(() => {
     if (journey.phase !== 'app' || journey.canEnterApp) return;
-    const identity = runtime.auth.identity();
-    if (identity.kind === 'canonical' && !identity.isAnonymous && identity.userId) {
-      void verifySelectedAccount(runtime).then((result) => {
-        if (result === 'paid') router.replace('/setup/X1');
-        else if (result === 'unpaid') router.replace('/paywall');
-        else router.replace('/sign-in');
-      });
-      return;
-    }
     beginPaywall();
     router.replace('/paywall');
-  }, [journey.phase, journey.canEnterApp, router, runtime]);
-  useEffect(() => runtime.clock.subscribe(() => void renewAdmission(runtime)?.catch(reportRuntimeError)), [runtime]);
+  }, [journey.phase, journey.canEnterApp, router]);
   return (
     <>
       <Stack
@@ -61,15 +47,13 @@ export function RootNavigator() {
           <Stack.Protected guard={journey.phase === 'launch' || journey.phase === 'welcome' || journey.phase === 'onboarding'}>
             <Stack.Screen name="onboarding/[step]" />
           </Stack.Protected>
-          <Stack.Protected guard={
-            journey.phase === 'paywall' || journey.phase === 'pendingPurchase' || journey.phase === 'accountRecovery'
-          }>
+          <Stack.Protected guard={journey.phase === 'paywall'}>
             <Stack.Screen name="paywall" options={{ presentation: 'card', gestureEnabled: false }} />
           </Stack.Protected>
           <Stack.Protected guard={journey.phase === 'setup' && journey.paid}>
             <Stack.Screen name="setup/[step]" />
           </Stack.Protected>
-          <Stack.Protected guard={journey.phase === 'signIn' || journey.phase === 'verifying'}>
+          <Stack.Protected guard={journey.phase === 'signIn'}>
             <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
           <Stack.Protected guard={!journey.canEnterApp}>
@@ -93,13 +77,6 @@ export function RootNavigator() {
         </Stack.Protected>
       </Stack>
       {__DEV__ && runtime.kind === 'fake' ? <FakePromptHost /> : null}
-      {journey.checking ? (
-        <FullWindowOverlay>
-          <View style={StyleSheet.absoluteFill}>
-            <BootScreen />
-          </View>
-        </FullWindowOverlay>
-      ) : null}
     </>
   );
 }

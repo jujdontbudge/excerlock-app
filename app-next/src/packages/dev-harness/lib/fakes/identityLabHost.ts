@@ -12,8 +12,6 @@ const synchronous = new Set<PropertyKey>([
   'dispose',
   'entitlement',
   'operation',
-  'recovery',
-  'subscribeRecovery',
 ]);
 
 export function identityLabHost(
@@ -23,8 +21,6 @@ export function identityLabHost(
 ) {
   let run = 0;
   let current: IdentityLab | null = null;
-  let stopRecovery: (() => void) | null = null;
-  const recoverySubscribers = new Set<(value: ReturnType<IdentityLab['subscription']['recovery']>) => void>();
   let starting: Promise<IdentityLab | null> = Promise.resolve(null);
   const settledLab = async () => {
     await runtimeReady();
@@ -44,11 +40,6 @@ export function identityLabHost(
             return null;
           }
           current = lab;
-          stopRecovery = lab.subscription.subscribeRecovery((value) => {
-            recoverySubscribers.forEach((callback) => callback(value));
-          });
-          const recovery = lab.subscription.recovery();
-          recoverySubscribers.forEach((callback) => callback(recovery));
           await lab.booted;
           return mine === run ? lab : null;
         })
@@ -58,8 +49,6 @@ export function identityLabHost(
     run += 1;
     const lab = current;
     current = null;
-    stopRecovery?.();
-    stopRecovery = null;
     starting = Promise.resolve(null);
     await lab?.dispose().catch(() => undefined);
   };
@@ -68,11 +57,6 @@ export function identityLabHost(
       get(target, key) {
         const value = Reflect.get(target, key);
         if (typeof value !== 'function') return value;
-        if (key === 'subscribeRecovery')
-          return (callback: (recovery: ReturnType<IdentityLab['subscription']['recovery']>) => void) => {
-            recoverySubscribers.add(callback);
-            return () => recoverySubscribers.delete(callback);
-          };
         if (synchronous.has(key))
           return (...args: unknown[]) => {
             const port = current ? pick(current) : target;

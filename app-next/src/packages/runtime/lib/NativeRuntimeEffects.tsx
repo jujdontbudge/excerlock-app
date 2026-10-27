@@ -10,7 +10,7 @@ import { trialReminderPlan } from '../../notifications/notificationPlan';
 import { expoLocalNotifications } from '../../notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../../permissions/permissionsStore';
 import { reportRuntimeError } from '../../telemetry/reportRuntimeError';
-import { currentJourney, refreshAdmission } from '../../journey/index';
+import { currentJourney } from '../../journey/index';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -75,7 +75,7 @@ export function NativeRuntimeEffects() {
 
   useEffect(() => {
     const refresh = () => {
-      if (currentJourney().phase === 'app') void refreshAdmission(runtime).catch(reportRuntimeError);
+      if (currentJourney().phase === 'app') void runtime.subscription.refresh().catch(reportRuntimeError);
     };
     const foreground = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();

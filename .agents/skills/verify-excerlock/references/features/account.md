@@ -2,9 +2,9 @@
 id: account
 title: Identity and account deletion
 routes: [settings/account, sign-in, recovery]
-scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict, review-verification-unavailable, review-store-null, review-store-timeout, review-server-error, review-server-timeout, review-offline, review-server-unknown, review-store-retry, review-verification-retry, review-pending-unavailable, review-admission-network-retry, review-admission-timeout-retry, review-admission-mirror-retry]
+scenarios: [signed-in-apple, trial-active, returning-unpaid, identity-lab-linked-providers, identity-lab-provider-attempts, identity-lab-email-challenges, identity-lab-established-provider-conflict]
 server: [PUT /v1/user, DELETE /v1/user, POST /v1/subscription/resync]
-events: [subscription_verification_failed]
+events: []
 depends: [setup]
 ---
 ## Sub-features
@@ -21,17 +21,6 @@ Settings → the profile row → Account. From the hard Paywall, open Account an
 ## Driving it with excer
 
 Run `./excer demo signed-in-apple --open /settings/account`. To assert what the server did, run it locally and check the database. `./excer server ready` must pass first.
-
-```proof
-name: fresh-apple-unavailable-reaches-paywall
-scenario: review-verification-unavailable
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
-```
 
 ```proof
 name: provider-attempts-fail-closed-until-success
@@ -310,138 +299,7 @@ after-relaunch-expect: Home | Conditions
 wait: 30
 ```
 
-```proof
-name: fresh-store-null-reaches-paywall
-scenario: review-store-null
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-wait: 35
-```
-
-```proof
-name: fresh-store-timeout-reaches-paywall
-scenario: review-store-timeout
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-wait: 35
-```
-
-```proof
-name: fresh-server-error-reaches-paywall
-scenario: review-server-error
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-wait: 35
-```
-
-```proof
-name: fresh-server-timeout-reaches-paywall
-scenario: review-server-timeout
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-wait: 50
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | review_admission_request {"attempt":2 | request_timeout
-```
-
-```proof
-name: fresh-offline-reaches-paywall
-scenario: review-offline
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Restore purchases | Continue
-absent: Let's try that again
-wait: 35
-```
-
-```proof
-name: fresh-email-unavailable-reaches-paywall
-scenario: review-server-unknown
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with email | tap Email address | type r@a.co | expect Email address r@a.co | tap Send code | expect Check your email | tap Verification code | type 123456
-expect: Restore purchases | Continue | Account and help
-absent: Let's try that again
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | subscription_verification_failed | subscription_unknown
-```
-
-```proof
-name: store-environment-recovers-on-retry
-scenario: review-store-retry
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple | expect Try again
-swipe: 0.5,0.8,0.5,0.25
-expect: Try again | Restore purchases
-then-tap: Try again
-then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | review_store_environment {"attempt":5 | /testflight/v1/subscription/resync
-```
-
-```proof
-name: admission-recovers-on-retry
-scenario: review-verification-retry
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Home | Conditions
-wait: 45
-then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
-```
-
 Admission retries use the production server adapter with scripted HTTP responses. One retry covers a transient 5xx, network failure, timeout, or unknown webhook mirror; a permanent timeout remains unpaid after two bounded attempts. They do not establish real Adapty webhook timing.
-
-```proof
-name: admission-recovers-after-network-error
-scenario: review-admission-network-retry
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Home | Conditions
-wait: 45
-then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
-```
-
-```proof
-name: admission-recovers-after-timeout
-scenario: review-admission-timeout-retry
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Home | Conditions
-wait: 45
-then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
-```
-
-```proof
-name: admission-recovers-after-delayed-webhook
-scenario: review-admission-mirror-retry
-open: /onboarding/O01
-actions: tap Sign in | tap Continue with Apple
-expect: Home | Conditions
-wait: 45
-then-open: /dev
-then-expect: Journey app · paid yes · admitted yes | review_admission_request {"attempt":2
-```
-
-```proof
-name: pending-unavailable-blocks-checkout
-scenario: review-pending-unavailable
-open: /
-swipe: 0.5,0.8,0.5,0.25
-expect: Sign in to continue | Restore purchases
-then-tap: Sign in to continue | Continue with Apple | Try again
-then-open: /dev
-then-expect: Journey verifying · paid no · admitted no | Purchase recovery accountConnection | Purchase operations 0
-absent: Continue
-```
 
 ```proof
 name: sign-in-layout

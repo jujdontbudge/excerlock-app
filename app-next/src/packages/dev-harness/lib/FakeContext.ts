@@ -27,7 +27,7 @@ export class FakeContext {
       motion: scenario.motion ?? 'still',
       protectedRouteMounts: [],
       remoteFlags: scenario.remoteFlags
-        ? `sign-in ${scenario.remoteFlags.signInRequired === true ? 'required' : 'optional'} review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
+        ? `review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
         : undefined,
       notificationResponses: { delivered: [], handled: 0 },
       otaResume: null,

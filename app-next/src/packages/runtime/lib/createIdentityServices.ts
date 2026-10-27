@@ -1,12 +1,11 @@
 import { Linking } from 'react-native';
 import type { AuthIdentity } from '../../ports/AuthPort';
 import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../identity/createAuthServices';
-import { AdaptySubscriptionAdapter, PurchaseIntentStore } from '../../subscription/AdaptySubscriptionAdapter';
+import { AdaptySubscriptionAdapter } from '../../subscription/AdaptySubscriptionAdapter';
+import { createComplimentaryAccess } from '../../subscription/complimentaryAccess';
 import { nativeAdaptySdk } from '../../subscription/nativeAdaptySdk';
 import type { AdaptySdkPort } from '../../subscription/adaptySdk';
 import { RuntimeCleanupError } from '../../platform/RuntimeSingleton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PurchaseRecoveryJournal } from '../../subscription/PurchaseRecoveryJournal';
 import type { AdAttributionPort } from '../../ports/AdAttributionPort';
 import type { AnalyticsPort } from '../../ports/AnalyticsPort';
 
@@ -36,7 +35,6 @@ export async function createIdentityServices(options: {
   };
   const analytics = options.analyticsFactory(getIdentity);
   const sdk = options.sdk ?? nativeAdaptySdk;
-  const recoveryJournal = new PurchaseRecoveryJournal(AsyncStorage);
   const subscription = new AdaptySubscriptionAdapter({
     sdk, publicSdkKey: options.adaptyPublicKey, getIdentity,
     waitForIdentityReady: () => {
@@ -50,11 +48,12 @@ export async function createIdentityServices(options: {
     getPosthogDistinctId: () => analytics.getDistinctId(),
     reportError: options.reportError,
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
-    recoveryJournal,
     analytics,
-    now: () => new Date().toISOString(),
     adAttribution: options.adAttribution,
-    purchaseIntents: new PurchaseIntentStore(AsyncStorage),
+    complimentaryAccess: createComplimentaryAccess({
+      apiBaseUrl: options.config.apiBaseUrl,
+      getAuthContext: async () => (authServices ? authServices.auth.getAuthContext() : null),
+    }),
     adIntegrationIdentifiers: async (): Promise<Record<string, string>> => {
       const id = await options.adAttribution?.metaAnonymousId();
       return id ? { facebook_anonymous_id: id } : {};

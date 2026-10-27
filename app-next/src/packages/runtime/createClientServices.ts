@@ -3,15 +3,13 @@ import { createPostHogRuntime } from '@posthog-runtime';
 import {
   createPaywallExperimentPort,
   createReviewPresetPort,
-  createSignInRequiredPort,
   normalizeWalkPlaces,
 } from '../telemetry/PostHogAnalyticsAdapter';
 import { createOnboardingFlowPort } from '../onboarding/flowOrder';
 import { initializeSentrySdk } from '@sentry-binding';
 import { getOtaObservabilityContext } from '../updates/updates';
 import { readClientConfiguration } from '../platform/clientConfiguration';
-import { verifiedStoreEnvironment, xcodeEntitlementTransactions } from '../platform/NativeStoreEnvironment';
-import { subscriptionBackend } from '../platform/subscriptionBackend';
+import { verifiedStoreEnvironment } from '../platform/NativeStoreEnvironment';
 import { settingsStore } from '../preferences/settingsStore';
 import { profileStore } from '../preferences/profileStore';
 import { createNativeNotifications } from '../notifications/createNativeNotifications';
@@ -20,9 +18,6 @@ import { createAccountBoundExport } from './AccountBoundExport';
 import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
 import { createIncidentReportTransport } from '../support/IncidentReportClient';
 import type { AuthIdentity } from '../ports/AuthPort';
-import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
-import { resolvingSubscriptionAdmission } from '../subscription/ResolvingSubscriptionAdmission';
-import { rememberAdmission } from '../subscription/rememberedAdmission';
 import { createOnboardingOffer } from '../subscription/createOnboardingOffer';
 import { createNativeAdAttribution } from '../ad-attribution/NativeAdAttribution';
 
@@ -93,20 +88,6 @@ export async function createClientServices(options: {
     return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
-  const subscriptionAdmission = resolvingSubscriptionAdmission({
-    resolveBackend: async () => subscriptionBackend(config, config.environment === 'prod' ? await readVerifiedEnvironment() : config.storeEnvironment),
-    createAdmission: (backend) => rememberAdmission(
-        createServerSubscriptionAdmission({
-          apiBaseUrl: backend.apiBaseUrl,
-          environment: backend.environment,
-          getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
-          getIdentity: () => identity.auth.identity(),
-          storeKitTestTransactions: backend.environment === 'sandbox' ? xcodeEntitlementTransactions : undefined,
-        }),
-        { environment: backend.environment, now: Date.now, identity: () => identity.auth.identity() },
-      ),
-  });
-  identity.subscription.bindAdmission(subscriptionAdmission);
   const dataExport = createAccountBoundExport(
     () => identity.auth.identity(),
     {
@@ -119,10 +100,9 @@ export async function createClientServices(options: {
     () => disposed,
   );
   return {
-    auth: identity.auth, subscription: identity.subscription, subscriptionAdmission, analytics: telemetry.analytics, adAttribution,
-    onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation, installId: () => telemetry.getDeviceId() }),
+    auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics, adAttribution,
+    onboardingOffer: createOnboardingOffer({ subscription: identity.subscription, analytics: telemetry.analytics, identityGeneration: () => identity.auth.identity().generation }),
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
-    signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     onboardingFlow: createOnboardingFlowPort({
       readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
       awaitReady: () =>
@@ -143,7 +123,6 @@ export async function createClientServices(options: {
     dispose() {
       if (disposal) return disposal;
       disposed = true;
-      subscriptionAdmission.invalidate();
       disposal = identity.dispose();
       return disposal;
     },

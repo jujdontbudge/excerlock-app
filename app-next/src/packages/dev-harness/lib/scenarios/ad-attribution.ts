@@ -58,16 +58,4 @@ export const adAttributionScenarios = [
   base('ads-purchase-cancelled', 'Ads · purchase cancelled', { ...atPaywall, identityLab: { purchase: 'cancel' }, ads: { tracking: 'granted' } }),
   base('ads-purchase-pending', 'Ads · Ask to Buy pending', { ...atPaywall, identityLab: { purchase: 'pending' }, ads: { tracking: 'granted' } }),
   base('ads-purchase-error', 'Ads · purchase fails', { ...atPaywall, identityLab: { purchase: 'error' }, ads: { tracking: 'granted' } }),
-  base('ads-interrupted-trial', 'Ads · app killed while the trial purchase completed', {
-    ...atPaywall,
-    identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'trial' } },
-    purchaseRecovery: 'pending',
-    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 39.99, currency: 'USD' } },
-  }),
-  base('ads-interrupted-paid', 'Ads · interrupted purchase without a provable trial is dropped', {
-    ...atPaywall,
-    identityLab: { storeGrant: { owner: 'lab-checkout-1', status: 'active' } },
-    purchaseRecovery: 'pending',
-    ads: { tracking: 'granted', interruptedPurchase: { vendorProductId: 'lab.annual', amount: 39.99, currency: 'USD' } },
-  }),
 ];

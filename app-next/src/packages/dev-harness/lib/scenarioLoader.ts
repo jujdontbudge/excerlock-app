@@ -14,8 +14,6 @@ import { onboardingStore } from '../../onboarding/onboardingStore';
 import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
 import { beginLaunch } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PURCHASE_RECOVERY_KEY } from '../../subscription/PurchaseRecoveryJournal';
-import { PURCHASE_INTENT_KEY } from '../../subscription/AdaptySubscriptionAdapter';
 import { LEDGER_PREFIX, ledgerKey } from '../../ad-attribution/AdAttribution';
 import { createAsyncStorageOtaStorage } from '../../updates/updates';
 import { showcaseModeStore } from '../../progress/showcaseModeStore';
@@ -32,18 +30,6 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
       savedAtMs: Date.parse(scenario.clock.now),
     });
   } else await otaStorage.clearEnvelope();
-  if (scenario.purchaseRecovery) {
-    const startedAt = scenario.clock.now;
-    await AsyncStorage.setItem(PURCHASE_RECOVERY_KEY, JSON.stringify({
-      version: 1,
-      type: scenario.purchaseRecovery,
-      operation: 'purchase',
-      operationId: `purchase:lab-checkout-1:${startedAt}`,
-      checkoutUserId: 'lab-checkout-1',
-      startedAt,
-      ...(scenario.purchaseRecovery === 'accountConnection' ? { confirmedAt: startedAt } : {}),
-    }));
-  } else await AsyncStorage.removeItem(PURCHASE_RECOVERY_KEY);
   await seedAdAttribution(scenario);
   resetStores();
   if (scenario.showcase) showcaseModeStore.getState().patch({ on: true });
@@ -76,19 +62,6 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
 
 async function seedAdAttribution(scenario: Scenario) {
   const keys = await AsyncStorage.getAllKeys();
-  await AsyncStorage.multiRemove([...keys.filter((key) => key.startsWith(LEDGER_PREFIX)), PURCHASE_INTENT_KEY]);
+  await AsyncStorage.multiRemove(keys.filter((key) => key.startsWith(LEDGER_PREFIX)));
   for (const parts of scenario.ads?.sentBefore ?? []) await AsyncStorage.setItem(ledgerKey(...parts), 'sent');
-  const interrupted = scenario.ads?.interruptedPurchase;
-  if (interrupted) {
-    await AsyncStorage.setItem(PURCHASE_INTENT_KEY, JSON.stringify({
-      version: 1,
-      operationId: `purchase:lab-checkout-1:${scenario.clock.now}`,
-      account: 'lab-checkout-1',
-      vendorProductId: interrupted.vendorProductId,
-      amount: interrupted.amount,
-      currency: interrupted.currency,
-      hadAccessBefore: false,
-      launch: 'previous-launch',
-    }));
-  }
 }

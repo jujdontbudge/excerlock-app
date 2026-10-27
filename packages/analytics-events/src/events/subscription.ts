@@ -1,7 +1,6 @@
 import type { EventSpecMap } from '../types'
 
 export const subscriptionEvents = {
-  subscription_verification_failed: { owner: 'client', transmittedProperties: ['reason_code', 'stage', 'recovery', 'destination'] },
   trial_started: { owner: 'adapty' },
   trial_converted: { owner: 'adapty' },
   trial_renewal_cancelled: { owner: 'adapty' },
@@ -21,7 +20,6 @@ export type AdaptyForwardedProps = {
 }
 
 export interface SubscriptionEventProps {
-  subscription_verification_failed: { reason_code: string; stage: 'selected_account' | 'renewal'; recovery: 'none' | 'pending' | 'accountConnection'; destination: 'paywall' | 'recovery' | 'retained' }
   trial_started: AdaptyForwardedProps
   trial_converted: AdaptyForwardedProps
   trial_renewal_cancelled: AdaptyForwardedProps

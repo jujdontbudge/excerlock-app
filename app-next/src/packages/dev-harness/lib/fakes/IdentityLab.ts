@@ -1,13 +1,11 @@
 import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../../identity/createAuthServices';
-import { AdaptySubscriptionAdapter, PurchaseIntentStore } from '../../../subscription/AdaptySubscriptionAdapter';
+import { AdaptySubscriptionAdapter } from '../../../subscription/AdaptySubscriptionAdapter';
 import type { AdAttributionPort } from '../../../ports/AdAttributionPort';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptySdkPort } from '../../../subscription/adaptySdk';
 import type { AuthIdentity, AuthPort } from '../../../ports/AuthPort';
 import type { SubscriptionPort } from '../../../ports/SubscriptionPort';
 import type { IdentityLabScript } from '../../../model/models';
 import { FakeContext } from '../FakeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PurchaseRecoveryJournal } from '../../../subscription/PurchaseRecoveryJournal';
 import { paymentAnalyticsLab } from './PaymentAnalyticsLab';
 import { AnalyticsFake } from './AnalyticsFake';
 import type { AnalyticsPort } from '../../../ports/AnalyticsPort';
@@ -28,7 +26,6 @@ type DeletionIsolationResult = {
   identity: string;
   deletedIdentity: string;
   entitlement: string;
-  recovery: string;
   queued: number;
   delivered: number;
   tombstonePreserved: boolean;
@@ -42,7 +39,6 @@ export type IdentityLab = {
   runDelayedCallbackIsolation(): Promise<{
     identity: string;
     entitlement: string;
-    recovery: string;
     queued: number;
     delivered: number;
   }>;
@@ -651,7 +647,6 @@ export async function createIdentityLab(
         updateSubscriptionLab();
         throw Object.assign(new Error('This subscription is already owned'), { adaptyCode: 107 });
       }
-      if (script.checkoutSheet !== 'none') storeKitInactive?.();
       await new Promise((resolve) => setTimeout(resolve, 40));
       if (result === 'cancel') return { type: 'user_cancelled' } as AdaptyPurchaseResult;
       if (result === 'pending') return { type: 'pending' } as AdaptyPurchaseResult;
@@ -739,37 +734,6 @@ export async function createIdentityLab(
 
   const provisional: AuthIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: 0, ready: false };
   const analytics = script.productionAnalytics ? paymentAnalyticsLab(ctx, () => services?.auth.identity() ?? provisional) : AnalyticsFake(ctx);
-  let storeKitInactive: (() => void) | undefined;
-  let journalFailed = false;
-  let journalClearAttempts = 0;
-  const recoveryStorage = {
-    getItem: async (key: string) => {
-      if (script.journalFailure === 'hydrateOnce' && !journalFailed) {
-        journalFailed = true;
-        ctx.log('lab_journal_failure', { operation: 'hydrate' });
-        throw new Error('Journal hydration unavailable');
-      }
-      return AsyncStorage.getItem(key);
-    },
-    setItem: async (key: string, value: string) => {
-      if (script.journalFailure === 'confirmOnce' && !journalFailed && JSON.parse(value).type === 'accountConnection') {
-        journalFailed = true;
-        ctx.log('lab_journal_failure', { operation: 'confirm' });
-        throw new Error('Journal confirmation unavailable');
-      }
-      await AsyncStorage.setItem(key, value);
-    },
-    removeItem: async (key: string) => {
-      journalClearAttempts += 1;
-      if (script.journalFailure === 'clearOnce' && !journalFailed) {
-        journalFailed = true;
-        ctx.log('lab_journal_failure', { operation: 'clear' });
-        throw new Error('Journal removal unavailable');
-      }
-      await AsyncStorage.removeItem(key);
-      if (script.journalFailure === 'clearOnce') ctx.log('lab_journal_cleared', { attempt: journalClearAttempts, durable: 'none' });
-    },
-  };
   const adapter = new AdaptySubscriptionAdapter({
     sdk,
     publicSdkKey: 'identity-lab',
@@ -785,7 +749,6 @@ export async function createIdentityLab(
     getPosthogDistinctId: () => distinctId,
     reportError: (error) => ctx.log('lab_adapter_error', { message: message(error) }),
     openSubscriptionManagement: async () => undefined,
-    recoveryJournal: new PurchaseRecoveryJournal(recoveryStorage),
     analytics: {
       track: (event, props) => {
         analytics.track(event, props);
@@ -797,13 +760,7 @@ export async function createIdentityLab(
         }
       },
     },
-    observeStoreKitInactive: (inactive) => {
-      storeKitInactive = inactive;
-      return () => { storeKitInactive = undefined; };
-    },
-    now: () => ctx.clock.now(),
     adAttribution: accountHooks?.adAttribution,
-    purchaseIntents: new PurchaseIntentStore(AsyncStorage),
     adIntegrationIdentifiers: async () => ({ facebook_anonymous_id: 'lab-meta-anonymous-id' }),
   });
   services = await createAuthServices({
@@ -843,14 +800,13 @@ export async function createIdentityLab(
   const auth = services.auth;
   const subscription: SubscriptionPort = {
     entitlement: () => adapter.entitlement(),
-    presentPaywall: () => adapter.presentPaywall(),
     restore: (context) => adapter.restore(context),
     identify: (id) => adapter.identify(id),
     reset: () => adapter.reset(),
     refresh: () => adapter.refresh(),
-    loadPaywall: async (placement, options) => {
+    loadPaywall: async (placement) => {
       try {
-        const paywall = await adapter.loadPaywall(placement, options);
+        const paywall = await adapter.loadPaywall(placement);
         ctx.log('lab_plans_loaded', { placement, plans: paywall.products.length });
         return paywall;
       } catch (error) {
@@ -863,7 +819,6 @@ export async function createIdentityLab(
       if (script.purchase === 'busyBarrier') {
         const first = adapter.purchase(handle);
         await purchaseBarrierEntered;
-        const before = adapter.recovery();
         const duplicate = adapter.purchase(handle).then(
           () => 'accepted',
           (error) => message(error),
@@ -873,18 +828,12 @@ export async function createIdentityLab(
           (error) => message(error),
         );
         await new Promise((resolve) => setTimeout(resolve, 0));
-        const during = adapter.recovery();
         releasePurchaseBarrier?.();
         try {
           const [result, duplicateResult, restoreResult] = await Promise.all([first, duplicate, restore]);
-          const after = adapter.recovery();
-          const stableOwner = before.type === 'pending' && during.type === 'pending' && after.type === 'accountConnection'
-            && before.checkoutUserId === during.checkoutUserId && during.checkoutUserId === after.checkoutUserId;
-          const stableOperation = before.type === 'pending' && during.type === 'pending' && after.type === 'accountConnection'
-            && before.operationId === during.operationId && during.operationId === after.operationId;
           ctx.update({ subscriptionLab: {
             ...ctx.snapshot().subscriptionLab!,
-            purchaseSerialization: `duplicate ${duplicateResult} restore ${restoreResult} owner ${stableOwner ? 'stable' : 'changed'} operation ${stableOperation ? 'stable' : 'changed'}`,
+            purchaseSerialization: `duplicate ${duplicateResult} restore ${restoreResult}`,
           } });
           return result;
         } catch (error) {
@@ -894,26 +843,20 @@ export async function createIdentityLab(
       }
       try {
         const result = await adapter.purchase(handle);
-        ctx.log('lab_purchase_recovery', { state: adapter.recovery().type });
-        if (script.activation || script.adaptyIdentify || script.audienceUpdate || script.journalFailure === 'hydrateOnce')
-          ctx.log('lab_preflight', { activation: attempts.activation, identify: attempts.adaptyIdentify, flowRecovered: attempts.flow > 1, journalRecovered: script.journalFailure === 'hydrateOnce' && journalFailed });
+        if (script.activation || script.adaptyIdentify || script.audienceUpdate)
+          ctx.log('lab_preflight', { activation: attempts.activation, identify: attempts.adaptyIdentify, flowRecovered: attempts.flow > 1 });
         return result;
       } catch (error) {
         ctx.log('lab_purchase_failure', {
           attempt: attempts.purchase,
           owner: customerUserId ?? 'none',
           grants: grants.size,
-          recovery: adapter.recovery().type,
         });
         updateSubscriptionLab();
         throw error;
       }
     },
     operation: () => adapter.operation(),
-    recovery: () => adapter.recovery(),
-    recoveryReady: () => adapter.recoveryReady(),
-    clearRecovery: () => adapter.clearRecovery(),
-    subscribeRecovery: (callback) => adapter.subscribeRecovery(callback),
     manageSubscription: () => adapter.manageSubscription(),
     subscribe: (callback) => adapter.subscribe(callback),
   };
@@ -969,7 +912,6 @@ export async function createIdentityLab(
       identity: selected.userId,
       deletedIdentity,
       entitlement: adapter.entitlement().status,
-      recovery: adapter.recovery().type,
       queued: callbacks.length,
       delivered: deliveredProfiles,
       tombstonePreserved: tombstones.has(deletedIdentity),
@@ -1005,8 +947,7 @@ export async function createIdentityLab(
       return {
         identity: selected.userId,
         entitlement: adapter.entitlement().status,
-        recovery: adapter.recovery().type,
-        queued: callbacks.length,
+          queued: callbacks.length,
         delivered: deliveredProfiles,
       };
     },

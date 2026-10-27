@@ -37,7 +37,7 @@ export function contextPersistence(ctx: FakeContext) {
           history: scenario.history,
           accessibility: scenario.accessibility,
           remoteFlags: scenario.remoteFlags
-            ? `sign-in ${scenario.remoteFlags.signInRequired === true ? 'required' : 'optional'} review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
+            ? `review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
             : undefined,
         };
         if (['ask', 'grant', 'deny'].includes(data.promptMode)) patch.promptMode = data.promptMode;

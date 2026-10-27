@@ -8,24 +8,11 @@ import { AnalyticsFake } from './AnalyticsFake';
 import type { SubscriptionPaywall } from '../../../ports/SubscriptionPort';
 export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
   const entitlement = () => ({ ...entitlementStore.getState().data.entitlement, offer: fakeOffer });
-  const noRecovery = { type: 'none' as const };
   let operation = { busy: false, pending: false, error: null as string | null };
   let placement: SubscriptionPaywall['placement'] = 'in_app';
   const analytics = AnalyticsFake(ctx);
   return {
     entitlement,
-    presentPaywall: async (placement) => {
-      if (ctx.result() === 'cancel') return entitlement();
-      const next = {
-        status: 'trial' as const,
-        renewsAt: new Date(Date.parse(ctx.clock.now()) + fakeOffer.trialDays * 86400000).toISOString(),
-        accessExpiresAt: new Date(Date.parse(ctx.clock.now()) + fakeOffer.trialDays * 86400000).toISOString(),
-      };
-      entitlementStore.getState().patch({ entitlement: next });
-      noteObservedEntitlement(next.status);
-      ctx.log('paywall_completed', { placement });
-      return next;
-    },
     restore: async (context) => {
       const attempt = new CheckoutDiagnostics(analytics, { operation: 'restore', placement: context?.placement ?? placement, plan_id: 'none' });
       try {
@@ -149,10 +136,6 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       }
     },
     operation: () => operation,
-    recovery: () => noRecovery,
-    recoveryReady: async () => undefined,
-    clearRecovery: async () => undefined,
-    subscribeRecovery: () => () => undefined,
     manageSubscription: async () => {
       ctx.log('subscription_management_opened');
     },

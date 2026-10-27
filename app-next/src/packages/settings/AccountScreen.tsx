@@ -21,7 +21,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         await runtime.auth.deleteAccount();
         notify(c.deleted);
       } else await runtime.auth.signOut();
-      forgetAccount(runtime);
+      forgetAccount();
       setConfirm(false);
       haptic('commit');
     } catch {

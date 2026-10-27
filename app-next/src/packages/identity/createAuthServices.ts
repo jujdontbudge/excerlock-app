@@ -276,4 +276,3 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   }
 }
 
-export { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';

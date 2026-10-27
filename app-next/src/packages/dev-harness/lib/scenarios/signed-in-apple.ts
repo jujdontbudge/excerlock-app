@@ -18,7 +18,7 @@ export const returningUnpaidRemoteBypassAttempt = base(
     session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
     entitlement: { status: 'none', renewsAt: null },
     launchSignInRequired: true,
-    remoteFlags: { signInRequired: false, reviewPreset: true, paywallVariant: 'error' },
+    remoteFlags: { reviewPreset: true, paywallVariant: 'error' },
   },
 );
 export const returningExpired = base('returning-expired', 'Returning account with expired subscription', {
@@ -29,8 +29,6 @@ export const returningExpired = base('returning-expired', 'Returning account wit
 export const returningOfflineStaleProfile = base('returning-offline-stale-profile', 'Returning offline account with stale expired profile', {
   session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
   entitlement: { status: 'expired', renewsAt: null, accessExpiresAt: '2026-09-06T15:00:00.000Z' },
-  rememberedPaidThrough: '2026-09-06T15:00:00.000Z',
-  admissionFailure: 'offline',
   launchSignInRequired: true,
 });
 export const reinstallKeychain = base('reinstall-keychain', 'Reinstall with saved account and receipt', {
@@ -42,29 +40,4 @@ export const reinstallKeychain = base('reinstall-keychain', 'Reinstall with save
   history: [],
   session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
   launchSignInRequired: true,
-});
-export const subscriptionProofMatching = base('subscription-proof-matching', 'Account-bound subscription proof matches', {
-  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
-  launchSignInRequired: true,
-  subscriptionProof: 'matching',
-});
-export const subscriptionProofWrongAccount = base('subscription-proof-wrong-account', 'Subscription proof names another account', {
-  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
-  launchSignInRequired: true,
-  subscriptionProof: 'wrongAccount',
-});
-export const subscriptionProofWrongEnvironment = base('subscription-proof-wrong-environment', 'Subscription proof names another environment', {
-  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
-  launchSignInRequired: true,
-  subscriptionProof: 'wrongEnvironment',
-});
-export const subscriptionProofUnavailable = base('subscription-proof-unavailable', 'Subscription proof is unavailable', {
-  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
-  launchSignInRequired: true,
-  subscriptionProof: 'unavailable',
-});
-export const subscriptionProofLapsed = base('subscription-proof-lapsed', 'Subscription proof says the subscription lapsed', {
-  session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' },
-  launchSignInRequired: true,
-  subscriptionProof: 'ineligible',
 });

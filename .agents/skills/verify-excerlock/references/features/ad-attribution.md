@@ -2,7 +2,7 @@
 id: ad-attribution
 title: Meta and TikTok ad events and App Tracking Transparency
 routes: []
-scenarios: [ads-interrupted-paid, ads-paid-after-trial, ads-trial-allowed, ads-registration-sent-before, ads-trial-denied, ads-paid-no-trial, ads-trial-ineligible, ads-trial-sent-before, ads-other-account-sent, ads-xcode-purchase, ads-duplicate-callbacks, ads-sdk-start-fails, ads-sdk-log-fails, ads-unconfigured, ads-restore, ads-purchase-cancelled, ads-purchase-pending, ads-purchase-error, ads-interrupted-trial]
+scenarios: [ads-paid-after-trial, ads-trial-allowed, ads-registration-sent-before, ads-trial-denied, ads-paid-no-trial, ads-trial-ineligible, ads-trial-sent-before, ads-other-account-sent, ads-xcode-purchase, ads-duplicate-callbacks, ads-sdk-start-fails, ads-sdk-log-fails, ads-unconfigured, ads-restore, ads-purchase-cancelled, ads-purchase-pending, ads-purchase-error]
 depends: [onboarding, paywall]
 ---
 ## Sub-features
@@ -196,14 +196,6 @@ then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | purchase_fa
 ```
 
 ```proof
-name: interrupted-trial-sent-once-next-launch
-scenario: ads-interrupted-trial
-open: /dev
-wait: 30
-expect: Meta events registration 0 view 0 trial 1 subscribe 0 | TikTok events registration 0 view 0 trial 1 subscribe 0
-```
-
-```proof
 name: paid-after-trial-does-not-send-second-conversion
 scenario: ads-paid-after-trial
 open: dev?journey=paywall
@@ -212,14 +204,6 @@ expect: Continue with Apple
 wait: 30
 then-open: /dev
 then-expect: Meta events registration 0 view 1 trial 0 subscribe 0 | TikTok events registration 0 view 1 trial 0 subscribe 0 | lab_offer_purchase
-```
-
-```proof
-name: interrupted-paid-without-transaction-is-dropped
-scenario: ads-interrupted-paid
-open: /dev
-wait: 30
-expect: Meta events registration 0 view 0 trial 0 subscribe 0 | TikTok events registration 0 view 0 trial 0 subscribe 0
 ```
 
 ## Gotchas

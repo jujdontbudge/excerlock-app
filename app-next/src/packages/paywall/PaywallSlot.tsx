@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { onboardingStore as useOnboardingStore } from '../onboarding/onboardingStore';
 import { useRuntime } from '../ports/useRuntime';
 import { reportPaywallError, type PaywallErrorOperation } from './lib/paywallErrors';
@@ -6,25 +6,15 @@ import type { PaywallVariant } from '../telemetry/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../ports/SubscriptionPort';
 import { PaywallScreen } from './lib/PaywallScreen';
 import { useRouter } from 'expo-router';
-import { useSignedIn } from '../identity/rememberedSignIn';
-import { beginOnboarding, beginSignIn, beginWelcome, checkoutNeedsVerification, notePurchaseRecovery, useJourney, verifySelectedAccount } from '../journey/index';
+import { admitPaid, beginOnboarding, beginWelcome } from '../journey/index';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
-  const signedIn = useSignedIn(runtime.auth);
-  const journey = useJourney(runtime);
-  const [retrying, setRetrying] = useState(false);
-  const retryInFlight = useRef(false);
   const setupComplete = useOnboardingStore((state) => state.data.setupComplete);
-  const placement: SubscriptionPaywall['placement'] = setupComplete && signedIn ? 'winback' : 'onboarding';
+  const placement: SubscriptionPaywall['placement'] = setupComplete ? 'winback' : 'onboarding';
   const experiments = runtime.experiments;
   const [assignment, setAssignment] = useState<{ variant: PaywallVariant; generation: number } | null>(null);
   const [loaded, setLoaded] = useState<SubscriptionPaywall | null>(null);
-  const recovery = useSyncExternalStore(
-    (callback) => runtime.subscription.subscribeRecovery(callback),
-    () => runtime.subscription.recovery(),
-    () => runtime.subscription.recovery(),
-  );
   const reportError = useCallback(
     (error: unknown, operation: PaywallErrorOperation) => reportPaywallError(runtime, error, operation),
     [runtime],
@@ -49,28 +39,13 @@ export function PaywallSlot() {
     });
   }, [assignment, loaded, experiments, placement]);
   useEffect(() => { runtime.analytics.screen('P'); }, [runtime]);
-  useEffect(() => {
-    notePurchaseRecovery(recovery);
-  }, [recovery]);
-  const onAccess = async () => {
-    if (!signedIn) {
-      beginSignIn();
-      router.replace('/sign-in');
-      return;
-    }
-    if (retryInFlight.current) return;
-    retryInFlight.current = true;
-    setRetrying(true);
-    const result = await verifySelectedAccount(runtime).finally(() => { retryInFlight.current = false; setRetrying(false); });
-    if (result === 'paid') {
-      router.replace('/setup/X1');
-    }
-    else if (result === 'unpaid') router.replace('/paywall');
-    else router.replace('/sign-in');
+  const onAccess = () => {
+    if (!admitPaid(runtime, setupComplete)) return;
+    router.replace(setupComplete ? '/(tabs)/home' : '/setup/X1');
   };
   const back = () => {
     const answeredOnboarding = Object.keys(useOnboardingStore.getState().data.answers).length > 0;
-    if ((setupComplete && signedIn) || !answeredOnboarding) {
+    if (setupComplete || !answeredOnboarding) {
       beginWelcome();
       router.replace('/onboarding/O01');
       return;
@@ -86,13 +61,9 @@ export function PaywallSlot() {
       variantKey={assignment?.variant ?? 'control'}
       onLoaded={setLoaded}
       reportError={reportError}
-      onAccess={() => void onAccess()}
-      recovery={recovery}
+      onAccess={onAccess}
       onClose={back}
       onAccount={() => router.push('/recovery')}
-      onRetryVerification={journey.error ? () => void onAccess() : undefined}
-      verificationRequired={Boolean(journey.error) && checkoutNeedsVerification(runtime)}
-      verifying={retrying}
     />
   );
 }

@@ -51,23 +51,17 @@ export type Scenario = {
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
   onboardingOffer?: { arm: 'a' | 'b' | 'unknown' | 'late' | 'error' | 'malformed'; assigned?: 'a' | 'b'; introEligible?: boolean; trialDays?: number; fallbackError?: boolean };
-  purchaseRecovery?: 'pending' | 'accountConnection';
   ads?: {
     tracking?: 'granted' | 'denied' | 'undetermined';
     answer?: 'granted' | 'denied';
     failure?: 'start' | 'send';
     unconfigured?: boolean;
     sentBefore?: string[][];
-    interruptedPurchase?: { vendorProductId: string; amount: number; currency: string };
   };
-  admissionFailure?: 'storeNull' | 'storeTimeout' | 'serverError' | 'serverTimeout' | 'offline' | 'retry' | 'storeRetry' | 'serverUnknown' | 'networkRetry' | 'timeoutRetry' | 'unknownRetry';
   enforcementPolicyProof?: boolean;
-  rememberedPaidThrough?: string;
-  subscriptionProof?: 'matching' | 'ineligible' | 'wrongAccount' | 'wrongEnvironment' | 'unavailable';
   otaResumeRoute?: string;
   launchSignInRequired?: boolean;
   remoteFlags?: {
-    signInRequired?: boolean;
     reviewPreset?: boolean;
     paywallVariant?: 'control' | 'variant_b' | 'error';
   };
@@ -79,7 +73,6 @@ export type IdentityLabScript = {
   productionAnalytics?: boolean;
   checkoutSheet?: 'none';
   checkoutAnalyticsFailure?: 'throw' | 'reject' | 'hang';
-  journalFailure?: 'hydrateOnce' | 'confirmOnce' | 'clearOnce';
   anonymousSignIn?: 'ok' | 'failFirst';
   userSync?: 'ok' | 'failFirst' | 'slow';
   plans?: 'ok' | 'failFirst' | 'empty';

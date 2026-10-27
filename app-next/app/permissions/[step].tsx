@@ -11,7 +11,6 @@ export default function PermissionsRoute() {
   return (
     <SafeAreaProvider>
       <SetupFlow
-        account={false}
         onDone={leave}
         onClose={leave}
         onStep={(next) => {

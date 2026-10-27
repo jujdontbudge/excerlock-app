@@ -3,7 +3,6 @@ import { Linking, View } from 'react-native';
 import { useIsFocused, useRouter } from 'expo-router';
 import { CloseButton, Heading, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton, SettingsGroup, SettingsRow } from '../ui';
 import { notify } from '../ui/Notice';
-import { SetupPresentation } from '../ui/SetupPresentation';
 import { tokens as t } from '../ui/tokens';
 import { setupCopy as c } from './lib/setupCopy';
 import { needBlocked, type SetupNeed } from '../permissions/setupNeeds';
@@ -13,27 +12,23 @@ import { ScreenTimeAuthorizationError } from '../app-selection/ScreenTimeAuthori
 import { permissionsStore } from '../permissions/permissionsStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { rulesStore } from '../conditions/rulesStore';
-import { useSignedIn } from '../identity/rememberedSignIn';
 import { PermissionGuide } from './lib/PermissionGuide';
 import { systemAlert } from '../permissions/systemAlerts';
-import { SignInScreen } from '../identity/SignInScreen';
 import { needCopyKey, useSetupNeeds } from '../permissions/useSetupNeeds';
 import { haptic } from '../ui/haptics';
 import { reportRuntimeError } from '../telemetry/reportRuntimeError';
 
-export type SetupStep = 'account' | 'screenTime' | 'locationAlways' | SetupNeed;
+export type SetupStep = 'screenTime' | 'locationAlways' | SetupNeed;
 
-export function SetupFlow({ account, onDone, onClose, onStep }: {
-  account: boolean;
+export function SetupFlow({ onDone, onClose, onStep }: {
   onDone: () => void;
   onClose?: () => void;
   onStep?: (step: SetupStep) => void;
 }) {
   const focused = useIsFocused();
-  const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost, router = useRouter(), signedIn = useSignedIn(runtime.auth);
+  const runtime = useRuntime(), AppPickerHost = runtime.appPickerHost, router = useRouter();
   const { needs, location, permissions } = useSetupNeeds();
   const [steps] = useState<SetupStep[]>(() => [
-    ...(account && !signedIn ? ['account' as const] : []),
     ...needs.flatMap((need): SetupStep[] => {
       if (need === 'apps') return permissions.screenTime === 'granted' ? ['apps'] : ['screenTime', 'apps'];
       if (need === 'location' && permissions.location === 'denied') return ['location'];
@@ -64,11 +59,6 @@ export function SetupFlow({ account, onDone, onClose, onStep }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the page changes
   }, [current]);
   if (!current) return <ScreenShell>{null}</ScreenShell>;
-  if (current === 'account') return (
-    <ScreenShell header={<Header onClose={onClose} />}>
-      <SetupPresentation><SignInScreen purpose="signUp" reportError={reportRuntimeError} onContinue={() => pass('account')} signInRequired requireFreshSignIn /></SetupPresentation>
-    </ScreenShell>
-  );
   const need = current;
   const permissionNeed = need === 'screenTime' ? 'apps' : need === 'locationAlways' ? 'location' : need;
   const copy = c.flow[need === 'screenTime' ? 'screenTime' : needCopyKey(permissionNeed, location)];

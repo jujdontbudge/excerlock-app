@@ -311,16 +311,6 @@ then-expect: Journey signIn · paid no · admitted no | Purchase recovery accoun
 ```
 
 ```proof
-name: identity-interrupted-purchase-recovery
-scenario: identity-lab-purchase-interrupted
-relaunch: true
-open: dev?journey=paywall
-wait: 25
-expect: Sign in to continue
-absent: Payment received
-```
-
-```proof
 name: identity-restore-not-found
 scenario: identity-lab-user-sync-failed
 open: dev?journey=paywall

@@ -51,7 +51,6 @@ export function DevControls() {
         <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
         <SettingsRow title="Run independent restore" onPress={() => void runAccountAction(() => dev.runLabIndependentRestore())} />
         <SettingsRow title="Run passive entry" onPress={() => void runAccountAction(() => dev.runLabPassiveEntry())} />
-        <SettingsRow title="Run subscription lease diagnostics" onPress={() => void runAccountAction(() => dev.runSubscriptionLeaseDiagnostics())} />
         <SettingsRow title="Run lifecycle revocation" onPress={() => void runAccountAction(() => dev.runLabLifecycleRevocation())} />
         <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
         <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
@@ -83,7 +82,6 @@ export function DevControls() {
         <SettingsRow title="Run full Onboarding path diagnostic" onPress={() => dev.runOnboardingPathDiagnostics()} />
         <SettingsRow title="Conditions" value={String(conditionCount)} />
         <SettingsRow title="Onboarding plan" value={planStaged ? 'Staged' : 'Not staged'} />
-        <SettingsRow title={`Purchase recovery ${runtime.subscription.recovery().type}`} />
         <SettingsRow title={`Meta events ${view.adEvents?.meta ?? 'none'}`} />
         <SettingsRow title={`TikTok events ${view.adEvents?.tiktok ?? 'none'}`} />
         <SettingsRow title={`Ad tracking ${view.adEvents?.consent ?? 'not started'}`} />
@@ -104,7 +102,6 @@ export function DevControls() {
         <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
         <SettingsRow title={`Restore isolation ${view.subscriptionLab?.restoreIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
-        <SettingsRow title={`Lease diagnostics ${view.subscriptionLab?.leaseDiagnostics ?? 'Not run'}`} />
         <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
         <SettingsRow title={`Onboarding path ${view.onboardingPath ?? 'Not run'}`} />
         {view.trialReminder ? <SettingsRow title={`Trial reminder ${view.trialReminder}`} /> : null}

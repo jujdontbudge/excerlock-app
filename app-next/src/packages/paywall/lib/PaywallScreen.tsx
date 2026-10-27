@@ -3,13 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton } from '../../ui';
+import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { haptic } from '../../ui/haptics';
 import { tokens as t } from '../../ui/tokens';
 import { Reveal } from '../../ui/Reveal';
-import type { PaywallProduct, PurchaseRecovery, SubscriptionPaywall } from '../../ports/SubscriptionPort';
+import type { PaywallProduct, SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { Entitlement } from '../../model/types';
 import { eligible } from '../../journey/index';
 import type { PaywallErrorOperation } from './paywallErrors';
@@ -32,10 +32,6 @@ export function PaywallScreen({
   onAccount,
   onLoaded,
   onAccess,
-  recovery,
-  onRetryVerification,
-  verificationRequired = false,
-  verifying = false,
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
@@ -44,10 +40,6 @@ export function PaywallScreen({
   onAccount?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
-  recovery: PurchaseRecovery;
-  onRetryVerification?: () => void;
-  verificationRequired?: boolean;
-  verifying?: boolean;
 }) {
   const runtime = useRuntime(),
     insets = useSafeAreaInsets(),
@@ -103,16 +95,19 @@ export function PaywallScreen({
     if (placement === 'onboarding') runtime.onboardingOffer?.expose();
   }, [paywall, runtime, placement, reportError]);
   const purchase = async () => {
-    if (!selected || busy || operationInFlight.current || verifying || verificationRequired || recovery.type !== 'none') return;
+    if (!selected || busy || operationInFlight.current) return;
     operationInFlight.current = true;
     setBusy('purchase');
     let restoreExisting = false;
     try {
       const result = await runtime.subscription.purchase(selected);
       if (result.type === 'success') {
-        if (eligible(result.entitlement, Date.parse(runtime.clock.now()))) {
+        const entitlement = eligible(result.entitlement, Date.parse(runtime.clock.now()))
+          ? result.entitlement
+          : await runtime.subscription.refresh();
+        if (eligible(entitlement, Date.parse(runtime.clock.now()))) {
           haptic('success');
-          onAccess?.(result.entitlement);
+          onAccess?.(entitlement);
         } else restoreExisting = true;
       } else if (result.type === 'pending') notify(subscriptionCopy.awaitingApproval);
       else if (result.type === 'already_subscribed') restoreExisting = true;
@@ -146,16 +141,10 @@ export function PaywallScreen({
       setBusy(null);
     }
   }
-  const continueRecovery = () => {
-    if (recovery.type === 'accountConnection') onAccess?.(runtime.subscription.entitlement());
-    else if (!busy) void restore();
-  };
   const product = paywall?.products.find((item) => item.handle === selected);
   const press = () => {
-    if (busy || operationInFlight.current || verifying) return;
-    if (recovery.type !== 'none') continueRecovery();
-    else if (verificationRequired) onRetryVerification?.();
-    else if (!paywall) void load();
+    if (busy || operationInFlight.current) return;
+    if (!paywall) void load();
     else void purchase();
   };
   const choose = (handle: string) => {
@@ -215,18 +204,12 @@ export function PaywallScreen({
                 : copy.billedAs(perPeriod(product))}
             </Label>
           ) : null}
-          {verificationRequired ? <Label variant="support" style={{ textAlign: 'center' }}>{copy.verifyBeforePurchase}</Label> : null}
           </View>
           <PrimaryButton
-            label={
-              recovery.type === 'accountConnection'
-                ? subscriptionCopy.signInToContinue
-                : verificationRequired || !paywall ? copy.retry : subscriptionCopy.continue
-            }
-            loading={busy !== null || verifying}
+            label={paywall ? subscriptionCopy.continue : copy.retry}
+            loading={busy !== null}
             onPress={press}
           />
-          {onRetryVerification && !verificationRequired ? <SecondaryButton label={copy.retry} loading={busy !== null || verifying} onPress={onRetryVerification} /> : null}
           <View
             style={[
               { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: t.space.xs },
@@ -239,7 +222,7 @@ export function PaywallScreen({
               {
                 label: subscriptionCopy.restore,
                 onPress: () => {
-                  if (busy === null && !verifying) void restore();
+                  if (busy === null) void restore();
                 },
               },
               {

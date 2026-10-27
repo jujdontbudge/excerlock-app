@@ -4,6 +4,3 @@ export interface PaywallExperimentPort {
   getPaywallVariant(): Promise<PaywallVariant>;
   trackPaywallVariantExposure(input: PaywallVariantExposure): void;
 }
-export interface SignInRequiredPort {
-  isRequired(): Promise<boolean>;
-}

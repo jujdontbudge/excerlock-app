@@ -3,7 +3,7 @@ import { startFakeBankEvidence } from './lib/bankEvidence';
 import { createBankDrainFake } from './lib/fakes/BankDrainFake';
 import type { GymLocationFix } from '../ports/GymPort';
 import { FakePickerHost } from './FakePickerHost';
-import { forgetObservedEntitlement, noteObservedEntitlement } from '../subscription/winbackSession';
+import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
 import { stores } from '../launch/stores';
 import { SupportFake } from './lib/fakes/SupportFake';
@@ -15,7 +15,6 @@ import { contextPersistence } from './lib/contextPersistence';
 import { scenarios } from './lib/scenarios';
 import { FakeContext } from './lib/FakeContext';
 import { loadScenario } from './lib/scenarioLoader';
-import type { Scenario } from '../model/models';
 import { permissionsStore } from '../permissions/permissionsStore';
 import { entitlementStore } from '../subscription/entitlementStore';
 import { sessionStore } from '../identity/sessionStore';
@@ -39,12 +38,9 @@ import { makeRule } from './lib/scenarios/base';
 import { rulesStore } from '../conditions/rulesStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { isAccountDataReady } from '../model/accountDataReady';
-import { SubscriptionAdmissionFake } from './lib/fakes/SubscriptionAdmissionFake';
-import { createServerSubscriptionAdmission } from '../subscription/ServerSubscriptionAdmission';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
-import { beginWelcome, currentJourney, finishSetup, refreshAdmission, verifySelectedAccount } from '../journey/index';
+import { admitPaid, beginWelcome, currentJourney, eligible, finishSetup } from '../journey/index';
 import { rememberSignIn } from '../identity/rememberedSignIn';
-import { rememberAdmission, rememberedAdmissionStore } from '../subscription/rememberedAdmission';
 import { pathFor } from '../onboarding/onboardingPath';
 import { classBackedPort } from './lib/fakes/classBackedPort';
 import { enforcementPolicyEvidence } from './lib/enforcementPolicyEvidence';
@@ -146,14 +142,11 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     subscription,
     analytics,
     identityGeneration: () => auth.identity().generation,
-    installId: () => labInstallArm(ctx.scenario.onboardingOffer) === 'b' ? 'lab-install-1' : 'lab-install-4',
   });
-  const scriptedAdmission = SubscriptionAdmissionFake(ctx, auth, subscription);
-  const subscriptionAdmission = rememberAdmission(scriptedAdmission, {
-    environment: 'sandbox',
-    now: () => Date.parse(ctx.clock.now()),
-    identity: () => auth.identity(),
-  });
+  const paidNow = () => eligible(subscription.entitlement(), Date.parse(ctx.clock.now()));
+  const subscriptionAdmission = {
+    verify: async (_identity: { userId: string; generation: number }) => ({ type: paidNow() ? 'eligible' as const : 'ineligible' as const }),
+  };
   async function seedAccount(account: 'A' | 'B') {
     const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
     if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
@@ -208,7 +201,6 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         ctx.resolve(false);
         await identityLab.stop();
         await loadScenario(scenario, keepEdits);
-        subscriptionAdmission.invalidate();
         notificationResponses.reset();
         if (scenario.identityLab) accountData = options.createAccountData();
         ctx.scenario = scenario;
@@ -224,22 +216,10 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           promptMode: scenario.fakeSystemPrompts, history: scenario.history, events: [], accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still', protectedRouteMounts: [],
           remoteFlags: scenario.remoteFlags
-            ? `sign-in ${scenario.remoteFlags.signInRequired === true ? 'required' : 'optional'} review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
+            ? `review preset ${scenario.remoteFlags.reviewPreset === true ? 'enabled' : 'disabled'} paywall variant ${scenario.remoteFlags.paywallVariant ?? 'control'}`
             : undefined,
           otaResume: null,
         });
-        scriptedAdmission.prepare();
-        if (scenario.rememberedPaidThrough) {
-          const identity = auth.identity();
-          if (!identity.userId) throw new Error('Remembered admission needs an account');
-          const observedAt = new Date(Date.parse(scenario.rememberedPaidThrough) - 60_000).toISOString();
-          rememberedAdmissionStore.getState().patch({ admission: {
-            userId: identity.userId, environment: 'sandbox', expiresAt: scenario.rememberedPaidThrough,
-            observedAt, verifiedAt: observedAt,
-          } });
-          rememberSignIn(identity);
-          forgetObservedEntitlement();
-        }
         await enforcementPolicyEvidence(ctx);
         void onboardingOffer.prefetch();
         const trialReminder = trialReminderPlan(scenario.entitlement, Date.parse(ctx.clock.now()));
@@ -247,8 +227,8 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
           if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
           rememberSignIn(auth.identity());
-          const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
-          if (await verifySelectedAccount(journeyRuntime) === 'paid') finishSetup(journeyRuntime);
+          const journeyRuntime = { auth, subscription } as unknown as Runtime;
+          if (admitPaid(journeyRuntime, false)) finishSetup(journeyRuntime);
         }
         walking.resume();
       },
@@ -339,7 +319,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           restores: current?.restores ?? 0,
           queued: current?.queued ?? 0,
           delivered: current?.delivered ?? 0,
-          callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+          callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} callbacks ${result.queued}/${result.delivered}`,
         } });
       },
       prepareLabDeletionCallbackIsolation: async () => {
@@ -360,7 +340,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
             queued: current?.queued ?? 0,
             delivered: current?.delivered ?? 0,
             callbackIsolation: current?.callbackIsolation,
-            deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+            deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} callbacks ${result.queued}/${result.delivered}`,
             transferIsolation: current?.transferIsolation,
             concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
           } });
@@ -384,7 +364,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           queued: current?.queued ?? 0,
           delivered: current?.delivered ?? 0,
           callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} recovery ${result.recovery} callbacks ${result.queued}/${result.delivered}`,
+          deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} callbacks ${result.queued}/${result.delivered}`,
           transferIsolation: current?.transferIsolation,
           concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
         } });
@@ -449,25 +429,14 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         } });
       },
       runLabLocalSignOut: async () => {
-        const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
+        const journeyRuntime = { auth, subscription } as unknown as Runtime;
         const journeyCheckpoint = async (action?: 'admit' | 'reset') => {
           if (action === 'reset') beginWelcome();
           else if (action === 'admit') {
-            const verified = await verifySelectedAccount(journeyRuntime);
-            if (verified !== 'paid' || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
+            if (!admitPaid(journeyRuntime, false) || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
           }
           const journey = currentJourney();
-          const identity = auth.identity();
-          const admission = journey.admission;
-          const admitted = Boolean(
-            admission &&
-            identity.kind === 'canonical' &&
-            identity.ready &&
-            !identity.isAnonymous &&
-            identity.userId === admission.userId &&
-            identity.generation === admission.generation &&
-            subscriptionAdmission.current(admission),
-          );
+          const admitted = journey.phase === 'app' && paidNow();
           return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
         };
         const result = await identityLab.runLocalSignOut(seedAccount, accountCheckpoint, journeyCheckpoint);
@@ -524,103 +493,14 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           passiveEntry: `store owner ${result.owner} passive target ${result.passiveTarget} target Entitlement ${result.targetEntitlement} source Entitlement ${result.sourceEntitlement} transfers ${result.transfers} restores ${result.restores} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
         } });
       },
-      runSubscriptionLeaseDiagnostics: async () => {
-        const identity = { userId: 'lease-user', generation: 7 };
-        let monotonic = 1000;
-        let response: 'eligible' | 'offline' | 'short' | 'missing' | 'denied' | 'legacy' | 'wrongEnvironment' = 'offline';
-        const verifiedAt = '2026-09-29T17:00:00.000Z';
-        const fetchImpl = (async () => {
-          if (response === 'offline') throw new TypeError('Network unavailable');
-          const expiresAt = response === 'short'
-            ? '2026-09-29T17:00:01.000Z'
-            : response === 'missing'
-              ? null
-              : '2026-09-29T17:10:00.000Z';
-          const denied = response === 'denied';
-          return {
-            ok: true,
-            json: async () => {
-              const authorization = {
-                environment: response === 'legacy' || response === 'wrongEnvironment' ? 'production' : 'sandbox',
-                status: denied ? 'expired' : 'active',
-                hasAccess: !denied,
-                expiresAt,
-                observedAt: verifiedAt,
-                source: 'webhook',
-              };
-              return response === 'legacy'
-                ? { authorization, syncedAt: verifiedAt }
-                : { accountId: identity.userId, verifiedAt, authorization };
-            },
-          } as Response;
-        }) as typeof fetch;
-        const admission = createServerSubscriptionAdmission({
-          apiBaseUrl: 'https://lease.invalid',
-          environment: 'sandbox',
-          getAuthContext: async () => ({ accessToken: 'redacted', ...identity }),
-          getIdentity: () => identity,
-          fetchImpl,
-          monotonicNow: () => monotonic,
-        });
-        const offlineFirst = await admission.verify(identity);
-        response = 'eligible';
-        const eligible = await admission.verify(identity);
-        monotonic += 4 * 60_000;
-        response = 'offline';
-        const offlineMidLease = await admission.verify(identity);
-        const retainedOffline = Boolean(admission.current(identity));
-        const retainedRollback = Boolean(admission.current(identity));
-        monotonic += 61_000;
-        const expiredAtCap = admission.current(identity) === null;
-
-        monotonic = 0;
-        response = 'short';
-        const short = await admission.verify(identity);
-        monotonic = 999;
-        const beforeBoundary = Boolean(admission.current(identity));
-        monotonic = 1000;
-        const atBoundary = admission.current(identity) === null;
-
-        response = 'missing';
-        const missing = await admission.verify(identity);
-        response = 'eligible';
-        await admission.verify(identity);
-        response = 'denied';
-        const denied = await admission.verify(identity);
-        const clearedOnDenial = admission.current(identity) === null;
-        response = 'legacy';
-        const legacy = await admission.verify(identity);
-        const clearedOnLegacy = admission.current(identity) === null;
-        response = 'wrongEnvironment';
-        const wrongEnvironment = await admission.verify(identity);
-        const clearedOnWrongEnvironment = admission.current(identity) === null;
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          leaseDiagnostics: `offline first ${offlineFirst.type} eligible ${eligible.type} offline mid-lease ${offlineMidLease.type}/${retainedOffline ? 'retained' : 'lost'} rollback ${retainedRollback ? 'retained' : 'lost'} five-minute cap ${expiredAtCap ? 'expired' : 'active'} short ${short.type} before boundary ${beforeBoundary ? 'active' : 'expired'} at boundary ${atBoundary ? 'expired' : 'active'} missing expiry ${missing.type} denial ${denied.type}/${clearedOnDenial ? 'cleared' : 'retained'} legacy ${legacy.type}/${clearedOnLegacy ? 'cleared' : 'retained'} wrong environment ${wrongEnvironment.type}/${clearedOnWrongEnvironment ? 'cleared' : 'retained'}`,
-        } });
-      },
       runLabLifecycleRevocation: async () => {
-        const journeyRuntime = { auth, subscription, subscriptionAdmission } as Runtime;
+        const journeyRuntime = { auth, subscription } as unknown as Runtime;
         const journeyCheckpoint = async (action: 'admit' | 'refresh') => {
           if (action === 'admit') {
-            const verified = await verifySelectedAccount(journeyRuntime);
-            if (verified !== 'paid' || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
-          } else await refreshAdmission(journeyRuntime);
+            if (!admitPaid(journeyRuntime, false) || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
+          } else await subscription.refresh();
           const journey = currentJourney();
-          const identity = auth.identity();
-          const admission = journey.admission;
-          const admitted = Boolean(
-            admission &&
-            identity.kind === 'canonical' &&
-            identity.ready &&
-            identity.userId === admission.userId &&
-            identity.generation === admission.generation &&
-            subscriptionAdmission.current(admission),
-          );
+          const admitted = journey.phase === 'app' && paidNow();
           return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
         };
         const result = await identityLab.runLifecycleRevocation(seedAccount, accountCheckpoint, journeyCheckpoint);
@@ -661,7 +541,6 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     gym,
     auth,
     subscription,
-    subscriptionAdmission,
     analytics,
     adAttribution,
     onboardingOffer,
@@ -677,7 +556,6 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
       },
       trackPaywallVariantExposure: () => undefined,
     },
-    signInRequired: { isRequired: async () => ctx.scenario.remoteFlags?.signInRequired ?? false },
     onboardingFlow: { order: () => null, load: async () => null, subscribe: () => () => undefined },
     notifications: NotificationsFake(ctx),
     notificationResponses,
@@ -713,6 +591,3 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   return runtime;
 }
 
-function labInstallArm(offer: Scenario['onboardingOffer']): 'a' | 'b' {
-  return offer?.assigned ?? (offer && ['b', 'late'].includes(offer.arm) ? 'b' : 'a');
-}

@@ -11,7 +11,6 @@ import { useRuntime } from '../ports/useRuntime';
 import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
 import { AuthError, isAuthCancelled, isAuthNoAccount, isAuthRateLimited, isAuthRecoveryRequired } from '../ports/AuthPort';
-import { resolveSignInRequired, type SignInRequiredSource } from './lib/signInRequired';
 import { rememberSignIn } from './rememberedSignIn';
 import { haptic } from '../ui/haptics';
 import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
@@ -25,7 +24,6 @@ export function SignInScreen({
   purpose,
   reportError,
   onContinue,
-  signInRequired,
   onExit,
   requireFreshSignIn = false,
   onCreateAccount,
@@ -34,7 +32,6 @@ export function SignInScreen({
   purpose: SignInPurpose;
   reportError: (error: unknown) => void;
   onContinue: () => void | Promise<void>;
-  signInRequired?: SignInRequiredSource;
   onExit?: () => void;
   requireFreshSignIn?: boolean;
   onCreateAccount?: () => void;
@@ -48,10 +45,6 @@ export function SignInScreen({
     [email, setEmail] = useState(initialChallenge?.email ?? ''),
     [code, setCode] = useState(''),
     [busy, setBusy] = useState(false),
-    [required, setRequired] = useState<boolean | null>(
-      signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
-    ),
-    [flagAttempt, setFlagAttempt] = useState(0),
     [cooldownUntil, setCooldownUntil] = useState(initialChallenge?.resendAt ?? 0),
     [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -60,24 +53,6 @@ export function SignInScreen({
     return () => clearTimeout(tick);
   }, [cooldownUntil, now]);
   const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
-  useEffect(() => {
-    let active = true,
-      retry: ReturnType<typeof setTimeout> | undefined;
-    void Promise.resolve(resolveSignInRequired(signInRequired, false))
-      .then((value) => {
-        if (active) setRequired(value);
-      })
-      .catch(() => {
-        if (active) {
-          setRequired(null);
-          retry = setTimeout(() => setFlagAttempt((value) => value + 1), t.motion.hold.notice);
-        }
-      });
-    return () => {
-      active = false;
-      if (retry) clearTimeout(retry);
-    };
-  }, [flagAttempt, signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const words = c[purpose];
   const title = words.title;
@@ -300,9 +275,7 @@ export function SignInScreen({
         </>
       )}
       <View style={{ flexGrow: 1 }} />
-      {required === false ? (
-        <SecondaryButton label={c.skip} loading={busy} variant="tertiary" onPress={onContinue} />
-      ) : null}
+      <SecondaryButton label={c.skip} loading={busy} variant="tertiary" onPress={onContinue} />
     </Reveal>
   );
 }

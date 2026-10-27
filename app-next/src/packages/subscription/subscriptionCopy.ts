@@ -69,7 +69,6 @@ export const subscriptionCopy = {
   error: "That didn't go through. Please try again.",
   notFound: 'No purchase found',
   awaitingApproval: 'Waiting for approval',
-  signInToContinue: 'Sign in to continue',
   restored: 'Your purchase has been restored.',
   devNote: 'Paywall stand-in. Prices and offers are placeholders. No purchase occurs.',
   restoreOutcome: 'Restore result',

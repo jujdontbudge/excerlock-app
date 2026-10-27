@@ -63,7 +63,7 @@ export const analyticsEmitter: Check = {
   },
 };
 
-const reviewedFlags = ['paywall_variant', 'review_preset', 'signInRequired'];
+const reviewedFlags = ['paywall_variant', 'review_preset'];
 
 export const flagRegistry: Check = {
   name: 'flag-registry',

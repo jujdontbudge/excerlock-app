@@ -46,7 +46,6 @@ export type DevSnapshot = RuntimeStatusSnapshot & {
     staleProductHandle?: string;
     restoreIsolation?: string;
     passiveEntry?: string;
-    leaseDiagnostics?: string;
     lifecycleRevocation?: string;
   };
   protectedRouteMounts: string[];
@@ -88,7 +87,6 @@ export interface RuntimeControls extends RuntimeStatusPort {
   runLabStaleProductHandle(): Promise<void>;
   runLabIndependentRestore(): Promise<void>;
   runLabPassiveEntry(): Promise<void>;
-  runSubscriptionLeaseDiagnostics(): Promise<void>;
   runLabLifecycleRevocation(): Promise<void>;
   runOnboardingPathDiagnostics(): void;
   deliverNotification(destination: 'home' | 'shop' | 'unlock'): void;

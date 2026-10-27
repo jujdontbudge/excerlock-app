@@ -10,7 +10,6 @@ import { permissionsStore } from '../permissions/permissionsStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { onboardingStore } from '../onboarding/onboardingStore';
 import { rememberedSignInStore } from '../identity/rememberedSignIn';
-import { rememberedAdmissionStore } from '../subscription/rememberedAdmission';
 import { filmingModeStore } from '../activity/filmingModeStore';
 import { showcaseModeStore } from '../progress/showcaseModeStore';
 import { bankStore } from '../bank/bankStore';
@@ -28,7 +27,6 @@ export const stores = [
   settingsStore,
   onboardingStore,
   rememberedSignInStore,
-  rememberedAdmissionStore,
   filmingModeStore,
   showcaseModeStore,
 ];

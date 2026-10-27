@@ -1,7 +1,7 @@
-import type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort } from '../ports/ExperimentPorts';
+import type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure } from '../ports/ExperimentPorts';
 import { eventsOwnedBy } from '@excerlock/analytics-events';
 import type { AnalyticsPort } from '../ports/AnalyticsPort';
-export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort };
+export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure };
 
 export type CanonicalIdentity = { userId: string | null; generation: number; ready: boolean };
 const walkPlaceOrder = ['outside', 'inside', 'treadmill'] as const;
@@ -174,9 +174,9 @@ export function createPostHogAnalyticsAdapter(options: {
   };
 }
 
-export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
+export type FlagName = 'paywall_variant' | 'review_preset';
 export type PayloadFlagName = 'shield_copy' | 'onboarding_variant' | 'stride_gate_config';
-const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], review_preset: [false, true] };
+const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };
 type PendingFlag = { promise: Promise<FlagValue>; resolve: (value: FlagValue) => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout>; origin: FlagOrigin };
@@ -195,7 +195,7 @@ export class PostHogFlagsController {
     private committed: () => CanonicalIdentity | null,
     private captureExposure: (origin: FlagOrigin, properties: Record<string, string | number | boolean>) => Promise<boolean>,
   ) {}
-  private fallback(name: FlagName): FlagValue { return name === 'signInRequired' || name === 'review_preset' ? false : 'control'; }
+  private fallback(name: FlagName): FlagValue { return name === 'review_preset' ? false : 'control'; }
   private eligible(origin?: FlagOrigin): origin is FlagOrigin {
     const live = this.identity(), committed = this.committed();
     return !!origin && this.optedIn() && live.ready && !!committed &&
@@ -299,9 +299,6 @@ export function createReviewPresetPort(flags: PostHogFlagsController) {
   };
 }
 
-export function createSignInRequiredPort(flags: PostHogFlagsController): SignInRequiredPort {
-  return { async isRequired() { return await flags.get('signInRequired') === true; } };
-}
 
 export type SemanticScreen = { name: string; props?: Record<string, string | number | boolean> };
 

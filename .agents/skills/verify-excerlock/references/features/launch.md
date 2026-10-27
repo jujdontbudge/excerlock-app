@@ -2,7 +2,7 @@
 id: launch
 title: Launch and routing
 routes: [index]
-scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, returning-offline-stale-profile, reinstall-keychain, subscription-proof-matching, subscription-proof-unavailable, subscription-proof-lapsed, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
+scenarios: [fresh-install, returning-signed-in, returning-unpaid, returning-unpaid-remote-bypass-attempt, returning-expired, returning-offline-stale-profile, reinstall-keychain, returning-unpaid-ota-home, returning-unpaid-ota-unlock]
 depends: [onboarding, paywall, setup, home]
 ---
 ## Sub-features
@@ -63,15 +63,6 @@ expect: HACK your brain to hit your fitness goals | Get started | Sign in
 ```
 
 ```proof
-name: offline-relaunch-keeps-home
-scenario: subscription-proof-matching
-open: /
-expect: day streak | Apps blocked until
-then-open: /dev?scenario=subscription-proof-unavailable&keep=1
-then-expect: day streak | Apps blocked until
-```
-
-```proof
 name: stale-profile-keeps-offline-admission
 scenario: returning-offline-stale-profile
 open: /
@@ -79,15 +70,6 @@ expect: Home | Conditions
 absent: Get your DREAM BODY with ExcerLock
 then-open: /dev
 then-expect: Journey app · paid yes · admitted yes | "reason_code":"request_failed" | "destination":"retained"
-```
-
-```proof
-name: lapsed-while-away-opens-paywall
-scenario: subscription-proof-matching
-open: /
-expect: day streak | Apps blocked until
-then-open: /dev?scenario=subscription-proof-lapsed&keep=1
-then-expect: Continue | Restore purchases
 ```
 
 ```proof
@@ -207,52 +189,6 @@ open: /
 expect: Continue | Restore purchases
 then-open: /dev
 then-expect: Journey paywall | OTA resume envelope | Denied /unlock/gym | Protected route mounts | None
-```
-
-```proof
-name: account-bound-proof-matches
-scenario: subscription-proof-matching
-open: /
-expect: day streak | Apps blocked until
-```
-
-```proof
-name: wrong-account-proof-fails-closed
-scenario: subscription-proof-wrong-account
-open: /
-expect: Try again | Restore purchases | Account and help
-absent: Checking your subscription | Connecting your subscription
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
-```
-
-```proof
-name: wrong-environment-proof-fails-closed
-scenario: subscription-proof-wrong-environment
-open: /
-expect: Try again | Restore purchases | Account and help
-absent: Checking your subscription | Connecting your subscription
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
-```
-
-```proof
-name: unavailable-proof-fails-closed
-scenario: subscription-proof-unavailable
-open: /
-expect: Try again | Restore purchases | Account and help
-absent: Retry will not start another purchase | verification is unavailable
-then-open: /dev
-then-expect: Journey paywall · paid no · admitted no | Protected route mounts | None
-```
-
-```proof
-name: unavailable-proof-recovery-access
-scenario: subscription-proof-unavailable
-open: /
-expect: Try again | Account and help
-then-tap: Account and help
-then-expect: Account and help | Restore purchases | Help and feedback
 ```
 
 ## Gotchas

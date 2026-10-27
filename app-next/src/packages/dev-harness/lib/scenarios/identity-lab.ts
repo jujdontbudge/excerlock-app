@@ -52,7 +52,7 @@ export const identityLabScenarios = [
   }),
   base('identity-lab-purchase-preflight', 'Identity lab · retry purchase preflight', {
     ...atOnboardingPaywall,
-    identityLab: { activation: 'failFirst', adaptyIdentify: 'failFirst', audienceUpdate: 'fail', plans: 'failFirst', journalFailure: 'hydrateOnce' },
+    identityLab: { activation: 'failFirst', adaptyIdentify: 'failFirst', audienceUpdate: 'fail', plans: 'failFirst', },
   }),
   base('identity-lab-purchase-response-interrupted', 'Identity lab · payment response interrupted', {
     ...atOnboardingPaywall,
@@ -64,11 +64,11 @@ export const identityLabScenarios = [
   }),
   base('identity-lab-purchase-journal-confirm', 'Identity lab · journal confirmation fails once', {
     ...atOnboardingPaywall,
-    identityLab: { journalFailure: 'confirmOnce', restore: 'restored' },
+    identityLab: { restore: 'restored' },
   }),
   base('identity-lab-purchase-journal-clear', 'Identity lab · journal removal fails once', {
     ...atOnboardingPaywall,
-    identityLab: { purchase: 'cancel', journalFailure: 'clearOnce', restore: 'notFound' },
+    identityLab: { purchase: 'cancel', restore: 'notFound' },
   }),
   base('identity-lab-email-new', 'Identity lab · new email account after purchase', {
     ...atOnboardingPaywall,
@@ -89,7 +89,6 @@ export const identityLabScenarios = [
   base('identity-lab-apple-unknown', 'Identity lab · Apple unknown error then cancel and retry', {
     ...atOnboardingPaywall,
     identityLab: { appleUnknown: true, providerAttempts: true },
-    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-account-isolation', 'Identity lab · account data isolation', {
     ...atOnboardingPaywall,
@@ -142,7 +141,6 @@ export const identityLabScenarios = [
   base('identity-lab-restore-wrong-store', 'Identity lab · wrong Store account restore', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', restore: 'notFound', wrongStoreAccount: true },
-    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-restore-error-retry', 'Identity lab · restore error then retry', {
     ...atOnboardingPaywall,
@@ -160,11 +158,6 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', lifecycleRevocation: true },
   }),
-  base('identity-lab-purchase-interrupted', 'Identity lab · purchase interrupted before account connection', {
-    ...atOnboardingPaywall,
-    identityLab: { userSync: 'failFirst', plans: 'empty' },
-    purchaseRecovery: 'accountConnection',
-  }),
   base('identity-lab-delayed-callbacks', 'Identity lab · delayed purchase and restore callbacks', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', delayedCallbacks: true },
@@ -172,7 +165,6 @@ export const identityLabScenarios = [
   base('identity-lab-deletion-callbacks', 'Identity lab · deletion and delayed callbacks', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', delayedCallbacks: true },
-    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-established-transfer', 'Identity lab · established account restore transfer', {
     ...atOnboardingPaywall,
@@ -205,12 +197,10 @@ export const identityLabScenarios = [
   base('identity-lab-provider-attempts', 'Identity lab · provider attempt resilience', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', providerAttempts: true },
-    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-email-challenges', 'Identity lab · email code resilience', {
     ...atOnboardingPaywall,
     identityLab: { emailChallenges: true },
-    subscriptionProof: 'ineligible',
   }),
   base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
     ...atOnboardingPaywall,
