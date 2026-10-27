@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../ui';
+import { BottomSheet, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton } from '../../ui';
 import { notify } from '../../ui/Notice';
 import { useMotion } from '../../ui/useMotion';
 import { haptic } from '../../ui/haptics';
@@ -25,13 +25,14 @@ import { paywallCopy as copy } from './paywallCopy';
 import { reportRuntimeAlert } from '../../telemetry/reportRuntimeError';
 const paidLockedOutAfterMs = 120_000,
   paywallLoadRetries = 2,
-  planRowHeight = t.control.full;
+  planRowHeight = t.control.full,
+  closeTop = (t.type.display.lineHeight - t.control.inline) / 2;
 export function PaywallScreen({
   placement,
   reportError,
   variantKey = 'control',
   onClose,
-  onAccount,
+  onNoPurchase,
   onLoaded,
   onAccess,
 }: {
@@ -39,7 +40,7 @@ export function PaywallScreen({
   reportError: (error: unknown, operation: PaywallErrorOperation) => void;
   variantKey?: PaywallVariant;
   onClose?: () => void;
-  onAccount?: () => void;
+  onNoPurchase?: () => void;
   onLoaded?: (paywall: SubscriptionPaywall) => void;
   onAccess?: (entitlement: Entitlement) => void;
 }) {
@@ -50,6 +51,7 @@ export function PaywallScreen({
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
     [confirming, setConfirming] = useState(false),
+    [noPurchase, setNoPurchase] = useState(false),
     chosen = useRef(false),
     operationInFlight = useRef(false),
     latest = useRef({ variantKey, onLoaded, onAccess }),
@@ -143,8 +145,10 @@ export function PaywallScreen({
     operationInFlight.current = true;
     setBusy('restore');
     try {
-      if ((await restorePurchases(runtime.subscription, placement)) === 'notFound')
-        notify(confirming ? copy.stillConfirming : subscriptionCopy.notFound);
+      if ((await restorePurchases(runtime.subscription, placement)) === 'notFound') {
+        if (confirming) notify(copy.stillConfirming);
+        else setNoPurchase(true);
+      }
       else {
         haptic('success');
         onAccess?.(runtime.subscription.entitlement());
@@ -175,30 +179,21 @@ export function PaywallScreen({
   return (
     <ScreenShell
       scrollResetKey={paywall ? 'plans' : 'loading'}
-      contentStyle={{ gap: t.space.xl, paddingTop: onClose ? 0 : insets.top + t.space.xl }}
-      header={
-        onClose ? (
-          <View
-            style={{
-              paddingHorizontal: t.layout.page,
-              height: t.layout.header,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: onAccount ? 'space-between' : 'flex-end',
-            }}>
-            {onAccount ? (
-              <PressableScale label={copy.account} onPress={onAccount}>
-                <Label variant="support" tone="secondary">
-                  {copy.account}
-                </Label>
-              </PressableScale>
-            ) : null}
-            <CloseButton label="Close" onPress={() => {
-              runtime.analytics.track('paywall_closed', { placement });
-              onClose();
-            }} />
-          </View>
-        ) : undefined
+      contentStyle={{ gap: t.space.xl, paddingTop: insets.top + t.space.xl }}
+      overlay={
+        <BottomSheet open={noPurchase} title={copy.noPurchase.title} onDismiss={() => setNoPurchase(false)}>
+          <Label tone="secondary">{copy.noPurchase.body}</Label>
+          <PrimaryButton label={copy.noPurchase.ok} onPress={() => setNoPurchase(false)} />
+          {onNoPurchase ? (
+            <SecondaryButton
+              label={copy.noPurchase.account}
+              onPress={() => {
+                setNoPurchase(false);
+                onNoPurchase();
+              }}
+            />
+          ) : null}
+        </BottomSheet>
       }
       footer={
         <>
@@ -273,7 +268,20 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <PaywallHeadline />
+      <View>
+        <PaywallHeadline />
+        {onClose ? (
+          <View style={{ position: 'absolute', top: closeTop, right: 0 }}>
+            <CloseButton
+              label="Close"
+              onPress={() => {
+                runtime.analytics.track('paywall_closed', { placement });
+                onClose();
+              }}
+            />
+          </View>
+        ) : null}
+      </View>
       <PaywallReview />
       <PaywallTagline />
     </ScreenShell>

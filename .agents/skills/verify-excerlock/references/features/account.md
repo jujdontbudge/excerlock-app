@@ -9,15 +9,15 @@ depends: [setup]
 ---
 ## Sub-features
 - Guest first: every install gets a Supabase anonymous account at launch. Buying, onboarding and Conditions all work as a guest (ADR 0091).
-- Save your account (Settings → Account, or Account and help): Apple and Google link their verified ID token to the same user id (`linkIdentity`); email sends a code to the new address and confirms it as an email change on the same user id. Nothing moves; the purchase is already on this id.
+- Save your account (Settings → Account; an unpaid account reaches it through Restore purchases → No purchase found → Account and deletion): Apple and Google link their verified ID token to the same user id (`linkIdentity`); email sends a code to the new address and confirms it as an email change on the same user id. Nothing moves; the purchase is already on this id.
 - If the Apple ID, Google account or email already belongs to another ExcerLock account, the app asks first ("You already have an account"). Only after "Sign in to my account" does it switch: the guest's Conditions and onboarding progress carry over when that account has no data on this iPhone, Adapty identifies the account, and the profile is refreshed, so a purchase made on that account follows it.
 - Welcome → Sign in uses the same flow but switches without asking, because the person said they already have an account. A new identity simply saves the guest.
 - Account screen: save, sign out and delete. Sign out and delete reset onboarding and start a fresh guest; a relaunch opens Welcome.
-- An unpaid account keeps a restricted Account and help surface for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
+- An unpaid account keeps a restricted account screen (`/recovery`, reached from the Paywall only through Restore purchases → No purchase found → Account and deletion, ADR 0092) for deletion, data export, subscription management and restore, support, and legal documents without mounting paid Settings.
 - Complimentary Premium is read from `GET /v1/subscription/complimentary` after an account loads. `POST /v1/subscription/resync` stays only for App Store builds that still gate on it. It is kept on the device until its expiry or until another account signs in.
 
 ## How to get to it (user POV)
-Settings → the profile row → Account. From the hard Paywall, open Account and help for the restricted recovery surface. Welcome → Sign in.
+Settings → the profile row → Account. From the Paywall, tap Restore purchases; when nothing is found, Account and deletion opens the restricted recovery screen. Welcome → Sign in.
 
 ## Driving it with excer
 
@@ -26,8 +26,8 @@ Run `./excer demo signed-in-apple --open /settings/account`. The identity-lab sc
 ```proof
 name: save-with-apple-keeps-account
 scenario: identity-lab-save
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with Apple
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with Apple
 wait: 30
 expect: Restore purchases
 then-open: /dev
@@ -37,8 +37,8 @@ then-expect: lab_link_identity {"provider":"apple","result":"ok","user":"lab-che
 ```proof
 name: save-with-google-keeps-account
 scenario: identity-lab-save
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with Google
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with Google
 wait: 30
 expect: Restore purchases
 then-open: /dev
@@ -48,8 +48,8 @@ then-expect: lab_link_identity {"provider":"google","result":"ok","user":"lab-ch
 ```proof
 name: save-with-email-keeps-account
 scenario: identity-lab-save
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with email | type n@b.co | tap Send code | expect Check your email | tap Verification code | type 123456
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with email | type n@b.co | tap Send code | expect Check your email | tap Verification code | type 123456
 wait: 30
 expect: Restore purchases
 absent: That code didn't work
@@ -60,8 +60,8 @@ then-expect: lab_email_code_sent {"kind":"save","challenge":1,"account":"lab-che
 ```proof
 name: existing-apple-asks-before-switching
 scenario: identity-lab-existing-apple
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with Apple
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with Apple
 wait: 30
 expect: You already have an account | Sign in to my account | Not now
 then-tap: Not now
@@ -71,8 +71,8 @@ then-expect: Save your account | Continue with Apple
 ```proof
 name: existing-apple-switch-keeps-plan-and-purchase
 scenario: identity-lab-existing-apple
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with Apple | expect You already have an account | tap Sign in to my account
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with Apple | expect You already have an account | tap Sign in to my account
 wait: 30
 expect: Allow Screen Time
 then-open: /dev
@@ -94,8 +94,8 @@ then-expect: lab_email_exists {"account":"lab-checkout-1"} | lab_email_code_sent
 ```proof
 name: rate-limit-retains-verifiable-code
 scenario: identity-lab-email-rate-limited
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with email | type e@b.co | tap Send code | expect Resend code in | tap Verification code | type 123456
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with email | type e@b.co | tap Send code | expect Resend code in | tap Verification code | type 123456
 wait: 30
 expect: Restore purchases
 then-open: /dev
@@ -105,8 +105,8 @@ then-expect: sign_in_failed {"provider":"email","surface":"sign_up","reason_clas
 ```proof
 name: provider-attempts-save-once
 scenario: identity-lab-provider-attempts
-open: /
-actions: tap Account and help | tap Account and deletion | tap Save your account | tap Continue with Apple | tap Continue with Google | tap Continue with Google
+open: /recovery
+actions: tap Account and deletion | tap Save your account | tap Continue with Apple | tap Continue with Google | tap Continue with Google
 wait: 30
 expect: Restore purchases
 then-open: /dev
@@ -184,23 +184,24 @@ expect: Sign in with email | Email address | Send code
 name: unpaid-account-recovery
 scenario: returning-unpaid
 open: /
-tap: Account and help
+tap: Restore purchases | Account and deletion
 expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
 ```
 
 ```proof
-name: account-and-help-back-returns-to-paywall
+name: account-recovery-back-returns-to-paywall
 scenario: returning-unpaid
 open: /
-tap: Account and help | Back
-expect: Continue | Restore purchases | Account and help
+tap: Restore purchases | Account and deletion | Back
+expect: Continue | Restore purchases
+absent: Account and help
 ```
 
 ```proof
 name: recovery-without-subscription
 scenario: returning-unpaid
 open: /
-tap: Account and help | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
+tap: Restore purchases | Account and deletion | Manage subscription in App Store | Export my data | Create export | Restore purchases | Help and feedback | Back | Terms of use | Back | Privacy policy | Back | Account and deletion | Delete account | Keep my account
 expect: Account | Signed in with Apple | Delete account
 then-open: /dev
 then-expect: Journey paywall · paid no · admitted no | subscription_management_opened {} | export_requested {"rules":1,"days":1,"earnedUnlocks":0,"visits":0} | restore {} | Protected route mounts | None

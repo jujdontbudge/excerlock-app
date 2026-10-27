@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0092: The Paywall has no account link](0092-paywall-has-no-account-link.md) — **accepted**.
 - [0091: Guest-first accounts, Adapty decides Premium](0091-guest-first-accounts-and-adapty-access.md) — **accepted**.
 - [0090: Correlate client checkout attempts without billing events](0090-client-checkout-attempt-diagnostics.md) — **accepted**.
 

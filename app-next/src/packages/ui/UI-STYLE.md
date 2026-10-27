@@ -32,3 +32,6 @@ Screens stay still and say nothing about their own work (ADR 0053). While someth
 
 ## Don'ts
 No small grey left-aligned captions floating above content: a caption that introduces something centred is itself centred, `text.primary`, `type.label` size · No dark screens · no grey card borders · no orange body text · no new colours · no emoji or coloured illustrations in UI chrome.
+
+## Paywall
+Owner rule, banned twice (ADR 0092): nothing above the headline and no account, help or sign-in link anywhere on the Paywall. Close sits on the headline's first line at the right edge. The only other exits are the bottom row: Terms of Use · Restore purchases · Privacy Policy. Account recovery opens from Restore purchases when no purchase is found. `./excer check` (`paywall-no-account-link`) fails if this changes.

@@ -63,7 +63,7 @@ export function PaywallSlot() {
       reportError={reportError}
       onAccess={onAccess}
       onClose={back}
-      onAccount={() => router.push('/recovery')}
+      onNoPurchase={() => router.push('/recovery')}
     />
   );
 }

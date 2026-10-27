@@ -238,3 +238,28 @@ export const adAttribution: Check = {
     return verdict(problems);
   },
 };
+
+export const paywallNoAccountLink: Check = {
+  name: 'paywall-no-account-link',
+  why: 'The Paywall has no header or account, help or sign-in link; recovery is reached through Restore purchases (ADR 0092).',
+  tier: 'static',
+  run() {
+    const problems: string[] = [];
+    for (const file of walk(join(appRoot, 'src', 'packages', 'paywall'))) {
+      const text = read(file);
+      for (const [pattern, what] of [
+        [/Account and help/i, '"Account and help"'],
+        [/\bonAccount\b/, 'an onAccount prop'],
+        [/\/sign-in/, 'a route to sign-in'],
+        [/onSignIn/, 'an onSignIn prop'],
+      ] as const)
+        if (pattern.test(text)) problems.push(`${rel(file)} has ${what}`);
+    }
+    const screen = read(join(appRoot, 'src', 'packages', 'paywall', 'lib', 'PaywallScreen.tsx'));
+    if (/\sheader=\{/.test(screen)) problems.push('PaywallScreen.tsx passes a header row to ScreenShell');
+    const slot = read(join(appRoot, 'src', 'packages', 'paywall', 'PaywallSlot.tsx'));
+    const recoveryRoutes = [...slot.matchAll(/(\w+)=\{\(\) => router\.push\('\/recovery'\)\}/g)].map((match) => match[1]);
+    if (recoveryRoutes.some((prop) => prop !== 'onNoPurchase')) problems.push(`PaywallSlot.tsx opens /recovery from ${recoveryRoutes.join(', ')}; only onNoPurchase may`);
+    return verdict(problems);
+  },
+};

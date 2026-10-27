@@ -1,4 +1,4 @@
-import { adAttribution, agentLayout, analyticsEmitter, ciPinned, deployHostKey, flagRegistry, noTests, researchIsolation, shieldCopyParity, updatesOwner } from './boundaries.ts';
+import { adAttribution, agentLayout, analyticsEmitter, ciPinned, deployHostKey, flagRegistry, noTests, paywallNoAccountLink, researchIsolation, shieldCopyParity, updatesOwner } from './boundaries.ts';
 import { dependencyFloors, publicConfigSecrets, sentryCore } from './dependencies.ts';
 import { featureMap } from './features.ts';
 import { iconCentring } from './icons.ts';
@@ -17,6 +17,7 @@ export const checks: Check[] = [
   adAttribution,
   flagRegistry,
   shieldCopyParity,
+  paywallNoAccountLink,
   researchIsolation,
   rawColours,
   rawType,

@@ -11,7 +11,7 @@ QUICK REVIEW PATH (physical device needed for movement and shields)
 1. Fresh install. Tap Get started and continue through the intro pages.
 2. On "What should we call you?" enter exactly: App Review (case-sensitive). This applies an ordinary, editable Walking target: 20 steps, all day, today. It grants no purchase, account, permission or enforcement bypass.
 3. Continue through the questions and import the plan, then continue to the subscription options.
-4. Each plan shows its full billed price and period with the weekly equivalent. The trial length and the following billed amount appear above Continue, with Terms of Use, Restore purchases and Privacy Policy below. Purchase with a Sandbox Apple ID. Account and help and Close stay available without buying.
+4. Each plan shows its full billed price and period with the weekly equivalent. The trial length and the following billed amount appear above Continue, with Terms of Use, Restore purchases and Privacy Policy below. Purchase with a Sandbox Apple ID. Close stays available without buying. Restore purchases with nothing to restore offers Account and deletion (deletion, data export, support, legal) without a subscription.
 5. Sign in with Apple, Google or email (six-digit code). Sign-in is required before Setup and Home; it ties the subscription to an account for restore and recovery. No demo credentials are needed. Returning users tap Sign in on Welcome. An account without a purchase opens the subscription options. If verification is temporarily unavailable, the app retries; an unfinished purchase stays in recovery with Try again, Restore purchases and help, and retry never buys another plan.
 6. Allow Screen Time and pick at least one app, then allow Motion & Fitness. Not now leaves a reminder on Home.
 7. Open a selected app: it stays shielded until the Walking target is met. Walk about 30 seconds (20 steps).
@@ -28,7 +28,7 @@ SCREEN TIME BANK (optional)
 On "How does this unlock?" choose Screen Time Bank. Steps or gym minutes earn Points; the Shop spends Points on Bank time, which drains only while Locked apps are used. Points cannot be bought, have no cash value and grant no subscription access.
 
 ACCOUNT
-Onboarding and the subscription options are available before sign-in. Sign-in persists until Sign out or Delete account. Account deletion and data export are in Settings.
+Onboarding and the subscription options are available before sign-in. Sign-in persists until Sign out or Delete account. Account deletion and data export are in Settings → Account, and without a subscription under Restore purchases → Account and deletion.
 
 FILMING MODE AND SHOWCASE DATA (disclosed owner demo settings)
 Seven taps on the version in Settings toggle Filming mode for two hours; it grants no subscription access and bypasses no permission. For the owner's allowlisted account only, it also shows sample History, 12,000 showcase Points and 17 Bank minutes.

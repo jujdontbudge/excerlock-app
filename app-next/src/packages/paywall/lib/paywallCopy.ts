@@ -20,5 +20,10 @@ export const paywallCopy = {
   retry: 'Try again',
   confirming: 'Payment received. Confirming your purchase…',
   stillConfirming: 'Still confirming with the App Store. Try Restore purchases again in a moment.',
-  account: 'Account and help',
+  noPurchase: {
+    title: 'No purchase found',
+    body: 'This Apple ID has no ExcerLock subscription to restore.',
+    ok: 'OK',
+    account: 'Account and deletion',
+  },
 } as const;

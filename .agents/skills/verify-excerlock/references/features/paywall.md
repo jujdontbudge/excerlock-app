@@ -11,7 +11,8 @@ depends: [launch]
 - Adapty on the phone is the only judge of Premium (`accessLevels.premium.isActive`). The server never gates access. A guest buys without signing in, and a successful purchase goes straight to Setup (or Home after a lapse). Signing in is optional and never follows a purchase.
 - Checkout diagnostics correlate one process-local attempt through identity, integration, StoreKit, result and entitlement verification. Exactly one completion reports the SDK outcome. `/dev` derives its Checkout labels from the emitted event log, checking IDs, terminal counts, property safety and timing. Inactive observations are a sheet proxy, not proof of Apple UI.
 - Close returns an onboarding user to the step before the Paywall with answers kept, and anyone else to Welcome. Close never grants access. Adapty placements cover onboarding, in-app and win-back. A win-back load failure falls back to the placement the surface would otherwise request.
-- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $39.99/year", in both offers, and the right side shows the smaller weekly equivalent, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $39.99/year" (or "Billed as …" without a trial), then automatic renewal/cancellation terms and the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy follow on the same scrollable screen. Account and help and Close remain available for every account, including plan-load failure; Close never grants admission: it returns an onboarding user to the step before the Paywall and anyone else to Welcome. The review is preview copy.
+- The paywall is a flat warm off-white screen: the headline "Get your DREAM BODY with ExcerLock" (DREAM BODY in flat bright orange with a soft breathing glow and a slow white shine sweep; it pops in on open, and Reduce Motion keeps it still), a centred review: five orange stars, the bold title "Life changing", the quote "This finally got me to lose 15 lbs after months of no progress." and "by Alexandra R.", then the two-line tagline "HACK your brain and become / ADDICTED to exercise." (HACK and ADDICTED in the same glowing, shining orange as DREAM BODY, their shine sweeping after the headline's), then one-line Yearly and Monthly plan pills with no free-trial toggle (Apple rejects trial toggles under Guideline 3.1.2): the left side names the plan and its billed price, "Yearly $39.99/year", in both offers, and the right side shows the smaller weekly equivalent, with the picked pill solid orange and white text. Under the pills the picked plan's billing reads "3-day free trial, then $39.99/year" (or "Billed as …" without a trial), then automatic renewal/cancellation terms and the orange Continue button. Underlined Terms of Use · Restore purchases · Privacy Policy follow on the same scrollable screen. Close sits on the headline's first line at the right edge and stays available for every account, including plan-load failure; there is no header row and no account, help or sign-in link (ADR 0092). Close never grants admission: it returns an onboarding user to the step before the Paywall and anyone else to Welcome. The review is preview copy.
+- Restore with nothing to restore opens a sheet, "No purchase found", with OK and "Account and deletion", which opens the restricted account screen. A restore that is still confirming a purchase shows the confirming notice instead.
 - Purchase and restore are single-flight and show a busy state; a purchase is never retried automatically. Cancel and error never grant access; error shows a retry message. `pending` (Ask to Buy) shows "Waiting for approval" and stays put. A successful purchase whose profile does not show Premium yet shows "Payment received. Confirming your purchase…" with Restore, and moves on by itself when Adapty reports access; it never shows the plans again. Failed plan loading offers Try again. An already-owned product restores.
 - Settings → Manage subscription shows the plan status (trial or active) and links to App Store management and restore. A billing issue keeps access only while Apple's grace period keeps the access level active; after that it opens the Paywall.
 - The server keeps Adapty webhooks for support and revenue only.
@@ -323,8 +324,8 @@ expect: Trial reminder None
 name: offer-fallback-outage-keeps-retry
 scenario: onboarding-offer-fallback-error
 open: /sample-paywall
-expect: Try again | Account and help | Close | Restore purchases | Terms of Use | Privacy Policy
-absent: Free trial | Enable free trial | free trial | Loading plans
+expect: Try again | Close | Restore purchases | Terms of Use | Privacy Policy
+absent: Account and help | Free trial | Enable free trial | free trial | Loading plans
 then-tap: Try again
 then-open: /dev
 then-expect: paywall_error {"operation":"load"}
@@ -457,3 +458,22 @@ then-expect: lab_posthog_capture {"event":"checkout_attempt_completed"} | lab_ch
 
 - The onboarding offer is retained from its early Adapty response. There are no trial/no-trial arms; trial wording comes only from the offer StoreKit returns. Notification timing diagnostics run the production `trialReminderPlan`; they are not proof of iOS delivery.
 - A fresh worker simulator has no location. The gym fake waits for a location fix while the scenario loads, so `excer demo` silently keeps the previous scenario. Set one first: `xcrun simctl --set ~/.local/share/excer/worker-simulators location <udid> set 40.1106,-88.2073`.
+
+```proof
+name: no-account-link-on-paywall
+scenario: returning-unpaid
+open: /
+expect: Get your | Close | Continue | Restore purchases
+absent: Account and help | Sign in
+```
+
+```proof
+name: restore-nothing-offers-account
+scenario: returning-unpaid
+open: /
+tap: Restore purchases
+wait: 20
+expect: No purchase found | This Apple ID has no ExcerLock subscription to restore. | OK | Account and deletion
+then-tap: Account and deletion
+then-expect: Account and help | Account and deletion | Manage subscription in App Store | Help and feedback
+```
