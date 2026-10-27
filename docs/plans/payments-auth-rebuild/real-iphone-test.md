@@ -25,3 +25,11 @@ About 10 minutes on Johan's iPhone 13 with a Sandbox Apple ID. Run it after the 
 After the run: read PostHog (events above with their `attempt_id`), Sentry (no new `paid_locked_out` or `apple_sign_in_failed`) and the server log (`journalctl -u excerlock-api`, request lines with status 2xx).
 
 Who does what: Claude builds, installs, launches and reads logs and dashboards, and judges pass or fail. Johan confirms each purchase sheet and sign-in prompt (Face ID and the Sandbox password cannot be automated).
+
+## Results (2026-10-27, iPhone 13, iOS 27.0.1, Release build 24 on Sandbox)
+
+- Step 1 passed. A guest bought yearly with the 3-day trial and went straight to Setup without signing in (`checkout_attempt_completed` success).
+- Steps 2–3 passed. Save with Apple found the existing account; "Sign in to my account" switched without a second Face ID and kept the Condition and Premium.
+- Step 4 passed. After delete and reinstall, Premium came back through Adapty access sharing without a Restore tap.
+- Save with email passed. The code email arrived within seconds and the save kept the guest's account id (`auth_completed` email save saved on the same id).
+- Notes: the Supabase session lives in the Keychain and survives app deletion; one `paywall_viewed` with placement `winback` fired while the account had Premium.
