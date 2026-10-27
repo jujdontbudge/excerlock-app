@@ -9,7 +9,7 @@ import { forgetAccount } from '../journey/index';
 import { Reveal } from '../ui/Reveal';
 import { notify } from '../ui/Notice';
 import { haptic } from '../ui/haptics';
-export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
+export function AccountScreen({ onSave, onBack }: { onSave: () => void; onBack: () => void }) {
   const session = useSessionStore((s) => s.data.session),
     runtime = useRuntime(),
     [confirm, setConfirm] = useState(false),
@@ -55,7 +55,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
       <Reveal key={session.kind === 'anonymous' ? 'anonymous' : 'signedIn'}>
         {session.kind === 'anonymous' ? (
           <>
-            <PrimaryButton label={c.signIn} onPress={onSignIn} />
+            <PrimaryButton label={c.saveAccount} onPress={onSave} />
             <SecondaryButton label={c.delete} loading={busy} onPress={() => setConfirm(true)} />
           </>
         ) : (

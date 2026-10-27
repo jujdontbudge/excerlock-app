@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-01
 ---
 
@@ -26,3 +26,5 @@ Paid admission stays honest at the five-minute cap without sending paying people
 - [0050: Hard paywall Journey and account-bound admission](0050-hard-paywall-journey-and-account-bound-admission.md) — accepted; this record implements its lease cap and foreground continuity.
 - `app-next/src/packages/journey/index.ts` (`refreshAdmission`, `renewAdmission`, `useJourney`), `app-next/src/packages/launch/RootNavigator.tsx`.
 - Proofs: `launch/admission-renews-while-open`, `launch/long-setup-keeps-admission`.
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

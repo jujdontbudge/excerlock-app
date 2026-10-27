@@ -81,18 +81,18 @@ export function isAuthRecoveryRequired(error: unknown): error is AuthRecoveryReq
   return error instanceof AuthRecoveryRequiredError;
 }
 
+export type SaveAccountResult = 'saved' | 'existing-account' | 'cancelled';
+export type EmailCodeResult = 'sent' | 'existing-account';
+export type ExistingAccountResult = 'switched' | 'code-sent';
+
 export interface AuthPort {
   session(): Session;
   identity(): AuthIdentity;
-  signInWithApple(): Promise<Session>;
-  signInWithGoogle(): Promise<Session>;
-  linkWithApple(): Promise<Session>;
-  linkWithGoogle(): Promise<Session>;
-  recoverWithApple(): Promise<Session>;
-  recoverWithGoogle(): Promise<Session>;
-  sendEmailCode(email: string, options?: { existingAccountOnly?: boolean }): Promise<void>;
-  verifyEmailCode(code: string): Promise<Session>;
-  recoverWithEmailCode(code: string): Promise<Session>;
+  saveWithApple(): Promise<SaveAccountResult>;
+  saveWithGoogle(): Promise<SaveAccountResult>;
+  sendEmailCode(email: string): Promise<EmailCodeResult>;
+  confirmEmailCode(code: string): Promise<Session>;
+  useExistingAccount(): Promise<ExistingAccountResult>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
   boot(): Promise<AuthIdentity>;

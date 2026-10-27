@@ -1,72 +1,112 @@
-import { AuthCancelledError, AuthIdentity, AuthNoAccountError, AuthPort, AuthRateLimitedError } from '../../../ports/AuthPort';
+import { AuthCancelledError, AuthIdentity, AuthPort, AuthRateLimitedError, SaveAccountResult } from '../../../ports/AuthPort';
 import { Session } from '../../../model/types';
 import { sessionStore } from '../../../identity/sessionStore';
+import { entitlementStore } from '../../../subscription/entitlementStore';
+import { onboardingStore } from '../../../onboarding/onboardingStore';
 import { FakeContext } from '../FakeContext';
+
+type Provider = 'apple' | 'google' | 'email';
+const EXISTING_USER = 'fake-existing-user';
 
 export function AuthFake(ctx: FakeContext): AuthPort {
   let email = 'alex@example.test';
   let generation = 0;
+  let userId = `fake-user-${generation}`;
+  let pending: Provider | null = null;
+  let codeKind: 'save' | 'signIn' = 'save';
   let lastSend: { email: string; at: number } | null = null;
   const listeners = new Set<(identity: AuthIdentity) => void>();
   const session = () => sessionStore.getState().data.session;
-  const identity = (): AuthIdentity => {
-    const current = session();
-    if (current.kind === 'signedIn') {
-      return { kind: 'canonical', userId: `fake-user-${generation}`, isAnonymous: false, generation, ready: true };
-    }
-    return { kind: 'provisional', userId: null, isAnonymous: true, generation, ready: false };
-  };
+  const identity = (): AuthIdentity => ({
+    kind: 'canonical', userId, isAnonymous: session().kind !== 'signedIn', generation, ready: true,
+  });
   const emitIdentity = () => {
     const snapshot = identity();
     listeners.forEach((callback) => callback(snapshot));
   };
-  const signIn = async (provider: 'apple' | 'google' | 'email'): Promise<Session> => {
-    if (ctx.result() === 'cancel') throw new AuthCancelledError();
+  const existing = (provider: Provider) =>
+    provider === 'email' ? /^existing/i.test(email) : ctx.scenario.existingAccount === provider;
+  const signedIn = (provider: Provider): Session => {
     const next: Session = { kind: 'signedIn', provider, email };
     sessionStore.getState().patch({ session: next });
     emitIdentity();
-    ctx.log('signed_in', { provider });
     return next;
+  };
+  const save = async (provider: 'apple' | 'google'): Promise<SaveAccountResult> => {
+    if (ctx.result() === 'cancel') throw new AuthCancelledError();
+    if (existing(provider)) {
+      pending = provider;
+      ctx.log('account_exists', { provider });
+      return 'existing-account';
+    }
+    signedIn(provider);
+    ctx.log('account_saved', { provider, userId });
+    return 'saved';
+  };
+  const switchTo = (provider: Provider) => {
+    generation += 1;
+    userId = EXISTING_USER;
+    pending = null;
+    const next = signedIn(provider);
+    ctx.log('account_switched', { provider, userId });
+    return next;
+  };
+  const reset = () => {
+    entitlementStore.getState().reset();
+    onboardingStore.getState().reset();
+    generation += 1;
+    userId = `fake-user-${generation}`;
+    pending = null;
+    sessionStore.getState().patch({ session: { kind: 'anonymous' } });
+    emitIdentity();
   };
   return {
     session,
     identity,
     waitForReady: async () => identity(),
-    signInWithApple: () => signIn('apple'),
-    signInWithGoogle: () => signIn('google'),
-    linkWithApple: () => signIn('apple'),
-    linkWithGoogle: () => signIn('google'),
-    recoverWithApple: () => signIn('apple'),
-    recoverWithGoogle: () => signIn('google'),
-    sendEmailCode: async (value, options) => {
+    saveWithApple: () => save('apple'),
+    saveWithGoogle: () => save('google'),
+    sendEmailCode: async (value) => {
       ctx.result();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error('Invalid email');
-      if (options?.existingAccountOnly && /^new/i.test(value)) throw new AuthNoAccountError();
       const waited = lastSend?.email === value ? (Date.now() - lastSend.at) / 1000 : Infinity;
       if (waited < 60) throw new AuthRateLimitedError(Math.ceil(60 - waited));
-      lastSend = { email: value, at: Date.now() };
       email = value;
-      ctx.log('email_code_sent');
+      if (session().kind !== 'signedIn' && existing('email')) {
+        pending = 'email';
+        ctx.log('account_exists', { provider: 'email' });
+        return 'existing-account';
+      }
+      lastSend = { email: value, at: Date.now() };
+      codeKind = session().kind === 'signedIn' ? 'signIn' : 'save';
+      ctx.log('email_code_sent', { kind: codeKind });
+      return 'sent';
     },
-    verifyEmailCode: async (code) => {
+    confirmEmailCode: async (code) => {
       if (code !== '123456') throw new Error('Invalid code');
-      return signIn('email');
+      if (codeKind === 'signIn') return switchTo('email');
+      ctx.log('account_saved', { provider: 'email', userId });
+      return signedIn('email');
     },
-    recoverWithEmailCode: async (code) => {
-      if (code !== '123456') throw new Error('Invalid code');
-      return signIn('email');
+    useExistingAccount: async () => {
+      if (!pending) throw new Error('No existing account to use');
+      if (pending === 'email') {
+        lastSend = { email, at: Date.now() };
+        codeKind = 'signIn';
+        pending = null;
+        ctx.log('email_code_sent', { kind: codeKind });
+        return 'code-sent';
+      }
+      switchTo(pending);
+      return 'switched';
     },
     signOut: async () => {
       ctx.result();
-      generation += 1;
-      sessionStore.getState().patch({ session: { kind: 'anonymous' } });
-      emitIdentity();
+      reset();
     },
     deleteAccount: async () => {
       ctx.result();
-      generation += 1;
-      sessionStore.getState().patch({ session: { kind: 'anonymous' } });
-      emitIdentity();
+      reset();
     },
     boot: async () => identity(),
     dispose: () => {
@@ -79,31 +119,6 @@ export function AuthFake(ctx: FakeContext): AuthPort {
         listeners.delete(callback);
       };
     },
-    waitForCanonicalIdentity: async (options) => {
-      const timeoutMs = options?.timeoutMs ?? 5000;
-      const startGeneration = generation;
-      const current = identity();
-      if (current.kind === 'canonical' && current.userId) return current;
-      return new Promise<AuthIdentity>((resolve, reject) => {
-        const timer = setTimeout(() => {
-          stop();
-          reject(new Error(`Canonical identity not available within ${timeoutMs}ms`));
-        }, timeoutMs);
-        const stop = sessionStore.subscribe(() => {
-          if (generation !== startGeneration) {
-            clearTimeout(timer);
-            stop();
-            reject(new Error('Identity generation changed while waiting'));
-            return;
-          }
-          const next = identity();
-          if (next.kind === 'canonical' && next.userId) {
-            clearTimeout(timer);
-            stop();
-            resolve(next);
-          }
-        });
-      });
-    },
+    waitForCanonicalIdentity: async () => identity(),
   };
 }

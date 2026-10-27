@@ -12,7 +12,7 @@ export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
     <Reveal index={4} style={{ gap: t.space.xs }}>
       <PrimaryButton label={onboardingLabels.start} onPress={() => { beginOnboarding(); onContinue(); }} />
       <View style={{ alignItems: 'center' }}>
-        <PressableScale label={c.signIn} onPress={() => { beginSignIn(); router.replace('/sign-in?purpose=signIn&from=welcome'); }}>
+        <PressableScale label={c.signIn} onPress={() => { beginSignIn(); router.replace('/sign-in?purpose=signIn'); }}>
           <Label variant="support" style={{ textAlign: 'center' }}>
             {c.existing}
             <Label variant="support" style={{ color: t.text.primary }}>

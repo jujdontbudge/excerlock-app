@@ -26,9 +26,9 @@ export const settingsCopy = {
   grantedCount: (n: number, total: number) => `${n} of ${total} granted`,
   legalHub: 'Privacy & terms',
   legalDescription: 'Read our published Privacy Policy and Terms of Use.',
-  signIn: 'Sign in',
+  saveAccount: 'Save your account',
   signOut: 'Sign out',
-  anonymous: 'Not signed in',
+  anonymous: 'Not saved yet. Save your account to keep your Conditions and subscription if you reinstall or change iPhone.',
   signedIn: (p: string) => `Signed in with ${p === 'apple' ? 'Apple' : p === 'google' ? 'Google' : 'email'}`,
   plan: (status: string) =>
     ({

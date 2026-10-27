@@ -9,7 +9,6 @@ import { entitlementStore } from '../subscription/entitlementStore';
 import { permissionsStore } from '../permissions/permissionsStore';
 import { settingsStore } from '../preferences/settingsStore';
 import { onboardingStore } from '../onboarding/onboardingStore';
-import { rememberedSignInStore } from '../identity/rememberedSignIn';
 import { filmingModeStore } from '../activity/filmingModeStore';
 import { showcaseModeStore } from '../progress/showcaseModeStore';
 import { bankStore } from '../bank/bankStore';
@@ -26,7 +25,6 @@ export const stores = [
   permissionsStore,
   settingsStore,
   onboardingStore,
-  rememberedSignInStore,
   filmingModeStore,
   showcaseModeStore,
 ];

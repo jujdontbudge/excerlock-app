@@ -37,11 +37,10 @@ import { profileStore } from '../preferences/profileStore';
 import { makeRule } from './lib/scenarios/base';
 import { rulesStore } from '../conditions/rulesStore';
 import { settingsStore } from '../preferences/settingsStore';
-import { isAccountDataReady } from '../model/accountDataReady';
 import { NotificationResponsesFake } from './lib/fakes/NotificationResponsesFake';
-import { admitPaid, beginWelcome, currentJourney, eligible, finishSetup } from '../journey/index';
-import { rememberSignIn } from '../identity/rememberedSignIn';
+import { admitPaid, finishSetup } from '../journey/index';
 import { pathFor } from '../onboarding/onboardingPath';
+import { onboardingStore } from '../onboarding/onboardingStore';
 import { classBackedPort } from './lib/fakes/classBackedPort';
 import { enforcementPolicyEvidence } from './lib/enforcementPolicyEvidence';
 export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
@@ -50,7 +49,7 @@ export type FakeRuntimeOptions = {
   nativeReview?: Runtime['review'];
   createAccountData(): {
     prepare(): Promise<void>;
-    deactivate(): Promise<void>;
+    deactivate(options?: { carryToNextAccount?: boolean }): Promise<void>;
     eraseActive(): Promise<void>;
     activate(userId: string): Promise<{ changedAccount: boolean }>;
     snapshot(): { activeUserId: string | null; legacyQuarantined: boolean };
@@ -60,7 +59,6 @@ export type FakeRuntimeOptions = {
 };
 export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
   let accountData = options.createAccountData();
-  let accountTransitions: string[] = [];
   const ctx = new FakeContext(scenarios[0]),
     adAttribution = AdAttributionFake(ctx),
     bankDrain = createBankDrainFake(() => ctx.clock.now()),
@@ -71,14 +69,13 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     gym = GymFake(ctx, options.gymFixSource),
     activity = activityHistory(ctx),
     accountLabel = (userId: string | null) =>
-      userId === 'lab-user-a' ? 'A' as const : userId === 'lab-user-b' ? 'B' as const : userId ? 'Checkout' as const : 'None' as const,
+      userId === 'lab-user-a' ? 'A' as const : userId === 'lab-user-b' ? 'B' as const : userId === 'lab-existing' ? 'Existing' as const : userId ? 'Checkout' as const : 'None' as const,
     updateAccountDataView = () => {
       const snapshot = accountData.snapshot();
       ctx.update({ accountData: {
         active: accountLabel(snapshot.activeUserId),
         legacyQuarantined: snapshot.legacyQuarantined,
         checkpoints: ctx.snapshot().accountData?.checkpoints,
-        switchOrdering: ctx.snapshot().accountData?.switchOrdering,
         activityCheckpoints: ctx.snapshot().accountData?.activityCheckpoints,
       } });
     },
@@ -89,17 +86,18 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         await accountData.prepare();
         updateAccountDataView();
       },
-      beforeAccountSwitch: async () => {
+      beforeAccountSwitch: async ({ carryGuestData, signedOut }) => {
         await settleBankDrain(bankDrain);
-        await accountData.deactivate();
-        accountTransitions.push('Preserved while unready');
+        await accountData.deactivate({ carryToNextAccount: carryGuestData });
+        if (signedOut) {
+          onboardingStore.getState().reset();
+          await onboardingStore.persistBarrier();
+        }
         updateAccountDataView();
       },
       prepareAccount: async (identity) => {
         if (!identity.userId) throw new Error('Account identity is missing');
-        const transition = await accountData.activate(identity.userId);
-        accountTransitions.push(`${accountLabel(identity.userId)} loaded before ready`);
-        if (transition.changedAccount) accountTransitions.push('Screen Time rotated after target loaded');
+        await accountData.activate(identity.userId);
         updateAccountDataView();
       },
       afterDelete: async () => {
@@ -143,10 +141,6 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
     analytics,
     identityGeneration: () => auth.identity().generation,
   });
-  const paidNow = () => eligible(subscription.entitlement(), Date.parse(ctx.clock.now()));
-  const subscriptionAdmission = {
-    verify: async (_identity: { userId: string; generation: number }) => ({ type: paidNow() ? 'eligible' as const : 'ineligible' as const }),
-  };
   async function seedAccount(account: 'A' | 'B') {
     const expected = account === 'A' ? 'lab-user-a' : 'lab-user-b';
     if (accountData.snapshot().activeUserId !== expected) throw new Error(`Account ${account} is not active`);
@@ -224,9 +218,7 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
         void onboardingOffer.prefetch();
         const trialReminder = trialReminderPlan(scenario.entitlement, Date.parse(ctx.clock.now()));
         ctx.update({ trialReminder: trialReminder ? `${trialReminder.title} · ${new Date(trialReminder.at).toISOString()} · ${Math.round((Date.parse(scenario.entitlement.accessExpiresAt!) - trialReminder.at) / 3600000)} hours before expiry` : 'None' });
-        if (scenario.onboarding === 'complete' && !scenario.launchSignInRequired && !scenario.identityLab) {
-          if (auth.identity().kind !== 'canonical') await auth.signInWithApple();
-          rememberSignIn(auth.identity());
+        if (scenario.onboarding === 'complete' && !scenario.identityLab) {
           const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
           if (admitPaid(journeyRuntime, false)) finishSetup(journeyRuntime);
         }
@@ -271,246 +263,6 @@ export function FakeRuntime(options: FakeRuntimeOptions): FakeRuntimeInstance {
           ...ctx.snapshot().accountData!,
           checkpoints: `A ${a} · B ${b} · A ${restored}`,
           activityCheckpoints: `A ${activityA} · B ${activityB} · A ${activityRestored}`,
-        } });
-      },
-      runLabAccountSwitchOrdering: async () => {
-        const waitForReady = async () => {
-          const current = auth.identity();
-          if (isAccountDataReady(current, accountData.snapshot().activeUserId)) return current;
-          return new Promise<ReturnType<typeof auth.identity>>((resolve, reject) => {
-            const timer = setTimeout(() => {
-              stop();
-              reject(new Error('Account switch did not become ready'));
-            }, 15_000);
-            const stop = auth.subscribeIdentity((identity) => {
-              if (!isAccountDataReady(identity, accountData.snapshot().activeUserId)) return;
-              clearTimeout(timer);
-              stop();
-              resolve(identity);
-            });
-          });
-        };
-        await auth.recoverWithApple();
-        await waitForReady();
-        await seedAccount('A');
-        accountTransitions = [];
-        await auth.recoverWithGoogle();
-        const b = await waitForReady();
-        accountTransitions.push(`${accountLabel(b.userId)} ready`);
-        await seedAccount('B');
-        await auth.recoverWithApple();
-        const a = await waitForReady();
-        accountTransitions.push(`${accountLabel(a.userId)} ready`);
-        updateAccountDataView();
-        ctx.update({ accountData: {
-          ...ctx.snapshot().accountData!,
-          switchOrdering: accountTransitions.join(' · '),
-        } });
-      },
-      runLabDelayedCallbackIsolation: async () => {
-        const result = await identityLab.runDelayedCallbackIsolation();
-        const selected = auth.identity();
-        const admission = selected.kind === 'canonical' && selected.userId
-          ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
-          : { type: 'unavailable' as const };
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: `${result.identity} Entitlement ${result.entitlement} admission ${admission.type} callbacks ${result.queued}/${result.delivered}`,
-        } });
-      },
-      prepareLabDeletionCallbackIsolation: async () => {
-        await identityLab.prepareDeletionCallbackIsolation(() => seedAccount('A'), async (result) => {
-          const selected = auth.identity();
-          const admission = selected.kind === 'canonical' && selected.userId
-            ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
-            : { type: 'unavailable' as const };
-          const accountDataErased =
-            rulesStore.getState().data.rules.length === 0 &&
-            historyStore.getState().data.days.length === 0 &&
-            profileStore.getState().data.name.length === 0 &&
-            settingsStore.getState().data.gymPlaces.length === 0;
-          const current = ctx.snapshot().subscriptionLab;
-          ctx.update({ subscriptionLab: {
-            purchases: current?.purchases ?? 0,
-            restores: current?.restores ?? 0,
-            queued: current?.queued ?? 0,
-            delivered: current?.delivered ?? 0,
-            callbackIsolation: current?.callbackIsolation,
-            deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} callbacks ${result.queued}/${result.delivered}`,
-            transferIsolation: current?.transferIsolation,
-            concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
-          } });
-        });
-      },
-      runLabDeletionCallbackIsolation: async () => {
-        const result = await identityLab.runDeletionCallbackIsolation(() => seedAccount('A'));
-        const selected = auth.identity();
-        const admission = selected.kind === 'canonical' && selected.userId
-          ? await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation })
-          : { type: 'unavailable' as const };
-        const accountDataErased =
-          rulesStore.getState().data.rules.length === 0 &&
-          historyStore.getState().data.days.length === 0 &&
-          profileStore.getState().data.name.length === 0 &&
-          settingsStore.getState().data.gymPlaces.length === 0;
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: `${result.deletedIdentity} deleted tombstone ${result.tombstonePreserved ? 'preserved' : 'missing'} fresh ${result.identity} Entitlement ${result.entitlement} admission ${admission.type} data ${accountDataErased ? 'erased' : 'present'} callbacks ${result.queued}/${result.delivered}`,
-          transferIsolation: current?.transferIsolation,
-          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
-        } });
-      },
-      runLabEstablishedTransfer: async () => {
-        const verifyCurrent = async () => {
-          const selected = auth.identity();
-          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
-          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
-          return proof.type;
-        };
-        const result = await identityLab.runEstablishedTransfer(seedAccount, accountCheckpoint, verifyCurrent);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? result.restores,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: current?.deletionIsolation,
-          transferIsolation: `${result.source} source profile ${result.beforeTransfer} retry ${result.afterFailure} transfer ${result.afterTransfer} repeat ${result.afterRepeat} source after ${result.sourceAfterTransfer} target return ${result.targetAfterReturn} transfers ${result.transfers}${result.grantLedger ? ` grants ${result.grantLedger}` : ''} data A ${result.sourceData} data B ${result.targetData}`,
-          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
-          providerConflict: current?.providerConflict,
-        } });
-      },
-      runLabConcurrentRestore: async () => {
-        const verifyCurrent = async () => {
-          const selected = auth.identity();
-          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
-          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
-          return proof.type;
-        };
-        const result = await identityLab.runConcurrentRestore(seedAccount, accountCheckpoint, verifyCurrent);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? result.restores,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: current?.deletionIsolation,
-          transferIsolation: current?.transferIsolation,
-          concurrentRestoreIsolation: `race A+B winner ${result.winner} after race ${result.afterRace} stale loser ${result.afterStaleLoser} repeat ${result.afterRepeat} source ${result.sourceAfterRace} target ${result.targetAfterReturn} transfers ${result.transfers} grants ${result.grantLedger} data A ${result.sourceData} data B ${result.targetData}`,
-          providerConflict: current?.providerConflict,
-        } });
-      },
-      runLabProviderLinking: async () => {
-        const result = await identityLab.runProviderLinking(seedAccount, accountCheckpoint);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: current?.deletionIsolation,
-          transferIsolation: current?.transferIsolation,
-          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
-          providerLinking: `canonical ${result.canonical} Apple ${result.apple} Google ${result.google} accounts ${result.accounts} grants ${result.grants} conflict ${result.conflict} data A ${result.initialData} data Apple ${result.appleData} data Google ${result.googleData} data conflict ${result.conflictData}`,
-          providerConflict: current?.providerConflict,
-          localSignOutIsolation: current?.localSignOutIsolation,
-        } });
-      },
-      runLabLocalSignOut: async () => {
-        const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
-        const journeyCheckpoint = async (action?: 'admit' | 'reset') => {
-          if (action === 'reset') beginWelcome();
-          else if (action === 'admit') {
-            if (!admitPaid(journeyRuntime, false) || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
-          }
-          const journey = currentJourney();
-          const admitted = journey.phase === 'app' && paidNow();
-          return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
-        };
-        const result = await identityLab.runLocalSignOut(seedAccount, accountCheckpoint, journeyCheckpoint);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          callbackIsolation: current?.callbackIsolation,
-          deletionIsolation: current?.deletionIsolation,
-          transferIsolation: current?.transferIsolation,
-          concurrentRestoreIsolation: current?.concurrentRestoreIsolation,
-          providerConflict: current?.providerConflict,
-          localSignOutIsolation: `before ${result.before} failed reset ${result.failedReset} after ${result.after} local scopes ${result.localScopes} local data ${result.localData} peer ${result.peer} fresh proofs ${result.peerProofs}`,
-        } });
-      },
-      runLabStaleProductHandle: async () => {
-        const result = await identityLab.runStaleProductHandle(seedAccount, accountCheckpoint);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? result.purchaseCalls,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          staleProductHandle: `source ${result.source} generation ${result.sourceGeneration} target ${result.target} generation ${result.targetGeneration} stale ${result.staleError} SDK purchases ${result.purchaseCalls} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
-        } });
-      },
-      runLabIndependentRestore: async () => {
-        const verifyCurrent = async () => {
-          const selected = auth.identity();
-          if (selected.kind !== 'canonical' || !selected.userId) return 'unavailable';
-          const proof = await subscriptionAdmission.verify({ userId: selected.userId, generation: selected.generation });
-          return proof.type;
-        };
-        const result = await identityLab.runIndependentRestore(seedAccount, accountCheckpoint, verifyCurrent);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? result.restores,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          restoreIsolation: `independent before ${result.before} empty restore after ${result.after} Entitlement ${result.entitlement} restores ${result.restores} data ${result.data}`,
-        } });
-      },
-      runLabPassiveEntry: async () => {
-        const result = await identityLab.runPassiveEntry(seedAccount, accountCheckpoint);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? result.restores,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          passiveEntry: `store owner ${result.owner} passive target ${result.passiveTarget} target Entitlement ${result.targetEntitlement} source Entitlement ${result.sourceEntitlement} transfers ${result.transfers} restores ${result.restores} data A ${result.sourceData} data B ${result.targetData} A restored ${result.sourceRestored}`,
-        } });
-      },
-      runLabLifecycleRevocation: async () => {
-        const journeyRuntime = { auth, subscription, clock: ctx.clock } as unknown as Runtime;
-        const journeyCheckpoint = async (action: 'admit' | 'refresh') => {
-          if (action === 'admit') {
-            if (!admitPaid(journeyRuntime, false) || !finishSetup(journeyRuntime)) throw new Error('Journey admission was not established');
-          } else await subscription.refresh();
-          const journey = currentJourney();
-          const admitted = journey.phase === 'app' && paidNow();
-          return `${journey.phase}/${admitted ? 'admitted' : 'revoked'}`;
-        };
-        const result = await identityLab.runLifecycleRevocation(seedAccount, accountCheckpoint, journeyCheckpoint);
-        const current = ctx.snapshot().subscriptionLab;
-        ctx.update({ subscriptionLab: {
-          purchases: current?.purchases ?? 0,
-          restores: current?.restores ?? 0,
-          queued: current?.queued ?? 0,
-          delivered: current?.delivered ?? 0,
-          lifecycleRevocation: `before ${result.before} after ${result.after} Entitlement ${result.entitlement} data ${result.data}`,
         } });
       },
       runOnboardingPathDiagnostics: () => {

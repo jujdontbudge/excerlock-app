@@ -11,7 +11,6 @@ import { permissionsStore } from '../../permissions/permissionsStore';
 import { sessionStore } from '../../identity/sessionStore';
 import { entitlementStore } from '../../subscription/entitlementStore';
 import { onboardingStore } from '../../onboarding/onboardingStore';
-import { authorizeDemoScenario } from '../../identity/rememberedSignIn';
 import { beginLaunch } from '../../journey/index';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LEDGER_PREFIX, ledgerKey } from '../../ad-attribution/AdAttribution';
@@ -20,7 +19,6 @@ import { showcaseModeStore } from '../../progress/showcaseModeStore';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
   beginLaunch();
-  authorizeDemoScenario(scenario.launchSignInRequired === true || scenario.onboarding !== 'complete' || Boolean(scenario.identityLab));
   if (keepEdits) return;
   const otaStorage = createAsyncStorageOtaStorage();
   if (scenario.otaResumeRoute) {

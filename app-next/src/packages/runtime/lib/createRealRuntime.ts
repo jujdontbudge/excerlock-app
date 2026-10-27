@@ -1,3 +1,4 @@
+import { onboardingStore } from '../../onboarding/onboardingStore';
 import { AppState, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -224,13 +225,17 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',
       reportError: options.reportError,
       promptSystem: (run) => safety.prompt(run),
-      beforeAccountSwitch: async () => {
+      beforeAccountSwitch: async ({ carryGuestData, signedOut }) => {
         await queue;
         walking.stop();
         await detection.service.stop();
         await detection.service.flush();
         await settleBankDrain(bankDrain);
-        await accountData.deactivate();
+        await accountData.deactivate({ carryToNextAccount: carryGuestData });
+        if (signedOut) {
+          onboardingStore.getState().reset();
+          await onboardingStore.persistBarrier();
+        }
       },
       prepareAccount: activateAccount,
       beforeDelete: async () => {

@@ -1,3 +1,4 @@
+import type { AccountSwitch } from '../identity/createAuthServices';
 import { createIdentityServices } from './lib/createIdentityServices';
 import { createPostHogRuntime } from '@posthog-runtime';
 import {
@@ -29,7 +30,7 @@ export async function createClientServices(options: {
   afterDelete(): Promise<void>;
   reportError(error: unknown): void;
   promptSystem<T>(run: () => Promise<T>): Promise<T>;
-  beforeAccountSwitch?(): Promise<void>;
+  beforeAccountSwitch?(options: AccountSwitch): Promise<void>;
   prepareAccount?(identity: AuthIdentity): Promise<void>;
 }) {
   const config = readClientConfiguration(options.extra);

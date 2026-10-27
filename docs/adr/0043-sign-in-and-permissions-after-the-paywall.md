@@ -54,3 +54,5 @@ At the time of this decision, sign-in kept its existing `signInRequired` flag an
   - `app-next/src/features/setup/__tests__/setup-router.test.tsx`
   - `app-next/src/features/home/__tests__/setup-reminder.test.tsx`
   - `app-next/src/features/conditions/__tests__/condition-needs.test.tsx`
+
+Its sign-in part is superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md); the permissions part stands.

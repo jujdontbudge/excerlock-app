@@ -50,42 +50,6 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { productionAnalytics: true, purchase: 'cancel' },
   }),
-  base('identity-lab-purchase-preflight', 'Identity lab · retry purchase preflight', {
-    ...atOnboardingPaywall,
-    identityLab: { activation: 'failFirst', adaptyIdentify: 'failFirst', audienceUpdate: 'fail', plans: 'failFirst', },
-  }),
-  base('identity-lab-purchase-response-interrupted', 'Identity lab · payment response interrupted', {
-    ...atOnboardingPaywall,
-    identityLab: { purchase: 'paidThenInterrupted', restore: 'restored' },
-  }),
-  base('identity-lab-purchase-response-encoding', 'Identity lab · payment response encoding failed', {
-    ...atOnboardingPaywall,
-    identityLab: { purchase: 'paidThenEncodingFailed', restore: 'restored' },
-  }),
-  base('identity-lab-purchase-journal-confirm', 'Identity lab · journal confirmation fails once', {
-    ...atOnboardingPaywall,
-    identityLab: { restore: 'restored' },
-  }),
-  base('identity-lab-purchase-journal-clear', 'Identity lab · journal removal fails once', {
-    ...atOnboardingPaywall,
-    identityLab: { purchase: 'cancel', restore: 'notFound' },
-  }),
-  base('identity-lab-email-new', 'Identity lab · new email account after purchase', {
-    ...atOnboardingPaywall,
-    identityLab: { emailAccount: 'new', restore: 'restored' },
-  }),
-  base('identity-lab-email-existing', 'Identity lab · existing email account after purchase', {
-    ...atOnboardingPaywall,
-    identityLab: { emailAccount: 'existing', restore: 'restored' },
-  }),
-  base('identity-lab-email-paid', 'Identity lab · existing paid email account after purchase', {
-    ...atOnboardingPaywall,
-    identityLab: { emailAccount: 'paid', restore: 'restored' },
-  }),
-  base('identity-lab-email-rate-limited', 'Identity lab · rate limited email code', {
-    ...atOnboardingPaywall,
-    identityLab: { emailAccount: 'existing', emailRateLimited: true },
-  }),
   base('identity-lab-apple-unknown', 'Identity lab · Apple unknown error then cancel and retry', {
     ...atOnboardingPaywall,
     identityLab: { appleUnknown: true, providerAttempts: true },
@@ -134,10 +98,6 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', purchase: 'alreadyOwned', restore: 'restored' },
   }),
-  base('identity-lab-stale-product-handle', 'Identity lab · stale product handle after account switch', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', staleProductHandle: true },
-  }),
   base('identity-lab-restore-wrong-store', 'Identity lab · wrong Store account restore', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', restore: 'notFound', wrongStoreAccount: true },
@@ -145,34 +105,6 @@ export const identityLabScenarios = [
   base('identity-lab-restore-error-retry', 'Identity lab · restore error then retry', {
     ...atOnboardingPaywall,
     identityLab: { userSync: 'failFirst', restore: 'errorFirst' },
-  }),
-  base('identity-lab-independent-restore', 'Identity lab · independent access survives empty restore', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', restore: 'notFound', independentRestore: true },
-  }),
-  base('identity-lab-passive-entry', 'Identity lab · passive entry does not transfer', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', passiveEntry: true },
-  }),
-  base('identity-lab-lifecycle-revocation', 'Identity lab · Entitlement revocation while admitted', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', lifecycleRevocation: true },
-  }),
-  base('identity-lab-delayed-callbacks', 'Identity lab · delayed purchase and restore callbacks', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', delayedCallbacks: true },
-  }),
-  base('identity-lab-deletion-callbacks', 'Identity lab · deletion and delayed callbacks', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', delayedCallbacks: true },
-  }),
-  base('identity-lab-established-transfer', 'Identity lab · established account restore transfer', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', establishedTransfer: true },
-  }),
-  base('identity-lab-transfer-second-subscription', 'Identity lab · transfer with second subscription', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', establishedTransfer: true, secondSubscription: true },
   }),
   base('identity-lab-integration-failed', 'Identity lab · attribution identifier fails before checkout', {
     ...atOnboardingPaywall,
@@ -182,32 +114,24 @@ export const identityLabScenarios = [
     ...atOnboardingPaywall,
     identityLab: { integrationIdentifier: 'hang' },
   }),
-  base('identity-lab-concurrent-restore', 'Identity lab · concurrent established account restores', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', concurrentRestore: true },
-  }),
-  base('identity-lab-local-signout', 'Identity lab · local sign-out with peer session', {
-    ...atOnboardingPaywall,
-    identityLab: { localSignOut: true },
-  }),
-  base('identity-lab-linked-providers', 'Identity lab · linked providers on one account', {
-    ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', linkedProviders: true },
-  }),
   base('identity-lab-provider-attempts', 'Identity lab · provider attempt resilience', {
     ...atOnboardingPaywall,
     identityLab: { googleSignIn: 'success', providerAttempts: true },
   }),
-  base('identity-lab-email-challenges', 'Identity lab · email code resilience', {
+  base('identity-lab-save', 'Identity lab · guest saves the account', {
     ...atOnboardingPaywall,
-    identityLab: { emailChallenges: true },
+    identityLab: { googleSignIn: 'success' },
   }),
-  base('identity-lab-established-provider-conflict', 'Identity lab · established provider conflict', {
+  base('identity-lab-existing-apple', 'Identity lab · Apple ID belongs to an existing paid account', {
     ...atOnboardingPaywall,
-    identityLab: { googleSignIn: 'success', establishedProviderConflict: true },
+    identityLab: { existing: { provider: 'apple', paid: true } },
   }),
-  base('identity-lab-apple-linked', 'Identity lab · Apple ID already linked', {
+  base('identity-lab-existing-email', 'Identity lab · email belongs to an existing paid account', {
     ...atOnboardingPaywall,
-    identityLab: { appleLink: 'conflict', restore: 'restored' },
+    identityLab: { existing: { provider: 'email', paid: true } },
+  }),
+  base('identity-lab-email-rate-limited', 'Identity lab · rate limited email code', {
+    ...atOnboardingPaywall,
+    identityLab: { emailRateLimited: true },
   }),
 ];

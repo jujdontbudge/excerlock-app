@@ -53,7 +53,7 @@ export function RootNavigator() {
           <Stack.Protected guard={journey.phase === 'setup' && journey.paid}>
             <Stack.Screen name="setup/[step]" />
           </Stack.Protected>
-          <Stack.Protected guard={journey.phase === 'signIn'}>
+          <Stack.Protected guard={journey.phase === 'signIn' || journey.canEnterApp}>
             <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
           <Stack.Protected guard={!journey.canEnterApp}>

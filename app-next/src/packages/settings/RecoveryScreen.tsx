@@ -6,7 +6,6 @@ import { AccountScreen } from './AccountScreen';
 import { LegalScreen } from './LegalScreen';
 import { FeedbackScreen } from '../support/FeedbackScreen';
 import { useRuntime } from '../ports/useRuntime';
-import { useSignedIn } from '../identity/rememberedSignIn';
 import { restorePurchases } from '../subscription/restorePurchases';
 import { subscriptionCopy } from '../subscription/subscriptionCopy';
 import { settingsCopy as c } from './lib/settingsCopy';
@@ -22,7 +21,6 @@ export function RecoveryScreen({
   onRestored: () => void;
 }) {
   const runtime = useRuntime();
-  const approved = useSignedIn(runtime.auth);
   const [section, setSection] = useState<'menu' | 'account' | 'feedback' | 'terms' | 'privacy'>('menu');
   const [exportOpen, setExportOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
@@ -59,8 +57,7 @@ export function RecoveryScreen({
       setExportBusy(false);
     }
   };
-  if (section === 'account' && (approved || runtime.auth.session().kind === 'anonymous'))
-    return <AccountScreen onBack={back} onSignIn={onSignIn} />;
+  if (section === 'account') return <AccountScreen onBack={back} onSave={onSignIn} />;
   if (section === 'feedback') return <FeedbackScreen onBack={back} />;
   if (section === 'terms' || section === 'privacy')
     return <SettingsPage onBack={back}><LegalScreen doc={section} /></SettingsPage>;
@@ -76,11 +73,7 @@ export function RecoveryScreen({
       }>
       <Heading title="Account and help" support="Your account and purchase recovery remain available without a subscription." />
       <SettingsGroup>
-        {approved || runtime.auth.session().kind === 'anonymous' ? (
-          <SettingsRow title="Account and deletion" onPress={() => setSection('account')} />
-        ) : (
-          <SettingsRow title="Sign in to manage your account" onPress={onSignIn} />
-        )}
+        <SettingsRow title="Account and deletion" onPress={() => setSection('account')} />
         <SettingsRow title="Manage subscription in App Store" onPress={() => void manage()} />
         <SettingsRow title={c.exportData} onPress={() => setExportOpen(true)} />
         <SettingsRow title={c.restore} onPress={() => void restore()} />

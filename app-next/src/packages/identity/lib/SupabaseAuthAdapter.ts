@@ -7,13 +7,16 @@ import {
   AuthRecoveryRequiredError,
   isAuthCancelled,
   isAuthRateLimited,
+  type EmailCodeResult,
+  type ExistingAccountResult,
+  type SaveAccountResult,
 } from '../../ports/AuthPort';
 import type { Session } from '../../model/types';
 import type { Unsubscribe } from '../../model/models';
 import { sessionStore } from '../sessionStore';
 import { requestAppleCredential, type AppleNativeDeps } from './providerApple';
 import { requestGoogleCredential, type GoogleAuthDeps } from './providerGoogle';
-import { emailSendError, isLinkConflictError, validateEmail, validateOtpCode } from './emailFlow';
+import { emailSendError, isExistingAccountError, isLinkConflictError, validateEmail, validateOtpCode } from './emailFlow';
 import type { RunIdentityOperation } from '../identityBarrier';
 import { currentEmailChallenge, rememberEmailChallenge, forgetEmailChallenge } from '../emailChallenge';
 import { isProtectedSessionError } from './protectedSessionStorage';
@@ -27,12 +30,18 @@ export type AuthAdapterDeps = {
   fetchImpl?: typeof fetch;
   onBeforeDelete?: () => Promise<void>;
   onAfterDelete?: () => Promise<void>;
-  onAccountSwitchReset?: () => Promise<void>;
+  onAccountSwitchReset?: (options: AccountSwitch) => Promise<void>;
   bootTimeoutMs?: number;
   runIdentityOperation?: RunIdentityOperation;
   readStoredSession?: () => Promise<SupabaseSession | null>;
   waitForReady?: (options?: { timeoutMs?: number }) => Promise<AuthIdentity>;
 };
+
+export type AccountSwitch = { carryGuestData: boolean; signedOut: boolean };
+type PendingExistingAccount =
+  | { provider: 'apple'; token: string; nonce: string; accessToken?: undefined }
+  | { provider: 'google'; token: string; nonce?: undefined; accessToken?: string }
+  | { provider: 'email'; email: string };
 
 const BOOT_TIMEOUT_MS = 5000;
 
@@ -65,7 +74,8 @@ export class SupabaseAuthAdapter implements AuthPort {
   private fetchImpl: typeof fetch;
   private onBeforeDelete: () => Promise<void>;
   private onAfterDelete: () => Promise<void>;
-  private onAccountSwitchReset: () => Promise<void>;
+  private onAccountSwitchReset: (options: AccountSwitch) => Promise<void>;
+  private pendingExisting: PendingExistingAccount | null = null;
   private bootTimeoutMs: number;
   private readStoredSession: () => Promise<SupabaseSession | null>;
   private prepareIdentity: AuthAdapterDeps['waitForReady'];
@@ -437,76 +447,68 @@ export class SupabaseAuthAdapter implements AuthPort {
   dispose(): void { this.beginDispose(); }
 
 
-  async signInWithApple(): Promise<Session> {
-    return this.authenticateWithApple(true);
+  saveWithApple(): Promise<SaveAccountResult> {
+    return this.saveWithProvider('apple');
   }
 
-  private async authenticateWithApple(linkAnonymous: boolean): Promise<Session> {
+  saveWithGoogle(): Promise<SaveAccountResult> {
+    return this.saveWithProvider('google');
+  }
+
+  private async saveWithProvider(provider: 'apple' | 'google'): Promise<SaveAccountResult> {
     const expected = this.captureCanonicalIdentity();
-    const credential = await requestAppleCredential(this.appleDeps);
+    let pending: PendingExistingAccount;
+    try {
+      if (provider === 'apple') {
+        const credential = await requestAppleCredential(this.appleDeps);
+        pending = { provider, token: credential.identityToken, nonce: credential.rawNonce };
+      } else {
+        const credential = await requestGoogleCredential(this.googleDeps);
+        pending = { provider, token: credential.idToken, accessToken: credential.accessToken };
+      }
+    } catch (error) {
+      if (isAuthCancelled(error)) return 'cancelled';
+      throw error;
+    }
     this.assertCanonicalIdentity(expected);
     return this.runIdentityOperation(async () => {
       this.assertCanonicalIdentity(expected);
-      if (linkAnonymous && this.currentIdentity.isAnonymous) {
-        try {
-          return await this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected);
-        } catch (error) {
-          if (!(error instanceof AuthRecoveryRequiredError)) throw error;
-        }
+      try {
+        await this.linkWithIdToken(pending.provider, pending.token, pending.nonce, pending.accessToken, expected);
+        this.pendingExisting = null;
+        return 'saved';
+      } catch (error) {
+        if (!(error instanceof AuthRecoveryRequiredError)) throw error;
+        this.pendingExisting = pending;
+        return 'existing-account';
       }
-      return this.authenticateSession(() => this.runSdk(() => this.supabase.auth.signInWithIdToken({
-        provider: 'apple', token: credential.identityToken, nonce: credential.rawNonce,
-      })), 'REAUTH_FAILED');
     });
   }
 
-  async linkWithApple(): Promise<Session> {
-    const expected = this.captureEstablishedIdentity();
-    const credential = await requestAppleCredential(this.appleDeps);
-    this.assertCanonicalIdentity(expected);
-    return this.runIdentityOperation(() =>
-      this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected),
-    );
-  }
-
-  async recoverWithApple(): Promise<Session> {
-    return this.authenticateWithApple(false);
-  }
-
-  async signInWithGoogle(): Promise<Session> {
-    return this.authenticateWithGoogle(true);
-  }
-
-  private async authenticateWithGoogle(linkAnonymous: boolean): Promise<Session> {
+  async useExistingAccount(): Promise<ExistingAccountResult> {
+    const pending = this.pendingExisting;
+    if (!pending) throw new AuthError('Choose how to sign in first.', { code: 'NO_EXISTING_ACCOUNT' });
     const expected = this.captureCanonicalIdentity();
-    const credential = await requestGoogleCredential(this.googleDeps);
-    this.assertCanonicalIdentity(expected);
     return this.runIdentityOperation(async () => {
       this.assertCanonicalIdentity(expected);
-      if (linkAnonymous && this.currentIdentity.isAnonymous) {
-        try {
-          return await this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected);
-        } catch (error) {
-          if (!(error instanceof AuthRecoveryRequiredError)) throw error;
-        }
+      if (pending.provider === 'email') {
+        const { error } = await this.runSdk(() => this.supabase.auth.signInWithOtp({
+          email: pending.email, options: { shouldCreateUser: false },
+        }));
+        this.assertCanonicalIdentity(expected);
+        const failure = error ? emailSendError(error) : null;
+        if (failure && !isAuthRateLimited(failure)) throw failure;
+        await rememberEmailChallenge(pending.email, expected.userId, 'signIn', isAuthRateLimited(failure) ? failure.retryAfterSeconds : 60);
+        this.pendingExisting = null;
+        if (failure) throw failure;
+        return 'code-sent';
       }
-      return this.authenticateSession(() => this.runSdk(() => this.supabase.auth.signInWithIdToken({
-        provider: 'google', token: credential.idToken, access_token: credential.accessToken,
+      await this.authenticateSession(() => this.runSdk(() => this.supabase.auth.signInWithIdToken({
+        provider: pending.provider, token: pending.token, nonce: pending.nonce, access_token: pending.accessToken,
       })), 'REAUTH_FAILED');
+      this.pendingExisting = null;
+      return 'switched';
     });
-  }
-
-  async linkWithGoogle(): Promise<Session> {
-    const expected = this.captureEstablishedIdentity();
-    const credential = await requestGoogleCredential(this.googleDeps);
-    this.assertCanonicalIdentity(expected);
-    return this.runIdentityOperation(() =>
-      this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected),
-    );
-  }
-
-  async recoverWithGoogle(): Promise<Session> {
-    return this.authenticateWithGoogle(false);
   }
 
   private async authenticateSession(
@@ -524,7 +526,8 @@ export class SupabaseAuthAdapter implements AuthPort {
       if (error || !data.session?.user || data.session.user.is_anonymous)
         throw new AuthError('Could not verify your sign-in. Please try again.', { code: failureCode });
       authenticated = true;
-      if (data.session.user.id !== previous.identity.userId) await this.onAccountSwitchReset();
+      if (data.session.user.id !== previous.identity.userId)
+        await this.onAccountSwitchReset({ carryGuestData: previous.identity.isAnonymous, signedOut: false });
       this.assertTransition(previous.operationGeneration);
       await forgetEmailChallenge();
       this.applySupabaseSession(data.session, { preserveGeneration: true, ready: false });
@@ -544,14 +547,6 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.restoreFailedTransition(previous);
       throw error;
     }
-  }
-
-  private captureEstablishedIdentity(): { userId: string; generation: number } {
-    const expected = this.captureCanonicalIdentity();
-    if (this.currentIdentity.isAnonymous || this.currentSession.kind !== 'signedIn') {
-      throw new AuthError('Sign in before adding another login method.', { code: 'LINK_REQUIRES_ACCOUNT' });
-    }
-    return expected;
   }
 
   private async linkWithIdToken(
@@ -582,31 +577,36 @@ export class SupabaseAuthAdapter implements AuthPort {
     if (!session?.user || !user) {
       throw new AuthError('Sign-in did not return a session. Please try again.', { code: 'LINK_NO_SESSION' });
     }
-    const beforeId = this.currentIdentity.userId;
-    if (beforeId && user.id !== beforeId) {
+    if (user.id !== expected.userId) {
       throw new AuthRecoveryRequiredError(provider);
     }
     this.applySupabaseSession(session, { preserveGeneration: true });
     return this.currentSession;
   }
 
-  async sendEmailCode(email: string, _options?: { existingAccountOnly?: boolean }): Promise<void> {
+  async sendEmailCode(email: string): Promise<EmailCodeResult> {
     const normalized = validateEmail(email);
     const expected = this.captureCanonicalIdentity();
     return this.runIdentityOperation(async () => {
       this.assertCanonicalIdentity(expected);
-      const { error } = await this.runSdk(() => this.supabase.auth.signInWithOtp({
-        email: normalized, options: { shouldCreateUser: true },
-      }));
+      const saving = this.currentIdentity.isAnonymous;
+      const { error } = saving
+        ? await this.runSdk(() => this.supabase.auth.updateUser({ email: normalized }))
+        : await this.runSdk(() => this.supabase.auth.signInWithOtp({ email: normalized, options: { shouldCreateUser: false } }));
       this.assertCanonicalIdentity(expected);
+      if (saving && error && isExistingAccountError(error)) {
+        this.pendingExisting = { provider: 'email', email: normalized };
+        return 'existing-account';
+      }
       const failure = error ? emailSendError(error) : null;
       if (failure && !isAuthRateLimited(failure)) throw failure;
-      await rememberEmailChallenge(normalized, expected.userId, isAuthRateLimited(failure) ? failure.retryAfterSeconds : 60);
+      await rememberEmailChallenge(normalized, expected.userId, saving ? 'save' : 'signIn', isAuthRateLimited(failure) ? failure.retryAfterSeconds : 60);
       if (failure) throw failure;
+      return 'sent';
     });
   }
 
-  verifyEmailCode(code: string): Promise<Session> {
+  confirmEmailCode(code: string): Promise<Session> {
     if (this.emailVerification) return this.emailVerification;
     const run = this.verifyPendingEmail(code);
     this.emailVerification = run;
@@ -623,16 +623,24 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.assertCanonicalIdentity(expected);
       if (currentEmailChallenge(expected.userId) !== challenge)
         throw new AuthError('Please use the latest code.', { code: 'OTP_NO_PENDING' });
-      return this.authenticateSession(() => this.runSdk(() => this.supabase.auth.verifyOtp({
-        email: challenge.email, token: normalizedCode, type: 'email',
-      })), 'OTP_INVALID');
+      if (challenge.kind !== 'save')
+        return this.authenticateSession(() => this.runSdk(() => this.supabase.auth.verifyOtp({
+          email: challenge.email, token: normalizedCode, type: 'email',
+        })), 'OTP_INVALID');
+      const { error } = await this.runSdk(() => this.supabase.auth.verifyOtp({
+        email: challenge.email, token: normalizedCode, type: 'email_change',
+      }));
+      this.assertCanonicalIdentity(expected);
+      if (error) throw new AuthError("That code didn't work. Please try again.", { code: 'OTP_INVALID' });
+      const { data, error: refreshError } = await this.runSdk(() => this.supabase.auth.refreshSession());
+      this.assertCanonicalIdentity(expected);
+      if (refreshError || !data.session?.user || data.session.user.id !== expected.userId)
+        throw new AuthError('Could not finish saving your account. Please try again.', { code: 'EMAIL_SAVE_REFRESH_FAILED' });
+      await forgetEmailChallenge();
+      this.applySupabaseSession(data.session, { preserveGeneration: true });
+      return this.currentSession;
     });
   }
-
-  async recoverWithEmailCode(code: string): Promise<Session> {
-    return this.verifyEmailCode(code);
-  }
-
 
   async signOut(): Promise<void> {
     const identity = this.currentIdentity;
@@ -645,7 +653,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     try {
       await this.runIdentityOperation(async () => {
         try {
-          await this.onAccountSwitchReset();
+          await this.onAccountSwitchReset({ carryGuestData: false, signedOut: true });
         } catch {
           throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_RESET_FAILED' });
         }
@@ -690,7 +698,7 @@ export class SupabaseAuthAdapter implements AuthPort {
       await this.onAfterDelete();
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       await forgetEmailChallenge();
-      await this.onAccountSwitchReset();
+      await this.onAccountSwitchReset({ carryGuestData: false, signedOut: true });
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       this.expectedSignedOutGenerations.add(generation);
       const { error } = await this.runSdk(() => this.supabase.auth.signOut());
@@ -793,7 +801,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         await this.onAfterDelete();
         if (this.generation !== startGeneration || this.disposed) throw new Error('stale deletion cleanup');
         await forgetEmailChallenge();
-        await this.onAccountSwitchReset();
+        await this.onAccountSwitchReset({ carryGuestData: false, signedOut: true });
         this.expectedSignedOutGenerations.add(startGeneration);
         const { error: signOutError } = await this.runSdk(() => this.supabase.auth.signOut());
         if (signOutError) throw signOutError;

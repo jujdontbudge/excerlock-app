@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-20
 ---
 
@@ -38,3 +38,5 @@ No server contract, production configuration, native module, entitlement or gran
 - `app-next/src/packages/identity/`, `app-next/src/packages/subscription/PurchaseRecoveryJournal.ts`, `app-next/src/packages/journey/index.ts`.
 
 The two additional Incident B rows are separate anonymous first sessions: their Supabase session user agents report Darwin 25.5 and 25.4, versus Darwin 27.0 for the failing Apple user, and all three have different network hashes. They cannot be attributed to that Apple attempt from temporal proximity. An anonymous API user is provisioned before analytics identification by design; closing the app or blocking analytics between those steps can leave a valid API row with no PostHog events. Native Apple failure itself has no account-creation call.
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

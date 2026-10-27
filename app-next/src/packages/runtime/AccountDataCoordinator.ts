@@ -43,6 +43,7 @@ type AccountDataEnvelope = {
   version: 1;
   activeUserId: string | null;
   lastUserId?: string | null;
+  carryFrom?: string | null;
   accounts: Record<string, AccountDataSnapshot>;
   legacy: AccountDataSnapshot | null;
 };
@@ -103,6 +104,7 @@ const parseEnvelope = (raw: string | null): AccountDataEnvelope | null => {
     version: 1,
     activeUserId: typeof value.activeUserId === 'string' ? value.activeUserId : null,
     lastUserId: typeof value.lastUserId === 'string' ? value.lastUserId : null,
+    carryFrom: typeof value.carryFrom === 'string' ? value.carryFrom : null,
     accounts: value.accounts as Record<string, AccountDataSnapshot>,
     legacy: value.legacy ?? null,
   };
@@ -155,12 +157,14 @@ export function createAccountDataCoordinator(storage: AccountDataStorage, activi
       await persist();
       await resetActive();
     }),
-    deactivate: () => run(async () => {
+    deactivate: (options?: { carryToNextAccount?: boolean }) => run(async () => {
       if (!envelope) throw new Error('Account data coordinator is not prepared');
+      envelope.carryFrom = null;
       if (envelope.activeUserId) {
         lastUserId = envelope.activeUserId;
         envelope.lastUserId = lastUserId;
         envelope.accounts[envelope.activeUserId] = await capture(activity);
+        if (options?.carryToNextAccount) envelope.carryFrom = envelope.activeUserId;
       }
       envelope.activeUserId = null;
       await persist();
@@ -183,8 +187,11 @@ export function createAccountDataCoordinator(storage: AccountDataStorage, activi
         envelope.lastUserId = lastUserId;
         envelope.accounts[envelope.activeUserId] = await capture(activity);
       }
-      const changedAccount = lastUserId !== userId && (lastUserId !== null || envelope.legacy !== null);
-      await restore(envelope.accounts[userId]);
+      const carryFrom = envelope.carryFrom && !envelope.accounts[userId] ? envelope.carryFrom : null;
+      envelope.carryFrom = null;
+      const changedAccount = !carryFrom && lastUserId !== userId && (lastUserId !== null || envelope.legacy !== null);
+      await restore(envelope.accounts[carryFrom ?? userId]);
+      if (carryFrom) delete envelope.accounts[carryFrom];
       envelope.activeUserId = userId;
       lastUserId = userId;
       envelope.lastUserId = userId;

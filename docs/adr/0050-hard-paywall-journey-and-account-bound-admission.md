@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-29
 ---
 
@@ -42,3 +42,5 @@ No production settings, transfers, data, pricing or releases change by accepting
 - [Implementation and proof plan](../plans/hard-paywall-journey.md).
 - ADR 0011 (canonical identity, still accepted), ADR 0024 (post-Setup account access, to be partly superseded), ADR 0043 (Paywall before Setup, still accepted), ADR 0049 (cold-launch sign-in gate, to be superseded).
 - [Adapty access-sharing semantics](https://adapty.io/docs/general), [RevenueCat restore behavior as comparison](https://www.revenuecat.com/docs/projects/restore-behavior), [Apple App Review requirements](https://developer.apple.com/app-store/review/guidelines/).
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

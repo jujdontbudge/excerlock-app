@@ -1,12 +1,15 @@
 import type { SupabaseClient, Session as SupabaseSession } from '@supabase/supabase-js';
-import { SupabaseAuthAdapter, type AuthAdapterDeps } from './lib/SupabaseAuthAdapter';
-import { IdentityCoordinator, type IdentityCoordinatorDeps } from './lib/identityCoordinator';
+import { SupabaseAuthAdapter, type AccountSwitch, type AuthAdapterDeps } from './lib/SupabaseAuthAdapter';
+
+import { startIdentitySync } from './lib/identitySync';
 import type { AppleNativeDeps } from './lib/providerApple';
 import type { GoogleAuthDeps } from './lib/providerGoogle';
 import type { AuthIdentity } from '../ports/AuthPort';
 import { createIdentityBarrier, type RunIdentityOperation } from './identityBarrier';
 import { AuthSdkLifecycle } from './lib/authLifecycle';
 import { RuntimeCleanupError } from '../platform/RuntimeSingleton';
+
+export type { AccountSwitch };
 
 export type AuthServiceConfig = {
   supabaseUrl: string;
@@ -28,14 +31,13 @@ export type AuthServiceConfig = {
   reportError?: (error: unknown) => void;
   onBeforeDelete: () => Promise<void>;
   onAfterDelete: () => Promise<void>;
-  beforeAccountSwitch?: () => Promise<void>;
+  beforeAccountSwitch?: (options: AccountSwitch) => Promise<void>;
   prepareAccount?: (identity: AuthIdentity) => Promise<void>;
   bootTimeoutMs?: number;
 };
 
 export type AuthServices = {
   auth: SupabaseAuthAdapter;
-  coordinator: IdentityCoordinator;
   waitForIdentityReady: (options?: { timeoutMs?: number }) => Promise<AuthIdentity>;
   dispose: () => Promise<void>;
   runIdentityOperation: RunIdentityOperation;
@@ -118,8 +120,8 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   const getPosthogDistinctId = config.getPosthogDistinctId;
   const setIntegrationIdentifier = config.setIntegrationIdentifier;
 
-  const onAccountSwitchReset = async () => {
-    await config.beforeAccountSwitch?.();
+  const onAccountSwitchReset = async (options: AccountSwitch) => {
+    await config.beforeAccountSwitch?.(options);
     await analyticsReset();
     await subscriptionReset();
   };
@@ -144,7 +146,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     waitForReady: (options) => waitForIdentityReady(options),
   };
   let auth!: SupabaseAuthAdapter;
-  let coordinator: IdentityCoordinator | undefined;
+  let sync: ReturnType<typeof startIdentitySync> | undefined;
   const disposeSdk = async (): Promise<void> => {
     const failures: unknown[] = [];
     if (!ownsSupabase) {
@@ -169,8 +171,8 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   try {
     auth = new SupabaseAuthAdapter(adapterDeps);
 
-  const putUser: IdentityCoordinatorDeps['putUser'] = async ({ accessToken, userId }) => {
-    void userId;
+  const reportError = (error: unknown) => config.reportError?.(error);
+  const putUser = async (accessToken: string) => {
     const impl = fetchImpl ?? fetch;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -181,19 +183,15 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
         body: JSON.stringify({}),
         signal: controller.signal,
       });
-      return { status: response.status };
+      return response.status;
     } finally {
       clearTimeout(timeout);
     }
   };
 
-  const attachIntegrationBestEffort = async (userId: string) => {
-    void userId;
+  const attachIntegration = async () => {
     const distinctId = getPosthogDistinctId();
-    if (!distinctId) {
-      config.reportError?.(new Error('PostHog distinct ID unavailable for Adapty attribution'));
-      return;
-    }
+    if (!distinctId) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
@@ -201,41 +199,34 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
         new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Adapty attribution timed out')), 3000); }),
       ]);
     } catch (error) {
-      config.reportError?.(error);
+      reportError(error);
     } finally {
       if (timer) clearTimeout(timer);
     }
   };
 
-  coordinator = new IdentityCoordinator({
+  sync = startIdentitySync({
     getIdentity: () => auth.identity(),
     subscribeIdentity: (cb) => auth.subscribeIdentity(cb),
-    getAuthContext: () => auth.getAuthContext(),
-    putUser,
-    analyticsIdentify,
-    subscriptionIdentify,
-    attachIntegration: attachIntegrationBestEffort,
     prepareAccount: config.prepareAccount,
-    onTombstone: async () => {
-      await auth.handleTombstone();
-    },
-    onReady: (identity) => {
-      auth.markReady(identity.userId as string, identity.generation);
+    subscriptionIdentify,
+    markReady: (identity) => auth.markReady(identity.userId!, identity.generation),
+    afterReady: async (identity) => {
+      await analyticsIdentify(identity.userId!).catch(reportError);
+      await attachIntegration();
+      const context = await auth.getAuthContext();
+      if (!context || context.userId !== identity.userId) return;
+      const status = await putUser(context.accessToken);
+      if (status === 410) await auth.handleTombstone();
+      else if (status < 200 || status >= 300) reportError(new Error(`PUT /v1/user answered ${status}`));
     },
     runIdentityOperation,
+    reportError,
   });
 
-  coordinator.start();
-
-  const recoverIdentity = async (): Promise<void> => {
-    if (auth.identity().kind === 'provisional') await auth.retryBoot();
-    for (let attempt = 0; attempt < 2 && auth.identity().kind === 'canonical' && !coordinator!.isReady(); attempt += 1)
-      await coordinator!.retry();
-  };
-  waitForIdentityReady = (options) => {
-    const ready = coordinator!.waitForIdentityReady(options);
-    void recoverIdentity().catch(() => undefined);
-    return ready;
+  waitForIdentityReady = async (options) => {
+    if (auth.identity().kind === 'provisional') await auth.retryBoot().catch(reportError);
+    return sync!.waitForReady(options?.timeoutMs);
   };
 
   let disposal: Promise<void> | null = null;
@@ -244,7 +235,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
     sdkLifecycle.closeCalls();
     disposal = (async () => {
       const failures: unknown[] = [];
-      try { coordinator!.dispose(); } catch (error) { failures.push(error); }
+      try { sync!.dispose(); } catch (error) { failures.push(error); }
       try { auth.beginDispose(); } catch (error) { failures.push(error); }
       try { await disposeSdk(); } catch (error) {
         if (error instanceof RuntimeCleanupError) failures.push(...error.failures);
@@ -257,7 +248,6 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
 
   return {
     auth,
-    coordinator: coordinator!,
     waitForIdentityReady,
     runIdentityOperation,
     dispose,
@@ -265,7 +255,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   } catch (error) {
     sdkLifecycle.closeCalls();
     const failures: unknown[] = [];
-    try { coordinator?.dispose(); } catch (cleanupError) { failures.push(cleanupError); }
+    try { sync?.dispose(); } catch (cleanupError) { failures.push(cleanupError); }
     try { auth?.beginDispose(); } catch (cleanupError) { failures.push(cleanupError); }
     try { await disposeSdk(); } catch (cleanupError) {
       if (cleanupError instanceof RuntimeCleanupError) failures.push(...cleanupError.failures);

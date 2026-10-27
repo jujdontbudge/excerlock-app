@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-20
 ---
 
@@ -35,3 +35,5 @@ A transient environment or API failure cannot permanently poison the launch, and
 - [ADR 0086](0086-verified-account-recovery-and-checkout-connection.md): unfinished purchase ownership retained.
 - [App Review investigation](../plans/2026-10-20-review-221-recovery.md).
 - [Apple App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/), sections 2.1, 2.3.1, 3.1.2 and 5.1.1(v).
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

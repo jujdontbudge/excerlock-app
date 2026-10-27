@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-21
 ---
 
@@ -39,3 +39,5 @@ Proofs exercise the production adapter, production analytics adapter and journal
 - [Pinned StoreKit purchaser](https://github.com/adaptyteam/AdaptySDK-iOS/blob/4.0.2/Sources/StoreKit/StoreKitPurchaser.swift).
 - [Pinned error mapping](https://github.com/adaptyteam/AdaptySDK-iOS/blob/4.0.2/Sources/Errors/CustomAdaptyError.swift).
 - [Apple pending purchase result](https://developer.apple.com/documentation/storekit/product/purchaseresult/pending).
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

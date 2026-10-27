@@ -10,38 +10,33 @@ import { notify } from '../ui/Notice';
 import { useRuntime } from '../ports/useRuntime';
 import { sessionStore as useSessionStore } from './sessionStore';
 import { EmailCodeScreen } from './lib/EmailCodeScreen';
-import { AuthError, isAuthCancelled, isAuthNoAccount, isAuthRateLimited, isAuthRecoveryRequired } from '../ports/AuthPort';
-import { rememberSignIn } from './rememberedSignIn';
+import { AuthError, isAuthCancelled, isAuthRateLimited } from '../ports/AuthPort';
+import type { SaveAccountResult } from '../ports/AuthPort';
 import { haptic } from '../ui/haptics';
 import { expectedSignInFailure, signInFailureClass } from './lib/signInFailure';
 import { currentEmailChallenge, forgetEmailChallenge } from './emailChallenge';
 
 export { signInRecoveryCopy } from './lib/signInCopy';
 
-export type SignInPurpose = 'signUp' | 'signIn';
+export type SignInPurpose = 'save' | 'signIn';
+type Provider = 'apple' | 'google' | 'email';
 
 export function SignInScreen({
   purpose,
   reportError,
   onContinue,
   onExit,
-  requireFreshSignIn = false,
-  onCreateAccount,
-  firstVisit = false,
 }: {
   purpose: SignInPurpose;
   reportError: (error: unknown) => void;
   onContinue: () => void | Promise<void>;
   onExit?: () => void;
-  requireFreshSignIn?: boolean;
-  onCreateAccount?: () => void;
-  firstVisit?: boolean;
 }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
     initialChallenge = currentEmailChallenge(runtime.auth.identity().userId),
     submitting = useRef(false),
-    [phase, setPhase] = useState<'options' | 'email' | 'code' | 'noAccount'>(initialChallenge ? 'code' : 'options'),
+    [phase, setPhase] = useState<'options' | 'email' | 'code' | 'existing'>(initialChallenge ? 'code' : 'options'),
     [email, setEmail] = useState(initialChallenge?.email ?? ''),
     [code, setCode] = useState(''),
     [busy, setBusy] = useState(false),
@@ -56,93 +51,91 @@ export function SignInScreen({
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const words = c[purpose];
   const title = words.title;
-  const support = purpose === 'signIn' && requireFreshSignIn && !firstVisit && session.kind === 'signedIn' ? c.returningBody : words.body;
-  const failed = (provider: 'apple' | 'google' | 'email', caught: unknown) => {
+  const support = words.body;
+  const failed = (provider: Provider, caught: unknown) => {
     const reason = signInFailureClass(caught);
     runtime.analytics.track('sign_in_failed', {
       provider,
-      surface: purpose === 'signUp' ? 'sign_up' : 'sign_in',
+      surface: purpose === 'save' ? 'sign_up' : 'sign_in',
       reason_class: reason,
       ...(caught instanceof AuthError ? { failure_code: caught.code.slice(0, 60) } : {}),
     });
     if (!expectedSignInFailure(reason)) reportError(caught);
   };
-  const signIn = async (provider: 'apple' | 'google' | 'email', typed = code) => {
+  const run = async (provider: Provider, action: () => Promise<void>) => {
     if (submitting.current) return;
     submitting.current = true;
     setBusy(true);
     try {
-      const result =
-        provider === 'apple'
-          ? await runtime.auth.signInWithApple()
-          : provider === 'google'
-            ? await runtime.auth.signInWithGoogle()
-            : await runtime.auth.verifyEmailCode(typed);
-      if (result.kind === 'signedIn' && rememberSignIn(runtime.auth.identity())) {
-        haptic('success');
-        await onContinue();
-      } else {
-        haptic('error');
-        notify(c.authError);
-        failed(provider, new AuthError('Sign-in finished without an approved account.', { code: 'IDENTITY_NOT_READY' }));
-      }
+      await action();
     } catch (caught) {
       if (isAuthCancelled(caught)) return;
-      if (!(isAuthRecoveryRequired(caught) && caught.provider === 'email')) failed(provider, caught);
-      if (isAuthRecoveryRequired(caught)) {
-        haptic('warning');
-        if (caught.provider === 'email') {
-          setPhase('code');
-          notify(c.codeSent);
-        } else {
-          notify(c.accountInUse);
-        }
-      } else {
-        haptic('error');
-        if (provider === 'email') setCode('');
-        notify(provider === 'email' ? c.codeError : provider === 'apple' ? c.appleError : c.authError);
-      }
+      failed(provider, caught);
+      haptic('error');
+      if (provider === 'email') setCode('');
+      notify(provider === 'email' && phase === 'code' ? c.codeError : provider === 'apple' ? c.appleError : c.authError);
     } finally {
       submitting.current = false;
       setBusy(false);
     }
   };
-  const send = async () => {
-    if (submitting.current || !validEmail || cooldown > 0) return;
-    submitting.current = true;
-    setBusy(true);
-    try {
-      await runtime.auth.sendEmailCode(email.trim());
+  const finish = async () => {
+    haptic('success');
+    if (purpose === 'save') notify(c.saved);
+    await onContinue();
+  };
+  const switchAccount = async () => {
+    const result = await runtime.auth.useExistingAccount();
+    if (result === 'code-sent') {
+      setCode('');
       setCooldownUntil(Date.now() + 60_000);
       setNow(Date.now());
-      setCode('');
-      if (phase === 'code') notify(c.resent);
       setPhase('code');
-    } catch (caught) {
-      if (isAuthRecoveryRequired(caught) && caught.provider === 'email') {
+      return;
+    }
+    await finish();
+  };
+  const existing = async () => {
+    haptic('warning');
+    if (purpose === 'signIn') await switchAccount();
+    else setPhase('existing');
+  };
+  const save = (provider: 'apple' | 'google') => run(provider, async () => {
+    const result: SaveAccountResult = provider === 'apple' ? await runtime.auth.saveWithApple() : await runtime.auth.saveWithGoogle();
+    if (result === 'cancelled') return;
+    if (result === 'existing-account') await existing();
+    else await finish();
+  });
+  const confirm = (typed = code) => run('email', async () => {
+    const result = await runtime.auth.confirmEmailCode(typed);
+    if (result.kind !== 'signedIn') throw new AuthError('Email code finished without a saved account.', { code: 'IDENTITY_NOT_READY' });
+    await finish();
+  });
+  const send = () => {
+    if (!validEmail || cooldown > 0) return Promise.resolve();
+    return run('email', async () => {
+      try {
+        const result = await runtime.auth.sendEmailCode(email.trim());
+        if (result === 'existing-account') {
+          await existing();
+          return;
+        }
+        setCooldownUntil(Date.now() + 60_000);
+        setNow(Date.now());
+        setCode('');
+        if (phase === 'code') notify(c.resent);
         setPhase('code');
-        notify(c.codeSent);
-      } else if (isAuthNoAccount(caught)) {
-        haptic('warning');
-        failed('email', caught);
-        setPhase('noAccount');
-      } else if (isAuthRateLimited(caught)) {
+      } catch (caught) {
+        if (!isAuthRateLimited(caught)) throw caught;
         failed('email', caught);
         setCooldownUntil(Date.now() + caught.retryAfterSeconds * 1000);
         setNow(Date.now());
         setPhase('code');
         notify(c.alreadySent);
-      } else {
-        haptic('error');
-        notify(c.authError);
-        failed('email', caught);
       }
-    } finally {
-      submitting.current = false;
-      setBusy(false);
-    }
+    });
   };
-  if (session.kind === 'signedIn' && !requireFreshSignIn)
+  if (purpose === 'save' && session.kind === 'signedIn' && phase === 'options')
     return (
       <>
         <Heading title={title} support={support} />
@@ -172,10 +165,10 @@ export function SignInScreen({
           email={email.trim()}
           onCode={(value) => {
             setCode(value);
-            if (value.length === 6 && value !== code) void signIn('email', value);
+            if (value.length === 6 && value !== code) void confirm(value);
           }}
-          onVerify={() => signIn('email')}
-          onResend={send}
+          onVerify={() => void confirm()}
+          onResend={() => void send()}
           onChangeEmail={() => {
             if (submitting.current) return;
             setCode('');
@@ -186,19 +179,18 @@ export function SignInScreen({
           busy={busy}
           resendIn={cooldown}
         />
-      ) : phase === 'noAccount' ? (
+      ) : phase === 'existing' ? (
         <>
-          <View style={{ alignItems: 'center', gap: t.space.md }}>
-            <LivingIcon name="mail" />
-            <Heading title={c.noAccountTitle} centered />
+          <View style={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: t.space.md }}>
+            <LivingIcon name="check" />
+            <Heading title={c.existingTitle} centered />
             <Label tone="secondary" style={{ textAlign: 'center' }}>
-              {c.noAccountBody(email.trim())}
+              {c.existingBody}
             </Label>
           </View>
           <View style={{ gap: t.space.md }}>
-            <PrimaryButton label={c.tryAnotherEmail} onPress={() => setPhase('email')} />
-            <SecondaryButton label={c.otherWays} onPress={() => setPhase('options')} />
-            {onCreateAccount ? <SecondaryButton label={c.createAccount} variant="tertiary" onPress={onCreateAccount} /> : null}
+            <PrimaryButton label={c.useExisting} loading={busy} onPress={() => void run('email', switchAccount)} />
+            <SecondaryButton label={c.keepGuest} variant="tertiary" onPress={() => setPhase('options')} />
           </View>
         </>
       ) : (
@@ -240,7 +232,7 @@ export function SignInScreen({
                 onSubmitEditing={() => void send()}
                 autoFocus
               />
-              <PrimaryButton label={c.sendCode} disabled={!validEmail} loading={busy} onPress={send} />
+              <PrimaryButton label={c.sendCode} disabled={!validEmail} loading={busy} onPress={() => void send()} />
             </>
           ) : (
             <View style={{ gap: t.space.md }}>
@@ -248,7 +240,7 @@ export function SignInScreen({
                 label={c.apple}
                 loading={busy}
                 leading={<SymbolView name="apple.logo" size={t.icon.md} tintColor={t.text.primary} />}
-                onPress={() => void signIn('apple')}
+                onPress={() => void save('apple')}
               />
               <SecondaryButton
                 label={c.google}
@@ -260,7 +252,7 @@ export function SignInScreen({
                     style={{ width: t.icon.md, height: t.icon.md }}
                   />
                 }
-                onPress={() => void signIn('google')}
+                onPress={() => void save('google')}
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
                 <View style={{ flex: 1, height: t.stroke.hairline, backgroundColor: t.border.divider }} />
@@ -275,7 +267,7 @@ export function SignInScreen({
         </>
       )}
       <View style={{ flexGrow: 1 }} />
-      <SecondaryButton label={c.skip} loading={busy} variant="tertiary" onPress={onContinue} />
+      {phase === 'existing' ? null : <SecondaryButton label={c.skip} loading={busy} variant="tertiary" onPress={onContinue} />}
     </Reveal>
   );
 }

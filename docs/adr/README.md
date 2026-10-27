@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0091: Guest-first accounts, Adapty decides Premium](0091-guest-first-accounts-and-adapty-access.md) — **accepted**.
 - [0090: Correlate client checkout attempts without billing events](0090-client-checkout-attempt-diagnostics.md) — **accepted**.
 
 - [0089: Resume Onboarding with its frozen offer](0089-resume-onboarding-with-its-frozen-offer.md) — **accepted**.
@@ -11,12 +12,12 @@
 - [0082: Scoped bearer tokens grant complimentary access over HTTPS](0082-scoped-access-grant-tokens.md) — **accepted**.
 - [0081: The Bank Condition sells screen time that drains only while Locked apps are used](0081-bank-condition.md) — **proposed**.
 - [0080: Reward motion is the one exception to still screens](0080-reward-motion.md) — **proposed**.
-- [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **accepted**.
+- [0078: One Adapty offer determines the onboarding tail and checkout](0078-adapty-onboarding-trial-assignment.md) — **superseded** by 0091.
 - [0066: Onboarding can stage several Conditions](0066-onboarding-stages-several-conditions.md) — **accepted**.
 - [0065: Text and icons are centred by construction and every proof measures it](0065-centring-by-construction.md) — **accepted**.
 - [0064: Owner filming mode makes walking unlock and lock in about a second](0064-owner-filming-mode.md) — **accepted**.
-- [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **accepted**.
-- [0059: Paid admission renews in place before its five-minute lease ends](0059-admission-renews-in-place.md) — **accepted**.
+- [0061: Stay signed in and admitted across launches](0061-stay-signed-in-and-admitted-across-launches.md) — **superseded** by 0091.
+- [0059: Paid admission renews in place before its five-minute lease ends](0059-admission-renews-in-place.md) — **superseded** by 0091.
 - [0058: Research and rating after the imported plan](0058-onboarding-research-rating.md) — **accepted**.
 - [0057: Permission answers precede Setup advancement; Screen Time and Locked apps have separate pages](0057-permission-answers-before-setup-advances.md) — **accepted**; its persisted Screen Time denial is superseded by 0085.
 - [0056: One semantic haptics language in `ui/haptics`](0056-semantic-haptics-language.md) — **proposed**.
@@ -28,7 +29,7 @@
 - [0046: Concept packages in strict layers](0046-concept-packages-in-strict-layers.md) — **accepted**.
 - [0045: Verify through the real app and static checks; no tests, no comments](0045-verification-over-tests-and-no-comments.md) — **accepted**.
 - [0044: One lean agent context shared by Claude Code, Pi and Hermes](0044-lean-cross-harness-agent-context.md) — **accepted**.
-- [0043: Sign-in and each condition's permissions follow the paywall; Home keeps one reminder card](0043-sign-in-and-permissions-after-the-paywall.md) — **accepted**.
+- [0043: Sign-in and each condition's permissions follow the paywall; Home keeps one reminder card](0043-sign-in-and-permissions-after-the-paywall.md) — **accepted**; its sign-in part is superseded by 0091.
 - [0042: The first App Store binary carries an OTA-ready sensor surface and a JS-callable review sheet](0042-ota-ready-native-sensor-surface-and-review-port.md) — **accepted**.
 - [0041: The raw stream corroborates Apple's walking legs and confirms stops](0041-raw-stream-corroborates-apple-and-confirms-stops.md) — **accepted**.
 - [0040: Background walking asks for its grants on Home and reports every shield move](0040-background-walking-grants-at-point-of-need.md) — **accepted**.

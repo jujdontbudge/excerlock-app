@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-03
 ---
 
@@ -41,3 +41,5 @@ Follow-up, tracked in issue #162: Keychain accessibility for background wakes wh
 - [ADR 0011](0011-canonical-identity-and-durable-erasure.md): accepted; account-switch boundaries unchanged.
 - `app-next/src/packages/identity/rememberedSignIn.ts`, `app-next/src/packages/subscription/rememberedAdmission.ts`, `app-next/src/packages/journey/index.ts` (`resumeReturningAccount`, `forgetAccount`, `renewAdmission`), `app-next/src/packages/launch/BootGate.tsx`, `app-next/src/packages/identity/lib/SupabaseAuthAdapter.ts` (`runBoot`).
 - Proofs: `launch/subscriber-opens-home`, `launch/sign-in-survives-relaunch`, `launch/offline-relaunch-keeps-home`, `launch/lapsed-while-away-opens-paywall`, `setup/sign-out-relaunch-stays-welcome`.
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

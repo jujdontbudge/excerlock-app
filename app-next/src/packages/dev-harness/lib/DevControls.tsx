@@ -14,11 +14,9 @@ import { onboardingStore } from '../../onboarding/onboardingStore';
 import { historyStore } from '../../progress/historyStore';
 import { profileStore } from '../../preferences/profileStore';
 import { settingsStore } from '../../preferences/settingsStore';
-import { useRouter } from 'expo-router';
 export function DevControls() {
   const runtime = useRuntime(),
     dev = requireRuntimeControls(runtime),
-    router = useRouter(),
     now = useClock(),
     view = useDevSnapshot(),
     permissions = usePermissionsStore((s) => s.data),
@@ -47,22 +45,7 @@ export function DevControls() {
         <SettingsRow title={`Gym background detection ${view.gymVisits?.autoDetect ? 'on' : 'off'}`} />
       </SettingsGroup>
       <SettingsGroup title="Account data">
-        <SettingsRow title="Run local sign-out isolation" onPress={() => void runAccountAction(() => dev.runLabLocalSignOut())} />
-        <SettingsRow title="Run stale product handle" onPress={() => void runAccountAction(() => dev.runLabStaleProductHandle())} />
-        <SettingsRow title="Run independent restore" onPress={() => void runAccountAction(() => dev.runLabIndependentRestore())} />
-        <SettingsRow title="Run passive entry" onPress={() => void runAccountAction(() => dev.runLabPassiveEntry())} />
-        <SettingsRow title="Run lifecycle revocation" onPress={() => void runAccountAction(() => dev.runLabLifecycleRevocation())} />
-        <SettingsRow title="Run linked provider isolation" onPress={() => void runAccountAction(() => dev.runLabProviderLinking())} />
-        <SettingsRow title="Run concurrent restore race" onPress={() => void runAccountAction(() => dev.runLabConcurrentRestore())} />
-        <SettingsRow title="Run established restore transfer" onPress={() => void runAccountAction(() => dev.runLabEstablishedTransfer())} />
         <SettingsRow title="Run A B A isolation" onPress={() => void runAccountAction(() => dev.runLabAccountIsolation())} />
-        <SettingsRow title="Run account switch ordering" onPress={() => void runAccountAction(() => dev.runLabAccountSwitchOrdering())} />
-        <SettingsRow title="Run delayed callback isolation" onPress={() => void runAccountAction(() => dev.runLabDelayedCallbackIsolation())} />
-        <SettingsRow title="Prepare deletion callback user path" onPress={() => void runAccountAction(async () => {
-          await dev.prepareLabDeletionCallbackIsolation();
-          router.replace('/recovery');
-        })} />
-        <SettingsRow title="Run deletion callback isolation" onPress={() => void runAccountAction(() => dev.runLabDeletionCallbackIsolation())} />
         <SettingsRow title={`Active account ${view.accountData?.active ?? 'None'}`} />
         <SettingsRow title={`Legacy data ${view.accountData?.legacyQuarantined ? 'Quarantined' : 'None'}`} />
         <SettingsRow title={`Condition owner ${rulesStore.getState().data.rules[0]?.id === 'account-a' ? 'Account A' : rulesStore.getState().data.rules[0]?.id === 'account-b' ? 'Account B' : 'None'}`} />
@@ -70,7 +53,6 @@ export function DevControls() {
         <SettingsRow title={`Profile ${profileStore.getState().data.name || 'None'}`} />
         <SettingsRow title={`Saved Gym ${settingsStore.getState().data.gymPlaces[0]?.name ?? 'None'}`} />
         <SettingsRow title={`Checkpoints ${view.accountData?.checkpoints ?? 'None'}`} />
-        <SettingsRow title={`Switch ordering ${view.accountData?.switchOrdering ?? 'None'}`} />
         <SettingsRow title={`Activity checkpoints ${view.accountData?.activityCheckpoints ?? 'None'}`} />
         <SettingsRow title="Use account A" onPress={() => void runAccountAction(() => dev.useLabAccount('A'))} />
         <SettingsRow title="Seed account A" onPress={() => void runAccountAction(() => dev.seedLabAccount('A'))} />
@@ -88,21 +70,10 @@ export function DevControls() {
         <SettingsRow title={`Purchase operations ${String(view.subscriptionLab?.purchases ?? 0)}`} />
         <SettingsRow title={`Restore operations ${String(view.subscriptionLab?.restores ?? 0)}`} />
         <SettingsRow title={`Delayed callbacks ${String(view.subscriptionLab?.queued ?? 0)}/${String(view.subscriptionLab?.delivered ?? 0)}`} />
-        <SettingsRow title={`Callback isolation ${view.subscriptionLab?.callbackIsolation ?? 'Not run'}`} />
-        <SettingsRow title={`Deletion isolation ${view.subscriptionLab?.deletionIsolation ?? 'Not run'}`} />
-        <SettingsRow title={`Transfer isolation ${view.subscriptionLab?.transferIsolation ?? 'Not run'}`} />
-        <SettingsRow title={`Concurrent restore ${view.subscriptionLab?.concurrentRestoreIsolation ?? 'Not run'}`} />
-        <SettingsRow title={`Linked providers ${view.subscriptionLab?.providerLinking ?? 'Not run'}`} />
         <SettingsRow title={`Provider attempts ${view.subscriptionLab?.providerAttempts ?? 'Not run'}`} />
-        <SettingsRow title={`Email challenges ${view.subscriptionLab?.emailChallenges ?? 'Not run'}`} />
-        <SettingsRow title={`Provider conflict ${view.subscriptionLab?.providerConflict ?? 'Not run'}`} />
-        <SettingsRow title={`Local sign-out ${view.subscriptionLab?.localSignOutIsolation ?? 'Not run'}`} />
         <SettingsRow title={`Purchase serialization ${view.subscriptionLab?.purchaseSerialization ?? 'Not run'}`} />
         <SettingsRow title={`Existing subscription ${view.subscriptionLab?.existingSubscription ?? 'Not run'}`} />
-        <SettingsRow title={`Stale product handle ${view.subscriptionLab?.staleProductHandle ?? 'Not run'}`} />
         <SettingsRow title={`Restore isolation ${view.subscriptionLab?.restoreIsolation ?? 'Not run'}`} />
-        <SettingsRow title={`Passive entry ${view.subscriptionLab?.passiveEntry ?? 'Not run'}`} />
-        <SettingsRow title={`Lifecycle revocation ${view.subscriptionLab?.lifecycleRevocation ?? 'Not run'}`} />
         <SettingsRow title={`Onboarding path ${view.onboardingPath ?? 'Not run'}`} />
         {view.trialReminder ? <SettingsRow title={`Trial reminder ${view.trialReminder}`} /> : null}
         {view.remoteFlags ? <SettingsRow title={`Remote flags ${view.remoteFlags}`} /> : null}

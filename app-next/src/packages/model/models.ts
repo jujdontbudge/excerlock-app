@@ -50,6 +50,7 @@ export type Scenario = {
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
   identityLab?: IdentityLabScript;
+  existingAccount?: 'apple' | 'google';
   onboardingOffer?: { arm: 'a' | 'b' | 'unknown' | 'late' | 'error' | 'malformed'; assigned?: 'a' | 'b'; introEligible?: boolean; trialDays?: number; fallbackError?: boolean };
   ads?: {
     tracking?: 'granted' | 'denied' | 'undetermined';
@@ -60,7 +61,6 @@ export type Scenario = {
   };
   enforcementPolicyProof?: boolean;
   otaResumeRoute?: string;
-  launchSignInRequired?: boolean;
   remoteFlags?: {
     reviewPreset?: boolean;
     paywallVariant?: 'control' | 'variant_b' | 'error';
@@ -76,7 +76,6 @@ export type IdentityLabScript = {
   anonymousSignIn?: 'ok' | 'failFirst';
   userSync?: 'ok' | 'failFirst' | 'slow';
   plans?: 'ok' | 'failFirst' | 'empty';
-  appleLink?: 'ok' | 'conflict';
   googleSignIn?: 'success' | 'cancel';
   purchase?: 'success' | 'successWithoutAccess' | 'alreadyOwned' | 'cancel' | 'error' | 'errorFirst' | 'pending' | 'busyBarrier' | 'paidThenInterrupted' | 'paidThenEncodingFailed';
   restore?: 'restored' | 'notFound' | 'errorFirst' | 'transport' | 'auth' | 'unverified';
@@ -85,13 +84,9 @@ export type IdentityLabScript = {
   integrationIdentifier?: 'networkFailed' | 'hang';
   secondSubscription?: boolean;
   concurrentRestore?: boolean;
-  linkedProviders?: boolean;
-  establishedProviderConflict?: boolean;
-  localSignOut?: boolean;
   providerAttempts?: boolean;
-  emailChallenges?: boolean;
-  emailAccount?: 'new' | 'existing' | 'paid';
   emailRateLimited?: boolean;
+  existing?: { provider: 'apple' | 'google' | 'email'; paid?: boolean };
   appleUnknown?: boolean;
   staleProductHandle?: boolean;
   storeGrant?: { owner: string; status: 'trial' | 'active' };

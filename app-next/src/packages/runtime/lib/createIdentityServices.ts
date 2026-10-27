@@ -1,6 +1,6 @@
 import { Linking } from 'react-native';
 import type { AuthIdentity } from '../../ports/AuthPort';
-import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../identity/createAuthServices';
+import { createAuthServices, type AccountSwitch, type AuthServiceConfig, type AuthServices } from '../../identity/createAuthServices';
 import { AdaptySubscriptionAdapter } from '../../subscription/AdaptySubscriptionAdapter';
 import { createComplimentaryAccess } from '../../subscription/complimentaryAccess';
 import { nativeAdaptySdk } from '../../subscription/nativeAdaptySdk';
@@ -23,7 +23,7 @@ export async function createIdentityServices(options: {
   analyticsFactory(getIdentity: () => AuthIdentity): AnalyticsIdentityHooks;
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
-  beforeAccountSwitch?(): Promise<void>;
+  beforeAccountSwitch?(options: AccountSwitch): Promise<void>;
   prepareAccount?(identity: AuthIdentity): Promise<void>;
   sdk?: AdaptySdkPort;
   adAttribution?: AdAttributionPort & { metaAnonymousId(): Promise<string | null> };

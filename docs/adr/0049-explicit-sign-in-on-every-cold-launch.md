@@ -25,3 +25,5 @@ Returning users must authenticate again after a process restart. A lost network,
 - [ADR 0011](0011-canonical-identity-and-durable-erasure.md): accepted, retained canonical identity and account-switch boundaries.
 - `app-next/src/packages/identity/launchSignInGate.ts`, `app-next/src/packages/launch/BootGate.tsx`, `app-next/src/packages/launch/RootNavigator.tsx`, `app-next/src/packages/setup/SetupFlow.tsx`.
 - `.agents/skills/verify-excerlock/references/features/setup.md`: returning-session focused proofs.
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

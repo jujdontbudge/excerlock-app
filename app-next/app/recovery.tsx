@@ -7,7 +7,7 @@ export default function RecoveryRoute() {
     if (router.canGoBack()) router.back();
     else { beginWelcome(); router.replace('/onboarding/O01'); }
   };
-  const signIn = () => { beginSignIn(); router.replace({ pathname: '/sign-in', params: { purpose: 'signIn' } }); };
+  const signIn = () => { beginSignIn(); router.replace({ pathname: '/sign-in', params: { purpose: 'save' } }); };
   const restored = () => { beginPaywall(); router.replace('/paywall'); };
   return <RecoveryScreen onBack={back} onSignIn={signIn} onRestored={restored} />;
 }

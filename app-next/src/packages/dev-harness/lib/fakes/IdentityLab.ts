@@ -1,4 +1,4 @@
-import { createAuthServices, type AuthServiceConfig, type AuthServices } from '../../../identity/createAuthServices';
+import { createAuthServices, type AccountSwitch, type AuthServiceConfig, type AuthServices } from '../../../identity/createAuthServices';
 import { AdaptySubscriptionAdapter } from '../../../subscription/AdaptySubscriptionAdapter';
 import type { AdAttributionPort } from '../../../ports/AdAttributionPort';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptySdkPort } from '../../../subscription/adaptySdk';
@@ -14,156 +14,25 @@ const SLOW_USER_SYNC_MS = 8000;
 const LAB_URL = 'https://identity-lab.invalid';
 const ANONYMOUS_DISTINCT_ID = 'lab-anonymous-distinct-id';
 const STORE_SUBSCRIPTION_ID = 'lab.store.annual';
-const INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.monthly';
 const TARGET_INDEPENDENT_SUBSCRIPTION_ID = 'lab.account.b.monthly';
+const EXISTING_USER_ID = 'lab-existing';
 
 type LabUser = { email?: string; id: string; is_anonymous: boolean; identities: { provider: string }[]; app_metadata: Record<string, string> };
 type LabSession = { access_token: string; refresh_token: string; user: LabUser };
 type LabSupabase = NonNullable<AuthServiceConfig['supabase']>;
 type LabAppleDeps = NonNullable<AuthServiceConfig['appleDeps']>;
 type LabGoogleDeps = NonNullable<AuthServiceConfig['googleDeps']>;
-type DeletionIsolationResult = {
-  identity: string;
-  deletedIdentity: string;
-  entitlement: string;
-  queued: number;
-  delivered: number;
-  tombstonePreserved: boolean;
-};
 
 export type IdentityLab = {
   auth: AuthPort;
   analytics: AnalyticsPort;
   subscription: SubscriptionPort;
   booted: Promise<void>;
-  runDelayedCallbackIsolation(): Promise<{
-    identity: string;
-    entitlement: string;
-    queued: number;
-    delivered: number;
-  }>;
-  prepareDeletionCallbackIsolation(
-    seedDeletedAccount: () => Promise<void>,
-    completed: (result: DeletionIsolationResult) => void | Promise<void>,
-  ): Promise<void>;
-  runDeletionCallbackIsolation(seedDeletedAccount: () => Promise<void>): Promise<DeletionIsolationResult>;
-  runEstablishedTransfer(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-    verifyCurrent: () => Promise<string>,
-  ): Promise<{
-    source: string;
-    beforeTransfer: string;
-    afterFailure: string;
-    afterTransfer: string;
-    afterRepeat: string;
-    sourceAfterTransfer: string;
-    targetAfterReturn: string;
-    sourceData: string;
-    targetData: string;
-    restores: number;
-    transfers: number;
-    grantLedger: string | null;
-  }>;
-  runConcurrentRestore(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-    verifyCurrent: () => Promise<string>,
-  ): Promise<{
-    winner: string;
-    afterRace: string;
-    afterStaleLoser: string;
-    afterRepeat: string;
-    sourceAfterRace: string;
-    targetAfterReturn: string;
-    sourceData: string;
-    targetData: string;
-    restores: number;
-    transfers: number;
-    grantLedger: string;
-  }>;
-  runProviderLinking(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-  ): Promise<{
-    canonical: string;
-    apple: string;
-    google: string;
-    accounts: number;
-    grants: number;
-    conflict: string;
-    initialData: string;
-    appleData: string;
-    googleData: string;
-    conflictData: string;
-  }>;
-  runLocalSignOut(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-    journeyCheckpoint: (action?: 'admit' | 'reset') => Promise<string>,
-  ): Promise<{
-    before: string;
-    failedReset: string;
-    after: string;
-    peer: string;
-    peerProofs: number;
-    localScopes: string;
-    localData: string;
-  }>;
-  runStaleProductHandle(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-  ): Promise<{
-    source: string;
-    target: string;
-    staleError: string;
-    purchaseCalls: number;
-    sourceGeneration: number;
-    targetGeneration: number;
-    sourceData: string;
-    targetData: string;
-    sourceRestored: string;
-  }>;
-  runIndependentRestore(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-    verifyCurrent: () => Promise<string>,
-  ): Promise<{
-    before: string;
-    after: string;
-    entitlement: string;
-    restores: number;
-    data: string;
-  }>;
-  runPassiveEntry(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-  ): Promise<{
-    owner: string;
-    passiveTarget: string;
-    targetEntitlement: string;
-    sourceEntitlement: string;
-    transfers: number;
-    restores: number;
-    sourceData: string;
-    targetData: string;
-    sourceRestored: string;
-  }>;
-  runLifecycleRevocation(
-    seedAccount: (account: 'A' | 'B') => Promise<void>,
-    accountCheckpoint: () => string,
-    journeyCheckpoint: (action: 'admit' | 'refresh') => Promise<string>,
-  ): Promise<{
-    before: string;
-    after: string;
-    entitlement: string;
-    data: string;
-  }>;
   dispose(): Promise<void>;
 };
 
 export type IdentityLabAccountHooks = {
-  beforeAccountSwitch(): Promise<void>;
+  beforeAccountSwitch(options: AccountSwitch): Promise<void>;
   prepareAccount(identity: AuthIdentity): Promise<void>;
   afterDelete(): Promise<void>;
   seedAccount?(account: 'A' | 'B'): Promise<void>;
@@ -242,6 +111,7 @@ export async function createIdentityLab(
   let deliveredProfiles = 0;
   let users = 0;
   let stored: LabSession | null = null;
+  let pendingEmail: string | null = null;
   let distinctId = ANONYMOUS_DISTINCT_ID;
   let customerUserId: string | undefined;
   let profileListener: ((profile: AdaptyProfile) => void) | null = null;
@@ -250,20 +120,17 @@ export async function createIdentityLab(
     resolve(profile: AdaptyProfile): void;
   }[] = [];
   let rejectNextAccountReset = false;
-  let rejectNextProviderLink = false;
   let enterPurchaseBarrier: (() => void) | undefined;
   let releasePurchaseBarrier: (() => void) | undefined;
   const purchaseBarrierEntered = new Promise<void>((resolve) => { enterPurchaseBarrier = resolve; });
   const purchaseBarrierReleased = new Promise<void>((resolve) => { releasePurchaseBarrier = resolve; });
-  const activeSessionTokens = new Set<string>();
-  const signOutScopes: string[] = [];
   let services: AuthServices | undefined;
   const providerUsers = new Map<string, LabUser>();
   const usersById = new Map<string, LabUser>();
-  const emailChallengeOutcomes: string[] = [];
-  const consumedEmailChallenges = new Set<number>();
 
   const networkError = (text: string) => Object.assign(new Error(text), { status: 0 });
+  const authError = (code: string, text: string, status = 422) => Object.assign(new Error(text), { code, status });
+  const rateLimited = () => authError('over_email_send_rate_limit', 'For security purposes, you can only request this after 60 seconds.', 429);
   const newUser = (provider?: string): LabUser => {
     const existing = provider ? providerUsers.get(provider) : undefined;
     if (existing) return existing;
@@ -278,10 +145,38 @@ export async function createIdentityLab(
     usersById.set(user.id, user);
     return user;
   };
+  if (script.existing) {
+    const { provider, paid } = script.existing;
+    const user: LabUser = {
+      id: EXISTING_USER_ID,
+      email: provider === 'email' ? 'e@b.co' : undefined,
+      is_anonymous: false,
+      identities: [{ provider }],
+      app_metadata: { provider },
+    };
+    providerUsers.set(provider, user);
+    usersById.set(user.id, user);
+    if (paid) grants.set(TARGET_INDEPENDENT_SUBSCRIPTION_ID, { owner: user.id, status: 'active' });
+  }
   const signedIn = (user: LabUser) => {
     stored = { access_token: `lab-token-${user.id}`, refresh_token: `lab-refresh-${user.id}`, user };
-    activeSessionTokens.add(stored.access_token);
     return { data: { user, session: stored }, error: null };
+  };
+  const linkTo = (provider: string, email?: string) => {
+    const linked: LabUser = {
+      ...stored!.user,
+      ...(email ? { email } : {}),
+      is_anonymous: false,
+      identities: [...stored!.user.identities.filter((identity) => identity.provider !== provider), { provider }],
+      app_metadata: { provider },
+    };
+    providerUsers.set(provider, linked);
+    usersById.set(linked.id, linked);
+    return linked;
+  };
+  const ownerOf = (provider: string) => {
+    const owner = providerUsers.get(provider);
+    return owner && owner.id !== stored?.user.id ? owner : null;
   };
   const unscripted = async () => ({ data: { user: null, session: null }, error: networkError('Not scripted in the identity lab') });
 
@@ -296,103 +191,61 @@ export async function createIdentityLab(
       },
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
       signOut: async ({ scope }: { scope?: 'local' | 'global' | 'others' } = {}) => {
-        const resolvedScope = scope ?? 'global';
-        signOutScopes.push(resolvedScope);
-        if (resolvedScope === 'global') activeSessionTokens.clear();
-        else if (resolvedScope === 'local' && stored) activeSessionTokens.delete(stored.access_token);
-        else if (stored) {
-          for (const token of activeSessionTokens) {
-            if (token !== stored.access_token) activeSessionTokens.delete(token);
-          }
-        }
-        ctx.log('lab_sign_out', { scope: resolvedScope });
+        ctx.log('lab_sign_out', { scope: scope ?? 'global' });
         stored = null;
         return { error: null };
       },
       setSession: async ({ access_token }: { access_token: string }) => {
-        const userId = access_token.replace(/^lab-token-/, '');
-        const user = usersById.get(userId);
+        const user = usersById.get(access_token.replace(/^lab-token-/, ''));
         if (!user) return { data: { user: null, session: null }, error: networkError('Saved session unavailable') };
-        attempts.sessionRestore += 1;
-        const result = signedIn(user);
         ctx.log('lab_session_restored', { user: user.id });
-        updateSubscriptionLab();
-        return result;
+        return signedIn(user);
+      },
+      refreshSession: async () => {
+        if (!stored) return { data: { user: null, session: null }, error: networkError('No session') };
+        return signedIn(usersById.get(stored.user.id) ?? stored.user);
       },
       linkIdentity: async ({ provider }: { provider: string }) => {
-        attempts.link += 1;
-        const result = rejectNextProviderLink ? 'conflict' : script.appleLink ?? 'ok';
-        rejectNextProviderLink = false;
-        ctx.log('lab_link_identity', { provider, result });
-        if (result === 'conflict' || !stored)
-          return { data: { user: null, session: null }, error: Object.assign(new Error('Identity is already linked to another user'), { status: 422 }) };
-        const linked: LabUser = {
-          ...stored.user,
-          is_anonymous: false,
-          identities: [...stored.user.identities.filter((identity) => identity.provider !== provider), { provider }],
-          app_metadata: { provider },
-        };
-        providerUsers.set(provider, linked);
-        usersById.set(linked.id, linked);
-        return signedIn(linked);
+        if (!stored) return unscripted();
+        const owner = ownerOf(provider);
+        ctx.log('lab_link_identity', { provider, result: owner ? 'conflict' : 'ok', user: stored.user.id });
+        if (owner) return { data: { user: null, session: null }, error: authError('identity_already_exists', 'Identity is already linked to another user') };
+        return signedIn(linkTo(provider));
       },
       signInWithIdToken: async ({ provider }: { provider: string }) => {
         const result = signedIn(newUser(provider));
-        ctx.log('lab_recovered_account', { provider, user: result.data.user.id });
+        ctx.log('lab_signed_in', { provider, user: result.data.user.id });
         return result;
       },
-      signInWithOtp: async () => {
-        if ((!script.emailChallenges && !script.emailAccount) || !stored) return unscripted();
-        attempts.emailSend += 1;
-        ctx.log('lab_email_code_sent', { challenge: attempts.emailSend, account: stored.user.id });
-        return { error: script.emailRateLimited ? Object.assign(new Error('For security purposes, you can only request this after 60 seconds.'), { status: 429 }) : null };
-      },
-      verifyOtp: async ({ token }: { email: string; token: string; type: string }) => {
-        if ((!script.emailChallenges && !script.emailAccount) || !stored) return unscripted();
-        if (script.emailAccount) {
-          const ok = token === '123456' && !consumedEmailChallenges.has(attempts.emailSend);
-          ctx.log('lab_email_verified', { challenge: attempts.emailSend, ok, consumed: consumedEmailChallenges.has(attempts.emailSend) });
-          if (!ok) return { data: { session: null }, error: { code: 'otp_expired' } };
-          consumedEmailChallenges.add(attempts.emailSend);
-          const user = newUser('email');
-          if (script.emailAccount === 'paid') grants.set(TARGET_INDEPENDENT_SUBSCRIPTION_ID, { owner: user.id, status: 'active' });
-          return signedIn(user);
+      updateUser: async ({ email }: { email: string }) => {
+        if (!stored) return unscripted();
+        if (ownerOf('email')) {
+          ctx.log('lab_email_exists', { account: stored.user.id });
+          return { data: { user: null }, error: authError('email_exists', 'A user with this email address has already been registered') };
         }
-        const outcome = token === '111111'
-          ? 'invalid'
-          : token === '222222'
-            ? 'expired'
-            : token === '333333'
-              ? 'superseded'
-              : token === '444444' && attempts.emailSend === 2
-                ? 'success'
-                : 'invalid';
-        const challenge = outcome === 'superseded' ? 1 : attempts.emailSend;
-        emailChallengeOutcomes.push(outcome);
-        ctx.log('lab_email_challenge', {
-          challenge,
-          result: outcome,
-          account: stored.user.id,
-          grants: grants.size,
-        });
-        updateSubscriptionLab();
-        if (outcome !== 'success')
-          return { data: { user: null, session: null }, error: Object.assign(new Error(`Email code ${outcome}`), { code: `otp_${outcome}` }) };
-        const linked: LabUser = {
-          ...stored.user,
-          is_anonymous: false,
-          identities: [...stored.user.identities.filter((identity) => identity.provider !== 'email'), { provider: 'email' }],
-          app_metadata: { provider: 'email' },
-        };
-        providerUsers.set('email', linked);
-        usersById.set(linked.id, linked);
-        return signedIn(linked);
-      },
-      updateUser: async ({ email: _email }: { email: string }) => {
-        if (!script.emailChallenges || !stored) return unscripted();
         attempts.emailSend += 1;
-        ctx.log('lab_email_code_sent', { challenge: attempts.emailSend, account: stored.user.id });
-        return { data: { user: stored.user }, error: null };
+        pendingEmail = email;
+        ctx.log('lab_email_code_sent', { kind: 'save', challenge: attempts.emailSend, account: stored.user.id });
+        return { data: { user: stored.user }, error: script.emailRateLimited ? rateLimited() : null };
+      },
+      signInWithOtp: async () => {
+        if (!stored) return unscripted();
+        if (!providerUsers.get('email')) return { data: { user: null, session: null }, error: authError('otp_disabled', 'Signups not allowed for otp') };
+        attempts.emailSend += 1;
+        ctx.log('lab_email_code_sent', { kind: 'signIn', challenge: attempts.emailSend, account: stored.user.id });
+        return { data: { user: null, session: null }, error: script.emailRateLimited ? rateLimited() : null };
+      },
+      verifyOtp: async ({ token, type }: { email: string; token: string; type: string }) => {
+        if (!stored) return unscripted();
+        const ok = token === '123456';
+        ctx.log('lab_email_verified', { type, challenge: attempts.emailSend, ok });
+        if (!ok) return { data: { user: null, session: null }, error: authError('otp_expired', 'Token has expired or is invalid', 403) };
+        if (type === 'email_change') {
+          const linked = linkTo('email', pendingEmail ?? undefined);
+          stored = { ...stored, user: linked };
+          return { data: { user: linked, session: null }, error: null };
+        }
+        return signedIn(newUser('email'));
       },
     },
   } as unknown as LabSupabase;
@@ -470,31 +323,16 @@ export async function createIdentityLab(
       restores: attempts.restore,
       queued: queuedProfiles.length,
       delivered: deliveredProfiles,
-      callbackIsolation: ctx.snapshot().subscriptionLab?.callbackIsolation,
-      deletionIsolation: ctx.snapshot().subscriptionLab?.deletionIsolation,
-      transferIsolation: ctx.snapshot().subscriptionLab?.transferIsolation,
-      concurrentRestoreIsolation: ctx.snapshot().subscriptionLab?.concurrentRestoreIsolation,
-      providerLinking: ctx.snapshot().subscriptionLab?.providerLinking,
       providerAttempts: script.providerAttempts && attempts.googleCredential >= 2
         ? `Apple canceled · Google failed · Google success · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
         : ctx.snapshot().subscriptionLab?.providerAttempts,
-      emailChallenges: script.emailChallenges && emailChallengeOutcomes.length >= 4
-        ? `${emailChallengeOutcomes.join(' · ')} · account ${stored?.user.id ?? 'none'} · grants ${grants.size}`
-        : ctx.snapshot().subscriptionLab?.emailChallenges,
-      localSignOutIsolation: ctx.snapshot().subscriptionLab?.localSignOutIsolation,
       purchaseSerialization: ctx.snapshot().subscriptionLab?.purchaseSerialization,
       existingSubscription: script.purchase === 'alreadyOwned'
         ? `store ${STORE_SUBSCRIPTION_ID} owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} charge starts 0`
         : ctx.snapshot().subscriptionLab?.existingSubscription,
-      staleProductHandle: ctx.snapshot().subscriptionLab?.staleProductHandle,
       restoreIsolation: script.wrongStoreAccount
         ? `wrong Store owner ${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} selected ${customerUserId ?? 'none'} transfers ${transfers}`
         : ctx.snapshot().subscriptionLab?.restoreIsolation,
-      passiveEntry: ctx.snapshot().subscriptionLab?.passiveEntry,
-      lifecycleRevocation: ctx.snapshot().subscriptionLab?.lifecycleRevocation,
-      providerConflict: script.establishedProviderConflict
-        ? `selected ${stored?.user.id ?? 'none'} Apple owner lab-user-a links ${attempts.link} session restores ${attempts.sessionRestore} Entitlement ${adapter?.entitlement().status ?? 'none'} data ${accountHooks?.accountCheckpoint?.() ?? 'unavailable'}`
-        : ctx.snapshot().subscriptionLab?.providerConflict,
     },
   });
   const profile = (owner = customerUserId): AdaptyProfile => {
@@ -787,13 +625,13 @@ export async function createIdentityLab(
     setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
     onBeforeDelete: async () => undefined,
     onAfterDelete: accountHooks?.afterDelete ?? (async () => undefined),
-    beforeAccountSwitch: async () => {
+    beforeAccountSwitch: async (options) => {
       if (rejectNextAccountReset) {
         rejectNextAccountReset = false;
         ctx.log('lab_sign_out_reset', { result: 'failed' });
         throw networkError('Account reset failed');
       }
-      await accountHooks?.beforeAccountSwitch();
+      await accountHooks?.beforeAccountSwitch(options);
     },
     prepareAccount: accountHooks?.prepareAccount,
   });
@@ -860,63 +698,7 @@ export async function createIdentityLab(
     manageSubscription: () => adapter.manageSubscription(),
     subscribe: (callback) => adapter.subscribe(callback),
   };
-  const booted = auth.boot().then(async () => {
-    if (!script.establishedProviderConflict) return;
-    await auth.recoverWithApple();
-    await services?.waitForIdentityReady();
-    await accountHooks?.seedAccount?.('A');
-    await auth.recoverWithGoogle();
-    await services?.waitForIdentityReady();
-    await accountHooks?.seedAccount?.('B');
-    updateSubscriptionLab();
-  });
-  const stageDeletionCallbackIsolation = async (seedDeletedAccount: () => Promise<void>) => {
-    const paywall = await adapter.loadPaywall('onboarding');
-    const purchase = await adapter.purchase(paywall.products[0]!.handle);
-    if (purchase.type !== 'pending') throw new Error('Delayed purchase did not remain pending');
-    await auth.recoverWithApple();
-    const deleted = await services?.waitForIdentityReady();
-    if (!deleted?.userId) throw new Error('Deleted account did not become ready');
-    await seedDeletedAccount();
-    ctx.update({ restoreOutcome: 'restored' });
-    await adapter.restore();
-    return deleted.userId;
-  };
-  const finishDeletionCallbackIsolation = async (deletedIdentity: string): Promise<DeletionIsolationResult> => {
-    await auth.recoverWithApple();
-    await new Promise<void>((resolve, reject) => {
-      const finish = (identity: AuthIdentity) => {
-        if (identity.kind !== 'canonical' || !identity.ready || !identity.userId || identity.userId === deletedIdentity) return;
-        clearTimeout(timer);
-        stop();
-        resolve();
-      };
-      const timer = setTimeout(() => {
-        stop();
-        reject(new Error('Deleted account tombstone did not settle to a fresh identity'));
-      }, 15_000);
-      const stop = auth.subscribeIdentity(finish);
-      finish(auth.identity());
-    });
-    const selected = auth.identity();
-    if (selected.kind !== 'canonical' || !selected.userId) throw new Error('Fresh identity did not become ready');
-    const callbacks = queuedProfiles.splice(0);
-    callbacks.forEach(({ operation, owner, profile: queued }) => {
-      deliveredProfiles += 1;
-      ctx.log('lab_deleted_profile', { operation, owner, selected: selected.userId });
-      profileListener?.(queued);
-    });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    updateSubscriptionLab();
-    return {
-      identity: selected.userId,
-      deletedIdentity,
-      entitlement: adapter.entitlement().status,
-      queued: callbacks.length,
-      delivered: deliveredProfiles,
-      tombstonePreserved: tombstones.has(deletedIdentity),
-    };
-  };
+  const booted = auth.boot();
   return {
     auth,
     analytics,
@@ -925,399 +707,6 @@ export async function createIdentityLab(
       () => undefined,
       () => undefined,
     ),
-    runDelayedCallbackIsolation: async () => {
-      const paywall = await adapter.loadPaywall('onboarding');
-      const purchase = await adapter.purchase(paywall.products[0]!.handle);
-      if (purchase.type !== 'pending') throw new Error('Delayed purchase did not remain pending');
-      await auth.recoverWithApple();
-      await services?.waitForIdentityReady();
-      ctx.update({ restoreOutcome: 'restored' });
-      await adapter.restore();
-      await auth.recoverWithGoogle();
-      const selected = await services?.waitForIdentityReady();
-      if (!selected?.userId) throw new Error('Target account did not become ready');
-      const callbacks = queuedProfiles.splice(0);
-      callbacks.forEach(({ operation, owner, profile: queued }) => {
-        deliveredProfiles += 1;
-        ctx.log('lab_delayed_profile', { operation, owner, selected: selected.userId });
-        profileListener?.(queued);
-      });
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      updateSubscriptionLab();
-      return {
-        identity: selected.userId,
-        entitlement: adapter.entitlement().status,
-          queued: callbacks.length,
-        delivered: deliveredProfiles,
-      };
-    },
-    prepareDeletionCallbackIsolation: async (seedDeletedAccount, completed) => {
-      const deletedIdentity = await stageDeletionCallbackIsolation(seedDeletedAccount);
-      let finishing = false;
-      let stop: () => void = () => undefined;
-      stop = auth.subscribeIdentity((identity) => {
-        if (
-          finishing ||
-          !tombstones.has(deletedIdentity) ||
-          identity.kind !== 'canonical' ||
-          !identity.ready ||
-          !identity.userId ||
-          identity.userId === deletedIdentity
-        ) return;
-        finishing = true;
-        stop();
-        void finishDeletionCallbackIsolation(deletedIdentity).then(completed).catch((error) => {
-          ctx.log('lab_deletion_callback_failed', { message: message(error) });
-        });
-      });
-    },
-    runDeletionCallbackIsolation: async (seedDeletedAccount) => {
-      const deletedIdentity = await stageDeletionCallbackIsolation(seedDeletedAccount);
-      await auth.deleteAccount();
-      return finishDeletionCallbackIsolation(deletedIdentity);
-    },
-    runEstablishedTransfer: async (seedAccount, accountCheckpoint, verifyCurrent) => {
-      await auth.recoverWithApple();
-      const source = await services?.waitForIdentityReady();
-      if (!source?.userId) throw new Error('Source account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
-      if (script.secondSubscription)
-        grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
-      const sourceProfile = profile(source.userId);
-      profileListener?.(sourceProfile);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      await auth.recoverWithGoogle();
-      const target = await services?.waitForIdentityReady();
-      if (!target?.userId) throw new Error('Target account did not become ready');
-      await seedAccount('B');
-      profileListener?.(sourceProfile);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const beforeTransfer = await verifyCurrent();
-
-      ctx.update({ restoreOutcome: 'restored' });
-      try {
-        await adapter.restore();
-      } catch (error) {
-        ctx.log('lab_transfer_retry', { message: message(error), owner: target.userId });
-      }
-      const afterFailure = await verifyCurrent();
-      await adapter.restore();
-      const afterTransfer = await verifyCurrent();
-      await adapter.restore();
-      const afterRepeat = await verifyCurrent();
-
-      await auth.recoverWithApple();
-      await services?.waitForIdentityReady();
-      await adapter.refresh();
-      const sourceAfterTransfer = await verifyCurrent();
-      const sourceData = accountCheckpoint();
-
-      await auth.recoverWithGoogle();
-      await services?.waitForIdentityReady();
-      await adapter.refresh();
-      const targetAfterReturn = await verifyCurrent();
-      const targetData = accountCheckpoint();
-      const ownedBy = (userId: string) => [...grants.entries()]
-        .filter(([, grant]) => grant.owner === userId)
-        .map(([subscriptionId]) => subscriptionId)
-        .sort()
-        .join(',');
-      const grantLedger = script.secondSubscription
-        ? `transferred ${STORE_SUBSCRIPTION_ID} to ${target.userId} independent ${INDEPENDENT_SUBSCRIPTION_ID} stays ${source.userId} target only ${ownedBy(target.userId)} source only ${ownedBy(source.userId)}`
-        : null;
-      updateSubscriptionLab();
-      return {
-        source: source.userId,
-        beforeTransfer,
-        afterFailure,
-        afterTransfer,
-        afterRepeat,
-        sourceAfterTransfer,
-        targetAfterReturn,
-        sourceData,
-        targetData,
-        restores: attempts.restore,
-        transfers,
-        grantLedger,
-      };
-    },
-    runConcurrentRestore: async (seedAccount, accountCheckpoint, verifyCurrent) => {
-      await auth.recoverWithApple();
-      const source = await services?.waitForIdentityReady();
-      if (!source?.userId) throw new Error('Source account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'trial' });
-      const staleSourceProfile = profile(source.userId);
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
-      grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
-
-      await auth.recoverWithGoogle();
-      const target = await services?.waitForIdentityReady();
-      if (!target?.userId) throw new Error('Target account did not become ready');
-      await seedAccount('B');
-      grants.set(TARGET_INDEPENDENT_SUBSCRIPTION_ID, { owner: target.userId, status: 'active' });
-      ctx.update({ restoreOutcome: 'restored' });
-
-      const targetRestore = adapter.restore();
-      const sourceRestore = restoreForOwner(source.userId, 'remote');
-      await Promise.all([sourceRestore, targetRestore]);
-      const raceWinner = grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none';
-      const afterRace = await verifyCurrent();
-
-      profileListener?.(staleSourceProfile);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const afterStaleLoser = `${await verifyCurrent()}/${adapter.entitlement().status}`;
-
-      await adapter.restore();
-      const afterRepeat = await verifyCurrent();
-
-      await auth.recoverWithApple();
-      await services?.waitForIdentityReady();
-      await adapter.refresh();
-      const sourceAfterRace = await verifyCurrent();
-      const sourceData = accountCheckpoint();
-
-      await auth.recoverWithGoogle();
-      await services?.waitForIdentityReady();
-      await adapter.refresh();
-      const targetAfterReturn = await verifyCurrent();
-      const targetData = accountCheckpoint();
-      const entries = [...grants.entries()].sort(([left], [right]) => left.localeCompare(right));
-      const grantLedger = `store ${STORE_SUBSCRIPTION_ID}=${grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none'} independent A ${INDEPENDENT_SUBSCRIPTION_ID}=${grants.get(INDEPENDENT_SUBSCRIPTION_ID)?.owner ?? 'none'} independent B ${TARGET_INDEPENDENT_SUBSCRIPTION_ID}=${grants.get(TARGET_INDEPENDENT_SUBSCRIPTION_ID)?.owner ?? 'none'} unique ${new Set(entries.map(([subscriptionId]) => subscriptionId)).size}/${entries.length}`;
-      updateSubscriptionLab();
-      return {
-        winner: raceWinner,
-        afterRace,
-        afterStaleLoser,
-        afterRepeat,
-        sourceAfterRace,
-        targetAfterReturn,
-        sourceData,
-        targetData,
-        restores: attempts.restore,
-        transfers,
-        grantLedger,
-      };
-    },
-    runProviderLinking: async (seedAccount, accountCheckpoint) => {
-      if (!script.linkedProviders) throw new Error('Linked providers are not scripted');
-      await auth.recoverWithApple();
-      const canonical = await services?.waitForIdentityReady();
-      if (!canonical?.userId) throw new Error('Canonical account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: canonical.userId, status: 'active' });
-      profileListener?.(profile(canonical.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const initialData = accountCheckpoint();
-
-      await auth.linkWithGoogle();
-      await services?.waitForIdentityReady();
-
-      await auth.recoverWithApple();
-      const apple = await services?.waitForIdentityReady();
-      if (!apple?.userId) throw new Error('Apple account did not become ready');
-      const appleData = accountCheckpoint();
-
-      await auth.recoverWithGoogle();
-      const google = await services?.waitForIdentityReady();
-      if (!google?.userId) throw new Error('Google account did not become ready');
-      const googleData = accountCheckpoint();
-
-      rejectNextProviderLink = true;
-      let conflict = 'missing';
-      try {
-        await auth.linkWithApple();
-      } catch (error) {
-        if ((error as { code?: unknown })?.code !== 'AUTH_RECOVERY_REQUIRED') throw error;
-        conflict = 'recovery required';
-      }
-      const afterConflict = auth.identity();
-      if (afterConflict.userId !== canonical.userId) throw new Error('Provider conflict changed the canonical account');
-      const conflictData = accountCheckpoint();
-      updateSubscriptionLab();
-      return {
-        canonical: canonical.userId,
-        apple: apple.userId,
-        google: google.userId,
-        accounts: new Set([...providerUsers.values()].map((user) => user.id)).size,
-        grants: grants.size,
-        conflict,
-        initialData,
-        appleData,
-        googleData,
-        conflictData,
-      };
-    },
-    runLocalSignOut: async (seedAccount, accountCheckpoint, journeyCheckpoint) => {
-      if (!script.localSignOut) throw new Error('Local sign-out is not scripted');
-      await auth.recoverWithApple();
-      const selected = await services?.waitForIdentityReady();
-      if (!selected?.userId) throw new Error('Local sign-out account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
-      profileListener?.(profile(selected.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const peerToken = `lab-peer-token-${selected.userId}`;
-      activeSessionTokens.add(peerToken);
-      const verifyPeer = () => {
-        attempts.peerProof += 1;
-        const active = activeSessionTokens.has(peerToken);
-        const eligible = [...grants.values()].some((grant) => grant.owner === selected.userId && ['trial', 'active'].includes(grant.status));
-        const result = active && eligible ? 'eligible' : 'unavailable';
-        ctx.log('lab_peer_subscription_proof', { account: selected.userId, result });
-        return result;
-      };
-      const before = await journeyCheckpoint('admit');
-      rejectNextAccountReset = true;
-      let failedReset = 'missing';
-      try {
-        await auth.signOut();
-      } catch (error) {
-        failedReset = message(error);
-      }
-      await services?.waitForIdentityReady();
-      const failedJourney = await journeyCheckpoint();
-      const failedData = accountCheckpoint();
-      await auth.signOut();
-      await services?.waitForIdentityReady();
-      const after = await journeyCheckpoint('reset');
-      const localData = accountCheckpoint();
-      const peer = verifyPeer();
-      updateSubscriptionLab();
-      return {
-        before,
-        failedReset: `${failedReset} journey ${failedJourney} data ${failedData}`,
-        after,
-        peer,
-        peerProofs: attempts.peerProof,
-        localScopes: signOutScopes.join(','),
-        localData,
-      };
-    },
-    runStaleProductHandle: async (seedAccount, accountCheckpoint) => {
-      if (!script.staleProductHandle) throw new Error('Stale product handles are not scripted');
-      await auth.recoverWithApple();
-      const source = await services?.waitForIdentityReady();
-      if (!source?.userId) throw new Error('Source account did not become ready');
-      await seedAccount('A');
-      const sourceData = accountCheckpoint();
-      const sourcePaywall = await adapter.loadPaywall('onboarding');
-      const staleHandle = sourcePaywall.products[0]?.handle;
-      if (!staleHandle) throw new Error('Source plan did not load');
-
-      await auth.recoverWithGoogle();
-      const target = await services?.waitForIdentityReady();
-      if (!target?.userId) throw new Error('Target account did not become ready');
-      await seedAccount('B');
-      const targetData = accountCheckpoint();
-      let staleError = 'accepted';
-      try {
-        await adapter.purchase(staleHandle);
-      } catch (error) {
-        staleError = message(error);
-      }
-      const targetPaywall = await adapter.loadPaywall('onboarding');
-
-      await auth.recoverWithApple();
-      await services?.waitForIdentityReady();
-      const sourceRestored = accountCheckpoint();
-      await auth.recoverWithGoogle();
-      await services?.waitForIdentityReady();
-      updateSubscriptionLab();
-      return {
-        source: source.userId,
-        target: target.userId,
-        staleError,
-        purchaseCalls: attempts.purchase,
-        sourceGeneration: sourcePaywall.generation,
-        targetGeneration: targetPaywall.generation,
-        sourceData,
-        targetData,
-        sourceRestored,
-      };
-    },
-    runIndependentRestore: async (seedAccount, accountCheckpoint, verifyCurrent) => {
-      if (!script.independentRestore) throw new Error('Independent restore is not scripted');
-      await auth.recoverWithApple();
-      const selected = await services?.waitForIdentityReady();
-      if (!selected?.userId) throw new Error('Independent account did not become ready');
-      await seedAccount('A');
-      grants.set(INDEPENDENT_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
-      profileListener?.(profile(selected.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const before = await verifyCurrent();
-      await adapter.restore();
-      const after = await verifyCurrent();
-      updateSubscriptionLab();
-      return {
-        before,
-        after,
-        entitlement: adapter.entitlement().status,
-        restores: attempts.restore,
-        data: accountCheckpoint(),
-      };
-    },
-    runPassiveEntry: async (seedAccount, accountCheckpoint) => {
-      if (!script.passiveEntry) throw new Error('Passive entry is not scripted');
-      await auth.recoverWithApple();
-      const source = await services?.waitForIdentityReady();
-      if (!source?.userId) throw new Error('Passive source account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: source.userId, status: 'active' });
-      profileListener?.(profile(source.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const sourceData = accountCheckpoint();
-
-      await auth.recoverWithGoogle();
-      const target = await services?.waitForIdentityReady();
-      if (!target?.userId) throw new Error('Passive target account did not become ready');
-      await seedAccount('B');
-      await adapter.refresh();
-      const targetEntitlement = adapter.entitlement().status;
-      const targetData = accountCheckpoint();
-
-      await auth.recoverWithApple();
-      await services?.waitForIdentityReady();
-      await adapter.refresh();
-      const sourceEntitlement = adapter.entitlement().status;
-      const sourceRestored = accountCheckpoint();
-      updateSubscriptionLab();
-      return {
-        owner: grants.get(STORE_SUBSCRIPTION_ID)?.owner ?? 'none',
-        passiveTarget: target.userId,
-        targetEntitlement,
-        sourceEntitlement,
-        transfers,
-        restores: attempts.restore,
-        sourceData,
-        targetData,
-        sourceRestored,
-      };
-    },
-    runLifecycleRevocation: async (seedAccount, accountCheckpoint, journeyCheckpoint) => {
-      if (!script.lifecycleRevocation) throw new Error('Lifecycle revocation is not scripted');
-      await auth.recoverWithApple();
-      const selected = await services?.waitForIdentityReady();
-      if (!selected?.userId) throw new Error('Revocation account did not become ready');
-      await seedAccount('A');
-      grants.set(STORE_SUBSCRIPTION_ID, { owner: selected.userId, status: 'active' });
-      profileListener?.(profile(selected.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const before = await journeyCheckpoint('admit');
-      grants.delete(STORE_SUBSCRIPTION_ID);
-      profileListener?.(profile(selected.userId));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const after = await journeyCheckpoint('refresh');
-      updateSubscriptionLab();
-      return {
-        before,
-        after,
-        entitlement: adapter.entitlement().status,
-        data: accountCheckpoint(),
-      };
-    },
     dispose: async () => {
       adapter.dispose();
       await services?.dispose();

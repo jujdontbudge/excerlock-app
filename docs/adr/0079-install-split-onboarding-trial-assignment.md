@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-13
 ---
 
@@ -26,3 +26,5 @@ The experiment can be stopped, resumed and analyzed by agents with existing CLIs
 - [0078](0078-adapty-onboarding-trial-assignment.md), assignment superseded here; screens, checkout, trial length and analytics otherwise unchanged.
 - `app-next/src/packages/subscription/createOnboardingOffer.ts`, `AdaptySubscriptionAdapter.ts`.
 - [Subscription setup](../subscriptions.md#three-day-trial-versus-no-trial-experiment).
+
+Superseded by [ADR 0091](0091-guest-first-accounts-and-adapty-access.md).

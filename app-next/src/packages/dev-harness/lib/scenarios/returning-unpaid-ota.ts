@@ -3,7 +3,6 @@ import { base } from './base';
 const unpaid = {
   session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' } as const,
   entitlement: { status: 'none', renewsAt: null } as const,
-  launchSignInRequired: true,
 };
 
 export const returningUnpaidOtaHome = base('returning-unpaid-ota-home', 'Returning unpaid account with Home OTA envelope', {
