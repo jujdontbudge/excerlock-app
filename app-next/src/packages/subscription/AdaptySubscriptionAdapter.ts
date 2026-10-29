@@ -50,6 +50,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   private listener: { remove(): void } | null = null;
   private userId: string | null = null;
   private loaded: Loaded | null = null;
+  private paywalls = new Map<number, Loaded>();
   private paywallGeneration = 0;
   private op: SubscriptionOperation = { busy: false, pending: false, error: null };
   private disposed = false;
@@ -87,6 +88,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     await retryAdapty(() => this.deps.sdk.identify(userId));
     this.userId = userId;
     this.loaded = null;
+    this.paywalls.clear();
     if (switching) {
       forgetObservedEntitlement();
       this.setComplimentary(null);
@@ -100,6 +102,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   async reset(): Promise<void> {
     this.userId = null;
     this.loaded = null;
+    this.paywalls.clear();
     this.setComplimentary(null);
     forgetObservedEntitlement();
     this.observed = { status: 'unknown', renewsAt: null };
@@ -127,10 +130,11 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     }));
     const products = await retryAdapty(() => this.deps.sdk.getPaywallProducts(flow));
     if (!products.length) throw new Error('Plans could not load');
-    if (generation !== this.paywallGeneration) throw new Error('Paywall request superseded');
     const remote = this.remoteCopy(flow);
     const mapped = products.map((product, index) => this.mapProduct(product, generation, index, remote.recommendedProductId));
-    this.loaded = { generation, userId, flow, placement, sdkProducts: new Map(mapped.map((item, i) => [item.handle, products[i]!])) };
+    const loaded = { generation, userId, flow, placement, sdkProducts: new Map(mapped.map((item, i) => [item.handle, products[i]!])) };
+    this.paywalls.set(generation, loaded);
+    if (generation === this.paywallGeneration) this.loaded = loaded;
     return {
       placement,
       title: remote.title?.trim() ? remote.title : 'Choose your plan',
@@ -142,14 +146,15 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     };
   }
   async logPaywallShown(generation: number): Promise<void> {
-    if (!this.loaded || this.loaded.generation !== generation) return;
-    await this.deps.sdk.logShowFlow(this.loaded.flow);
+    const loaded = this.paywalls.get(generation);
+    if (!loaded) return;
+    await this.deps.sdk.logShowFlow(loaded.flow);
   }
 
   async purchase(handle: string): Promise<PurchaseResult> {
     if (this.op.busy) throw new Error('A purchase is already running');
     this.op = { busy: true, pending: false, error: null };
-    const loaded = this.loaded;
+    const loaded = this.paywalls.get(Number(handle.split(':')[0])) ?? null;
     const product = loaded?.sdkProducts.get(handle);
     const attempt = new CheckoutDiagnostics(this.deps.analytics, {
       operation: 'purchase', placement: loaded?.placement ?? 'in_app', plan_id: product?.vendorProductId ?? 'unknown',

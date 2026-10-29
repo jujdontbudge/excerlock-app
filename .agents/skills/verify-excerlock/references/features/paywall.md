@@ -522,3 +522,17 @@ wait: 6
 expect: ONE TIME OFFER | 75% off forever | Was $9.99 a month, now $2.50/mo | This offer won't be there once you close it | LOWEST PRICE EVER. Yearly, 12mo · $29.99 · 3-day free trial, $2.50/mo | Claim your one time offer | I'd rather pay full price | Terms of Use | Restore purchases | Privacy Policy
 absent: Continue
 ```
+
+Leaving the close offer for the Paywall keeps the Paywall's own plans purchasable, even when it reuses the onboarding offer it loaded earlier.
+
+```proof
+name: close-offer-then-paywall-purchase
+scenario: identity-lab-user-sync-failed
+open: dev?journey=paywall
+open-wait: 3
+actions: expect Yearly $39.99/year | tap Close | expect Claim your one time offer | tap I'd rather pay full price | expect Yearly $39.99/year
+tap: Continue
+wait: 25
+expect: Allow Screen Time
+absent: ONE TIME OFFER | Plans changed
+```
