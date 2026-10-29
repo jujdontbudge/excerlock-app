@@ -18,6 +18,9 @@ depends: [launch]
 - Settings → Manage subscription shows the plan status (trial or active) and links to App Store management and restore. A billing issue keeps access only while Apple's grace period keeps the access level active; after that it opens the Paywall.
 - The server keeps Adapty webhooks for support and revenue only.
 
+## Never verify with a fake
+The proofs below run on fake subscriptions and are not verification. A Paywall, offer, purchase or Adapty change ships only after a real App Store sandbox purchase on a real iPhone in the real build, including Close, the close offer and back to the Paywall. The close offer passed every fake proof here and still broke real purchases (2026-10-27).
+
 ## How to get to it (user POV)
 Finish onboarding and the paywall appears. A subscriber reaches it through Settings → Manage subscription. A lapsed user sees the win-back paywall at launch.
 

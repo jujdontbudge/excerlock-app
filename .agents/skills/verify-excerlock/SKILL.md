@@ -7,13 +7,17 @@ description: Verify an ExcerLock change on the simulator with ./excer. Use after
 
 A change is done when you have seen it work through the path a user takes, and you can point at the evidence. `./excer` gives you control of the app. The feature map gives you the context: what exists and how to reach it.
 
+## Never verify with a fake
+
+`./excer demo` scenarios, fake adapters and the identity lab are fake versions of the app. They are not verification. Never report a fake pass as verified and never ship on one. Payments, subscriptions, the Paywall, offers and Adapty are verified only in the real app build with real Adapty and a real App Store sandbox purchase on a real iPhone, along the user's whole path including Close and back. If you cannot do that, report the change as not verified and do not ship it. A close offer that passed every fake proof broke real purchases in production on 2026-10-27.
+
 ## Loop
 
 1. **Find the feature.** Run `./excer feature list`, then `./excer feature show <id>`. For a file you changed, `./excer feature routes` shows which feature owns each screen. Read the feature's Gotchas before you start.
 2. **Check statically.** `./excer check` must pass. It runs typecheck, lint and the repository invariants, and it enforces ratchets that may only go down.
 3. **Drive it.** Use `./excer demo <scenario> --open <route>` to put the app into a known state. Then `./excer sim tree` reads what is on screen, `./excer sim tap "<label>"` presses things, and `./excer sim shot` saves a screenshot. Everything is headless: Simulator.app stays closed, and the installed build is reused.
 4. **Prove the changed behavior, not every feature.** Add or update the relevant proof block, watch it fail against the old behavior, then run `./excer prove <feature> --proof <name>`. It saves a screenshot, labels and `result.json` under `.excer/proof/`. A full `./excer prove <feature>` or multi-feature sweep requires the user's explicit request. Do not repeat already-proven unchanged paths after a merge. Run proofs individually with visible progress and a five-minute outer timeout; if a command stalls, stop and report it as blocked rather than extending the deadline or silently starting another suite.
-5. **Report.** Say which proofs passed, give the evidence path, and name anything you could not verify, for example real Screen Time shields, HealthKit or physical motion. Never report blocked verification as passed.
+5. **Report.** Say which proofs passed and that they ran on fakes, give the evidence path, and name anything you could not verify, for example real Screen Time shields, HealthKit or physical motion. Never report blocked verification as passed.
 
 ## Feature files
 

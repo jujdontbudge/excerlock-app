@@ -26,6 +26,8 @@ ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must b
 3. For a server change, run the server locally, confirm `./excer server ready`, and assert the route's effect in the database.
 4. Say exactly what you verified, with the evidence path. Report blocked verification as blocked.
 
+**Never verify with a fake.** Demo scenarios, fake adapters (`SubscriptionFake`, `FakeRuntime`) and the identity lab are fake versions of the app. A pass on a fake is never verification: never report it as verified, never ship on it, and never use one to verify payments. Anything that touches purchases, subscriptions, the Paywall, offers or Adapty is verified only in the real app build with real Adapty and a real App Store sandbox purchase on a real iPhone, along the user's path (including Close and back), before it ships. If that is not possible, say it is not verified and do not ship it. On 2026-10-27 a close offer passed every fake proof and broke real purchases in production.
+
 ## iOS simulator
 
 Work headless. Keep Simulator.app closed. `./excer sim` drives one simulator (`ExcerLock-Next` by default, or `EXCER_SIM`) through `xcrun simctl` and `idb`, and starts that simulator's `idb_companion` when needed. Metro serves on `EXCER_METRO_PORT` (default 8091). Reuse the installed app or an existing build. Build only when the binary is missing or native code changed, and keep caches. Shut down only simulators you booted. Headless Xcode commands: `~/.local/share/agent-ios/GUIDE.md`.
